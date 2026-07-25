@@ -5044,7 +5044,8 @@ export async function bootEngine({ bus } = {}) {
     renderTacticalConfrontation,
     matchLiveAudio,
   });
-  const {renderFinalSummary,showFinalActions,exitLiveMatch,reopenMatchWindow,openPreparation}=matchLiveSession;
+  const {renderFinalSummary,showFinalActions,exitLiveMatch,reopenMatchWindow:reopenMatchWindowBase,openPreparation}=matchLiveSession;
+  let reopenMatchWindow=reopenMatchWindowBase;
   let roundResults = null, roundPreviewResults={};
   const cupPenaltyWinner=(first,second)=>{
     const strength=name=>{
@@ -7676,9 +7677,15 @@ export async function bootEngine({ bus } = {}) {
     applyWear,tick,foul,advance,
     shootoutGoalsCount,shootoutAttemptsCount,currentShootoutClub,shootoutLineup,shootoutCardsFor,renderShootoutTrack,logShootout,
     evaluateShootoutWinner,pickShootoutCpuTaker,executeShootoutKick,startShootoutTakerChoice,startShootoutCpuKick,scheduleNextShootoutKick,
+    resumeShootoutFlow,reconcileShootoutState,
     completePenaltyShootout,startPenaltyShootout,startPenaltyChoice,startPenaltyAgainst,
     openPenaltyDuel,closePenaltyDuel,isPenaltyDuelOpen,runPenaltyDuelResolve,
   }=matchLiveOrchestration;
+  reopenMatchWindow=()=>{
+    const opened=reopenMatchWindowBase();
+    if(opened&&shootoutState&&!matchFinished)resumeShootoutFlow();
+    return opened;
+  };
   ({ addPasses, shot, takeFreeKick, penaltyTaker, buildAttack, planPenaltyOutcome } = createLiveMatchActions({
     clamp,
     rnd,
@@ -7950,25 +7957,6 @@ export async function bootEngine({ bus } = {}) {
       return true;
     }
     modal.classList.remove('hidden');
-    if(pendingPenalty?.mode==='shootout'&&shootoutState){
-      stopMatchClock();
-      $('#matchActions').classList.add('hidden');
-      $('#shootoutPanel').classList.remove('hidden');
-      renderShootoutTrack();
-      startShootoutTakerChoice(pendingPenalty.kickingClub||currentShootoutClub());
-      return true;
-    }
-    if(pendingPenalty?.mode==='shootout-cpu'&&shootoutState){
-      stopMatchClock();
-      $('#matchActions').classList.add('hidden');
-      $('#shootoutPanel').classList.remove('hidden');
-      renderShootoutTrack();
-      const club=pendingPenalty.kickingClub||currentShootoutClub();
-      const taker=shootoutLineup(club).find(player=>player.name===pendingPenalty.takerName)||pickShootoutCpuTaker(club);
-      if(taker)startShootoutCpuKick(club,taker);
-      else scheduleNextShootoutKick();
-      return true;
-    }
     if(pendingPenalty?.mode==='against'&&pendingPenalty?.current&&pendingPenalty?.other){
       startPenaltyAgainst(pendingPenalty.current,pendingPenalty.other);
       return true;
@@ -7977,12 +7965,11 @@ export async function bootEngine({ bus } = {}) {
       startPenaltyChoice(pendingPenalty.current,pendingPenalty.other);
       return true;
     }
-    if(shootoutState){
+    if(shootoutState&&!matchFinished){
       stopMatchClock();
       $('#matchActions').classList.add('hidden');
       $('#shootoutPanel').classList.remove('hidden');
-      renderShootoutTrack();
-      scheduleNextShootoutKick();
+      resumeShootoutFlow();
       return true;
     }
     if(preMatchPreparation||snap.ui?.pauseOpen||activePreparationTitle){

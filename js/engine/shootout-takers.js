@@ -82,9 +82,15 @@ export function decideShootoutWinner({ clubs, results, suddenDeath = false } = {
     return { winner: null, suddenDeath: sd };
   }
 
-  if (a0 >= 5 && a1 >= 5) sd = true;
-  if (a0 === a1 && a0 > 5 && g0 !== g1) {
-    return { winner: g0 > g1 ? c0 : c1, suddenDeath: sd };
+  if (a0 >= 5 && a1 >= 5) {
+    sd = true;
+    if (a0 === a1 && g0 !== g1) {
+      return { winner: g0 > g1 ? c0 : c1, suddenDeath: sd };
+    }
+    // Estado dessincronizado (ex.: persistência durante animação) — evita disputa infinita.
+    if (Math.abs(a0 - a1) > 1 && Math.abs(g0 - g1) >= 2) {
+      return { winner: g0 > g1 ? c0 : c1, suddenDeath: sd };
+    }
   }
   return { winner: null, suddenDeath: sd };
 }

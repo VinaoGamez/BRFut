@@ -559,7 +559,19 @@ export function createLiveMatchOrchestration(deps) {
 
   const shootoutGoalsCount = club => (getShootoutState()?.results?.[club] || []).filter(Boolean).length;
   const shootoutAttemptsCount = club => (getShootoutState()?.results?.[club] || []).length;
-  const currentShootoutClub = () => { const shootoutState = getShootoutState(); return shootoutState?.clubs?.[(shootoutState.firstKicker + shootoutState.kickIndex) % 2]; };
+  const currentShootoutClub = () => {
+    const shootoutState = getShootoutState();
+    return shootoutState?.clubs?.[(shootoutState.firstKicker + shootoutState.kickIndex) % 2];
+  };
+
+  /** Alinha kickIndex ao total de cobranças já registradas (save/restore). */
+  const reconcileShootoutState = () => {
+    const shootoutState = getShootoutState();
+    if (!shootoutState?.clubs?.length) return;
+    const [c0, c1] = shootoutState.clubs;
+    const total = (shootoutState.results[c0] || []).length + (shootoutState.results[c1] || []).length;
+    if (Number(shootoutState.kickIndex) !== total) shootoutState.kickIndex = total;
+  };
   const shootoutLineup = clubName => {
     const userClub = getUserClub(), matchClub = getMatchClub(), clubs = getClubs();
     if (clubName === userClub) return getActiveStarters();
@@ -587,7 +599,10 @@ export function createLiveMatchOrchestration(deps) {
 
   const logShootout = (text, type = '', side = null) => {
     const shootoutState = getShootoutState();
-    const kickNo = Math.max(1, Math.ceil((shootoutState?.kickIndex || 0) / 2));
+    const club = shootoutState?.currentKickClub;
+    const kickNo = club
+      ? shootoutAttemptsCount(club) + 1
+      : Math.max(1, Math.ceil((shootoutState?.kickIndex || 0) / 2));
     log(`PÊN ${kickNo} · ${text}`, type || 'penalty', side);
   };
 
@@ -631,6 +646,8 @@ export function createLiveMatchOrchestration(deps) {
 
   let penaltyDuelTimer = null;
   let penaltyAgainstStartTimer = null;
+  let shootoutScheduleTimer = null;
+  let shootoutScheduleGen = 0;
 
   const setPenaltyDuelNarration = text => {
     const el = $('#penaltyDuelNarration');
@@ -652,12 +669,20 @@ export function createLiveMatchOrchestration(deps) {
     }
   };
 
+  const resetPenaltyWatchButton = () => {
+    const btn = $('#penaltyWatchBtn');
+    if (!btn) return;
+    btn.disabled = false;
+    btn.textContent = 'ASSISTIR';
+  };
+
   const resetPenaltyDuelStage = (narration = 'Escolha o cobrador para iniciar a cobrança.') => {
     if (penaltyDuelTimer) { clearTimeout(penaltyDuelTimer); penaltyDuelTimer = null; }
     const stage = $('#penaltyDuelStage');
     clearPenaltyDuelKick();
     stage?.classList.add('is-idle');
     setPenaltyDuelNarration(narration);
+    resetPenaltyWatchButton();
     $('#penaltyTakers')?.querySelectorAll('button').forEach(btn => {
       btn.disabled = false;
       btn.classList.remove('is-selected');
@@ -808,16 +833,24 @@ export function createLiveMatchOrchestration(deps) {
   };
 
   /** Pausa de leitura: só inicia a cobrança após o clique em ASSISTIR. */
-  const wirePenaltyWatchButton = onWatch => {
+  const wirePenaltyWatchButton = (onWatch, { validate } = {}) => {
     const btn = $('#penaltyWatchBtn');
     if (!btn || typeof onWatch !== 'function') return;
+    resetPenaltyWatchButton();
     btn.onclick = () => {
       if (btn.disabled) return;
+      if (typeof validate === 'function' && !validate()) return;
       btn.disabled = true;
       btn.textContent = 'ASSISTINDO…';
-      const run = () => onWatch();
+      const run = () => {
+        try {
+          onWatch();
+        } catch {
+          resetPenaltyWatchButton();
+        }
+      };
       const cue = matchLiveAudio?.playPenaltyKick?.();
-      if (cue?.then) cue.then(run);
+      if (cue?.then) cue.then(run).catch(run);
       else run();
     };
   };
@@ -906,8 +939,17 @@ export function createLiveMatchOrchestration(deps) {
   const executeShootoutKick = (kickingClub, taker, plan = null) => {
     const shootoutState = getShootoutState();
     if (!shootoutState || !taker) return;
+    reconcileShootoutState();
+    const expectedClub = currentShootoutClub();
+    if (expectedClub && kickingClub !== expectedClub) {
+      log(`Disputa: vez de ${expectedClub} — cobrança descartada.`, 'penalty');
+      closePenaltyDuel();
+      scheduleNextShootoutKick();
+      return;
+    }
     const userClub = getUserClub();
     const isUser = kickingClub === userClub, side = isUser ? 'home' : 'away', current = isUser ? profile() : opponentForMatch(), other = isUser ? opponentForMatch() : profile();
+    shootoutState.currentKickClub = kickingClub;
     shootoutState.usedNames[kickingClub] = shootoutState.usedNames[kickingClub] || [];
     shootoutState.usedNames[kickingClub].push(taker.name);
     const resolved = plan || planPenaltyOutcome?.(side, { ...current, attack: current.attack + 9 }, other, {
@@ -926,6 +968,7 @@ export function createLiveMatchOrchestration(deps) {
     shootoutState.results[kickingClub] = shootoutState.results[kickingClub] || [];
     shootoutState.results[kickingClub].push(scored);
     shootoutState.kickIndex++;
+    shootoutState.currentKickClub = null;
     renderShootoutTrack();
     closePenaltyDuel();
     const winner = evaluateShootoutWinner();
@@ -1000,37 +1043,62 @@ export function createLiveMatchOrchestration(deps) {
 
     wirePenaltyWatchButton(() => {
       const pending = getPendingPenalty?.();
-      if (!pending || pending.mode !== 'shootout-cpu') return;
-      if (!plan) {
-        // Limpa o modo CPU antes de avançar — a próxima cobrança (usuário) redefine pending.
+      if (!pending || pending.mode !== 'shootout-cpu') {
+        resetPenaltyWatchButton();
+        return;
+      }
+      const resolvedPlan =
+        plan ||
+        planPenaltyOutcome?.(side, { ...current, attack: current.attack + 9 }, other, {
+          taker: taker.name,
+          penaltySkill: taker.penaltyTaking,
+          shootout: true,
+        });
+      if (!resolvedPlan?.outcome) {
         setPendingPenalty(null);
         executeShootoutKick(kickingClub, taker);
         return;
       }
       const note = $('#penaltyCompare')?.querySelector('.penalty-compare-note');
       if (note) note.textContent = 'Bola rolando — acompanhe a cobrança.';
-      runPenaltyDuelResolve(taker.name, plan, () => {
-        // Não limpar depois do execute: scheduleNext pode já ter aberto a escolha do usuário.
+      const started = runPenaltyDuelResolve(taker.name, resolvedPlan, () => {
         setPendingPenalty(null);
-        executeShootoutKick(kickingClub, taker, plan);
+        executeShootoutKick(kickingClub, taker, resolvedPlan);
       });
+      if (!started) resetPenaltyWatchButton();
+    }, {
+      validate: () => {
+        const pending = getPendingPenalty?.();
+        return !!pending && pending.mode === 'shootout-cpu';
+      },
     });
   };
 
   const scheduleNextShootoutKick = () => {
     const shootoutState = getShootoutState(), userClub = getUserClub();
     if (!shootoutState) return;
-    const club = currentShootoutClub();
-    if (club === userClub) startShootoutTakerChoice(club);
-    else {
-      $('#matchStatus').textContent = `${club} prepara a cobrança…`;
-      setTimeout(() => {
+    reconcileShootoutState();
+    const winner = evaluateShootoutWinner();
+    if (winner) {
+      completePenaltyShootout(winner);
+      return;
+    }
+    shootoutScheduleGen += 1;
+    const gen = shootoutScheduleGen;
+    if (shootoutScheduleTimer) clearTimeout(shootoutScheduleTimer);
+    shootoutScheduleTimer = setTimeout(() => {
+      shootoutScheduleTimer = null;
+      if (gen !== shootoutScheduleGen || !getShootoutState()) return;
+      const club = currentShootoutClub();
+      if (!club) return;
+      if (club === userClub) startShootoutTakerChoice(club);
+      else {
+        $('#matchStatus').textContent = `${club} prepara a cobrança…`;
         const taker = pickShootoutCpuTaker(club);
         if (taker) {
           startShootoutCpuKick(club, taker);
           return;
         }
-        // Não pode travar: tenta de novo com pool reiniciado; se ainda falhar, encerra com empate técnico.
         const retry = pickShootoutCpuTaker(club);
         if (retry) {
           startShootoutCpuKick(club, retry);
@@ -1040,13 +1108,47 @@ export function createLiveMatchOrchestration(deps) {
         const [c0, c1] = shootoutState.clubs;
         const g0 = shootoutGoalsCount(c0), g1 = shootoutGoalsCount(c1);
         completePenaltyShootout(g0 >= g1 ? c0 : c1);
-      }, Math.max(450, optionsUi.getPaceMs() * 2));
+      }
+    }, Math.max(450, optionsUi.getPaceMs() * 2));
+  };
+
+  /** Retoma modal/ASSISTIR após reload ou fechar e reabrir a janela ao vivo. */
+  const resumeShootoutFlow = () => {
+    const shootoutState = getShootoutState();
+    if (!shootoutState || getMatchFinished()) return;
+    if (penaltyDuelTimer) return;
+    reconcileShootoutState();
+    renderShootoutTrack();
+    const winner = evaluateShootoutWinner();
+    if (winner) {
+      completePenaltyShootout(winner);
+      return;
     }
+    const pending = getPendingPenalty?.();
+    if (pending?.mode === 'shootout') {
+      startShootoutTakerChoice(pending.kickingClub || currentShootoutClub());
+      return;
+    }
+    if (pending?.mode === 'shootout-cpu') {
+      const club = pending.kickingClub || currentShootoutClub();
+      const taker =
+        shootoutLineup(club).find(player => player.name === pending.takerName) ||
+        pickShootoutCpuTaker(club);
+      if (taker) startShootoutCpuKick(club, taker);
+      else scheduleNextShootoutKick();
+      return;
+    }
+    scheduleNextShootoutKick();
   };
 
   const completePenaltyShootout = winner => {
     const liveMatchGame = getLiveMatchGame();
     if (!getShootoutState() || !liveMatchGame) return;
+    shootoutScheduleGen += 1;
+    if (shootoutScheduleTimer) {
+      clearTimeout(shootoutScheduleTimer);
+      shootoutScheduleTimer = null;
+    }
     const penFor = club => shootoutGoalsCount(club);
     liveMatchGame.shootoutWinner = winner;
     liveMatchGame.shootoutPenalties = `${penFor(liveMatchGame.home)}–${penFor(liveMatchGame.away)}`;
@@ -1068,6 +1170,7 @@ export function createLiveMatchOrchestration(deps) {
     const games = getKnockoutTieGames(liveMatchGame), clubs = [games[0]?.home, games[0]?.away].filter(Boolean);
     if (clubs.length < 2) return;
     setShootoutState({ clubs, firstKicker: 1, kickIndex: 0, results: { [clubs[0]]: [], [clubs[1]]: [] }, usedNames: { [clubs[0]]: [], [clubs[1]]: [] }, suddenDeath: false, competition: liveMatchGame?.competition });
+    reconcileShootoutState();
     log(`Empate no agregado. Disputa de pênaltis — ${knockoutCompetitionLabel(liveMatchGame)}!`, 'penalty');
     $('#matchStatus').textContent = 'Disputa de pênaltis — escolha os cobradores quando for sua vez.';
     $('#matchActions').classList.add('hidden');
@@ -1145,7 +1248,10 @@ export function createLiveMatchOrchestration(deps) {
 
     wirePenaltyWatchButton(() => {
       const pending = getPendingPenalty?.();
-      if (!pending || pending.mode !== 'against') return;
+      if (!pending || pending.mode !== 'against') {
+        resetPenaltyWatchButton();
+        return;
+      }
       const plan = planPenaltyOutcome?.(
         'away',
         { ...current, attack: current.attack + 35 },
@@ -1169,7 +1275,7 @@ export function createLiveMatchOrchestration(deps) {
       }
       const note = $('#penaltyCompare')?.querySelector('.penalty-compare-note');
       if (note) note.textContent = 'Bola rolando — acompanhe a cobrança.';
-      runPenaltyDuelResolve(taker.name, plan, () => {
+      const started = runPenaltyDuelResolve(taker.name, plan, () => {
         shot(
           'away',
           { ...current, attack: current.attack + 35 },
@@ -1188,6 +1294,12 @@ export function createLiveMatchOrchestration(deps) {
         renderStats();
         startMatchClock();
       });
+      if (!started) resetPenaltyWatchButton();
+    }, {
+      validate: () => {
+        const pending = getPendingPenalty?.();
+        return !!pending && pending.mode === 'against';
+      },
     });
   };
 
@@ -1199,6 +1311,11 @@ export function createLiveMatchOrchestration(deps) {
     const elapsed = Math.max(1, Math.floor(rnd(1, 3)));
     let minute = minute0;
     const stoppageActive = getStoppageActive?.() || null;
+
+    // Estado inconsistente (intervalo aberto com acréscimo ainda marcado): normaliza.
+    if (stoppageActive === 'first' && getHalftimeShown()) {
+      setStoppageActive?.(null);
+    }
 
     // Acréscimos: relógio fica em 45'/90', display 45+N / 90+N.
     if (stoppageActive === 'first' && !getHalftimeShown()) {
@@ -1284,8 +1401,8 @@ export function createLiveMatchOrchestration(deps) {
     const homeLive = liveOverall('home', homeBase), awayLive = liveOverall('away', awayBase);
     // A média efetiva ajusta as ações em escala moderada: favorece o melhor
     // momento, mas atributos individuais e aleatoriedade continuam decisivos.
-    const homeProfile = { ...homeBase, overall: homeLive, attack: homeBase.attack + (homeLive - homeBase.overall) * .30, passing: homeBase.passing + (homeLive - homeBase.overall) * .26, defense: homeBase.defense + (homeLive - homeBase.overall) * .26 - cautionPenalty('home') };
-    const awayProfile = { ...awayBase, overall: awayLive, attack: awayBase.attack + (awayLive - awayBase.overall) * .30, passing: awayBase.passing + (awayLive - awayBase.overall) * .26, defense: awayBase.defense + (awayLive - awayBase.overall) * .26 - cautionPenalty('away') };
+    const homeProfile = { ...homeBase, overall: homeLive, attack: homeBase.attack + (homeLive - homeBase.overall) * .38, passing: homeBase.passing + (homeLive - homeBase.overall) * .32, defense: homeBase.defense + (homeLive - homeBase.overall) * .32 - cautionPenalty('home') };
+    const awayProfile = { ...awayBase, overall: awayLive, attack: awayBase.attack + (awayLive - awayBase.overall) * .38, passing: awayBase.passing + (awayLive - awayBase.overall) * .32, defense: awayBase.defense + (awayLive - awayBase.overall) * .32 - cautionPenalty('away') };
     // Posse: força + tática + mando real do calendário (não o "home" interno do motor).
     // Alinhado ao match-sim: swings perceptíveis sem extremos irreais (ex.: 62–38 constantes).
     const overallGap = homeLive - awayLive;
@@ -1300,9 +1417,9 @@ export function createLiveMatchOrchestration(deps) {
     const redControl = ((cards.away?.filter(card => card.red).length || 0) - (cards.home?.filter(card => card.red).length || 0)) * 2;
     // Motor home = usuário; o bônus de mando segue o calendário (casa/fora de verdade).
     const venueBias = userAtHomeInLiveMatch() ? 2.2 : -2.2;
-    const structuralControl = (homeProfile.passing - awayProfile.passing) * .40 + (homeProfile.overall - awayProfile.overall) * .16 + (homeTactic.possession - awayTactic.possession) * .10 + (homeTactic.press - awayTactic.press) * .03 + (homeTactic.mentality - awayTactic.mentality) * .02 + (stats.home.momentum - stats.away.momentum) * .12 + passControl + attackControl + redControl + homeOpeningBias * .2 + venueBias;
+    const structuralControl = (homeProfile.passing - awayProfile.passing) * .40 + (homeProfile.overall - awayProfile.overall) * .21 + (homeTactic.possession - awayTactic.possession) * .10 + (homeTactic.press - awayTactic.press) * .03 + (homeTactic.mentality - awayTactic.mentality) * .02 + (stats.home.momentum - stats.away.momentum) * .12 + passControl + attackControl + redControl + homeOpeningBias * .2 + venueBias;
     const hasRed = cards.home?.some(card => card.red) || cards.away?.some(card => card.red);
-    const possMin = hasRed ? 30 : 36, possMax = hasRed ? 70 : 64;
+    const possMin = hasRed ? 28 : 34, possMax = hasRed ? 72 : 66;
     const targetPossession = clamp(50 + structuralControl, possMin, possMax);
     // Motor: home = usuário, away = adversário. Espelhar visitante (como no match-sim).
     stats.home.possession = stats.home.possession * .78 + targetPossession * .22;
@@ -1406,6 +1523,8 @@ export function createLiveMatchOrchestration(deps) {
     startShootoutTakerChoice,
     startShootoutCpuKick,
     scheduleNextShootoutKick,
+    resumeShootoutFlow,
+    reconcileShootoutState,
     completePenaltyShootout,
     startPenaltyShootout,
     startPenaltyChoice,

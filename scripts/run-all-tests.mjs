@@ -15,6 +15,7 @@ const SUITES = [
   { label: 'season-calendar-plan', steps: [['scripts/season-calendar-plan-tests.mjs']] },
   { label: 'season-calendar-mold', steps: [['scripts/season-calendar-mold-tests.mjs']] },
   { label: 'knockout-shootout', steps: [['scripts/knockout-shootout-tests.mjs']] },
+  { label: 'shootout-live', steps: [['scripts/shootout-live-tests.mjs']] },
   { label: 'competition-rules', steps: [['scripts/competition-rules-tests.mjs']] },
   { label: 'serie-c-calendar', steps: [['scripts/serie-c-calendar-tests.mjs']] },
   { label: 'messages-stale', steps: [['scripts/messages-stale-tests.mjs']] },
