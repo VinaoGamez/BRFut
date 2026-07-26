@@ -109,9 +109,10 @@ body {
 .home-main {
   display: grid;
   gap: 26px;
-  align-content: start;
+  align-content: center;
   width: min(52vw, 760px);
   max-width: 760px;
+  min-height: calc(100vh - 180px);
 }
 
 .home-kicker {
@@ -194,10 +195,10 @@ button.home-btn {
   font-size: 12px;
 }
 
-/* Pilares 3×3 — até ~metade da página, sem cobrir o gramado */
+/* Pilares 2×4 — cards mais legíveis, gramado visível à direita */
 .home-pillars {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
 }
