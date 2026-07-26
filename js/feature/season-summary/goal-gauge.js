@@ -13,6 +13,7 @@ export const GOAL_GAUGE = {
 export function seasonGoalGauge(input = 'met', options = {}) {
   const compact = !!options.compact;
   const office = !!options.office;
+  const dashboard = !!options.dashboard;
   const hideLegend = !!options.hideLegend;
   let status = 'met';
   let score;
@@ -38,7 +39,13 @@ export function seasonGoalGauge(input = 'met', options = {}) {
   const progress = score / 100;
   const dash = (circumference * progress).toFixed(2);
   const gap = (circumference - circumference * progress).toFixed(2);
-  const sizeClass = office ? ' season-goal-gauge--office' : compact ? ' season-goal-gauge--compact' : '';
+  const sizeClass = office
+    ? ' season-goal-gauge--office'
+    : dashboard
+      ? ' season-goal-gauge--dashboard'
+      : compact
+        ? ' season-goal-gauge--compact'
+        : '';
   const legend = hideLegend
     ? ''
     : office

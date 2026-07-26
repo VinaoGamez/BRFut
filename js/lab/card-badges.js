@@ -1,47 +1,96 @@
 /**
- * Badges do verso do card — especialistas e craque.
- * PNGs com fundo transparente em assets/cards/badges/.
+ * Badges do verso do card — especialistas e craque (WebP, lazy por tipo).
  */
 
-import { isPenaltySavingSpecialist } from '../engine/player-generation.js';
-import badgeFaltaUrl from '../../assets/cards/badges/card-badge-especialista-falta.png';
-import badgePenaltiUrl from '../../assets/cards/badges/card-badge-especialista-penalti.png';
-import badgeDefesaPenaltiUrl from '../../assets/cards/badges/card-badge-especialista-defesa-penalti.png';
-import badgeEstrelaPrataUrl from '../../assets/cards/badges/card-badge-estrela-prata.png';
-import badgeEstrelaDouradaUrl from '../../assets/cards/badges/card-badge-estrela-dourada.png';
+import {
+  isCraque,
+  isDestaque,
+  isPenaltySavingSpecialist,
+  isSetPieceSpecialist,
+} from '../engine/player-generation.js';
+
+const loaders = {
+  freeKick: () => import('../../assets/cards/badges/card-badge-especialista-falta.webp'),
+  penalty: () => import('../../assets/cards/badges/card-badge-especialista-penalti.webp'),
+  penaltySaving: () => import('../../assets/cards/badges/card-badge-especialista-defesa-penalti.webp'),
+  specialistStar: () => import('../../assets/cards/badges/card-badge-estrela-prata.webp'),
+  craque: () => import('../../assets/cards/badges/card-badge-estrela-dourada.webp'),
+};
+
+const cache = new Map();
 
 export const CARD_BADGE_ASSETS = {
   freeKick: {
     id: 'freeKick',
     label: 'Especialista em Falta',
     short: 'Esp. falta',
-    url: badgeFaltaUrl,
+    url: '',
   },
   penalty: {
     id: 'penalty',
     label: 'Especialista em Cobrança de Pênaltis',
     short: 'Esp. pênalti',
-    url: badgePenaltiUrl,
+    url: '',
   },
   penaltySaving: {
     id: 'penaltySaving',
     label: 'Especialista em Defesa de Pênaltis',
     short: 'Esp. def. pênalti',
-    url: badgeDefesaPenaltiUrl,
+    url: '',
   },
   specialistStar: {
     id: 'specialistStar',
     label: 'Especialista',
     short: 'Estrela prata',
-    url: badgeEstrelaPrataUrl,
+    url: '',
   },
   craque: {
     id: 'craque',
     label: 'Craque',
     short: 'Estrela dourada',
-    url: badgeEstrelaDouradaUrl,
+    url: '',
   },
 };
+
+export async function preloadCardBadge(id) {
+  if (!loaders[id]) return '';
+  if (cache.has(id)) return cache.get(id);
+  const mod = await loaders[id]();
+  const url = mod.default;
+  cache.set(id, url);
+  if (CARD_BADGE_ASSETS[id]) CARD_BADGE_ASSETS[id].url = url;
+  return url;
+}
+
+/** Preload só os badges que o card pode exibir. */
+export async function preloadCardBadgesForPlayer(player, { preview = false } = {}) {
+  const ids = new Set();
+  if (preview) {
+    ids.add(player?.pos === 'GOL' ? 'penaltySaving' : 'freeKick');
+    ids.add('specialistStar');
+  } else {
+    const hex = resolveSpecialistHexBadge(player);
+    if (hex) ids.add(hex.id);
+    if (isCraque(player)) ids.add('craque');
+    else if (
+      isDestaque(player) ||
+      isSetPieceSpecialist(player) ||
+      isPenaltySavingSpecialist(player)
+    ) {
+      ids.add('specialistStar');
+    }
+  }
+  await Promise.all([...ids].map(preloadCardBadge));
+}
+
+export function hydrateCardBadgeImages(root = document) {
+  root.querySelectorAll('img[data-badge-id]').forEach(async img => {
+    const id = img.dataset.badgeId;
+    if (!id || img.getAttribute('src')) return;
+    const url = await preloadCardBadge(id);
+    if (url) img.setAttribute('src', url);
+  });
+}
 
 /** Um hex por jogador — conforme flag/atributos de bola parada. */
 export function resolveSpecialistHexBadge(player) {

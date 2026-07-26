@@ -7,15 +7,27 @@
  * a disputa precisa ser jogada ao vivo (AO VIVO).
  */
 import { simulateProbabilisticShootout } from './shootout-sim.js';
+import { STATE_LEAGUE_COMPETITION } from './state-league-format.js';
+
 export const KNOCKOUT_COMPETITIONS = {
   COPA: 'COPA DO BRASIL',
   SERIE_D: 'SÉRIE D ELIMINATÓRIAS',
+  RECOPA: 'RECOPA NACIONAL',
+  ESTADUAL: STATE_LEAGUE_COMPETITION,
 };
+
+const STATE_KNOCKOUT_PHASES = new Set(['quarters', 'semis', 'final']);
+
+/** Mata-mata estadual — jogo único; empate vai aos pênaltis. */
+export const isStateKnockoutPhase = game =>
+  String(game?.competition || '') === STATE_LEAGUE_COMPETITION &&
+  STATE_KNOCKOUT_PHASES.has(game?.phase);
 
 /** Campeonatos que podem ir aos pênaltis quando o agregado/jogo único empata. */
 export const KNOCKOUT_SHOOTOUT_COMPETITIONS = new Set([
   KNOCKOUT_COMPETITIONS.COPA,
   KNOCKOUT_COMPETITIONS.SERIE_D,
+  KNOCKOUT_COMPETITIONS.RECOPA,
 ]);
 
 export const registerKnockoutShootoutCompetition = key => {
@@ -23,7 +35,10 @@ export const registerKnockoutShootoutCompetition = key => {
 };
 
 export const isKnockoutShootoutCompetition = game =>
-  !!game && (KNOCKOUT_SHOOTOUT_COMPETITIONS.has(game.competition) || (!!game.tieId && game.knockoutRound != null));
+  !!game &&
+  (KNOCKOUT_SHOOTOUT_COMPETITIONS.has(game.competition) ||
+    isStateKnockoutPhase(game) ||
+    (!!game.tieId && game.knockoutRound != null));
 
 /** Mesma fixture do confronto (manda/visitante + leg/tie quando existirem). */
 export const sameKnockoutFixture = (a, b) =>
@@ -44,10 +59,29 @@ export const knockoutTieAggregate = games => {
   return aggregate;
 };
 
+const SERIE_D_KO_PHASE_BY_ROUND = {
+  11: '2ª fase eliminatória',
+  13: '3ª fase eliminatória',
+  15: 'Oitavas de final',
+  17: 'Quartas de final',
+  19: 'Semifinal',
+  21: 'Final',
+};
+
+/** Nome da fase do mata-mata Série D (persistido em game.phase ou derivado de knockoutRound). */
+export const serieDKnockoutPhaseLabel = game => {
+  if (!game) return 'Eliminatórias';
+  if (game.phase) return game.phase;
+  const round = Number(game.knockoutRound ?? game.round);
+  return SERIE_D_KO_PHASE_BY_ROUND[round] || 'Eliminatórias';
+};
+
 export const knockoutCompetitionLabel = game => {
   if (!game) return 'Eliminatórias';
   if (game.competition === KNOCKOUT_COMPETITIONS.COPA) return `Copa do Brasil${game.phase ? ` · ${game.phase}` : ''}`;
+  if (game.competition === KNOCKOUT_COMPETITIONS.RECOPA) return 'Recopa Nacional';
   if (game.competition === KNOCKOUT_COMPETITIONS.SERIE_D) return 'Brasileirão Série D · Eliminatórias';
+  if (isStateKnockoutPhase(game)) return 'Campeonato Estadual · Mata-mata';
   return game.competition || 'Eliminatórias';
 };
 

@@ -1,5 +1,6 @@
 import { MODULE_VERSIONS } from '../core/constants.js';
 import { getSponsors, sponsorLogoSlug } from './economy.js';
+import { sponsorLogoUrl } from '../assets/sponsor-logos.js';
 import { allowsExtendedSecondHalfStoppage, rollStoppageMinutes } from './match-clock.js';
 import { isKnockoutShootoutCompetition } from './knockout-shootout.js';
 import { enginePenaltyChance } from './match-tuning.js';
@@ -9,18 +10,6 @@ import {
   shootoutChoiceOptions,
 } from './shootout-takers.js';
 import { isPenaltySpecialist, isPenaltySavingSpecialist, penaltyGoalChanceRate, shootoutKickGoalChance } from './player-generation.js';
-
-const SPONSOR_LOGO_URLS = Object.fromEntries(
-  Object.entries(
-    import.meta.glob('../../assets/sponsors/icons/*.png', {
-      eager: true,
-      import: 'default',
-    }),
-  ).map(([path, url]) => {
-    const file = path.split('/').pop() || '';
-    return [file.replace(/\.png$/i, ''), url];
-  }),
-);
 
 /**
  * Orquestração da partida ao vivo — desgaste por minuto, ciclo tick/advance,
@@ -710,7 +699,7 @@ export function createLiveMatchOrchestration(deps) {
 
   const sponsorLedCell = (name, { master = false } = {}) => {
     const slug = sponsorLogoSlug(name);
-    const url = slug ? SPONSOR_LOGO_URLS[slug] : null;
+    const url = sponsorLogoUrl(slug);
     const label = String(name || '—');
     const logo = url
       ? `<img src="${url}" alt="${label}" width="72" height="72" loading="lazy" decoding="async">`
@@ -849,9 +838,17 @@ export function createLiveMatchOrchestration(deps) {
           resetPenaltyWatchButton();
         }
       };
+      let settled = false;
+      const fire = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(fallbackTimer);
+        run();
+      };
+      const fallbackTimer = setTimeout(fire, 1200);
       const cue = matchLiveAudio?.playPenaltyKick?.();
-      if (cue?.then) cue.then(run).catch(run);
-      else run();
+      if (cue?.then) cue.then(fire).catch(fire);
+      else fire();
     };
   };
 

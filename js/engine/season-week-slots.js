@@ -22,6 +22,8 @@ export const MATCH_WEEK_PROFILES = Object.freeze({
     weekend: Object.freeze({ weekdays: [WEEKDAY.SUN], defaultTime: '16:00' }),
     weekend_b: Object.freeze({ weekdays: [WEEKDAY.SAT], defaultTime: '16:00' }),
     knockout_ida: Object.freeze({ weekdays: [WEEKDAY.SUN], defaultTime: '18:00' }),
+    recopa_national: Object.freeze({ weekdays: [WEEKDAY.SUN], defaultTime: '18:00' }),
+    continental_conmebol: Object.freeze({ weekdays: [WEEKDAY.WED, WEEKDAY.THU], defaultTime: '21:30' }),
   }),
   /** Legado Qua/Sáb (testes / perfil alternativo). */
   wed_sat: Object.freeze({
@@ -30,6 +32,30 @@ export const MATCH_WEEK_PROFILES = Object.freeze({
     weekend: Object.freeze({ weekdays: [WEEKDAY.SAT], defaultTime: '16:00' }),
     weekend_b: Object.freeze({ weekdays: [WEEKDAY.SAT], defaultTime: '16:00' }),
     knockout_ida: Object.freeze({ weekdays: [WEEKDAY.SAT], defaultTime: '16:00' }),
+  }),
+  /**
+   * Grade BR — dias fixos por divisão (simulação / futuro perfil ativo).
+   * A: Dom (Qua no overlap EST) · B: Sáb (Seg no overlap) · C: Ter/Sex · D: Qui
+   * EST: Dom · CBR: Qua · CONMEBOL: Qua/Qui (slot compartilhado LIB/CSU).
+   */
+  br_weekly_grid: Object.freeze({
+    league_a_sun: Object.freeze({ weekdays: [WEEKDAY.SUN], defaultTime: '16:00' }),
+    league_a_wed: Object.freeze({ weekdays: [WEEKDAY.WED], defaultTime: '21:30' }),
+    league_b_sat: Object.freeze({ weekdays: [WEEKDAY.SAT], defaultTime: '16:00' }),
+    league_b_mon: Object.freeze({ weekdays: [WEEKDAY.MON], defaultTime: '19:00' }),
+    league_c_tue: Object.freeze({ weekdays: [WEEKDAY.TUE], defaultTime: '19:00' }),
+    league_c_fri: Object.freeze({ weekdays: [WEEKDAY.FRI], defaultTime: '19:00' }),
+    league_d_thu: Object.freeze({ weekdays: [WEEKDAY.THU], defaultTime: '19:00' }),
+    state_league_sun: Object.freeze({ weekdays: [WEEKDAY.SUN], defaultTime: '16:00' }),
+    state_league_wed: Object.freeze({ weekdays: [WEEKDAY.WED], defaultTime: '19:00' }),
+    cup_wed: Object.freeze({ weekdays: [WEEKDAY.WED], defaultTime: '21:30' }),
+    continental_conmebol: Object.freeze({ weekdays: [WEEKDAY.WED, WEEKDAY.THU], defaultTime: '21:30' }),
+    recopa_national: Object.freeze({ weekdays: [WEEKDAY.SUN], defaultTime: '18:00' }),
+    knockout_ida: Object.freeze({ weekdays: [WEEKDAY.WED], defaultTime: '21:30' }),
+    midweek: Object.freeze({ weekdays: [WEEKDAY.WED], defaultTime: '21:30' }),
+    midweek_alt: Object.freeze({ weekdays: [WEEKDAY.THU], defaultTime: '21:30' }),
+    weekend: Object.freeze({ weekdays: [WEEKDAY.SUN], defaultTime: '16:00' }),
+    weekend_b: Object.freeze({ weekdays: [WEEKDAY.SAT], defaultTime: '16:00' }),
   }),
   /** Qui/Dom. */
   thu_sun: Object.freeze({
@@ -41,8 +67,8 @@ export const MATCH_WEEK_PROFILES = Object.freeze({
   }),
 });
 
-/** Perfil ativo — alinhado ao calendário CBF 2026. */
-export const ACTIVE_WEEK_PROFILE = 'cbf_2026';
+/** Perfil ativo — grade semanal BR (molde CBF 2026). */
+export const ACTIVE_WEEK_PROFILE = 'br_weekly_grid';
 
 export const MATCH_WEEK_SLOTS = MATCH_WEEK_PROFILES[ACTIVE_WEEK_PROFILE];
 
@@ -51,19 +77,19 @@ export const MATCH_WEEK_SLOTS = MATCH_WEEK_PROFILES[ACTIVE_WEEK_PROFILE];
  * Divisões nacionais usam league_a / league_b etc. (ver season-calendar-mold.js).
  */
 export const COMPETITION_WEEK_SLOT_MAP = Object.freeze({
-  league: 'weekend',
-  league_a: 'weekend',
-  league_b: 'weekend_b',
-  league_c: 'weekend_b',
-  league_d: 'weekend_b',
-  cup: 'midweek',
-  serie_d_knockout: 'midweek',
+  league: 'league_a_sun',
+  league_a: 'league_a_sun',
+  league_b: 'league_b_sat',
+  league_c: 'league_c_tue',
+  league_d: 'league_d_thu',
+  cup: 'cup_wed',
+  serie_d_knockout: 'cup_wed',
   // ——— futuras (molde CBF; enabled: false) ———
-  state_league: 'weekend_b',
-  recopa_national: 'knockout_ida',
-  libertadores: 'midweek_alt',
-  sudamericana: 'midweek_alt',
-  recopa_sudamericana: 'midweek_alt',
+  state_league: 'state_league_sun',
+  recopa_national: 'recopa_national',
+  recopa_sudamericana: 'continental_conmebol',
+  libertadores: 'continental_conmebol',
+  sudamericana: 'continental_conmebol',
   regional_cup: 'midweek',
   fifa_friendlies: null,
   world_cup: null,

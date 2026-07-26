@@ -1,2 +1,11 @@
 /* from engine.js treatmentModalCss */
-.treatment-modal{width:min(520px,calc(100vw - 28px));text-align:left}.treatment-injury-name{color:#63d9ff;font-weight:700}.treatment-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}.treatment-actions button{padding:10px 14px;border-radius:5px;font:700 10px DM Sans;letter-spacing:.5px}.treatment-actions #treatmentConservative{background:#122b35!important;color:#edf8f5!important;border:1px solid #397487!important}.treatment-actions #treatmentSurgery{background:#24667c!important;color:#fff!important;border:1px solid #63d9ff!important}
+.treatment-modal{width:min(520px,calc(100vw - 28px));text-align:left}
+.treatment-injury-name{color:#63d9ff;font-weight:700}
+.treatment-medical-meta{margin:10px 0 0;font:500 11px/1.45 DM Sans;color:#8eb4c4}
+.treatment-actions{display:flex;gap:10px;justify-content:stretch;margin-top:16px}
+.treatment-actions button{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px 14px;border-radius:6px;font:700 10px DM Sans;letter-spacing:.5px;text-align:left}
+.treatment-choice-label{display:block}
+.treatment-choice-meta{display:block;font:600 11px/1.35 DM Sans;letter-spacing:0;color:#b8dde8;opacity:.95}
+.treatment-actions #treatmentConservative{background:#122b35!important;color:#edf8f5!important;border:1px solid #397487!important}
+.treatment-actions #treatmentSurgery{background:#24667c!important;color:#fff!important;border:1px solid #63d9ff!important}
+.treatment-actions #treatmentSurgery.treatment-choice-disabled,.treatment-actions #treatmentSurgery:disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.25)}

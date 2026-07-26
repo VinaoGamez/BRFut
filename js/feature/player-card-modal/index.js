@@ -2,8 +2,6 @@
  * Modal de card do jogador — clique no nome abre card interativo.
  */
 
-import { mountMatchdayCard } from '../../lab/player-card-system.js';
-import { rosterPlayerToCardPlayer } from '../player-card/roster-card-player.js';
 import { resolvePlayerId } from '../../engine/player-identity.js';
 
 const MODAL_ID = 'playerCardModal';
@@ -63,7 +61,12 @@ export function createPlayerCardModal(deps = {}) {
 
     openCtx = { playerId: resolvePlayerId(player), isOwn, ownerClub };
 
-    const cardPlayer = rosterPlayerToCardPlayer(player, {
+    const [{ mountMatchdayCard }, { rosterPlayerToCardPlayer }] = await Promise.all([
+      import('../../lab/player-card-system.js'),
+      import('../player-card/roster-card-player.js'),
+    ]);
+
+    const cardPlayer = await rosterPlayerToCardPlayer(player, {
       playerHistory: deps.getPlayerHistory?.(),
       careerSeason: deps.getCareerSeason?.(),
       clubName: ownerClub,

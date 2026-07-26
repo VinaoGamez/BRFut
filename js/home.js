@@ -1,8 +1,10 @@
 import './security/tester-hardening.js';
-import { BUILD_VERSION } from './core/constants.js';
+import { BUILD_VERSION, SAVE_KEYS } from './core/constants.js';
 import { SPONSOR_EXTERNAL_LINKS } from './core/sponsor-links.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
 import { createTesterHubFeature } from './feature/tester-hub/index.js';
+import { fetchPlayerStats, probeBackend } from './core/storage-api.js';
+import { mountAccountPanel } from './feature/account/index.js';
 
 const SPONSOR_LOGO_URLS = Object.fromEntries(
   Object.entries(
@@ -68,29 +70,97 @@ const SPONSOR_ORDER = [
 
   const hasCareer = () => {
     try {
-      return !!localStorage.getItem('matchday-new-game');
+      return !!localStorage.getItem(SAVE_KEYS.career);
     } catch {
       return false;
     }
   };
 
   const continueBtn = $('#continueBtn');
+  const newGameBtn = $('#newGameBtn');
+  const loginBtn = $('#loginBtn');
   const careerHint = $('#careerHint');
-  if (hasCareer()) {
-    continueBtn?.classList.remove('hidden');
-    if (careerHint) {
-      try {
-        const save = JSON.parse(localStorage.getItem('matchday-new-game') || '{}');
-        const club = save.clubName || 'seu clube';
-        const division = save.division ? `Série ${save.division}` : 'carreira ativa';
-        careerHint.textContent = `Carreira encontrada: ${club} · ${division}.`;
-        careerHint.classList.remove('hidden');
-      } catch {
-        careerHint.textContent = 'Carreira salva encontrada neste navegador.';
-        careerHint.classList.remove('hidden');
-      }
+  const storageHint = $('#homeStorageHint');
+  const playerStatsEl = $('#homePlayerStats');
+  let playerStatsTimer = 0;
+
+  const renderPlayerStats = stats => {
+    if (!playerStatsEl) return;
+    if (!stats || typeof stats.registered !== 'number') {
+      playerStatsEl.classList.add('hidden');
+      playerStatsEl.textContent = '';
+      return;
     }
-  }
+    const online = Number(stats.online) || 0;
+    const registered = Number(stats.registered) || 0;
+    playerStatsEl.innerHTML =
+      `<span class="stat-on">${online} ON</span> · ${registered} cadastrado${registered === 1 ? '' : 's'}`;
+    playerStatsEl.classList.remove('hidden');
+  };
+
+  const refreshPlayerStats = async () => {
+    if (!(await probeBackend())) {
+      renderPlayerStats(null);
+      return;
+    }
+    renderPlayerStats(await fetchPlayerStats());
+  };
+
+  const startPlayerStatsPolling = () => {
+    if (playerStatsTimer || typeof window === 'undefined') return;
+    void refreshPlayerStats();
+    playerStatsTimer = window.setInterval(refreshPlayerStats, 60_000);
+  };
+
+  const syncStorageHint = ({ loggedIn, hasBackend }) => {
+    if (!storageHint) return;
+    if (loggedIn) {
+      storageHint.classList.add('hidden');
+      return;
+    }
+    storageHint.classList.remove('hidden');
+    storageHint.textContent = hasBackend
+      ? 'Entre para salvar sua carreira'
+      : 'Carreira salva neste navegador';
+  };
+
+  const syncHeroActions = ({ loggedIn, hasBackend }) => {
+    if (hasBackend) {
+      loginBtn?.classList.toggle('hidden', loggedIn);
+      newGameBtn?.classList.toggle('hidden', !loggedIn);
+    } else {
+      loginBtn?.classList.add('hidden');
+      newGameBtn?.classList.remove('hidden');
+    }
+    syncStorageHint({ loggedIn, hasBackend });
+  };
+
+  const account = mountAccountPanel({
+    modal: document.getElementById('accountModal'),
+    hasCareer,
+    onAuthChange: syncHeroActions,
+    onContinueVisible: visible => continueBtn?.classList.toggle('hidden', !visible),
+    onCareerHint: text => {
+      if (!careerHint) return;
+      if (!text) {
+        careerHint.textContent = '';
+        careerHint.classList.add('hidden');
+        return;
+      }
+      careerHint.textContent = text;
+      careerHint.classList.remove('hidden');
+    },
+  });
+
+  account.refresh().then(state => {
+    syncHeroActions({
+      loggedIn: state.mode === 'cloud',
+      hasBackend: !!state.backend || state.mode === 'cloud',
+    });
+    if (state.backend || state.mode === 'cloud') startPlayerStatsPolling();
+  });
+
+  loginBtn?.addEventListener('click', () => account.openLogin());
 
   const initSponsorRail = () => {
     const track = $('#homeSponsorsTrack');

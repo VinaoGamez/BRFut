@@ -1,0 +1,382 @@
+/* Editor de escudo compacto (Nova Carreira) */
+
+.nc-crest-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: transparent;
+}
+
+.nc-crest-fieldset legend {
+  padding: 0;
+  margin: 0;
+  color: #63d9ff;
+  font: 700 9px DM Sans, sans-serif;
+  letter-spacing: 0.55px;
+}
+
+.nc-crest-body {
+  display: grid;
+  grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-height: 0;
+  flex: 1;
+  background: transparent;
+}
+
+.nc-crest-preview-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  min-width: 0;
+  align-self: start;
+  background: transparent;
+}
+
+.nc-crest-mode {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.nc-crest-mode-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid #315b68;
+  border-radius: 4px;
+  background: #102b35;
+  color: #c5dce0;
+  font: 600 9px DM Sans, sans-serif;
+  cursor: pointer;
+}
+
+.nc-crest-mode-opt:has(input:checked) {
+  border-color: #63d9ff;
+  color: #eef8f6;
+  box-shadow: 0 0 0 1px #63d9ff33;
+}
+
+.nc-crest-mode-opt input {
+  margin: 0;
+  accent-color: #63d9ff;
+}
+
+.nc-crest-preview {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  background: transparent !important;
+  border: none;
+  box-shadow: none;
+}
+
+.new-career-crest-mount .nc-crest-preview.crest--club {
+  aspect-ratio: unset;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  font-size: 0 !important;
+  line-height: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.new-career-crest-mount .nc-crest-preview.crest--club img,
+.new-career-crest-mount .nc-crest-preview.crest--club svg {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(36vh, 220px);
+  object-fit: contain;
+  background: transparent !important;
+  filter: none !important;
+}
+
+.new-career-crest-mount .nc-crest-preview.crest--club svg {
+  overflow: visible;
+}
+
+.nc-crest-controls {
+  min-height: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+.nc-crest-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* Gerar: só personalização — sem botão de upload */
+.nc-crest-fieldset.is-generate-mode .nc-crest-panel--upload {
+  display: none !important;
+}
+
+/* Upload sem imagem: coluna única, botão centralizado */
+.nc-crest-fieldset.is-upload-mode .nc-crest-panel--generate {
+  display: none !important;
+}
+
+.nc-crest-fieldset.is-upload-mode:not(.has-upload-image) .nc-crest-body {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+.nc-crest-fieldset.is-upload-mode:not(.has-upload-image) .nc-crest-preview-col {
+  align-items: center;
+  width: 100%;
+}
+
+.nc-crest-fieldset.is-upload-mode:not(.has-upload-image) .nc-crest-mode {
+  justify-content: center;
+}
+
+.nc-crest-fieldset.is-upload-mode:not(.has-upload-image) .nc-crest-preview {
+  display: none;
+}
+
+.nc-crest-fieldset.is-upload-mode:not(.has-upload-image) .nc-crest-controls {
+  align-items: center;
+  justify-content: center;
+  width: auto;
+}
+
+/* Upload com imagem: escudo à esquerda, controles à direita */
+.nc-crest-fieldset.is-upload-mode.has-upload-image .nc-crest-preview-col {
+  align-items: center;
+  align-self: stretch;
+}
+
+.nc-crest-fieldset.is-upload-mode.has-upload-image .nc-crest-mode {
+  justify-content: center;
+  width: 100%;
+}
+
+.nc-crest-fieldset.is-upload-mode.has-upload-image .nc-crest-preview {
+  flex: 1;
+  width: 100%;
+  min-height: 120px;
+}
+
+.nc-crest-fieldset.is-upload-mode.has-upload-image .nc-crest-controls {
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+}
+
+.nc-crest-fieldset.is-upload-mode .nc-crest-panel--upload {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.nc-crest-select-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+
+.nc-crest-field--compact {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.nc-crest-field--compact select {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  field-sizing: content;
+  padding-right: 22px;
+}
+
+.nc-crest-colors {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  width: 100%;
+}
+
+.nc-crest-swatch {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  flex: 0 0 auto;
+  justify-items: center;
+}
+
+.nc-crest-swatch span {
+  color: #79cce7;
+  font: 700 8px DM Sans, sans-serif;
+  letter-spacing: 0.35px;
+}
+
+.nc-crest-swatch input[type='color'] {
+  width: 30px;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid #315b68;
+  border-radius: 4px;
+  background: #102b35;
+  cursor: pointer;
+}
+
+.nc-crest-field--text {
+  width: min(100%, 11.5rem);
+  max-width: 100%;
+}
+
+.nc-crest-text-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 6px;
+  align-items: end;
+  width: 100%;
+}
+
+.nc-crest-field {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+}
+
+.nc-crest-field span {
+  color: #79cce7;
+  font: 700 8px DM Sans, sans-serif;
+  letter-spacing: 0.4px;
+}
+
+.nc-crest-field select,
+.nc-crest-field input[type='text'] {
+  box-sizing: border-box;
+  padding: 5px 6px;
+  background: #102b35;
+  color: #edf8f5;
+  border: 1px solid #315b68;
+  border-radius: 4px;
+  outline: 0;
+  font: 500 11px DM Sans, sans-serif;
+}
+
+.nc-crest-field--text input[type='text'] {
+  width: 100%;
+}
+
+.nc-crest-field select:focus,
+.nc-crest-field input[type='text']:focus {
+  border-color: #63d9ff;
+}
+
+.nc-crest-field--swatch input[type='color'] {
+  width: 30px;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid #315b68;
+  border-radius: 4px;
+  background: #102b35;
+  cursor: pointer;
+}
+
+.nc-crest-field--check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding-bottom: 1px;
+  color: #c5dce0;
+  font: 600 9px DM Sans, sans-serif;
+  white-space: nowrap;
+}
+
+.nc-crest-field--check input {
+  margin: 0;
+  accent-color: #63d9ff;
+}
+
+.nc-crest-range {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.nc-crest-range input[type='range'] {
+  width: 100%;
+  margin: 0;
+  accent-color: #63d9ff;
+}
+
+.nc-crest-range output {
+  min-width: 34px;
+  color: #9eb6b8;
+  font: 600 9px DM Sans, sans-serif;
+  text-align: right;
+}
+
+.nc-crest-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 10rem;
+  max-width: 12rem;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 1px dashed #397487;
+  border-radius: 5px;
+  background: transparent;
+  color: #dce9ea;
+  font: 600 10px DM Sans, sans-serif;
+  cursor: pointer;
+}
+
+.nc-crest-upload-btn:hover {
+  border-color: #63d9ff;
+  color: #fff;
+}
+
+.nc-crest-clear-upload {
+  min-width: 10rem;
+  max-width: 12rem;
+  padding: 6px 10px !important;
+  font-size: 9px !important;
+}
+
+@media (max-width: 720px) {
+  .nc-crest-body {
+    grid-template-columns: 1fr;
+  }
+
+  .nc-crest-preview-col {
+    min-height: 160px;
+  }
+
+  .nc-crest-text-row {
+    grid-template-columns: 1fr;
+  }
+}

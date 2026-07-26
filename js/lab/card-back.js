@@ -277,7 +277,8 @@ function renderHexBadge(player, { preview = false } = {}) {
     asset = resolveSpecialistHexBadge(player);
   }
   if (!asset) return '';
-  return `<img class="mdc-foot-badge mdc-foot-badge--${asset.id}" src="${asset.url}" alt="${asset.label}" title="${asset.label}">`;
+  const src = asset.url ? ` src="${asset.url}"` : '';
+  return `<img class="mdc-foot-badge mdc-foot-badge--${asset.id}" data-badge-id="${asset.id}"${src} alt="${asset.label}" title="${asset.label}" decoding="async">`;
 }
 
 /** Craque (dourada) substitui especialista (prata) no mesmo slot. */
@@ -296,7 +297,8 @@ function renderStarBadge(player, { preview = false } = {}) {
   }
   if (!asset) return '';
   const kind = asset.id === 'craque' ? 'craque' : 'star';
-  return `<img class="mdc-foot-badge mdc-foot-badge--${kind}" src="${asset.url}" alt="${asset.label}" title="${asset.label}">`;
+  const src = asset.url ? ` src="${asset.url}"` : '';
+  return `<img class="mdc-foot-badge mdc-foot-badge--${kind}" data-badge-id="${asset.id}"${src} alt="${asset.label}" title="${asset.label}" decoding="async">`;
 }
 
 export function careerSnapshot(player) {
@@ -410,7 +412,7 @@ export function renderCardBack(player, meta, { showActions = true, actionMode = 
     <div class="mdc-back-zone" data-zone="backCareer">${renderCareerRow(career)}</div>
     ${showActions ? `<div class="mdc-back-zone" data-zone="actions">${renderCardActions({ enabled: actionsEnabled, mode: actionMode })}</div>` : ''}
     <div class="mdc-back-zone" data-zone="backBrand">
-      <footer class="md-card-back-brand">Matchday · Alpha</footer>
+      <footer class="md-card-back-brand">BR Football · Alpha</footer>
     </div>
   </div>`;
 }

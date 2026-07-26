@@ -57,6 +57,6 @@
   `;
   document.documentElement.appendChild(style);
 
-  console.log('%cMatchday Football — build pública de testers.', 'color:#63d9ff;font-weight:700;font-size:12px');
+  console.log('%cBR Football — build pública de testers.', 'color:#63d9ff;font-weight:700;font-size:12px');
   console.log('%cInspeção e cópia do cliente estão restritas neste ambiente.', 'color:#9eb6b8;font-size:11px');
 })();

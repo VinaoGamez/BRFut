@@ -4,8 +4,10 @@ import { applyCompetitionBadge } from '../../ui/competition-badge.js';
 import { setHumanBadgeOnCrest } from '../../ui/human-badge.js';
 import { applyTeamCrestToElement, teamCrestHtml } from '../../ui/team-crest.js';
 import { resolveNationalTeam } from '../../engine/national-teams.js';
+import { isStateLeagueGame } from '../../engine/state-league-format.js';
 import {
   clubStandingContext,
+  formatClubPositionLabel,
   isWorldCupFixture,
   matchCompetitionPhaseLabel,
 } from '../shared/match-presentation.js';
@@ -34,6 +36,7 @@ import subArrowsUrl from '../../../assets/ui/sub-arrows.png?url';
  * @param {Function} deps.getMatchFinished
  * @param {Function} deps.getPreMatchPreparation
  * @param {Function} deps.getHalftimeShown
+ * @param {Function} [deps.getSecondHalfStarted]
  * @param {Function} deps.getShootoutState
  * @param {Function} deps.getScores — () => ({ home, away }) já orientado ao calendário
  * @param {Function} deps.getUserClub
@@ -79,6 +82,7 @@ export function createMatchLiveUiFeature(deps) {
     getMatchFinished,
     getPreMatchPreparation,
     getHalftimeShown,
+    getSecondHalfStarted = () => false,
     getShootoutState,
     getScores,
     getGoals,
@@ -240,8 +244,8 @@ export function createMatchLiveUiFeature(deps) {
     const stoppage = getStoppageActive?.();
     if (stoppage === 'first') return '1º TEMPO · ACRÉSCIMOS';
     if (stoppage === 'second') return '2º TEMPO · ACRÉSCIMOS';
-    if (getHalftimeShown() && minute <= 45) return 'INTERVALO';
-    if (minute > 45) return '2º TEMPO';
+    if (getHalftimeShown() && minute <= 45 && !getSecondHalfStarted()) return 'INTERVALO';
+    if (minute > 45 || getSecondHalfStarted()) return '2º TEMPO';
     return '1º TEMPO';
   };
 
@@ -260,7 +264,7 @@ export function createMatchLiveUiFeature(deps) {
     if (getMatchFinished()) {
       return Math.max(0, Number(getStoppageSecond?.() || getStoppageElapsed?.() || 0));
     }
-    if (getHalftimeShown() && getMinute() <= 45) {
+    if (getHalftimeShown() && getMinute() <= 45 && !getSecondHalfStarted()) {
       return Math.max(0, Number(getStoppageFirst?.() || getStoppageElapsed?.() || 0));
     }
     return 0;
@@ -275,7 +279,8 @@ export function createMatchLiveUiFeature(deps) {
     const timeEl = clock.querySelector('.live-match-clock-time'),
       phaseEl = clock.querySelector('.live-match-clock-phase');
     const stoppageElapsed = displayStoppageMinutes();
-    const atInterval = getHalftimeShown() && !getMatchFinished() && getMinute() <= 45;
+    const atInterval =
+      getHalftimeShown() && !getMatchFinished() && getMinute() <= 45 && !getSecondHalfStarted();
     const minute = getMatchFinished() ? 90 : atInterval ? 45 : getMinute();
     if (timeEl) {
       const parts = formatLiveClockParts(minute, stoppageElapsed, liveClockSeconds);
@@ -345,9 +350,21 @@ export function createMatchLiveUiFeature(deps) {
         const nt = resolveNationalTeam(teamName);
         return nt ? `FIFA ${nt.fifaRank}º` : '—';
       }
-      return typeof displayedClubPosition === 'function'
-        ? `${displayedClubPosition(teamName)}º colocado`
-        : '—';
+      if (typeof displayedClubPosition === 'function') {
+        const pos = displayedClubPosition(teamName, game);
+        const clubs = typeof getClubs === 'function' ? getClubs() : null;
+        const serieDGroups = typeof getSerieDGroups === 'function' ? getSerieDGroups() : [];
+        const userDivision = typeof getUserDivision === 'function' ? getUserDivision() : 'A';
+        return formatClubPositionLabel(pos, {
+          game,
+          teamName,
+          clubs,
+          serieDGroups,
+          userDivision,
+          serieDGroupRounds,
+        });
+      }
+      return '—';
     };
     applyCompetitionBadge('#liveMatchCompetition', game, { userDivision });
     const phaseEl = $('#liveMatchCompetitionPhase');
@@ -405,10 +422,13 @@ export function createMatchLiveUiFeature(deps) {
     }
     const volHome = $('#liveVolumeHomeCrest');
     const volAway = $('#liveVolumeAwayCrest');
-    if (volHome) volHome.textContent = clubCrestInitials(homeClub);
+    if (volHome) {
+      volHome.className = 'crest';
+      applyTeamCrestToElement(volHome, homeClub);
+    }
     if (volAway) {
-      volAway.textContent = clubCrestInitials(awayClub);
-      volAway.classList.add('away');
+      volAway.className = 'crest away';
+      applyTeamCrestToElement(volAway, awayClub, { away: true });
     }
     renderScorers();
     renderVolume();

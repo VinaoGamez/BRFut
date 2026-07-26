@@ -4,6 +4,13 @@
 
 const BRAZIL = 'Brasil';
 
+const BRAZIL_MIDDLE_NAMES = [
+  'Luiz', 'José', 'Carlos', 'Paulo', 'Antônio', 'Francisco', 'Miguel', 'Bernardo', 'Ricardo', 'Marcelo',
+  'Roberto', 'Eduardo', 'Fernando', 'Alexandre', 'Daniel', 'Felipe', 'Guilherme', 'Rafael', 'Rodrigo', 'Thiago',
+];
+
+const PATRONYMIC_SUFFIXES = ['Júnior', 'Neto', 'Filho'];
+
 const int = (random, lo, hi) => lo + Math.floor(random() * (hi - lo + 1));
 
 export const PLAYER_NAME_POOLS = {
@@ -237,16 +244,115 @@ export function rollPlayerName({ nationality = BRAZIL, index = 0, random = Math.
   return `${first} ${last}${secondLast}`;
 }
 
-/** Evita homônimos no elenco (sufixo " 2", " 3", …). */
-export function dedupeRosterNames(roster) {
+function nameSeed(value) {
+  let hash = 0;
+  const text = String(value || '');
+  for (let i = 0; i < text.length; i += 1) {
+    hash = (hash * 31 + text.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+/** Sufixo numérico legado ("Henrique Vieira 2") — não usar em nomes novos. */
+export function hasTrailingNumericNameSuffix(name) {
+  return /\s+\d+$/.test(String(name || '').trim());
+}
+
+export function stripTrailingNumericNameSuffix(name) {
+  return normalizePlayerDisplayName(String(name || '').replace(/\s+\d+$/, ''));
+}
+
+function pickDistinctFromPool(pool, usedKeys, attempt, salt = 0) {
+  const size = pool.length;
+  for (let offset = 0; offset < size; offset += 1) {
+    const value = pool[(attempt * 5 + salt + offset) % size];
+    const key = normalizeNameKey(value);
+    if (!usedKeys.has(key)) return value;
+  }
+  return pool[(attempt + salt) % size];
+}
+
+/** Gera variante legível sem números (sobrenome extra, meio, Júnior/Neto, inicial, re-roll). */
+export function variantPlayerName(baseName, { nationality = BRAZIL, attempt = 0, random = Math.random } = {}) {
+  const pool = PLAYER_NAME_POOLS[nationality] || PLAYER_NAME_POOLS[BRAZIL];
+  const cleaned = stripTrailingNumericNameSuffix(baseName);
+  const parts = cleaned.split(' ').filter(Boolean);
+  const first = parts[0] || pool.first[attempt % pool.first.length];
+  const last = parts.length > 1 ? parts[parts.length - 1] : first;
+  const strategy = attempt % 6;
+
+  if (strategy === 0) {
+    return rollPlayerName({ nationality, index: attempt * 17 + nameSeed(cleaned), random });
+  }
+  if (strategy === 1) {
+    const secondLast = pickDistinctFromPool(pool.last, new Set([normalizeNameKey(last)]), attempt, nameSeed(first));
+    return `${first} ${last} ${secondLast}`;
+  }
+  if (strategy === 2) {
+    const middle =
+      nationality === BRAZIL
+        ? BRAZIL_MIDDLE_NAMES[attempt % BRAZIL_MIDDLE_NAMES.length]
+        : pool.first[(attempt + nameSeed(last)) % pool.first.length];
+    return `${first} ${middle} ${last}`;
+  }
+  if (strategy === 3) {
+    const suffix = PATRONYMIC_SUFFIXES[attempt % PATRONYMIC_SUFFIXES.length];
+    return `${first} ${last} ${suffix}`;
+  }
+  if (strategy === 4) {
+    const initial = first.charAt(0).toUpperCase();
+    const secondLast = pickDistinctFromPool(pool.last, new Set([normalizeNameKey(last)]), attempt + 3, nameSeed(cleaned));
+    return `${initial}. ${last} ${secondLast}`;
+  }
+  return rollPlayerName({ nationality, index: attempt * 31 + nameSeed(last), random });
+}
+
+/** Evita homônimos no elenco sem sufixos numéricos. */
+export function dedupeRosterNames(roster, { random = Math.random } = {}) {
   if (!Array.isArray(roster)) return roster;
-  const seen = new Map();
+
   roster.forEach(player => {
+    if (!player?.name || player.nameCustomized) return;
+    if (hasTrailingNumericNameSuffix(player.name)) {
+      player.name = stripTrailingNumericNameSuffix(player.name);
+    }
+  });
+
+  const used = new Set();
+  roster.forEach((player, rosterIndex) => {
     if (!player?.name) return;
-    const key = normalizeNameKey(player.name);
-    const count = seen.get(key) || 0;
-    seen.set(key, count + 1);
-    if (count) player.name = `${player.name} ${count + 1}`;
+    if (player.nameCustomized) {
+      used.add(normalizeNameKey(player.name));
+      return;
+    }
+
+    const nationality = player.nationality || BRAZIL;
+    let name = normalizePlayerDisplayName(player.name);
+    let key = normalizeNameKey(name);
+
+    if (!used.has(key)) {
+      player.name = name;
+      used.add(key);
+      return;
+    }
+
+    for (let attempt = 0; attempt < 64; attempt += 1) {
+      const candidate = normalizePlayerDisplayName(
+        variantPlayerName(name, { nationality, attempt: attempt + rosterIndex, random }),
+      );
+      key = normalizeNameKey(candidate);
+      if (!used.has(key) && candidate.length <= 40) {
+        player.name = candidate;
+        used.add(key);
+        return;
+      }
+    }
+
+    const fallback = normalizePlayerDisplayName(
+      rollPlayerName({ nationality, index: rosterIndex * 997 + used.size, random }),
+    );
+    player.name = fallback;
+    used.add(normalizeNameKey(fallback));
   });
   return roster;
 }

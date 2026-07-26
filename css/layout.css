@@ -72,7 +72,8 @@ main > .view.active {
   padding: 10px 11px !important;
   font-size: 12px !important;
   line-height: 1.2;
-  letter-spacing: 0 !important;
+  letter-spacing: 0.35px !important;
+  text-transform: uppercase;
 }
 
 .sidebar .nav-label {
@@ -80,6 +81,7 @@ main > .view.active {
   align-items: center;
   gap: 7px;
   min-width: 0;
+  text-transform: uppercase;
 }
 
 .sidebar .nav-transfer-icon {
@@ -368,6 +370,16 @@ main > .view.active {
 .match-competition[data-kind='cup'] .match-competition-trophy {
   filter: drop-shadow(0 2px 4px #b6ff3855);
 }
+.match-competition[data-kind='estadual'] {
+  color: #5eead4;
+  border-color: #2a7a6e;
+  background:
+    radial-gradient(circle at 18% 30%, #5eead433, transparent 55%),
+    linear-gradient(135deg, #102824 0%, #141c22 100%);
+}
+.match-competition[data-kind='estadual'] .match-competition-trophy {
+  filter: drop-shadow(0 2px 4px #5eead455);
+}
 .match-competition[data-kind='idle'] {
   color: #63d9ff;
   border-color: #3a6b77;
@@ -416,13 +428,14 @@ main > .view.active {
 .view#dashboard .match.season-ended .season-review-crest-wrap {
   display: grid;
   place-items: center;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #2a6b4a, #163528 70%);
-  box-shadow: 0 0 0 3px #b6ff3844, 0 10px 28px #00000055;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
-.view#dashboard .match.season-ended .season-review-club i {
+.view#dashboard .match.season-ended .season-review-club i:not(.crest--club) {
   display: grid;
   place-items: center;
   width: 78px;
@@ -1891,8 +1904,10 @@ main > .view.active {
 body.national-team-command .nav[data-view='office'],
 body.national-team-command .nav[data-view='stadium'],
 body.national-team-command .nav[data-view='youth'],
+body.national-team-command .nav[data-view='training'],
 body.national-team-command .header-budget-wrap,
-body.national-team-command .side-mini-cards {
+body.national-team-command .side-mini-cards,
+body.national-team-command .training-shortcut-card {
   display: none !important;
 }
 
@@ -1903,6 +1918,35 @@ body.national-team-command .side-mini-cards {
 .view#dashboard .stadium-card.office-entry-card > div {
   align-content: center;
   gap: 3px;
+}
+
+.dashboard-stadium-preview {
+  width: 92px;
+  height: 64px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: #0b1a22;
+  contain: paint;
+}
+
+.dashboard-stadium-preview-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 62%;
+}
+
+.dashboard-stadium-preview::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse 92% 84% at 50% 55%, transparent 36%, rgba(11, 26, 34, 0.72) 74%, rgba(11, 26, 34, 0.98) 100%);
 }
 
 .view#dashboard .dashboard-tables .mini-table-head,

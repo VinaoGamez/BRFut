@@ -23,6 +23,7 @@ import {
   snapToNearestWeekday,
   snapToNextWeekday,
 } from './season-week-slots.js';
+import { isClubCalendarBlackout, isWorldCupClubCalendarLocked } from './season-calendar-cycle.js';
 
 /** Janelas nacionais — derivadas do molde CBF 2026. */
 export const LEAGUE_CALENDAR_WINDOWS = leagueWindowsFromMold();
@@ -108,6 +109,7 @@ export function findAvailableSlotDate(occupancy, home, away, {
   minRestDays = DEFAULT_MIN_REST_DAYS,
   slotWeekdays,
   maxWeeks = 26,
+  seasonYear = null,
 } = {}) {
   if (!slotWeekdays?.length) {
     return findAvailableDate(occupancy, home, away, {
@@ -129,6 +131,7 @@ export function findAvailableSlotDate(occupancy, home, away, {
   for (const date of sorted) {
     if (minBound && date.getTime() < minBound.getTime()) continue;
     if (maxBound && date.getTime() > maxBound.getTime()) continue;
+    if (seasonYear && isClubCalendarBlackout(date, seasonYear)) continue;
     if (clubsAvailable(occupancy, home, away, date, minRestDays)) return new Date(date);
   }
 
@@ -139,6 +142,7 @@ export function findAvailableSlotDate(occupancy, home, away, {
     cursor.setDate(cursor.getDate() + 7);
     if (maxBound && cursor.getTime() > maxBound.getTime()) break;
     if (minBound && cursor.getTime() < minBound.getTime()) continue;
+    if (seasonYear && isClubCalendarBlackout(cursor, seasonYear)) continue;
     if (clubsAvailable(occupancy, home, away, cursor, minRestDays)) return new Date(cursor);
   }
 
@@ -148,6 +152,7 @@ export function findAvailableSlotDate(occupancy, home, away, {
   for (let week = 0; week < maxWeeks; week += 1) {
     cursor.setDate(cursor.getDate() - 7);
     if (minBound && cursor.getTime() < minBound.getTime()) break;
+    if (seasonYear && isClubCalendarBlackout(cursor, seasonYear)) continue;
     if (clubsAvailable(occupancy, home, away, cursor, minRestDays)) return new Date(cursor);
   }
 
@@ -155,6 +160,11 @@ export function findAvailableSlotDate(occupancy, home, away, {
   let probe = snapToNextWeekday(fallbackNominal, slotWeekdays);
   for (let attempt = 0; attempt < maxWeeks * slotWeekdays.length * 2; attempt += 1) {
     if (maxBound && probe.getTime() > maxBound.getTime()) break;
+    if (seasonYear && isClubCalendarBlackout(probe, seasonYear)) {
+      probe.setDate(probe.getDate() + 1);
+      probe = snapToNextWeekday(probe, slotWeekdays);
+      continue;
+    }
     if (minBound && probe.getTime() >= minBound.getTime()
       && clubsAvailable(occupancy, home, away, probe, minRestDays)) {
       return new Date(probe);
@@ -179,6 +189,7 @@ export function findAvailableDate(occupancy, home, away, {
   minRestDays = DEFAULT_MIN_REST_DAYS,
   maxSearchDays = 60,
   slotWeekdays = null,
+  seasonYear = null,
 } = {}) {
   if (slotWeekdays?.length) {
     return findAvailableSlotDate(occupancy, home, away, {
@@ -188,6 +199,7 @@ export function findAvailableDate(occupancy, home, away, {
       minRestDays,
       slotWeekdays,
       maxWeeks: Math.ceil(maxSearchDays / 7) + 4,
+      seasonYear,
     });
   }
   const maxBound = maxDate ? normalizeNoon(maxDate) : null;
@@ -203,6 +215,7 @@ export function findAvailableDate(occupancy, home, away, {
       date.setDate(date.getDate() + offset * sign);
       if (minBound && date.getTime() < minBound.getTime()) continue;
       if (maxBound && date.getTime() > maxBound.getTime()) continue;
+      if (seasonYear && isClubCalendarBlackout(date, seasonYear)) continue;
       if (clubsAvailable(occupancy, home, away, date, minRestDays)) return date;
     }
   }
@@ -224,6 +237,10 @@ export function findAvailableDate(occupancy, home, away, {
       continue;
     }
     if (seasonCap != null && fallback.getTime() > seasonCap) break;
+    if (seasonYear && isClubCalendarBlackout(fallback, seasonYear)) {
+      fallback.setDate(fallback.getDate() + 1);
+      continue;
+    }
     if (clubsAvailable(occupancy, home, away, fallback, minRestDays)) return fallback;
     fallback.setDate(fallback.getDate() + 1);
   } while (!seasonCap || fallback.getTime() <= seasonCap);
@@ -247,6 +264,7 @@ export function scheduleGameOnOccupancy(game, occupancy, {
   time = null,
   slotWeekdays = null,
   competitionId = null,
+  seasonYear = null,
 } = {}) {
   if (!game?.home || !game?.away) return game;
   unreserveScheduledGame(occupancy, game);
@@ -259,6 +277,7 @@ export function scheduleGameOnOccupancy(game, occupancy, {
     maxDate,
     minRestDays,
     slotWeekdays: weekdays,
+    seasonYear,
   });
   game.date = scheduled;
   const slotKey = competitionId ? getCompetitionSlotKey(competitionId) : null;
@@ -276,8 +295,10 @@ export function scheduleLeagueDivision(season, division, fixtures, {
   minRestDays = DEFAULT_MIN_REST_DAYS,
   occupancy = createClubOccupancy(),
   competitionId = null,
+  seasonYear = null,
 } = {}) {
   if (!window || !Array.isArray(fixtures)) return occupancy;
+  const year = seasonYear ?? (Number(season) || null);
   const maxDate = planSeasonEndDate(season);
   const rounds = fixtures.length;
   const { start, end } = windowToDates(season, window);
@@ -295,6 +316,7 @@ export function scheduleLeagueDivision(season, division, fixtures, {
         slotWeekdays: leagueWeekdays,
         competitionId: leagueCompId,
         time: fixtureTimes[gameIndex % fixtureTimes.length],
+        seasonYear: year,
       });
       if (game.date) game.date = clampToSeason(game.date, season);
     });
@@ -308,6 +330,7 @@ export function scheduleAllLeagueCompetitions(season, nationalCompetitions, opti
   const windows = options.windows || LEAGUE_CALENDAR_WINDOWS;
   const fixtureTimes = options.fixtureTimes || DEFAULT_FIXTURE_TIMES;
   const minRestDays = options.minRestDays ?? DEFAULT_MIN_REST_DAYS;
+  const seasonYear = Number(season) || null;
   ['A', 'B', 'C', 'D'].forEach(division => {
     const comp = nationalCompetitions?.[division];
     if (!comp?.fixtures?.length) return;
@@ -316,6 +339,7 @@ export function scheduleAllLeagueCompetitions(season, nationalCompetitions, opti
       fixtureTimes,
       minRestDays,
       occupancy,
+      seasonYear,
     });
   });
   return occupancy;
@@ -383,6 +407,7 @@ export function rescheduleCupFixtures(cupGames, occupancy, {
         slotWeekdays,
         competitionId: 'cup',
         time: game.time,
+        seasonYear: year,
       });
       game.date = clampToSeason(game.date, year);
       if (game.date.getTime() > phaseMax.getTime()) game.date = normalizeNoon(phaseMax);
@@ -431,10 +456,37 @@ export function leagueFixturesNeedScheduling(nationalCompetitions) {
   );
 }
 
+/** Jogos de clubes caíram na janela CMU (save antigo ou remarcação incompleta). */
+export function clubFixturesViolateHardBlackout(nationalCompetitions, seasonYear) {
+  if (!isWorldCupClubCalendarLocked(seasonYear)) return false;
+  return ['A', 'B', 'C', 'D'].some(division => {
+    const rounds = nationalCompetitions?.[division]?.fixtures;
+    if (!Array.isArray(rounds)) return false;
+    return rounds.flat().some(game => game?.date && isClubCalendarBlackout(game.date, seasonYear));
+  });
+}
+
+function clearBlackoutLeagueDates(nationalCompetitions, seasonYear) {
+  ['A', 'B', 'C', 'D'].forEach(division => {
+    const rounds = nationalCompetitions?.[division]?.fixtures;
+    if (!Array.isArray(rounds)) return;
+    rounds.flat().forEach(game => {
+      if (!game?.date || !isClubCalendarBlackout(game.date, seasonYear)) return;
+      delete game.date;
+      delete game._reservedTs;
+    });
+  });
+}
+
 /** Garante Date em todos os jogos de liga a partir do save ou gera novo calendário. */
 export function ensureLeagueScheduleMaterialized(season, nationalCompetitions, options = {}) {
-  if (!leagueFixturesNeedScheduling(nationalCompetitions)) {
+  const needsDates = leagueFixturesNeedScheduling(nationalCompetitions);
+  const needsBlackoutRepair = clubFixturesViolateHardBlackout(nationalCompetitions, season);
+  if (!needsDates && !needsBlackoutRepair) {
     return rebuildOccupancyFromLeagueFixtures(nationalCompetitions);
+  }
+  if (needsBlackoutRepair && !needsDates) {
+    clearBlackoutLeagueDates(nationalCompetitions, season);
   }
   return scheduleAllLeagueCompetitions(season, nationalCompetitions, options);
 }

@@ -1,9 +1,14 @@
 import {
   SERIE_D_CLUBS,
   SERIE_D_PROMOTIONS,
-  serieCRelegationCountForTransition,
+  SERIE_C_RELEGATION_TO_D,
   normalizeDivisionTeamsSerieC,
 } from './serie-c-calendar.js';
+import {
+  buildSerieDRosterCBF,
+  collectSerieDSecondPhaseClubs,
+  serieDFormationSummary,
+} from './serie-d-formation.js';
 
 function seasonPrizeCreditedTotal(club) {
   const ledger = Array.isArray(club?.budgetLedger) ? club.budgetLedger : [];
@@ -19,6 +24,9 @@ function seasonPrizeCreditedTotal(club) {
 export function createSeasonTransitionEngine(deps) {
   let pendingDivisionTeams = deps.initialPendingDivisionTeams ?? null;
   let pendingUserDivision = deps.initialPendingUserDivision ?? deps.getUserDivision();
+  let pendingSerieDFormation = deps.initialPendingSerieDFormation ?? null;
+  let pendingStateLeagueGuaranteed = deps.initialPendingStateLeagueGuaranteed ?? null;
+  let pendingStateLeagueMembership = deps.initialPendingStateLeagueMembership ?? null;
   let seasonTransitionPrepared = !!deps.initialSeasonTransitionPrepared;
   let idleSeasonWasSimulated = !!deps.initialIdleSeasonWasSimulated;
   let nonHumanSimRunning = false;
@@ -108,8 +116,7 @@ export function createSeasonTransitionEngine(deps) {
     const promB = [b[0], b[1], playoffEdge(b[2], b[5], 'B'), playoffEdge(b[3], b[4], 'B')];
     const relB = b.slice(-4);
     const promC = c.slice(0, 4);
-    const relCCount = serieCRelegationCountForTransition(c.length, careerSeason + 1);
-    const relC = c.slice(-relCCount);
+    const relC = c.slice(-SERIE_C_RELEGATION_TO_D);
     let promD = [...deps.serieDPromotedClubs()];
     if (promD.length < SERIE_D_PROMOTIONS) {
       const groupWinners = serieDGroups
@@ -123,32 +130,52 @@ export function createSeasonTransitionEngine(deps) {
       promD = [...new Set([...promD, ...groupWinners])].slice(0, SERIE_D_PROMOTIONS);
     }
 
+    const permanenceClubs = collectSerieDSecondPhaseClubs(serieDGroups, nationalCompetitions.D);
+    const dFormation = buildSerieDRosterCBF({
+      relegatedFromC: relC,
+      promotedFromD: promD,
+      previousD: divisionTeams.D,
+      permanenceClubs,
+      regionalPool: generatedClubPool,
+      nationalRankingEntries: deps.getNationalRankingEntries?.() || {},
+      clubs,
+      userClub,
+      stateRnfQualifiersByUf: deps.getStateRnfQualifiers?.(careerSeason + 1) || null,
+      careerSeason: careerSeason + 1,
+    });
+
     const next = {
       A: [...divisionTeams.A.filter(name => !relA.includes(name)), ...promB],
       B: [...divisionTeams.B.filter(name => !promB.includes(name) && !relB.includes(name)), ...relA, ...promC],
       C: [...divisionTeams.C.filter(name => !promC.includes(name) && !relC.includes(name)), ...relB, ...promD],
-      D: [...divisionTeams.D.filter(name => !promD.includes(name)), ...relC],
+      D: dFormation.roster,
     };
-    const used = new Set(Object.values(next).flat());
-    generatedClubPool
-      .filter(name => !used.has(name) && name !== userClub)
-      .some(name => {
-        if (next.D.length >= SERIE_D_CLUBS) return true;
-        next.D.push(name);
-        used.add(name);
-        return false;
-      });
 
     const nextCNorm = normalizeDivisionTeamsSerieC(next, {
       season: careerSeason + 1,
       userClub,
       fillPool: generatedClubPool,
       dTarget: SERIE_D_CLUBS,
+      skipD: true,
     });
     pendingDivisionTeams = nextCNorm.divisionTeams;
+    pendingDivisionTeams.D = dFormation.roster.slice(0, SERIE_D_CLUBS);
+    deps.setPendingSerieDFormation?.({
+      season: careerSeason + 1,
+      breakdown: dFormation.breakdown,
+      summary: serieDFormationSummary(dFormation.breakdown),
+    });
+    pendingSerieDFormation = {
+      season: careerSeason + 1,
+      breakdown: dFormation.breakdown,
+      summary: serieDFormationSummary(dFormation.breakdown),
+    };
     pendingUserDivision =
       Object.keys(pendingDivisionTeams).find(division => pendingDivisionTeams[division].includes(userClub)) ||
       userDivision;
+
+    pendingStateLeagueGuaranteed = deps.getStateLeagueGuaranteedSnapshot?.() || null;
+    pendingStateLeagueMembership = deps.getStateLeagueMembershipSnapshot?.() || null;
 
     const champions = {
       A: ranked('A')[0],
@@ -157,6 +184,11 @@ export function createSeasonTransitionEngine(deps) {
       D: dKnockout.champion || ranked('D')[0],
       CUP: cupCompetition.champion,
     };
+    deps.setPriorSeasonChampions?.({
+      season: careerSeason,
+      A: champions.A,
+      CUP: champions.CUP,
+    });
     const userPromoted = promD.includes(userClub) || promC.includes(userClub) || promB.includes(userClub);
     const userRelegated = relA.includes(userClub) || relB.includes(userClub) || relC.includes(userClub);
     const userLine =
@@ -364,7 +396,10 @@ export function createSeasonTransitionEngine(deps) {
         fatigue: 100,
         injuryHistory: deps.pruneInjuryHistory(player.injuryHistory),
       })),
-      worldRosters: deps.collectWorldRosters(clubs, { skipClub: userClub }),
+      worldRosters: deps.collectWorldRosters(clubs, {
+        skipClub: userClub,
+        merge: savedNewGame.worldRosters || {},
+      }),
       clubStatus: {
         ...(deps.snapshotUserClubStatus() || savedNewGame.clubStatus || {}),
         budget: deps.getBalance(clubs[userClub]),
@@ -389,8 +424,15 @@ export function createSeasonTransitionEngine(deps) {
       seasonObjectives: null,
       seasonObjectivesResult: null,
       season: (savedNewGame.season || 2026) + 1,
+      priorSeasonChampions: savedNewGame.priorSeasonChampions || null,
+      serieDFormation: pendingSerieDFormation,
+      stateLeagueGuaranteed:
+        pendingStateLeagueGuaranteed || savedNewGame.stateLeagueGuaranteed || {},
+      stateLeagueMembership:
+        pendingStateLeagueMembership || savedNewGame.stateLeagueMembership || {},
       stadiumName: clubs[userClub]?.stadiumName || savedNewGame.stadiumName || null,
       userStadium: deps.serializeUserStadium(clubs[userClub]),
+      userClubInvestments: deps.serializeUserClubInvestments(clubs[userClub]),
       pendingSponsorChoice: true,
       createdAt: new Date().toISOString(),
       version: 4,
@@ -400,6 +442,9 @@ export function createSeasonTransitionEngine(deps) {
     deps.finalizePlayerHistorySeason(careerSeason, { nextSeason: (savedNewGame.season || 2026) + 1 });
     deps.clearSeasonSave();
     pendingDivisionTeams = null;
+    pendingSerieDFormation = null;
+    pendingStateLeagueGuaranteed = null;
+    pendingStateLeagueMembership = null;
     seasonTransitionPrepared = false;
     deps.closeSeasonSummary();
     deps.redirectGame();
@@ -449,7 +494,6 @@ export function createSeasonTransitionEngine(deps) {
         }
         deps.setIdleSimStatus(`Simulando rodada ${deps.getCurrentRound()} de ${maxRound}…`);
         const idleResult = deps.simulateIdleRound();
-        deps.persistSeason();
         if (idleResult?.sacked || deps.careerCrisisBlocks()) {
           deps.closeIdleSimOverlay();
           nonHumanSimRunning = false;

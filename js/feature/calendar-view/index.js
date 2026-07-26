@@ -7,7 +7,9 @@ import { formatMatchRating as defaultFormatMatchRating } from '../../engine/play
 import { formatMatchMinuteLabel } from '../../engine/match-clock.js';
 import { isDateInTransferWindow, getTransferWindowPhase } from '../../engine/transfers.js';
 import { sortCalendarCompetitionCodes, calendarCompetitionLabel, isWorldCupSeasonActive } from '../../engine/season-calendar-mold.js';
+import { isClubCalendarBlackout } from '../../engine/season-calendar-cycle.js';
 import { isWorldCupFixture } from '../../engine/world-cup-calendar.js';
+import { isStateLeagueGame, stateLeagueBadgeName, stateLeaguePhaseLabel } from '../../engine/state-league-format.js';
 import { tipKey, buildPlayerTipIndex, ownGoalTipCount } from './match-report-tips.js';
 import goalBallUrl from '../../../assets/ui/goal-ball.png?url';
 import ownGoalBallUrl from '../../../assets/ui/goal-ball-own.png?url';
@@ -125,10 +127,17 @@ export function createCalendarViewFeature(deps) {
     const restConflictCount = getRestConflictCount();
     let worldCupBit = '';
     if (worldCupCount) {
+      const phaseLabel = wcSummary?.phase === 'complete'
+        ? 'encerrada'
+        : wcSummary?.phase === 'knockout'
+          ? 'mata-mata'
+          : wcSummary?.knockoutGenerated
+            ? 'mata-mata gerado'
+            : 'fase de grupos';
       if (wcSummary && !wcSummary.knockoutGenerated) {
-        worldCupBit = ` · ${wcSummary.groupCount || worldCupCount} jogos da Copa (fase de grupos — mata-mata após resultados)`;
+        worldCupBit = ` · CMU ${phaseLabel}: ${wcSummary.groupCount || worldCupCount} jogos (CPU simula rodada a rodada — veja jun/jul)`;
       } else {
-        worldCupBit = ` · ${worldCupCount} jogos da Copa do Mundo`;
+        worldCupBit = ` · CMU ${phaseLabel}: ${worldCupCount} jogos`;
       }
     }
     $('#calendar .title span').textContent = `Agenda nacional de janeiro a dezembro · ${championshipFixtures.flat().length} jogos do Brasileiro · ${copaDoBrasilFixtures.length} jogos confirmados da Copa do Brasil${worldCupBit} · ${calendarIntervalLabel(restConflictCount)}.`;
@@ -142,6 +151,11 @@ export function createCalendarViewFeature(deps) {
       return game.completed ? { game, result: game, data: game.data || null, goals: game.goals || null } : null;
     }
     if (isWorldCupFixture(game)) {
+      return game.completed || game.homeGoals != null
+        ? { game, result: game, data: game.data || null, goals: game.goals || null }
+        : null;
+    }
+    if (isStateLeagueGame(game)) {
       return game.completed || game.homeGoals != null
         ? { game, result: game, data: game.data || null, goals: game.goals || null }
         : null;
@@ -722,6 +736,7 @@ export function createCalendarViewFeature(deps) {
     $('#calendarSelectedDay').textContent = dateLabel;
     const cupGames = games.filter(game => game.competition === 'COPA DO BRASIL');
     const worldCupGames = games.filter(isWorldCupFixture);
+    const stateGames = games.filter(isStateLeagueGame);
     const phase = getTransferWindowPhase(selectedCalendarDate);
     const marketBits = [];
     if (phase.active) marketBits.push(phase.isDeadlineDay ? 'Deadline Day' : phase.label || 'Janela aberta');
@@ -731,7 +746,9 @@ export function createCalendarViewFeature(deps) {
         ? `${worldCupGames.length} Copa do Mundo`
         : cupGames.length
           ? cupGames[0].phase
-          : '';
+          : stateGames.length
+            ? `${stateGames.length} Estadual`
+            : '';
       marketBits.unshift(compHint ? `${summary} · ${compHint}` : summary);
     }
     $('#calendarSelectedMeta').textContent = marketBits.length
@@ -744,17 +761,20 @@ export function createCalendarViewFeature(deps) {
         const atHome = game.home === userClub;
         const isCup = game.competition === 'COPA DO BRASIL';
         const isWorldCup = isWorldCupFixture(game);
+        const isState = isStateLeagueGame(game);
         const completed = isFixtureCompleted(game);
         const scoreLabel = fixtureResultLabel(game);
         const eventLabel = isWorldCup
           ? `COPA DO MUNDO · ${game.phase}${game.knockout ? '' : ` · R${game.round}`}`
           : isCup
             ? `COPA DO BRASIL · ${game.phase} · ${game.leg}`
-            : `BRASILEIRÃO · RODADA ${game.round}`;
+            : isState
+              ? `${stateLeagueBadgeName(game).toUpperCase()} · ${stateLeaguePhaseLabel(game).toUpperCase()}${game.phase === 'league' || game.phase === 'groups' ? ` · R${game.round}` : ''}`
+              : `BRASILEIRÃO · RODADA ${game.round}`;
         const report = calendarGameResult(game);
         const reportKey = `${key}-${index}`;
         if (report) calendarReportGames.set(reportKey, report);
-        return `<div class="agenda-item ${report ? 'has-report' : ''} ${userGame ? 'user-game' : ''} ${isWorldCup ? 'world-cup' : isCup ? 'cup' : ''} ${completed ? 'completed' : ''}"><time>${detail.time}</time><div><small>${userGame ? `SEU JOGO · ${eventLabel} · ${atHome ? 'EM CASA' : 'FORA'}${completed ? ' · ENCERRADO' : ''}` : eventLabel}</small><strong><span class="club-link" data-club="${game.home}" role="button" tabindex="0">${game.home}</span> × <span class="club-link" data-club="${game.away}" role="button" tabindex="0">${game.away}</span>${scoreLabel ? ` <em>· ${scoreLabel}</em>` : ''}</strong></div>${report ? `<button type="button" class="agenda-match-report" data-match-report="${reportKey}" title="Ver estatísticas finais" aria-label="Ver estatísticas de ${game.home} contra ${game.away}">▤</button>` : ''}</div>`;
+        return `<div class="agenda-item ${report ? 'has-report' : ''} ${userGame ? 'user-game' : ''} ${isWorldCup ? 'world-cup' : isCup ? 'cup' : isState ? 'estadual' : ''} ${completed ? 'completed' : ''}"><time>${detail.time}</time><div><small>${userGame ? `SEU JOGO · ${eventLabel} · ${atHome ? 'EM CASA' : 'FORA'}${completed ? ' · ENCERRADO' : ''}` : eventLabel}</small><strong><span class="club-link" data-club="${game.home}" role="button" tabindex="0">${game.home}</span> × <span class="club-link" data-club="${game.away}" role="button" tabindex="0">${game.away}</span>${scoreLabel ? ` <em>· ${scoreLabel}</em>` : ''}</strong></div>${report ? `<button type="button" class="agenda-match-report" data-match-report="${reportKey}" title="Ver estatísticas finais" aria-label="Ver estatísticas de ${game.home} contra ${game.away}">▤</button>` : ''}</div>`;
       })
       .join('');
     const trainingRows = activities
@@ -835,17 +855,23 @@ export function createCalendarViewFeature(deps) {
       const transferPhase = !outside ? transferMetaByKey.get(key) || null : null;
       const inTransferWindow = !!transferPhase;
       const isUserCup = userGame?.competition === 'COPA DO BRASIL';
+      const isUserState = isStateLeagueGame(userGame);
       const eventText = userGame
         ? isUserCup
           ? userScore || ''
-          : `${atHome ? 'CASA' : 'FORA'} · R${userGame.round}${userScore ? ` · ${userScore}` : ''}`
+          : isUserState
+            ? `${atHome ? 'CASA' : 'FORA'} · EST${userScore ? ` · ${userScore}` : ''}`
+            : `${atHome ? 'CASA' : 'FORA'} · R${userGame.round}${userScore ? ` · ${userScore}` : ''}`
         : '';
       const transferChip = inTransferWindow
         ? `<span class="transfer-window-event ${transferPhase?.isDeadlineWeek ? 'is-deadline' : ''}">${transferPhase?.isDeadlineDay ? 'DEADLINE' : transferPhase?.isDeadlineWeek ? 'JANELA · DIA' : 'JANELA'}</span>`
         : '';
       const compTags = calendarCompetitionTagMarkup(key);
-      const userEventClass = userGame && !isUserCup ? (atHome ? 'user-match' : 'user-match user-match-away') : userScore ? 'completed-score' : '';
-      return `<button type="button" class="calendar-day ${outside ? 'outside' : ''} ${selected ? 'selected' : ''} ${inPlanningWeek ? 'planning-week' : ''} ${inTransferWindow ? 'transfer-window' : ''} ${transferPhase?.isDeadlineWeek ? 'transfer-deadline' : ''} ${transferPhase?.isDeadlineDay ? 'transfer-deadline-day' : ''} ${key === careerDayKey ? 'career-today' : ''} ${pendingUserGame && key === careerDayKey ? 'matchday-stop' : ''} ${userGame ? (atHome ? 'user-home' : 'user-away') : ''} ${userCompleted ? 'completed-user' : ''} ${key === currentRoundKey ? 'current-round' : ''}" data-calendar-date="${key}" aria-pressed="${selected}"><time datetime="${key}">${date.getDate()}</time><span class="calendar-day-events">${compTags}${eventText ? `<span class="${userEventClass}">${eventText}</span>` : ''}${transferChip}${activities.map(activity => `<span class="training-event">◆ ${activity.label}</span>`).join('')}</span></button>`;
+      const userEventClass = userGame && !isUserCup && !isUserState ? (atHome ? 'user-match' : 'user-match user-match-away') : userScore ? 'completed-score' : '';
+      const inWorldCupBlackout = isWorldCupSeasonActive(careerSeason)
+        && !outside
+        && isClubCalendarBlackout(date, careerSeason);
+      return `<button type="button" class="calendar-day ${outside ? 'outside' : ''} ${selected ? 'selected' : ''} ${inPlanningWeek ? 'planning-week' : ''} ${inTransferWindow ? 'transfer-window' : ''} ${transferPhase?.isDeadlineWeek ? 'transfer-deadline' : ''} ${transferPhase?.isDeadlineDay ? 'transfer-deadline-day' : ''} ${inWorldCupBlackout ? 'world-cup-blackout' : ''} ${key === careerDayKey ? 'career-today' : ''} ${pendingUserGame && key === careerDayKey ? 'matchday-stop' : ''} ${userGame ? (atHome ? 'user-home' : 'user-away') : ''} ${userCompleted ? 'completed-user' : ''} ${key === currentRoundKey ? 'current-round' : ''}" data-calendar-date="${key}" aria-pressed="${selected}"><time datetime="${key}">${date.getDate()}</time><span class="calendar-day-events">${compTags}${inWorldCupBlackout && !compTags ? '<span class="calendar-comp-tags"><span class="calendar-comp-tag" data-code="CMU" data-tip="Copa do Mundo — clubes parados" aria-label="Copa do Mundo">CMU</span></span>' : ''}${eventText ? `<span class="${userEventClass}">${eventText}</span>` : ''}${transferChip}${activities.map(activity => `<span class="training-event">◆ ${activity.label}</span>`).join('')}</span></button>`;
     }).join('');
     renderTrainingRules();
     renderCalendarRoutine();
@@ -883,10 +909,13 @@ export function createCalendarViewFeature(deps) {
     const copaDoBrasilFixtures = getCopaFixtures();
     const restConflictCount = getRestConflictCount();
     const worldCupLegend = isWorldCupSeasonActive(careerSeason)
-      ? '<span><i class="comp-cmu"></i>CMU · COPA DO MUNDO</span>'
+      ? '<span><i class="comp-cmu"></i>CMU · COPA DO MUNDO</span><span><i class="comp-cmu-lock"></i>CMU · CLUBES PARADOS</span>'
+      : '';
+    const worldCupSidebar = isWorldCupSeasonActive(careerSeason)
+      ? `<article class="card world-cup-calendar-card"><label>COPA DO MUNDO ${careerSeason}</label><strong>11 JUN — 19 JUL</strong><p>Fase de grupos (3 rodadas) com resultados simulados semana a semana. Mata-mata gerado após a 3ª rodada — avance o calendário para ver placares.</p><div class="world-cup-calendar-jumps"><button type="button" data-calendar-month="5">JUN</button><button type="button" data-calendar-month="6">JUL</button></div></article>`
       : '';
 
-    $('#calendar .title p').textContent = `TEMPORADA ${careerSeason} · BRASILEIRÃO SÉRIE ${userDivision} + COPA DO BRASIL`;
+    $('#calendar .title p').textContent = `TEMPORADA ${careerSeason} · BRASILEIRÃO SÉRIE ${userDivision} + COPA DO BRASIL${isWorldCupSeasonActive(careerSeason) ? ' + CMU' : ''}`;
     syncCalendarSubtitle();
     $('.calendar-toolbar').insertAdjacentHTML(
       'afterend',
@@ -898,7 +927,7 @@ export function createCalendarViewFeature(deps) {
     );
     $('.calendar-sidebar').insertAdjacentHTML(
       'beforeend',
-      `<article class="card calendar-routine-card"><label>ROTINA DA SEMANA</label><div id="calendarRoutineSummary" class="calendar-routine-summary"></div></article><article class="card cup-calendar-card"><label>COPA DO BRASIL ${careerSeason}</label><strong>126 CLUBES · 9 FASES</strong><p>1ª à 4ª fase em jogo único. Da 5ª fase à semifinal em ida e volta. Os 20 clubes da Série A entram na 5ª fase.</p><div><span>INÍCIO<b>18 FEV</b></span><span>FINAL ÚNICA<b>06 DEZ</b></span></div></article>`
+      `${worldCupSidebar}<article class="card calendar-routine-card"><label>ROTINA DA SEMANA</label><div id="calendarRoutineSummary" class="calendar-routine-summary"></div></article><article class="card cup-calendar-card"><label>COPA DO BRASIL ${careerSeason}</label><strong>126 CLUBES · 9 FASES</strong><p>1ª à 4ª fase em jogo único. Da 5ª fase à semifinal em ida e volta. Os 20 clubes da Série A entram na 5ª fase.</p><div><span>INÍCIO<b>18 FEV</b></span><span>FINAL ÚNICA<b>06 DEZ</b></span></div></article>`
     );
 
     document.body.insertAdjacentHTML(

@@ -1,5 +1,7 @@
 import { SAVE_KEYS } from './constants.js';
 import { normalizeWorldCupHistory } from '../engine/world-cup-history.js';
+import { stampSyncableSave } from './save-sync.js';
+import { isCloudStorageActive, queueCloudDelete, queueCloudSave } from './storage-api.js';
 
 /** Limites para conter crescimento de save/RAM em carreiras longas. */
 export const MEMORY_LIMITS = {
@@ -7,10 +9,16 @@ export const MEMORY_LIMITS = {
   rankingTitles: 12,
   liveTimeline: 40,
   persistDebounceMs: 400,
+  /** Amostras do gráfico de volume ao vivo (~2 min cada). */
+  liveVolumeSamples: 120,
+  /** Rodadas mantidas no histórico da temporada. */
+  seasonRoundHistory: 24,
   /** Mensagens gravadas no save da temporada (inbox já tem teto próprio). */
   seasonMessages: 80,
   /** Deals de mercado mantidos no save. */
   seasonTransferDeals: 40,
+  /** HTML da timeline ao vivo — cap no snapshot. */
+  liveTimelineHtml: 8000,
 };
 
 export function readJson(key, fallback = null) {
@@ -27,9 +35,10 @@ export function readJson(key, fallback = null) {
  * Em QuotaExceeded, remove chave legada e tenta de novo uma vez.
  */
 export function writeJson(key, value) {
+  const payload = stampSyncableSave(key, value);
   let raw;
   try {
-    raw = JSON.stringify(value);
+    raw = JSON.stringify(payload);
   } catch (error) {
     console.warn('[matchday] falha ao serializar save', key, error);
     return false;
@@ -37,6 +46,13 @@ export function writeJson(key, value) {
 
   try {
     localStorage.setItem(key, raw);
+    if (isCloudStorageActive()) {
+      try {
+        queueCloudSave(key, payload);
+      } catch {
+        /* ignore cloud queue */
+      }
+    }
     return true;
   } catch (error) {
     const quota =
@@ -82,11 +98,28 @@ export function writeJson(key, value) {
   }
 }
 
+function sanitizeWorldRostersOnLoad(worldRosters) {
+  if (!worldRosters || typeof worldRosters !== 'object') return {};
+  const out = {};
+  Object.entries(worldRosters).forEach(([clubName, roster]) => {
+    if (!Array.isArray(roster)) return;
+    out[clubName] = roster
+      .map(player => {
+        if (!player || typeof player !== 'object') return null;
+        const { workload, injuryHistory, ...rest } = player;
+        return rest;
+      })
+      .filter(Boolean);
+  });
+  return out;
+}
+
 export function loadCareerSave() {
   const raw = readJson(SAVE_KEYS.career, null);
   if (!raw) return null;
   return {
     ...raw,
+    worldRosters: sanitizeWorldRostersOnLoad(raw.worldRosters),
     worldCupHistory: normalizeWorldCupHistory(raw.worldCupHistory),
   };
 }
@@ -102,6 +135,10 @@ export function isSeasonValidForCareer(career, season) {
 export function clearSeasonSave() {
   localStorage.removeItem(SAVE_KEYS.season);
   localStorage.removeItem(SAVE_KEYS.liveMatch);
+  if (isCloudStorageActive()) {
+    queueCloudDelete(SAVE_KEYS.season);
+    queueCloudDelete(SAVE_KEYS.liveMatch);
+  }
   // playerHistory (matchday-player-history) NÃO é limpo aqui — sobrevive entre temporadas.
 }
 
@@ -133,6 +170,7 @@ export function consumeSkipPersistOnce() {
 export function clearCareerStorage({ clearTraining = true, clearPlayerHistory = true } = {}) {
   try {
     localStorage.removeItem(SAVE_KEYS.career);
+    if (isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.career);
   } catch {
     /* ignore */
   }
@@ -140,6 +178,7 @@ export function clearCareerStorage({ clearTraining = true, clearPlayerHistory = 
   if (clearTraining) {
     try {
       localStorage.removeItem(SAVE_KEYS.training);
+      if (isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.training);
     } catch {
       /* ignore */
     }
@@ -147,6 +186,7 @@ export function clearCareerStorage({ clearTraining = true, clearPlayerHistory = 
   if (clearPlayerHistory && SAVE_KEYS.playerHistory) {
     try {
       localStorage.removeItem(SAVE_KEYS.playerHistory);
+      if (isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.playerHistory);
     } catch {
       /* ignore */
     }
@@ -221,8 +261,14 @@ function compactUserStats(userStats) {
 }
 
 /** Compacta histórico de rodadas (extraído/estendido do motor legado). */
+export function trimRoundHistory(history = [], maxRounds = MEMORY_LIMITS.seasonRoundHistory) {
+  if (!Array.isArray(history) || history.length <= maxRounds) return history;
+  return history.slice(-maxRounds);
+}
+
+/** Compacta histórico de rodadas (extraído/estendido do motor legado). */
 export function compactRoundHistory(history = [], userClub = null) {
-  return history.map(item => ({
+  return trimRoundHistory(history).map(item => ({
     round: item.round,
     games: (item.games || []).map(game =>
       compactMatchResult(game, { keepData: involvesClub(game, userClub) })

@@ -30,12 +30,23 @@ export const FIFA_FRIENDLY_WINDOWS = Object.freeze([
   Object.freeze({ id: 'fifa_november', start: [10, 10], end: [10, 18] }),
 ]);
 
-/** Janela da Copa do Mundo (clubes parados — a cada 4 anos). */
+/** Janela da Copa do Mundo (clubes parados — a cada 4 anos). FIFA 2026: 11/jun–19/jul. */
 export const WORLD_CUP_WINDOW = Object.freeze({
   id: 'world_cup',
-  start: [5, 1],
-  end: [6, 22],
+  start: [5, 11],
+  end: [6, 19],
 });
+
+/** Datas salvas — Recopa Nacional (SCB): jogo único pós-estadual. */
+export const RECOPA_NATIONAL_CALENDAR_SLOTS = Object.freeze([
+  Object.freeze({ month: 1, day: 8, leg: 'FINAL' }),
+]);
+
+/** Datas salvas — Recopa Sul-Americana (REC): ida + volta. */
+export const RECOPA_SUDAMERICANA_CALENDAR_SLOTS = Object.freeze([
+  Object.freeze({ month: 1, day: 5, leg: 'IDA' }),
+  Object.freeze({ month: 1, day: 19, leg: 'VOLTA' }),
+]);
 
 /** Bloqueios globais base (FIFA, recesso, janelas). Use `getSeasonBlackouts(year)` para WC. */
 export const SEASON_BLACKOUTS = Object.freeze([
@@ -111,20 +122,23 @@ export const SEASON_BLACKOUTS = Object.freeze([
   },
 ]);
 
-/** Blackouts efetivos do ano (inclui Mundial quando aplicável). */
+/** Blackouts efetivos do ano (inclui Mundial travado em anos de copa). */
 export function getSeasonBlackouts(seasonYear) {
   const year = Number(seasonYear) || WORLD_CUP_ANCHOR_YEAR;
   const list = [...SEASON_BLACKOUTS];
-  if (isWorldCupSeasonActive(year)) {
+  if (isWorldCupYear(year)) {
     list.push({
       id: 'world_cup',
       code: 'CMU',
-      label: 'Copa do Mundo de Seleções',
+      label: 'Copa do Mundo de Seleções (clubes parados)',
       start: [...WORLD_CUP_WINDOW.start],
       end: [...WORLD_CUP_WINDOW.end],
       blocksClubs: true,
+      locked: true,
+      hard: true,
       cadence: 'quadrennial',
-      soft: true,
+      anchorYear: WORLD_CUP_ANCHOR_YEAR,
+      soft: false,
     });
   }
   return list;
@@ -196,7 +210,7 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     matchCount: 11,
     weekSlot: 'weekend_b',
     priority: 1,
-    enabled: false,
+    enabled: FEATURES.stateLeague,
   }),
   /** Recopa Nacional — campeão Brasileiro × campeão Copa do Brasil (jogo único). */
   recopa_national: Object.freeze({
@@ -207,13 +221,13 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     start: [0, 25],
     end: [1, 15],
     matchCount: 1,
-    weekSlot: 'knockout_ida',
-    idaSlot: 'knockout_ida',
+    calendarSlots: RECOPA_NATIONAL_CALENDAR_SLOTS,
+    weekSlot: 'recopa_national',
+    idaSlot: 'recopa_national',
     twoLegged: false,
     priority: 2,
-    enabled: false,
+    enabled: true,
   }),
-  /** CONMEBOL Libertadores (CBF: fev – nov). */
   libertadores: Object.freeze({
     code: 'LIB',
     competitionId: 'libertadores',
@@ -221,16 +235,16 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     category: 'continental',
     start: [1, 1],
     end: [10, 30],
-    matchCount: 14,
-    weekSlot: 'midweek_alt',
-    idaSlot: 'midweek_alt',
-    voltaSlot: 'midweek_alt',
+    matchCount: 13,
+    weekSlot: 'continental_conmebol',
+    idaSlot: 'continental_conmebol',
+    voltaSlot: 'continental_conmebol',
     twoLegged: true,
     priority: 3,
     enabled: false,
     skipsWhen: ['world_cup'], // clubes liberados em anos de copa — ajustável
   }),
-  /** CONMEBOL Sudamericana (CBF: fev – out). */
+  /** CONMEBOL Sudamericana (CBF: fev – out) — mesmo slot que Libertadores. */
   sudamericana: Object.freeze({
     code: 'CSU',
     competitionId: 'sudamericana',
@@ -238,10 +252,10 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     category: 'continental',
     start: [1, 1],
     end: [10, 15],
-    matchCount: 14,
-    weekSlot: 'midweek_alt',
-    idaSlot: 'midweek_alt',
-    voltaSlot: 'midweek_alt',
+    matchCount: 13,
+    weekSlot: 'continental_conmebol',
+    idaSlot: 'continental_conmebol',
+    voltaSlot: 'continental_conmebol',
     twoLegged: true,
     priority: 3,
     enabled: false,
@@ -255,9 +269,10 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     start: [1, 1],
     end: [2, 28],
     matchCount: 2,
-    weekSlot: 'midweek_alt',
-    idaSlot: 'midweek_alt',
-    voltaSlot: 'midweek_alt',
+    calendarSlots: RECOPA_SUDAMERICANA_CALENDAR_SLOTS,
+    weekSlot: 'continental_conmebol',
+    idaSlot: 'continental_conmebol',
+    voltaSlot: 'continental_conmebol',
     twoLegged: true,
     priority: 3,
     enabled: false,
@@ -358,7 +373,7 @@ export const COMPETITION_CALENDAR_MOLD = Object.freeze({
 export function listFutureCompetitionMold({ seasonYear = null } = {}) {
   return Object.values(FUTURE_COMPETITION_MOLD).filter(spec => {
     if (spec.competitionId === 'world_cup' && seasonYear != null) {
-      return isWorldCupSeasonActive(seasonYear);
+      return isWorldCupYear(seasonYear);
     }
     return true;
   });
@@ -473,6 +488,8 @@ const LEAGUE_CODE_BY_DIVISION = Object.freeze(
 export function resolveFixtureCompetitionCode(game, { division = null } = {}) {
   if (!game) return null;
   const comp = String(game.competition || '');
+  if (comp === 'ESTADUAL') return 'EST';
+  if (comp === 'RECOPA NACIONAL') return 'SCB';
   if (comp === 'COPA DO BRASIL' || comp === 'COPA') return COMPETITION_CALENDAR_MOLD.cup.code;
   if (comp === 'COPA DO MUNDO') return 'CMU';
   if (comp === 'SÉRIE D ELIMINATÓRIAS' || (game.tieId && game.knockoutRound != null)) {

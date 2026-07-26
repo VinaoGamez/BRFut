@@ -4,7 +4,7 @@ import {
   serieCRelegationCountForTransition,
   normalizeDivisionTeamsSerieC,
   SERIE_D_CLUBS,
-  SERIE_D_PROMOTIONS,
+  SERIE_C_RELEGATION_TO_D,
 } from '../js/engine/serie-c-calendar.js';
 
 let passed = 0;
@@ -33,21 +33,19 @@ check('CBF sizes by season', () => {
   assert(serieCClubsForSeason(2030) === 28, '2030 → 28');
 });
 
-check('relegation zones by season', () => {
-  assert(serieCRelegationSlots(2026) === 2, '2026 Z2');
-  assert(serieCRelegationSlots(2027) === 2, '2027 Z2');
-  assert(serieCRelegationSlots(2028) === 6, '2028 Z6');
+check('rebaixamento fixo para Série D', () => {
+  assert(serieCRelegationSlots() === SERIE_C_RELEGATION_TO_D, 'Z4 fixo');
+  assert(serieCRelegationCountForTransition(20, 2027) === SERIE_C_RELEGATION_TO_D, 'transição 4');
 });
 
-check('transition relegation hits next target', () => {
-  assert(serieCRelegationCountForTransition(20, 2027) === 2, '20→24 needs 2 down');
-  assert(serieCRelegationCountForTransition(24, 2028) === 2, '24→28 needs 2 down');
-  assert(serieCRelegationCountForTransition(28, 2029) === 6, '28→28 needs 6 down');
-  assert(serieCRelegationCountForTransition(36, 2031) === 14, '36→28 needs 14 down');
-  const nextFrom20 = 20 + SERIE_D_PROMOTIONS - serieCRelegationCountForTransition(20, 2027);
-  assert(nextFrom20 === 24, 'net size after 2026 transition');
-  const nextStable = 28 + SERIE_D_PROMOTIONS - serieCRelegationCountForTransition(28, 2029);
-  assert(nextStable === 28, 'net size stays 28');
+check('normalize skipD nao repoe D automaticamente', () => {
+  const d = Array.from({ length: 94 }, (_, i) => `D${i}`);
+  const { divisionTeams } = normalizeDivisionTeamsSerieC(
+    { A: [], B: [], C: Array.from({ length: 18 }, (_, i) => `C${i}`), D: d },
+    { season: 2026, userClub: 'Manager FC', fillPool: ['Pool A', 'Pool B'], skipD: true },
+  );
+  assert(divisionTeams.C.length === 20, 'C filled to 20');
+  assert(divisionTeams.D.length === 92, 'D perde 2 p/ C mas nao recebe fill do pool');
 });
 
 check('normalize shrinks bloated C and keeps user club', () => {

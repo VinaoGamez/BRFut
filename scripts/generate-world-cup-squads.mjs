@@ -29,7 +29,7 @@ const CRAQUE_ROSTER = {
   EGY: [{ name: 'Mohamed Sala', pos: 'PE' }],
   KOR: [{ name: 'Sun Heung-min', pos: 'PE' }],
   ESP: [
-    { name: 'Rodrygo Hernández', pos: 'VOL' },
+    { name: 'Rodrygo Hernández', pos: 'PE' },
     { name: 'Lamin Yamal', pos: 'PD' },
   ],
   GER: [{ name: 'Florian Virtz', pos: 'MEI' }],
@@ -40,54 +40,155 @@ const CRAQUE_ROSTER = {
   MAR: [{ name: 'Assaf Hakimi', pos: 'LAT' }],
 };
 
-/** Destaques prata — array de nomes fixos ou contagem numérica. */
+/** Destaques prata — contagem numérica ou lista { name, pos } (eco-nomes + posição real). */
 const DESTAQUE_NAMES = {
-  BRA: ['Rafinha', 'Marquinhos'],
-  RSA: 2,
-  GER: 2,
-  KSA: 2,
-  ALG: 2,
-  ARG: 2,
-  AUS: 1,
-  AUT: 2,
-  BEL: 2,
-  BIH: 2,
-  CPV: 2,
-  CAN: 2,
-  QAT: 2,
-  COL: 1,
-  CIV: 3,
-  CRO: 2,
-  CUW: 2,
-  EGY: 1,
-  ECU: 2,
-  SCO: 1,
-  ESP: 1,
-  USA: 2,
-  GHA: 3,
-  HAI: 2,
-  NED: 3,
-  ENG: 1,
-  IRQ: 2,
-  JPN: 2,
-  JOR: 1,
-  MAR: 2,
-  MEX: 1,
-  NZL: 1,
-  NOR: 2,
-  PAN: 1,
-  PAR: 1,
-  POR: 2,
-  KOR: 1,
-  COD: 2,
-  IRN: 1,
-  SEN: 3,
-  SWE: 2,
-  SUI: 3,
-  CZE: 1,
-  TUR: 2,
-  URU: 2,
-  UZB: 2,
+  BRA: [
+    { name: 'Rafinha', pos: 'PE' },
+    { name: 'Marquinhos', pos: 'ZAG' },
+  ],
+  ARG: [
+    { name: 'Julián Di María', pos: 'PE' },
+    { name: 'Lautaro Martínez', pos: 'ATA' },
+  ],
+  POR: [
+    { name: 'Rúben Dias', pos: 'ZAG' },
+    { name: 'Diogo Jota', pos: 'ATA' },
+  ],
+  NED: [
+    { name: 'Memphis Depay', pos: 'ATA' },
+    { name: 'Cody Gakpo', pos: 'PE' },
+    { name: 'Jeremie Frimpong', pos: 'LAT' },
+  ],
+  ENG: [{ name: 'Bukayo Saka', pos: 'PD' }],
+  ESP: [{ name: 'Álvaro Morata', pos: 'ATA' }],
+  BEL: [
+    { name: 'Romelu Lukaku', pos: 'ATA' },
+    { name: 'Jan Vertonghen', pos: 'ZAG' },
+  ],
+  GER: [
+    { name: 'Joshua Kimmich', pos: 'LAT' },
+    { name: 'Jamal Musiala', pos: 'MEI' },
+  ],
+  CRO: [
+    { name: 'Marcelo Brozović', pos: 'MEI' },
+    { name: 'Dejan Lovren', pos: 'ZAG' },
+  ],
+  MAR: [
+    { name: 'Hakim Ziyech', pos: 'MEI' },
+    { name: 'Sofyan Amrabat', pos: 'VOL' },
+  ],
+  COL: [{ name: 'James Rodríguez', pos: 'MEI' }],
+  URU: [
+    { name: 'Luis Suárez', pos: 'ATA' },
+    { name: 'Darwin Núñez', pos: 'ATA' },
+  ],
+  SUI: [
+    { name: 'Granit Xhaka', pos: 'MEI' },
+    { name: 'Manuel Akanji', pos: 'ZAG' },
+    { name: 'Yann Sommer', pos: 'GOL' },
+  ],
+  JPN: [
+    { name: 'Takefusa Kubo', pos: 'PE' },
+    { name: 'Kaoru Mitoma', pos: 'PE' },
+  ],
+  SEN: [
+    { name: 'Kalidou Koulibaly', pos: 'ZAG' },
+    { name: 'Idrissa Gueye', pos: 'VOL' },
+    { name: 'Édouard Mendy', pos: 'GOL' },
+  ],
+  USA: [
+    { name: 'Christian Pulisic', pos: 'PE' },
+    { name: 'Giovanni Reyna', pos: 'MEI' },
+  ],
+  MEX: [{ name: 'Hirving Lozano', pos: 'PE' }],
+  ECU: [
+    { name: 'Moisés Caicedo', pos: 'VOL' },
+    { name: 'Enner Valencia', pos: 'ATA' },
+  ],
+  AUT: [
+    { name: 'David Alaba', pos: 'LAT' },
+    { name: 'Marcel Sabitzer', pos: 'MEI' },
+  ],
+  KOR: [{ name: 'Lee Kang-in', pos: 'MEI' }],
+  AUS: [{ name: 'Mathew Ryan', pos: 'GOL' }],
+  NOR: [
+    { name: 'Martin Ødegaard', pos: 'MEI' },
+    { name: 'Rasmus Højlund', pos: 'ATA' },
+  ],
+  EGY: [{ name: 'Omar Marmoush', pos: 'ATA' }],
+  CAN: [
+    { name: 'Alphonso Davies', pos: 'LAT' },
+    { name: 'Jonathan David', pos: 'ATA' },
+  ],
+  SWE: [
+    { name: 'Alexander Isak', pos: 'ATA' },
+    { name: 'Emil Forsberg', pos: 'MEI' },
+  ],
+  CIV: [
+    { name: 'Wilfried Zaha', pos: 'PE' },
+    { name: 'Simon Adingra', pos: 'PE' },
+    { name: 'Franck Kessié', pos: 'VOL' },
+  ],
+  TUR: [
+    { name: 'Hakan Çalhanoğlu', pos: 'MEI' },
+    { name: 'Arda Güler', pos: 'MEI' },
+  ],
+  CZE: [{ name: 'Patrik Schick', pos: 'ATA' }],
+  SCO: [{ name: 'Scott McTominay', pos: 'MEI' }],
+  PAR: [{ name: 'Miguel Almirón', pos: 'MEI' }],
+  PAN: [{ name: 'Adalberto Carrasquilla', pos: 'MEI' }],
+  GHA: [
+    { name: 'Mohammed Kudus', pos: 'MEI' },
+    { name: 'Thomas Partey', pos: 'VOL' },
+    { name: 'André Ayew', pos: 'ATA' },
+  ],
+  ALG: [
+    { name: 'Riyad Mahrez', pos: 'PE' },
+    { name: 'Ismaël Bennacer', pos: 'MEI' },
+  ],
+  KSA: [
+    { name: 'Salem Al-Dawsari', pos: 'PE' },
+    { name: 'Mohammed Al-Owais', pos: 'GOL' },
+  ],
+  RSA: [
+    { name: 'Percy Tau', pos: 'PE' },
+    { name: 'Ronwen Williams', pos: 'GOL' },
+  ],
+  IRN: [{ name: 'Mehdi Taremi', pos: 'ATA' }],
+  BIH: [
+    { name: 'Edin Džeko', pos: 'ATA' },
+    { name: 'Miralem Pjanić', pos: 'MEI' },
+  ],
+  CPV: [
+    { name: 'Ryan Mendes', pos: 'PE' },
+    { name: 'Jovane Cabral', pos: 'PE' },
+  ],
+  QAT: [
+    { name: 'Almoez Ali', pos: 'ATA' },
+    { name: 'Akram Afif', pos: 'PE' },
+  ],
+  IRQ: [
+    { name: 'Mohanad Ali', pos: 'ATA' },
+    { name: 'Bashar Resan', pos: 'MEI' },
+  ],
+  JOR: [{ name: 'Musa Al-Taamari', pos: 'PE' }],
+  NZL: [{ name: 'Chris Wood', pos: 'ATA' }],
+  COD: [
+    { name: 'Sébastien Haller', pos: 'ATA' },
+    { name: 'Chancel Mbemba', pos: 'ZAG' },
+  ],
+  UZB: [
+    { name: 'Eldor Shomurodov', pos: 'ATA' },
+    { name: 'Jaloliddin Masharipov', pos: 'PE' },
+  ],
+  CUW: [
+    { name: 'Leandro Bacuna', pos: 'MEI' },
+    { name: 'Cuco Martina', pos: 'ZAG' },
+  ],
+  HAI: [
+    { name: 'Duckens Nazon', pos: 'ATA' },
+    { name: 'Zachary Herivaux', pos: 'VOL' },
+  ],
 };
 
 const SQUAD_POSITIONS = [
@@ -131,34 +232,96 @@ function destaqueSlotCount(code) {
   return 0;
 }
 
+function normalizeDestaqueEntries(code) {
+  const entry = DESTAQUE_NAMES[code];
+  if (!Array.isArray(entry)) return [];
+  return entry.map(item =>
+    typeof item === 'string' ? { name: item, pos: null, used: false } : { ...item, used: false },
+  );
+}
+
+function findNamedPlayerSlot(slots, used, preferredPos) {
+  const alternates = {
+    PE: ['PD', 'ATA', 'MEI'],
+    PD: ['PE', 'ATA', 'MEI'],
+    ATA: ['PE', 'PD', 'MEI'],
+    MEI: ['MC', 'VOL', 'PE', 'PD'],
+    MC: ['MEI', 'VOL'],
+    VOL: ['MC', 'MEI'],
+    LAT: ['ZAG'],
+    ZAG: ['LAT', 'VOL'],
+    GOL: [],
+  };
+  const candidates = [preferredPos, ...(alternates[preferredPos] || []), null];
+  for (const pos of candidates) {
+    const idx = slots.findIndex(
+      (slot, index) => !used.has(index) && !slot.name && (pos == null || slot.pos === pos),
+    );
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
 function buildTeamSquad(code, meta) {
   const rng = mulberry32(meta.fifaRank * 997 + code.charCodeAt(0) * 13);
   const teamPower = nationalTeamPower(meta.block);
   const pool = meta.namePool || meta.name || 'Brasil';
   const craques = [...(CRAQUE_ROSTER[code] || [])];
-  const destaqueFixed = Array.isArray(DESTAQUE_NAMES[code]) ? [...DESTAQUE_NAMES[code]] : [];
+  const destaqueFixed = normalizeDestaqueEntries(code);
   let destaqueSlots = destaqueSlotCount(code) - destaqueFixed.length;
+  const slots = SQUAD_POSITIONS.map(pos => ({
+    pos,
+    name: null,
+    craque: false,
+    destaque: false,
+  }));
+  const used = new Set();
 
-  const players = SQUAD_POSITIONS.map((pos, index) => {
-    let name;
-    let craque = false;
-    let destaque = false;
+  const placeNamed = (entry, flags) => {
+    const idx = findNamedPlayerSlot(slots, used, entry.pos || null);
+    if (idx < 0) {
+      console.warn(`[${code}] slot não encontrado: ${entry.name} (${entry.pos})`);
+      return;
+    }
+    used.add(idx);
+    slots[idx].name = entry.name;
+    slots[idx].craque = !!flags.craque;
+    slots[idx].destaque = !!flags.destaque;
+  };
 
-    const craqueIdx = craques.findIndex(c => !c.used && (!c.pos || c.pos === pos));
-    if (craqueIdx >= 0) {
-      const c = craques[craqueIdx];
-      c.used = true;
-      name = c.name;
-      craque = true;
-    } else if (destaqueFixed.length) {
-      name = destaqueFixed.shift();
-      destaque = true;
-    } else if (destaqueSlots > 0) {
-      destaqueSlots -= 1;
-      destaque = true;
-      name = rollPlayerName({ nationality: pool, index: index + meta.fifaRank, random: rng });
-    } else {
-      name = rollPlayerName({ nationality: pool, index: index + meta.fifaRank * 3, random: rng });
+  craques.forEach(entry => placeNamed(entry, { craque: true }));
+  destaqueFixed.forEach(entry => placeNamed(entry, { destaque: true }));
+
+  const anonDestaqueIndices = new Set();
+  const outfieldOrder = ['ATA', 'MEI', 'PE', 'PD', 'ZAG', 'LAT', 'VOL'];
+  let anonDestaqueLeft = destaqueSlots;
+  for (const pos of outfieldOrder) {
+    if (anonDestaqueLeft <= 0) break;
+    slots.forEach((slot, index) => {
+      if (anonDestaqueLeft <= 0 || slot.name || anonDestaqueIndices.has(index)) return;
+      if (slot.pos === pos) {
+        anonDestaqueIndices.add(index);
+        anonDestaqueLeft -= 1;
+      }
+    });
+  }
+  if (anonDestaqueLeft > 0) {
+    slots.forEach((slot, index) => {
+      if (anonDestaqueLeft <= 0 || slot.name || anonDestaqueIndices.has(index)) return;
+      anonDestaqueIndices.add(index);
+      anonDestaqueLeft -= 1;
+    });
+  }
+
+  const players = slots.map((slot, index) => {
+    let { name, craque, destaque, pos } = slot;
+    if (!name) {
+      if (anonDestaqueIndices.has(index)) {
+        destaque = true;
+        name = rollPlayerName({ nationality: pool, index: index + meta.fifaRank, random: rng });
+      } else {
+        name = rollPlayerName({ nationality: pool, index: index + meta.fifaRank * 3, random: rng });
+      }
     }
 
     const player = {
@@ -216,6 +379,43 @@ const destaqueCountTotal = Object.values(teams).reduce(
   0,
 );
 
+const ALT_POS = {
+  PE: ['PD', 'ATA', 'MEI'],
+  PD: ['PE', 'ATA', 'MEI'],
+  ATA: ['PE', 'PD', 'MEI'],
+  MEI: ['VOL', 'PE', 'PD'],
+  LAT: ['ZAG'],
+  ZAG: ['LAT', 'VOL'],
+  VOL: ['MEI', 'ZAG'],
+  GOL: [],
+};
+const okPos = (exp, act) => exp === act || (ALT_POS[exp] || []).includes(act);
+const GK_DESTAQUE_OK = /^(Yann Sommer|Édouard Mendy|Mathew Ryan|Mohammed Al-Owais|Ronwen Williams)/;
+
+let validationIssues = 0;
+for (const [code, team] of Object.entries(teams)) {
+  const byName = Object.fromEntries(team.players.map(p => [p.name, p]));
+  for (const entry of [...(CRAQUE_ROSTER[code] || []), ...(Array.isArray(DESTAQUE_NAMES[code]) ? DESTAQUE_NAMES[code] : [])]) {
+    const p = byName[entry.name];
+    if (!p) {
+      console.warn(`VALIDATE ${code}: ${entry.name} ausente após dedupe`);
+      validationIssues += 1;
+      continue;
+    }
+    if (!okPos(entry.pos, p.pos)) {
+      console.warn(`VALIDATE ${code}: ${entry.name} esperado ${entry.pos}, obteve ${p.pos}`);
+      validationIssues += 1;
+    }
+  }
+  for (const p of team.players) {
+    if (!(p.craque || p.destaque) || p.pos !== 'GOL') continue;
+    if (p.craque || GK_DESTAQUE_OK.test(p.name)) continue;
+    console.warn(`VALIDATE ${code}: ${p.name} destaque/craque em GOL`);
+    validationIssues += 1;
+  }
+}
+
 console.log(`Wrote ${outPath}`);
 console.log(`Teams: ${Object.keys(teams).length}, Players: ${playerCount}`);
 console.log(`Craques: ${craqueCount}, Destaques: ${destaqueCountTotal}`);
+console.log(validationIssues ? `Validation: ${validationIssues} issue(s)` : 'Validation: OK');

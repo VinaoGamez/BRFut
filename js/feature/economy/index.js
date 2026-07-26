@@ -12,19 +12,7 @@ import { seasonObjectiveLiveProgress } from '../../engine/season-objectives.js';
 import { maxAchievableStadiumCapacity, STADIUM_SECTOR_DEFS, TICKET_SECTOR_PRICE_RANGE } from '../../engine/stadium-sectors.js';
 import { seasonGoalGauge } from '../season-summary/goal-gauge.js';
 import { mountStadiumVisual } from './stadium-visual.js';
-
-const SPONSOR_LOGO_URLS = Object.fromEntries(
-  Object.entries(
-    import.meta.glob('../../../assets/sponsors/icons/*.png', {
-      eager: true,
-      query: '?url',
-      import: 'default',
-    }),
-  ).map(([path, url]) => {
-    const file = path.split('/').pop()?.replace(/\.png$/i, '') || '';
-    return [file, url];
-  }),
-);
+import { sponsorLogoUrl } from '../../assets/sponsor-logos.js';
 
 const NAMING_MODAL_HTML = `
 <div id="namingPickerModal" class="modal hidden">
@@ -107,6 +95,7 @@ export function createEconomyFeature(deps) {
     getSeasonGoalLiveContext,
     getBoardBriefContext,
     onBudgetChanged,
+    refreshDashboardStadiumPreview,
     pushMessage,
     getCurrentRound,
     openView,
@@ -125,7 +114,7 @@ export function createEconomyFeature(deps) {
 
   const namingLogoHtml = name => {
     const slug = sponsorLogoSlug(name);
-    const url = slug ? SPONSOR_LOGO_URLS[slug] : null;
+    const url = sponsorLogoUrl(slug);
     if (url) return `<img src="${url}" alt="" width="56" height="56" loading="lazy">`;
     return `<span class="sponsor-picker-fallback">${String(name || '?').slice(0, 2).toUpperCase()}</span>`;
   };
@@ -450,7 +439,7 @@ export function createEconomyFeature(deps) {
   const sponsorCardHtml = (item, { master = false } = {}) => {
     const name = item?.name || '—';
     const slug = sponsorLogoSlug(name);
-    const logoUrl = slug ? SPONSOR_LOGO_URLS[slug] : null;
+    const logoUrl = sponsorLogoUrl(slug);
     const href = sponsorExternalUrl(name);
     const img = logoUrl
       ? `<img src="${logoUrl}" alt="${name}" width="88" height="88" decoding="async">`
@@ -1198,10 +1187,11 @@ export function createEconomyFeature(deps) {
       }
     }
     renderUpgradeRows($('#stadiumUpgradesList'), listStadiumUpgrades(club, division), 'data-buy-stadium');
-    mountStadiumVisual($('#stadiumVisualMount'), club, division, {
+    void mountStadiumVisual($('#stadiumVisualMount'), club, division, {
       getStructureLevel,
       getPitchLevel,
     });
+    refreshDashboardStadiumPreview?.();
     renderTickets(club);
   };
 

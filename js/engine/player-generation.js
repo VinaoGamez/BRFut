@@ -4,7 +4,7 @@
  */
 import { rollSquadAge, rollPotential, POT_CAPS } from './player-development.js';
 import { assignRosterNationalities } from './player-nationality.js';
-import { ensureCardVariantId } from './player-card-art.js';
+import { ensureCardVariantId } from './player-card-variant-id.js';
 import { SHOOTOUT_TUNING } from './match-tuning.js';
 
 export const GENERIC_SQUAD_ROLES = [
@@ -225,7 +225,7 @@ export function shootoutGoalChanceRate(penaltySkill, keeperSaving, taker = null,
 export function shootoutKickGoalChance(penaltySkill, keeperSaving, taker = null, keeper = null) {
   const wide = shootoutWideChance(penaltySkill);
   const onFrame = shootoutGoalChanceRate(penaltySkill, keeperSaving, taker, keeper);
-  return clamp((1 - wide) * onFrame, 0.52, 0.95);
+  return clamp((1 - wide) * onFrame, 0.65, 0.95);
 }
 
 /**

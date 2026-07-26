@@ -1,5 +1,5 @@
 import '../../css/release-notes-viewer.css';
-import { BUILD_VERSION } from '../core/constants.js';
+import { BUILD_VERSION, GAME_BRAND_UPDATE_TITLE } from '../core/constants.js';
 import { RELEASE_NOTES } from '../core/release-notes.js';
 
 const MODAL_ID = 'releaseNotesModal';
@@ -84,7 +84,7 @@ function renderReaderAt(index) {
   const body = document.getElementById('releaseNotesBody');
 
   if (meta) meta.textContent = `ATUALIZAÇÃO · ${note.version}${note.version === BUILD_VERSION ? ' · ATUAL' : ''}`;
-  if (title) title.textContent = note.title || 'Matchday Football foi atualizado';
+  if (title) title.textContent = note.title || GAME_BRAND_UPDATE_TITLE;
   if (time) time.textContent = formatReleaseDateTime(note);
   if (body) body.innerHTML = renderTopicsHtml(note.topics);
 

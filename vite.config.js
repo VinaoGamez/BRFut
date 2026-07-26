@@ -7,12 +7,15 @@ const isGithubPages = process.env.GITHUB_PAGES === 'true';
 
 /** Mercado ativo em todos os builds (local + GitHub Pages). */
 const enableTransfers = process.env.MATCHDAY_DISABLE_TRANSFERS !== 'true';
+/** Origem estadual / campeonato estadual — só build local até validação. */
+const enableStateLeague = !isGithubPages;
 
 export default defineConfig({
   root: '.',
   base: isGithubPages ? githubPagesBase : './',
   define: {
     __MATCHDAY_ENABLE_TRANSFERS__: JSON.stringify(enableTransfers),
+    __MATCHDAY_ENABLE_STATE_LEAGUE__: JSON.stringify(enableStateLeague),
   },
   plugins: [
     {
@@ -43,6 +46,7 @@ export default defineConfig({
           : {
               cardLab: resolve(__dirname, 'card-lab.html'),
               cardPreview: resolve(__dirname, 'card-preview.html'),
+              teamLab: resolve(__dirname, 'team-lab.html'),
             }),
       },
     },

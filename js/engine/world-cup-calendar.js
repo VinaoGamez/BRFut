@@ -8,11 +8,15 @@ import { prepareWorldCupEdition, WORLD_CUP_GROUP_LETTERS } from './world-cup-his
 export const WORLD_CUP_COMPETITION = 'COPA DO MUNDO';
 export const WORLD_CUP_CALENDAR_CODE = 'CMU';
 
-const GROUP_MATCHDAYS = Object.freeze([
-  { month: 5, startDay: 1, endDay: 4 },
-  { month: 5, startDay: 5, endDay: 10 },
+/** Rodadas da fase de grupos — FIFA 2026 (72 jogos, 12 grupos × 3 rodadas). */
+export const WORLD_CUP_GROUP_MATCHDAYS = Object.freeze([
   { month: 5, startDay: 11, endDay: 15 },
+  { month: 5, startDay: 18, endDay: 22 },
+  { month: 5, startDay: 24, endDay: 27 },
 ]);
+
+/** @deprecated alias */
+const GROUP_MATCHDAYS = WORLD_CUP_GROUP_MATCHDAYS;
 
 /** Mata-mata — datas dentro da janela FIFA (jun/jul). Exportado para geração após fase de grupos. */
 export const KNOCKOUT_SCHEDULE = Object.freeze([
@@ -20,38 +24,38 @@ export const KNOCKOUT_SCHEDULE = Object.freeze([
     phase: '16 AVOS DE FINAL',
     round: 4,
     slots: [
-      { month: 5, day: 18, count: 4 },
-      { month: 5, day: 19, count: 4 },
-      { month: 5, day: 20, count: 4 },
-      { month: 5, day: 21, count: 4 },
+      { month: 5, day: 28, count: 4 },
+      { month: 5, day: 29, count: 4 },
+      { month: 5, day: 30, count: 4 },
+      { month: 6, day: 1, count: 4 },
     ],
   },
   {
     phase: 'OITAVAS DE FINAL',
     round: 5,
     slots: [
-      { month: 5, day: 25, count: 2 },
-      { month: 5, day: 26, count: 2 },
-      { month: 5, day: 27, count: 2 },
-      { month: 5, day: 28, count: 2 },
+      { month: 6, day: 4, count: 2 },
+      { month: 6, day: 5, count: 2 },
+      { month: 6, day: 6, count: 2 },
+      { month: 6, day: 7, count: 2 },
     ],
   },
   {
     phase: 'QUARTAS DE FINAL',
     round: 6,
     slots: [
-      { month: 6, day: 3, count: 1 },
-      { month: 6, day: 4, count: 1 },
-      { month: 6, day: 5, count: 1 },
-      { month: 6, day: 6, count: 1 },
+      { month: 6, day: 9, count: 1 },
+      { month: 6, day: 10, count: 1 },
+      { month: 6, day: 11, count: 1 },
+      { month: 6, day: 12, count: 1 },
     ],
   },
   {
     phase: 'SEMIFINAL',
     round: 7,
     slots: [
-      { month: 6, day: 10, count: 1 },
-      { month: 6, day: 11, count: 1 },
+      { month: 6, day: 14, count: 1 },
+      { month: 6, day: 15, count: 1 },
     ],
   },
   {
@@ -162,3 +166,41 @@ export function buildWorldCupCalendarFixtures(seasonYear, worldCupHistory = [], 
 
 export const WORLD_CUP_GROUP_FIXTURE_COUNT = 72;
 export const WORLD_CUP_KNOCKOUT_FIXTURE_COUNT = 32;
+
+/**
+ * Todas as datas travadas da CMU no ano (grupos + mata-mata) — independente de FEATURES.worldCup.
+ * @param {number} seasonYear
+ * @returns {Date[]}
+ */
+export function buildWorldCupLockedDates(seasonYear) {
+  const year = Number(seasonYear);
+  if (!isWorldCupYear(year)) return [];
+
+  const seen = new Set();
+  const push = (month, day) => {
+    const date = dateInWindow(year, month, day);
+    seen.add(date.getTime());
+  };
+
+  WORLD_CUP_GROUP_MATCHDAYS.forEach(window => {
+    for (let day = window.startDay; day <= window.endDay; day += 1) {
+      push(window.month, day);
+    }
+  });
+
+  KNOCKOUT_SCHEDULE.forEach(phase => {
+    phase.slots.forEach(slot => {
+      for (let i = 0; i < slot.count; i += 1) {
+        push(slot.month, slot.day);
+      }
+    });
+  });
+
+  const [endMonth, endDay] = WORLD_CUP_WINDOW.end;
+  const endCap = dateInWindow(year, endMonth, endDay).getTime();
+
+  return [...seen]
+    .map(ts => new Date(ts))
+    .filter(date => date.getTime() <= endCap)
+    .sort((a, b) => a - b);
+}

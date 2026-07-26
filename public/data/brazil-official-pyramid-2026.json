@@ -1,0 +1,1578 @@
+{
+  "generatedAt": "2026-07-24T19:33:56.865653+00:00",
+  "season": 2026,
+  "source": "CBF Brasileirão Séries A-D 2026 (ge.globo) + Brasfoot + placeholders",
+  "policy": {
+    "national": "official_lists",
+    "regional": "brasfoot_remainder",
+    "fictionalNames": false
+  },
+  "totals": {
+    "A": 20,
+    "B": 20,
+    "C": 20,
+    "D": 96,
+    "REG": 691,
+    "nationalTotal": 156,
+    "braTotal": 847,
+    "placeholdersAdded": 0
+  },
+  "divisions": {
+    "A": [
+      {
+        "name": "Palmeiras",
+        "uf": "SP",
+        "id": "brasfoot-palmeiras",
+        "slug": "palmeiras",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Athletico PR",
+        "uf": "PR",
+        "id": "brasfoot-atleticopr_bra",
+        "slug": "atleticopr_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Atlético-MG",
+        "uf": "MG",
+        "id": "brasfoot-atleticomg_bra",
+        "slug": "atleticomg_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Bahia",
+        "uf": "BA",
+        "id": "brasfoot-bahia",
+        "slug": "bahia",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Botafogo",
+        "uf": "RJ",
+        "id": "brasfoot-botafogopb_bra",
+        "slug": "botafogopb_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:slug_override"
+      },
+      {
+        "name": "Chapecoense",
+        "uf": "SC",
+        "id": "brasfoot-chapecoense_bra",
+        "slug": "chapecoense_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Corinthians",
+        "uf": "SP",
+        "id": "brasfoot-corinthians_bra",
+        "slug": "corinthians_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Coritiba",
+        "uf": "PR",
+        "id": "brasfoot-coritiba_bra",
+        "slug": "coritiba_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Cruzeiro",
+        "uf": "MG",
+        "id": "brasfoot-cruzeiro_bra",
+        "slug": "cruzeiro_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Flamengo",
+        "uf": "RJ",
+        "id": "brasfoot-flamengopb_bra",
+        "slug": "flamengopb_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Fluminense",
+        "uf": "RJ",
+        "id": "brasfoot-fluminensepi_bra",
+        "slug": "fluminensepi_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Grêmio",
+        "uf": "RS",
+        "id": "brasfoot-gremio",
+        "slug": "gremio",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Internacional",
+        "uf": "RS",
+        "id": "brasfoot-internacional_bra",
+        "slug": "internacional_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Mirassol",
+        "uf": "SP",
+        "id": "brasfoot-miirassol_sp",
+        "slug": "miirassol_sp",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Bragantino",
+        "uf": "SP",
+        "id": "brasfoot-bragantino_bra",
+        "slug": "bragantino_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Remo",
+        "uf": "PA",
+        "id": "brasfoot-remo",
+        "slug": "remo",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Santos",
+        "uf": "SP",
+        "id": "brasfoot-santos",
+        "slug": "santos",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "São Paulo",
+        "uf": "SP",
+        "id": "brasfoot-saopaulo_bra",
+        "slug": "saopaulo_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Vasco",
+        "uf": "RJ",
+        "id": "brasfoot-vascoac_bra",
+        "slug": "vascoac_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Vitória",
+        "uf": "BA",
+        "id": "brasfoot-vitóriaes_bra",
+        "slug": "vitóriaes_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      }
+    ],
+    "B": [
+      {
+        "name": "América-MG",
+        "uf": "MG",
+        "id": "brasfoot-americamg_bra",
+        "slug": "americamg_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Athletic",
+        "uf": "MG",
+        "id": "brasfoot-athleticclub_mg",
+        "slug": "athleticclub_mg",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Atlético-GO",
+        "uf": "GO",
+        "id": "brasfoot-atleticogo_bra",
+        "slug": "atleticogo_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Avai",
+        "uf": "SC",
+        "id": "brasfoot-avai_bra",
+        "slug": "avai_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Botafogo-SP",
+        "uf": "SP",
+        "id": "brasfoot-botafogosp_bra",
+        "slug": "botafogosp_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:slug_override"
+      },
+      {
+        "name": "Ceará",
+        "uf": "CE",
+        "id": "brasfoot-ceara_bra",
+        "slug": "ceara_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "CRB",
+        "uf": "AL",
+        "id": "brasfoot-crb_bra",
+        "slug": "crb_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Criciúma",
+        "uf": "SC",
+        "id": "brasfoot-criciuma_bra",
+        "slug": "criciuma_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Cuiabá",
+        "uf": "MT",
+        "id": "brasfoot-cuiaba_bra",
+        "slug": "cuiaba_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Fortaleza",
+        "uf": "CE",
+        "id": "brasfoot-fortaleza",
+        "slug": "fortaleza",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Goiás",
+        "uf": "GO",
+        "id": "brasfoot-goias",
+        "slug": "goias",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Juventude",
+        "uf": "RS",
+        "id": "brasfoot-juventudema_bra",
+        "slug": "juventudema_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Londrina",
+        "uf": "PR",
+        "id": "brasfoot-londrina_pr",
+        "slug": "londrina_pr",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Náutico",
+        "uf": "PE",
+        "id": "brasfoot-nauticorr_bra",
+        "slug": "nauticorr_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Novorizontino",
+        "uf": "SP",
+        "id": "brasfoot-novorinzontino_sp",
+        "slug": "novorinzontino_sp",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Operário PR",
+        "uf": "PR",
+        "id": "brasfoot-operario_pr",
+        "slug": "operario_pr",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Ponte Preta",
+        "uf": "SP",
+        "id": "brasfoot-pontepreta_bra",
+        "slug": "pontepreta_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "São Bernardo",
+        "uf": "SP",
+        "id": "brasfoot-saobernardo_sp",
+        "slug": "saobernardo_sp",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Sport",
+        "uf": "PE",
+        "id": "brasfoot-sport",
+        "slug": "sport",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Vila Nova",
+        "uf": "GO",
+        "id": "brasfoot-vilago",
+        "slug": "vilago",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      }
+    ],
+    "C": [
+      {
+        "name": "Amazonas",
+        "uf": "AM",
+        "id": "brasfoot-amazonas_am",
+        "slug": "amazonas_am",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Anápolis",
+        "uf": "GO",
+        "id": "brasfoot-anapolisgo_bra",
+        "slug": "anapolisgo_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Barra",
+        "uf": "SC",
+        "id": "brasfoot-barra_sc",
+        "slug": "barra_sc",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Botafogo-PB",
+        "uf": "PB",
+        "id": "official-placeholder-botafogo-pb-pb",
+        "slug": "botafogo-pb-pb",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Brusque",
+        "uf": "SC",
+        "id": "brasfoot-brusquesc_bra",
+        "slug": "brusquesc_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Caxias",
+        "uf": "RS",
+        "id": "brasfoot-caxias",
+        "slug": "caxias",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Confiança",
+        "uf": "SE",
+        "id": "brasfoot-confianca_se",
+        "slug": "confianca_se",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Ferroviária",
+        "uf": "SP",
+        "id": "brasfoot-ferroviaria_sp",
+        "slug": "ferroviaria_sp",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Figueirense",
+        "uf": "SC",
+        "id": "brasfoot-figueirense",
+        "slug": "figueirense",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Floresta",
+        "uf": "CE",
+        "id": "brasfoot-florestace",
+        "slug": "florestace",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Guarani",
+        "uf": "SP",
+        "id": "brasfoot-guaranisp_bra",
+        "slug": "guaranisp_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Inter de Limeira",
+        "uf": "SP",
+        "id": "brasfoot-interlimeirasp_bra",
+        "slug": "interlimeirasp_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Itabaiana",
+        "uf": "SE",
+        "id": "brasfoot-itabaiana_se",
+        "slug": "itabaiana_se",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Ituano",
+        "uf": "SP",
+        "id": "brasfoot-ituano_sp",
+        "slug": "ituano_sp",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Maranhão",
+        "uf": "MA",
+        "id": "brasfoot-maranhãoqtt_bra",
+        "slug": "maranhãoqtt_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Maringá",
+        "uf": "PR",
+        "id": "brasfoot-maringapr",
+        "slug": "maringapr",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Paysandu",
+        "uf": "PA",
+        "id": "brasfoot-paysandu",
+        "slug": "paysandu",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Santa Cruz",
+        "uf": "PE",
+        "id": "brasfoot-santacruzac_bra",
+        "slug": "santacruzac_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Volta Redonda",
+        "uf": "RJ",
+        "id": "brasfoot-voltaredondarj_bra",
+        "slug": "voltaredondarj_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Ypiranga",
+        "uf": "RS",
+        "id": "brasfoot-ypiranga_rs",
+        "slug": "ypiranga_rs",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      }
+    ],
+    "D": [
+      {
+        "name": "Manauara",
+        "uf": "AM",
+        "id": "brasfoot-manauara_br",
+        "slug": "manauara_br",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Nacional",
+        "uf": "AM",
+        "id": "brasfoot-nacional_am",
+        "slug": "nacional_am",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "São Raimundo",
+        "uf": "RR",
+        "id": "brasfoot-saoraimundorr_bra",
+        "slug": "saoraimundorr_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Monte Roraima",
+        "uf": "RR",
+        "id": "brasfoot-monteroraima_rr",
+        "slug": "monteroraima_rr",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Manaus",
+        "uf": "AM",
+        "id": "official-placeholder-manaus-am",
+        "slug": "manaus-am",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "GAS",
+        "uf": "RR",
+        "id": "brasfoot-gas_rr",
+        "slug": "gas_rr",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Guaporé",
+        "uf": "RO",
+        "id": "official-placeholder-guapore-ro",
+        "slug": "guapore-ro",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Gazin Porto Velho",
+        "uf": "RO",
+        "id": "official-placeholder-gazin-porto-velho-ro",
+        "slug": "gazin-porto-velho-ro",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Araguaína",
+        "uf": "TO",
+        "id": "brasfoot-araguaina_to",
+        "slug": "araguaina_to",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Independência",
+        "uf": "AC",
+        "id": "brasfoot-independencia_ac",
+        "slug": "independencia_ac",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Galvez",
+        "uf": "AC",
+        "id": "brasfoot-galvez_bra",
+        "slug": "galvez_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Humaitá",
+        "uf": "AC",
+        "id": "brasfoot-humaita_ac",
+        "slug": "humaita_ac",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Gama",
+        "uf": "DF",
+        "id": "brasfoot-gama_df_bra",
+        "slug": "gama_df_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Luverdense",
+        "uf": "MT",
+        "id": "brasfoot-luverdensemt_bra",
+        "slug": "luverdensemt_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Brasiliense",
+        "uf": "DF",
+        "id": "brasfoot-brasiliense_bra",
+        "slug": "brasiliense_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Aparecidense",
+        "uf": "GO",
+        "id": "brasfoot-aparecidense_go",
+        "slug": "aparecidense_go",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Primavera",
+        "uf": "MT",
+        "id": "official-placeholder-primavera-mt",
+        "slug": "primavera-mt",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Inhumas",
+        "uf": "GO",
+        "id": "official-placeholder-inhumas-go",
+        "slug": "inhumas-go",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Capital",
+        "uf": "DF",
+        "id": "official-placeholder-capital-df",
+        "slug": "capital-df",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Goiatuba",
+        "uf": "GO",
+        "id": "official-placeholder-goiatuba-go",
+        "slug": "goiatuba-go",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Ceilândia",
+        "uf": "DF",
+        "id": "brasfoot-ceilandia_df_bra",
+        "slug": "ceilandia_df_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Mixto",
+        "uf": "MT",
+        "id": "brasfoot-mixto_mt",
+        "slug": "mixto_mt",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "União Rondonópolis",
+        "uf": "MT",
+        "id": "brasfoot-uniaorondonopolis_mt",
+        "slug": "uniaorondonopolis_mt",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Operário VG",
+        "uf": "MT",
+        "id": "official-placeholder-operario-vg-mt",
+        "slug": "operario-vg-mt",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Trem",
+        "uf": "AP",
+        "id": "official-placeholder-trem-ap",
+        "slug": "trem-ap",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Águia de Marabá",
+        "uf": "PA",
+        "id": "brasfoot-aguiapa_bra",
+        "slug": "aguiapa_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Imperatriz",
+        "uf": "MA",
+        "id": "brasfoot-imperatriz_ma",
+        "slug": "imperatriz_ma",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Tuna Luso",
+        "uf": "PA",
+        "id": "brasfoot-tunaluso_pa",
+        "slug": "tunaluso_pa",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Tocantinópolis",
+        "uf": "TO",
+        "id": "brasfoot-tocantinopolis_to",
+        "slug": "tocantinopolis_to",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Oratório",
+        "uf": "AP",
+        "id": "brasfoot-oratorio_ap",
+        "slug": "oratorio_ap",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Iguatu",
+        "uf": "CE",
+        "id": "brasfoot-iguatu_ce",
+        "slug": "iguatu_ce",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Maracanã",
+        "uf": "CE",
+        "id": "brasfoot-maracana_ce",
+        "slug": "maracana_ce",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Parnahyba",
+        "uf": "PI",
+        "id": "brasfoot-parnahyba_br",
+        "slug": "parnahyba_br",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Sampaio Corrêa",
+        "uf": "MA",
+        "id": "brasfoot-samapaiocorrea_ma",
+        "slug": "samapaiocorrea_ma",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Moto Club",
+        "uf": "MA",
+        "id": "official-placeholder-moto-club-ma",
+        "slug": "moto-club-ma",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "IAPE",
+        "uf": "MA",
+        "id": "brasfoot-iape_ma",
+        "slug": "iape_ma",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Ferroviário",
+        "uf": "CE",
+        "id": "brasfoot-ferroviarioce_bra",
+        "slug": "ferroviarioce_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Piauí",
+        "uf": "PI",
+        "id": "brasfoot-piaui_pi",
+        "slug": "piaui_pi",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Fluminense-PI",
+        "uf": "PI",
+        "id": "official-placeholder-fluminense-pi-pi",
+        "slug": "fluminense-pi-pi",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Altos",
+        "uf": "PI",
+        "id": "brasfoot-altos_pi",
+        "slug": "altos_pi",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Tirol",
+        "uf": "CE",
+        "id": "official-placeholder-tirol-ce",
+        "slug": "tirol-ce",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Atlético-CE",
+        "uf": "CE",
+        "id": "brasfoot-atleticoce_bra",
+        "slug": "atleticoce_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "ABC",
+        "uf": "RN",
+        "id": "brasfoot-abcrn_bra",
+        "slug": "abcrn_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "América-RN",
+        "uf": "RN",
+        "id": "brasfoot-americarn",
+        "slug": "americarn",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Maguary",
+        "uf": "PE",
+        "id": "brasfoot-maguary_pe",
+        "slug": "maguary_pe",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Central",
+        "uf": "PE",
+        "id": "official-placeholder-central-pe",
+        "slug": "central-pe",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Sousa",
+        "uf": "PB",
+        "id": "official-placeholder-sousa-pb",
+        "slug": "sousa-pb",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Laguna",
+        "uf": "RN",
+        "id": "official-placeholder-laguna-rn",
+        "slug": "laguna-rn",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Treze",
+        "uf": "PB",
+        "id": "brasfoot-trezepb_bra",
+        "slug": "trezepb_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Sergipe",
+        "uf": "SE",
+        "id": "brasfoot-sergipe_se",
+        "slug": "sergipe_se",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Serra Branca",
+        "uf": "PB",
+        "id": "brasfoot-serrabranca_pb_cg_br",
+        "slug": "serrabranca_pb_cg_br",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Lagarto",
+        "uf": "SE",
+        "id": "brasfoot-lagarto_se",
+        "slug": "lagarto_se",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Retrô",
+        "uf": "PE",
+        "id": "brasfoot-retrope_bra",
+        "slug": "retrope_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Decisão",
+        "uf": "PE",
+        "id": "official-placeholder-decisao-pe",
+        "slug": "decisao-pe",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "CSA",
+        "uf": "AL",
+        "id": "brasfoot-csa_bra",
+        "slug": "csa_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Juazeirense",
+        "uf": "BA",
+        "id": "brasfoot-juazeirense_ba",
+        "slug": "juazeirense_ba",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "ASA",
+        "uf": "AL",
+        "id": "official-placeholder-asa-al",
+        "slug": "asa-al",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Jacuipense",
+        "uf": "BA",
+        "id": "official-placeholder-jacuipense-ba",
+        "slug": "jacuipense-ba",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "CSE",
+        "uf": "AL",
+        "id": "official-placeholder-cse-al",
+        "slug": "cse-al",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Atlético de Alagoinhas",
+        "uf": "BA",
+        "id": "official-placeholder-atletico-de-alagoinhas-ba",
+        "slug": "atletico-de-alagoinhas-ba",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Uberlândia",
+        "uf": "MG",
+        "id": "official-placeholder-uberlandia-mg",
+        "slug": "uberlandia-mg",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Betim",
+        "uf": "MG",
+        "id": "official-placeholder-betim-mg",
+        "slug": "betim-mg",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "CRAC",
+        "uf": "GO",
+        "id": "official-placeholder-crac-go",
+        "slug": "crac-go",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Ivinhema",
+        "uf": "MS",
+        "id": "brasfoot-ivinhema_ms",
+        "slug": "ivinhema_ms",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "ABECAT",
+        "uf": "GO",
+        "id": "official-placeholder-abecat-go",
+        "slug": "abecat-go",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Operário MS",
+        "uf": "MS",
+        "id": "brasfoot-operarioms_bra",
+        "slug": "operarioms_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Democrata GV",
+        "uf": "MG",
+        "id": "brasfoot-ecdemocrata_mg",
+        "slug": "ecdemocrata_mg",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Tombense",
+        "uf": "MG",
+        "id": "brasfoot-tombense_mg",
+        "slug": "tombense_mg",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Vitória ES",
+        "uf": "ES",
+        "id": "brasfoot-vitoria_es",
+        "slug": "vitoria_es",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Rio Branco ES",
+        "uf": "ES",
+        "id": "brasfoot-riobranco_es",
+        "slug": "riobranco_es",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Porto-BA",
+        "uf": "BA",
+        "id": "brasfoot-porto_ba",
+        "slug": "porto_ba",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Real Noroeste",
+        "uf": "ES",
+        "id": "brasfoot-realnoroeste_es",
+        "slug": "realnoroeste_es",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Portuguesa",
+        "uf": "SP",
+        "id": "brasfoot-portuguesa_bra",
+        "slug": "portuguesa_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Água Santa",
+        "uf": "SP",
+        "id": "brasfoot-aguasantasp_bra",
+        "slug": "aguasantasp_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Portuguesa-RJ",
+        "uf": "RJ",
+        "id": "brasfoot-portuguesarj_bra",
+        "slug": "portuguesarj_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "América-RJ",
+        "uf": "RJ",
+        "id": "brasfoot-americarj_bra",
+        "slug": "americarj_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Madureira",
+        "uf": "RJ",
+        "id": "brasfoot-madureira_bra",
+        "slug": "madureira_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Pouso Alegre",
+        "uf": "MG",
+        "id": "brasfoot-pousoalegre_mg",
+        "slug": "pousoalegre_mg",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "XV de Piracicaba",
+        "uf": "SP",
+        "id": "brasfoot-xvdepiracicaba_sp",
+        "slug": "xvdepiracicaba_sp",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Noroeste",
+        "uf": "SP",
+        "id": "brasfoot-noroeste_sp",
+        "slug": "noroeste_sp",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Velo Clube",
+        "uf": "SP",
+        "id": "brasfoot-veloclube_sp",
+        "slug": "veloclube_sp",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Sampaio Corrêa-RJ",
+        "uf": "RJ",
+        "id": "brasfoot-sampaiocorrea_rj",
+        "slug": "sampaiocorrea_rj",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Nova Iguaçu",
+        "uf": "RJ",
+        "id": "brasfoot-novaiguacu_rj",
+        "slug": "novaiguacu_rj",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Maricá",
+        "uf": "RJ",
+        "id": "brasfoot-marica_rj",
+        "slug": "marica_rj",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Santa Catarina",
+        "uf": "SC",
+        "id": "official-placeholder-santa-catarina-sc",
+        "slug": "santa-catarina-sc",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Cianorte",
+        "uf": "PR",
+        "id": "brasfoot-cianorte_pr",
+        "slug": "cianorte_pr",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "FC Cascavel",
+        "uf": "PR",
+        "id": "brasfoot-cascavel_pr",
+        "slug": "cascavel_pr",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "São Luiz",
+        "uf": "RS",
+        "id": "brasfoot-saoluiz_rs",
+        "slug": "saoluiz_rs",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Joinville",
+        "uf": "SC",
+        "id": "brasfoot-joinville",
+        "slug": "joinville",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Guarany de Bagé",
+        "uf": "RS",
+        "id": "official-placeholder-guarany-de-bage-rs",
+        "slug": "guarany-de-bage-rs",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Blumenau",
+        "uf": "SC",
+        "id": "brasfoot-blumenau_sc",
+        "slug": "blumenau_sc",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Marcílio Dias",
+        "uf": "SC",
+        "id": "brasfoot-marciliodiassc_bra",
+        "slug": "marciliodiassc_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "São Joseense",
+        "uf": "PR",
+        "id": "brasfoot-independente_pr",
+        "slug": "independente_pr",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "São José",
+        "uf": "RS",
+        "id": "brasfoot-saojosers_bra",
+        "slug": "saojosers_bra",
+        "placeholder": false,
+        "hasBrasfoot": true,
+        "divisionSource": "cbf2026:exact"
+      },
+      {
+        "name": "Brasil de Pelotas",
+        "uf": "RS",
+        "id": "official-placeholder-brasil-de-pelotas-rs",
+        "slug": "brasil-de-pelotas-rs",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      },
+      {
+        "name": "Azuriz",
+        "uf": "PR",
+        "id": "official-placeholder-azuriz-pr",
+        "slug": "azuriz-pr",
+        "placeholder": true,
+        "hasBrasfoot": false,
+        "divisionSource": "cbf2026:placeholder"
+      }
+    ]
+  },
+  "serieDGroups": [
+    [
+      "Manauara",
+      "Nacional",
+      "São Raimundo",
+      "Monte Roraima",
+      "Manaus",
+      "GAS"
+    ],
+    [
+      "Guaporé",
+      "Gazin Porto Velho",
+      "Araguaína",
+      "Independência",
+      "Galvez",
+      "Humaitá"
+    ],
+    [
+      "Gama",
+      "Luverdense",
+      "Brasiliense",
+      "Aparecidense",
+      "Primavera",
+      "Inhumas"
+    ],
+    [
+      "Capital",
+      "Goiatuba",
+      "Ceilândia",
+      "Mixto",
+      "União Rondonópolis",
+      "Operário VG"
+    ],
+    [
+      "Trem",
+      "Águia de Marabá",
+      "Imperatriz",
+      "Tuna Luso",
+      "Tocantinópolis",
+      "Oratório"
+    ],
+    [
+      "Iguatu",
+      "Maracanã",
+      "Parnahyba",
+      "Sampaio Corrêa",
+      "Moto Club",
+      "IAPE"
+    ],
+    [
+      "Ferroviário",
+      "Piauí",
+      "Fluminense-PI",
+      "Altos",
+      "Tirol",
+      "Atlético-CE"
+    ],
+    [
+      "ABC",
+      "América-RN",
+      "Maguary",
+      "Central",
+      "Sousa",
+      "Laguna"
+    ],
+    [
+      "Treze",
+      "Sergipe",
+      "Serra Branca",
+      "Lagarto",
+      "Retrô",
+      "Decisão"
+    ],
+    [
+      "CSA",
+      "Juazeirense",
+      "ASA",
+      "Jacuipense",
+      "CSE",
+      "Atlético de Alagoinhas"
+    ],
+    [
+      "Uberlândia",
+      "Betim",
+      "CRAC",
+      "Ivinhema",
+      "ABECAT",
+      "Operário MS"
+    ],
+    [
+      "Democrata GV",
+      "Tombense",
+      "Vitória ES",
+      "Rio Branco ES",
+      "Porto-BA",
+      "Real Noroeste"
+    ],
+    [
+      "Portuguesa",
+      "Água Santa",
+      "Portuguesa-RJ",
+      "América-RJ",
+      "Madureira",
+      "Pouso Alegre"
+    ],
+    [
+      "XV de Piracicaba",
+      "Noroeste",
+      "Velo Clube",
+      "Sampaio Corrêa-RJ",
+      "Nova Iguaçu",
+      "Maricá"
+    ],
+    [
+      "Santa Catarina",
+      "Cianorte",
+      "FC Cascavel",
+      "São Luiz",
+      "Joinville",
+      "Guarany de Bagé"
+    ],
+    [
+      "Blumenau",
+      "Marcílio Dias",
+      "São Joseense",
+      "São José",
+      "Brasil de Pelotas",
+      "Azuriz"
+    ]
+  ],
+  "serieDGroupRules": {
+    "groups": 16,
+    "clubsPerGroup": 6,
+    "maxClubsPerFederationPerGroup": 3,
+    "formationCriteria": [
+      "geographic",
+      "logistics",
+      "max_3_per_federation"
+    ],
+    "knockoutPairing": "adjacent_pairs",
+    "knockoutSeeding": "1v4_2v3",
+    "source": "CBF conselho técnico mar/2026"
+  },
+  "placeholders": []
+}

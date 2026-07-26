@@ -1,6 +1,13 @@
-import { MODULE_VERSIONS } from '../../core/constants.js';
+import { MODULE_VERSIONS, FEATURES } from '../../core/constants.js';
+import '../../../css/new-career-modal.css';
 import { initReleaseNotesViewer, renderOptionsUpdateSummary } from '../../ui/release-notes-viewer.js';
 import { createTesterHubFeature } from '../tester-hub/index.js';
+import { mountCrestEditor } from '../../ui/crest-editor.js';
+import { getCustomClubByName, retainCustomClubsForCareer, upsertCustomClub } from '../../engine/custom-clubs.js';
+import {
+  BRAZILIAN_UFS,
+  stateCompetitionIdForUf,
+} from '../../engine/brazilian-clubs-by-uf.js';
 
 const GAME_PACE_CONFIG = {
   ultra: { name: 'ULTRA', detail: '8 s por tempo · 16 s de jogo contínuo', ms: 250 },
@@ -21,6 +28,7 @@ const GAME_PACE_CONFIG = {
  * @param {Function} deps.clearSeasonSave
  * @param {Function} [deps.clearCareerStorage]
  * @param {Function} [deps.markSkipPersistOnce]
+ * @param {Function} [deps.prepareForNewCareer]
  * @param {object} deps.SAVE_KEYS
  * @param {boolean} deps.hasCareer
  * @param {Function} deps.getSavedCareer
@@ -42,6 +50,7 @@ export function createOptionsFeature(deps) {
     clearSeasonSave,
     clearCareerStorage,
     markSkipPersistOnce,
+    prepareForNewCareer,
     SAVE_KEYS,
     hasCareer,
     getSavedCareer,
@@ -56,10 +65,25 @@ export function createOptionsFeature(deps) {
   let gamePace = localStorage.getItem(SAVE_KEYS.pace) || 'standard';
   if (!GAME_PACE_CONFIG[gamePace]) gamePace = 'standard';
 
+
+  const buildNewGameModalHtml = () => {
+    if (FEATURES.stateLeague) {
+      const ufOptions = BRAZILIAN_UFS.map(
+        uf => `<option value="${uf.code}">${uf.name} (${uf.code})</option>`,
+      ).join('');
+      return `<div id="newGameModal" class="modal hidden"><div class="modal-card new-game-modal new-career-v2"><button id="closeNewGame" class="close">×</button><header class="new-career-head"><h2>NOVA CARREIRA</h2><p class="new-career-lead">Escolha o estado e a divisão de estreia. Um clube real será sorteado para abrir sua vaga.</p></header><div class="new-career-panels"><section class="new-career-panel new-career-panel-origin" aria-labelledby="newCareerOriginTitle"><h3 id="newCareerOriginTitle" class="new-career-panel-title">Origem</h3><div class="new-career-toolbar"><div class="career-field new-career-uf-field"><label for="careerOriginUf">Estado</label><select id="careerOriginUf" autocomplete="off">${ufOptions}</select></div><div class="career-field new-career-uf-field"><label for="careerTargetDivision">Divisão de estreia</label><select id="careerTargetDivision" autocomplete="off"><option value="A">Série A</option><option value="B">Série B</option><option value="C">Série C</option><option value="D">Série D</option></select></div></div><p id="careerOriginSummary" class="new-career-summary">Prioridade a clubes do seu estado; se não houver, sorteio nacional na divisão escolhida.</p></section><section class="new-career-panel new-career-panel-club" aria-labelledby="newCareerClubTitle"><h3 id="newCareerClubTitle" class="new-career-panel-title">Seu clube</h3><div class="career-fields new-career-fields"><div class="career-field"><label for="careerClubName">Nome do time</label><input id="careerClubName" maxlength="32" autocomplete="off" placeholder="Ex.: Atlético Fênix"></div><div class="career-field"><label for="careerManagerName">Treinador</label><input id="careerManagerName" maxlength="40" autocomplete="off" placeholder="Ex.: Ricardo Almeida"></div><div class="career-field"><label for="careerStadiumName">Estádio</label><input id="careerStadiumName" maxlength="40" autocomplete="off" placeholder="Ex.: Arena Fênix"></div></div><div id="careerCrestEditorMount" class="new-career-crest-mount"></div></section></div><p id="newGameError" class="new-game-error"></p><div class="new-game-buttons"><button id="cancelNewGame" type="button" class="secondary">Cancelar</button><button id="confirmNewGame" type="button">Criar carreira</button></div></div></div>`;
+    }
+    return `<div id="newGameModal" class="modal hidden"><div class="modal-card new-game-modal new-career-v2"><button id="closeNewGame" class="close">×</button><header class="new-career-head"><h2>NOVA CARREIRA</h2><p class="new-career-lead">Defina seu clube fictício e a divisão de estreia.</p></header><section class="new-career-panel new-career-panel-club"><h3 class="new-career-panel-title">Seu clube</h3><div class="career-fields new-career-fields"><div class="career-field"><label for="careerClubName">Nome do time</label><input id="careerClubName" maxlength="32" autocomplete="off" placeholder="Ex.: Atlético Fênix"></div><div class="career-field"><label for="careerManagerName">Treinador</label><input id="careerManagerName" maxlength="40" autocomplete="off" placeholder="Ex.: Ricardo Almeida"></div><div class="career-field"><label for="careerStadiumName">Estádio</label><input id="careerStadiumName" maxlength="40" autocomplete="off" placeholder="Ex.: Arena Fênix"></div><div class="career-field"><label for="careerDivision">Divisão inicial</label><select id="careerDivision" autocomplete="off"><option value="A">Série A</option><option value="B">Série B</option><option value="C">Série C</option><option value="D">Série D</option></select></div></div><div id="careerCrestEditorMount" class="new-career-crest-mount"></div></section><p id="newGameError" class="new-game-error"></p><div class="new-game-buttons"><button id="cancelNewGame" type="button" class="secondary">Cancelar</button><button id="confirmNewGame" type="button">Criar carreira</button></div></div></div>`;
+  };
+
+  const newCareerBlurb = FEATURES.stateLeague
+    ? 'Escolha UF e divisão de estreia; a vítima do sorteio é revelada ao iniciar a carreira.'
+    : 'Monte seu clube fictício e escolha a divisão de estreia na pirâmide nacional.';
+
   const injectModals = () => {
     document.body.insertAdjacentHTML(
       'beforeend',
-      `<div id="optionsModal" class="modal hidden"><div class="modal-card options-modal"><button id="closeOptions" class="close">×</button><label>CONFIGURAÇÕES</label><h2>Opções do Jogo</h2><section class="option-section"><label>NOVA CARREIRA</label><div class="new-game-action"><div><strong>Criar clube e iniciar carreira</strong><small>Escolha seu clube, treinador e divisão. O universo nacional será gerado novamente.</small></div><button id="openNewGame" type="button">NOVO JOGO</button></div></section><section class="option-section"><label>RITMO DE JOGO</label><p>Define a duração da simulação contínua. Pausas técnicas e decisões do treinador continuam sob seu controle.</p><div id="paceChoices" class="option-choices">${Object.entries(GAME_PACE_CONFIG).map(([key, pace]) => `<button class="pace-choice" data-pace="${key}"><b>${pace.name}</b><small>${pace.detail}</small></button>`).join('')}</div></section><section class="option-section"><label>SONS AO VIVO</label><p>Apito, narração e reação da torcida durante a simulação de partida.</p><div id="liveAudioOptions" class="live-audio-options"></div></section><section class="option-section"><label>INFORMAÇÕES DE ATUALIZAÇÕES</label><div class="updates-info-row"><div class="updates-info-summary"><strong>Última Atualização</strong><span id="optionsLatestUpdate">—</span></div><button id="openReleaseNotes" type="button">CONSULTAR</button></div></section><section class="option-section"><label>TESTERS</label><div class="new-game-action"><div><strong>Guia e feedback</strong><small>Como testar a build e enviar relatório estruturado (GitHub ou copiar texto).</small></div><div class="option-choices" style="flex:none;display:flex;gap:8px;flex-wrap:wrap"><button id="openTesterGuide" type="button">GUIA</button><button id="openTesterFeedback" type="button">FEEDBACK</button><button id="previewSeasonGoalGauge" type="button" title="Abre o balanço com dados fictícios — não altera a carreira">PREVIEW META</button></div></div></section></div></div><div id="newGameModal" class="modal hidden"><div class="modal-card new-game-modal"><button id="closeNewGame" class="close">×</button><label>NOVA CARREIRA</label><h2>Crie sua história</h2><p>Defina a identidade do seu clube e a divisão em que a carreira começará.</p><div class="career-fields"><div class="career-field"><label for="careerClubName">NOME DO TIME</label><input id="careerClubName" maxlength="32" autocomplete="off" placeholder="Ex.: Atlético Fênix"></div><div class="career-field"><label for="careerManagerName">NOME DO TREINADOR</label><input id="careerManagerName" maxlength="40" autocomplete="off" placeholder="Ex.: Ricardo Almeida"></div><div class="career-field"><label for="careerStadiumName">NOME DO ESTÁDIO</label><input id="careerStadiumName" maxlength="40" autocomplete="off" placeholder="Ex.: Arena Fênix"></div></div><div class="division-choice"><label>DIVISÃO INICIAL</label><div class="division-choice-grid"><button class="division-card selected" data-career-division="A"><b>SÉRIE A</b><small>20 clubes · elite nacional</small></button><button class="division-card" data-career-division="B"><b>SÉRIE B</b><small>20 clubes · luta pelo acesso</small></button><button class="division-card" data-career-division="C"><b>SÉRIE C</b><small>20 clubes · primeira fase nacional</small></button><button class="division-card" data-career-division="D"><b>SÉRIE D</b><small>96 clubes · fase regional</small></button></div></div><p id="newGameError" class="new-game-error"></p><div class="new-game-buttons"><button id="cancelNewGame" type="button" class="secondary">CANCELAR</button><button id="confirmNewGame" type="button">CRIAR CARREIRA</button></div></div></div>`,
+      `<div id="optionsModal" class="modal hidden"><div class="modal-card options-modal"><button id="closeOptions" class="close">×</button><label>CONFIGURAÇÕES</label><h2>Opções do Jogo</h2><section class="option-section"><label>NOVA CARREIRA</label><div class="new-game-action"><div><strong>Criar clube e iniciar carreira</strong><small>${newCareerBlurb}</small></div><button id="openNewGame" type="button">NOVO JOGO</button></div></section><section class="option-section"><label>RITMO DE JOGO</label><p>Define a duração da simulação contínua. Pausas técnicas e decisões do treinador continuam sob seu controle.</p><div id="paceChoices" class="option-choices">${Object.entries(GAME_PACE_CONFIG).map(([key, pace]) => `<button class="pace-choice" data-pace="${key}"><b>${pace.name}</b><small>${pace.detail}</small></button>`).join('')}</div></section><section class="option-section"><label>SONS AO VIVO</label><p>Apito, narração e reação da torcida durante a simulação de partida.</p><div id="liveAudioOptions" class="live-audio-options"></div></section><section class="option-section"><label>INFORMAÇÕES DE ATUALIZAÇÕES</label><div class="updates-info-row"><div class="updates-info-summary"><strong>Última Atualização</strong><span id="optionsLatestUpdate">—</span></div><button id="openReleaseNotes" type="button">CONSULTAR</button></div></section><section class="option-section"><label>TESTERS</label><div class="new-game-action"><div><strong>Guia e feedback</strong><small>Como testar a build e enviar relatório estruturado (GitHub ou copiar texto).</small></div><div class="option-choices" style="flex:none;display:flex;gap:8px;flex-wrap:wrap"><button id="openTesterGuide" type="button">GUIA</button><button id="openTesterFeedback" type="button">FEEDBACK</button><button id="previewSeasonGoalGauge" type="button" title="Abre o balanço com dados fictícios — não altera a carreira">PREVIEW META</button></div></div></section></div></div>${buildNewGameModalHtml()}`,
     );
   };
 
@@ -73,12 +97,21 @@ export function createOptionsFeature(deps) {
     }
     document.body.insertAdjacentHTML(
       'beforeend',
-      '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.png" alt="Matchday Football" width="420" height="140"></div><button id="welcomeNewGame" type="button">NOVO JOGO</button></div></section>',
+      '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.png" alt="BR Football" width="480" height="72"></div><button id="welcomeNewGame" type="button">NOVO JOGO</button></div></section>',
     );
   };
 
   injectModals();
   injectCareerWelcome();
+
+  const careerCrestMount = $('#careerCrestEditorMount');
+  const careerCrestEditor = careerCrestMount
+    ? mountCrestEditor(careerCrestMount, {
+        getClubName: () => cleanCareerText($('#careerClubName')?.value || '', ''),
+      })
+    : null;
+
+  $('#careerClubName')?.addEventListener('input', () => careerCrestEditor?.refreshPreview());
   matchLiveAudio?.renderOptions?.($('#liveAudioOptions'));
 
   const testerHub = createTesterHubFeature({
@@ -107,21 +140,36 @@ export function createOptionsFeature(deps) {
     onPreviewSeasonGoal?.();
   });
 
-  let selectedCareerDivision = 'A';
-  const selectCareerDivision = division => {
-    selectedCareerDivision = division;
-    $$('[data-career-division]').forEach(button =>
-      button.classList.toggle('selected', button.dataset.careerDivision === division),
-    );
+  let selectedOriginUf = 'SP';
+  let selectedTargetDivision = 'A';
+
+  const updateCareerOriginSummary = () => {
+    const summary = $('#careerOriginSummary');
+    if (!summary) return;
+    const divisionLabels = { A: 'Série A', B: 'Série B', C: 'Série C', D: 'Série D' };
+    const ufName = BRAZILIAN_UFS.find(item => item.code === selectedOriginUf)?.name || selectedOriginUf;
+    summary.textContent = `Estreia na ${divisionLabels[selectedTargetDivision] || 'Série A'} · origem ${ufName} (${selectedOriginUf}). O clube sorteado será revelado após criar a carreira.`;
+    summary.classList.remove('is-empty');
   };
 
   const openCareerCreator = () => {
-    const savedCareer = getSavedCareer();
-    $('#careerClubName').value = savedCareer?.clubName || '';
-    $('#careerManagerName').value = savedCareer?.managerName || '';
-    $('#careerStadiumName').value = savedCareer?.stadiumName || '';
+    $('#careerClubName').value = '';
+    $('#careerManagerName').value = '';
+    $('#careerStadiumName').value = '';
+    careerCrestEditor?.setCrest({});
+    careerCrestEditor?.refreshPreview();
     $('#newGameError').textContent = '';
-    selectCareerDivision(savedCareer?.division || 'A');
+    if (FEATURES.stateLeague) {
+      selectedOriginUf = 'SP';
+      selectedTargetDivision = 'A';
+      $('#careerOriginUf').value = selectedOriginUf;
+      const divisionEl = $('#careerTargetDivision');
+      if (divisionEl) divisionEl.value = selectedTargetDivision;
+      updateCareerOriginSummary();
+    } else {
+      const divisionEl = $('#careerDivision');
+      if (divisionEl) divisionEl.value = 'A';
+    }
     $('#optionsModal').classList.add('hidden');
     $('#newGameModal').classList.remove('hidden');
     setTimeout(() => $('#careerClubName')?.focus(), 0);
@@ -150,10 +198,17 @@ export function createOptionsFeature(deps) {
 
   onClick('#closeNewGame', closeCareerCreator);
   onClick('#cancelNewGame', closeCareerCreator);
-  onClick('.division-choice-grid', event => {
-    const button = event.target.closest('[data-career-division]');
-    if (button) selectCareerDivision(button.dataset.careerDivision);
-  });
+  if (FEATURES.stateLeague) {
+    $('#careerOriginUf')?.addEventListener('change', event => {
+      selectedOriginUf = event.target.value || 'SP';
+      updateCareerOriginSummary();
+    });
+    $('#careerTargetDivision')?.addEventListener('change', event => {
+      selectedTargetDivision = event.target.value || 'A';
+      if (!['A', 'B', 'C', 'D'].includes(selectedTargetDivision)) selectedTargetDivision = 'A';
+      updateCareerOriginSummary();
+    });
+  }
 
   onClick('#confirmNewGame', () => {
     const clubName = cleanCareerText($('#careerClubName').value, '');
@@ -175,6 +230,35 @@ export function createOptionsFeature(deps) {
       $('#careerStadiumName').focus();
       return;
     }
+
+    let selectedCareerDivision = 'A';
+    /** @type {Record<string, unknown>} */
+    const careerPayloadExtra = {};
+
+    if (FEATURES.stateLeague) {
+      if (!selectedOriginUf) {
+        error.textContent = 'Escolha o estado de origem.';
+        return;
+      }
+      if (!['A', 'B', 'C', 'D'].includes(selectedTargetDivision)) {
+        error.textContent = 'Escolha a divisão de estreia.';
+        return;
+      }
+      selectedCareerDivision = selectedTargetDivision;
+      Object.assign(careerPayloadExtra, {
+        userUf: selectedOriginUf,
+        targetDivision: selectedTargetDivision,
+        replacementMode: 'cascade',
+        stateCompetitionId: stateCompetitionIdForUf(selectedOriginUf),
+        regionalBaseClubs: [],
+        version: 6,
+      });
+    } else {
+      selectedCareerDivision = $('#careerDivision')?.value || 'A';
+      if (!['A', 'B', 'C', 'D'].includes(selectedCareerDivision)) selectedCareerDivision = 'A';
+      Object.assign(careerPayloadExtra, { version: 4 });
+    }
+
     const seed = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
     const status = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
     const environmentRange = initialEnvironmentRanges[selectedCareerDivision];
@@ -185,11 +269,13 @@ export function createOptionsFeature(deps) {
       finances: status(55, 88),
       budget: initialBudget(selectedCareerDivision),
     };
-    // Impede o beforeunload da sessão atual de regravar o save antigo
-    // (conflito de seed + estouro de cota do localStorage).
+    const crest = careerCrestEditor?.getCrest() || null;
+    // Impede a sessão atual de regravar o save antigo antes do redirect.
+    prepareForNewCareer?.();
     markSkipPersistOnce?.();
     if (typeof clearCareerStorage === 'function') clearCareerStorage({ clearTraining: true });
     else clearSeasonSave();
+    retainCustomClubsForCareer(clubName);
     const careerPayload = {
       seed,
       clubName,
@@ -202,8 +288,22 @@ export function createOptionsFeature(deps) {
       clubStatus,
       season: defaultCareerSeason,
       createdAt: new Date().toISOString(),
-      version: 4,
+      freshWorld: true,
+      crest,
+      ...careerPayloadExtra,
     };
+    if (crest) {
+      const customClubPayload = {
+        name: clubName,
+        country: 'BRA',
+        uf: FEATURES.stateLeague ? selectedOriginUf : 'SP',
+        division: selectedCareerDivision,
+        crest,
+      };
+      const existingCustom = getCustomClubByName(clubName);
+      if (existingCustom?.id) customClubPayload.id = existingCustom.id;
+      upsertCustomClub(customClubPayload);
+    }
     const saved = writeJson(SAVE_KEYS.career, careerPayload);
     if (!saved) {
       error.textContent =

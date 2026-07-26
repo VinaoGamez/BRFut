@@ -225,6 +225,34 @@
 .season-goal-gauge--compact .season-goal-gauge-progress{
   stroke-width:8;
 }
+.season-goal-gauge--dashboard{
+  width:100%;
+  max-width:148px;
+  gap:8px;
+}
+.season-goal-gauge--dashboard .season-goal-gauge-ring{
+  width:132px;
+  height:132px;
+}
+.season-goal-gauge--dashboard .season-goal-gauge-score strong{
+  font-size:30px;
+}
+.season-goal-gauge--dashboard .season-goal-gauge-score span{
+  font-size:9px;
+  letter-spacing:.6px;
+}
+.season-goal-gauge--dashboard .season-goal-gauge-track,
+.season-goal-gauge--dashboard .season-goal-gauge-progress{
+  stroke-width:8;
+}
+@media(max-width:700px){
+  .season-goal-card-visual{
+    min-height:132px;
+  }
+  .dashboard-side-slot{
+    min-height:132px;
+  }
+}
 .season-goal-gauge--office{
   display:flex;
   flex-direction:row;

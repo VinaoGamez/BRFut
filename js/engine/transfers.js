@@ -5,6 +5,14 @@
 import { resolvePlayerId } from './player-identity.js';
 import { ensureMarketFields, estimatePlayerValue, refreshMarketFields } from './player-value.js';
 import {
+  calendarDaysBetween,
+  computeReleaseFee,
+  contractExpiresDate,
+  ensurePlayerContract,
+  isContractExpired,
+  signSemesterContract,
+} from './player-contracts.js';
+import {
   evaluateRosterPayroll,
   resolvePlayerRoundWage,
   ROSTER_HARD_MAX,
@@ -70,7 +78,7 @@ export const TRANSFER_LIMITS = {
   loanOfferShare: 0.2,
 };
 
-const DIV_BUDGET_FALLBACK = { A: 40_000_000, B: 20_000_000, C: 10_000_000, D: 4_000_000 };
+const DIV_BUDGET_FALLBACK = { A: 40_000_000, B: 20_000_000, C: 10_000_000, D: 4_000_000, REG: 2_000_000 };
 
 /**
  * Template estável inspirado na CBF/FIFA (mês 1–12).
@@ -562,6 +570,41 @@ export function createTransfersEngine(deps) {
   const careerDate = () => {
     if (typeof deps.getCareerDate !== 'function') return null;
     return toCareerDate(deps.getCareerDate());
+  };
+
+  const applyTransferContract = (player, buyerDivision) => {
+    const date = careerDate() || new Date();
+    ensureMarketFields(player, {
+      division: buyerDivision,
+      season: getCareerSeason(),
+      careerDate: date,
+    });
+    signSemesterContract(player, {
+      wagePerRound: player.wage,
+      signedDate: date,
+      division: buyerDivision,
+    });
+  };
+
+  const chargeSellerReleaseFee = (seller, sellerDivision, player) => {
+    const date = careerDate() || new Date();
+    ensurePlayerContract(player, {
+      division: sellerDivision,
+      careerDate: date,
+      season: getCareerSeason(),
+    });
+    const releaseFee = computeReleaseFee(player, sellerDivision, date);
+    if (releaseFee <= 0) return { ok: true, releaseFee: 0 };
+    if (!canAfford(seller, releaseFee)) ensureAiCash(seller);
+    if (!canAfford(seller, releaseFee)) {
+      return { ok: false, reason: 'release_fee', releaseFee };
+    }
+    spend(seller, releaseFee, {
+      reason: 'contract_release',
+      label: `Multa rescisória · ${player.name}`,
+      meta: { playerId: resolvePlayerId(player), releaseFee },
+    });
+    return { ok: true, releaseFee };
   };
 
   const runtimeGateOpen = () =>
@@ -1059,11 +1102,18 @@ export function createTransfersEngine(deps) {
     const divDelta = sellerAcceptRatioDeltaForDivision(buyerDivision, sellerDivision);
     if (divDelta > 0) ratio += divDelta;
 
-    const yearsLeft = Math.max(0, (Number(player.contractUntil) || season) - season);
-    if (yearsLeft <= 1) {
+    const contractDate = careerDate() || new Date();
+    ensurePlayerContract(player, {
+      division: sellerDivision,
+      careerDate: contractDate,
+      season,
+    });
+    const expires = contractExpiresDate(player);
+    const daysLeft = expires ? calendarDaysBetween(contractDate, expires) : 0;
+    if (isContractExpired(player, contractDate) || daysLeft <= 60) {
       ratio -= 0.06;
       reasons.push('contract_short');
-    } else if (yearsLeft >= 3) {
+    } else if (daysLeft >= 120) {
       ratio += 0.04;
       reasons.push('contract_long');
     }
@@ -1322,6 +1372,20 @@ export function createTransfersEngine(deps) {
     }
     if (!canAfford(buyer, fee)) return { ok: false, reason: 'cannot_afford', fee, payroll };
 
+    const releaseGate = chargeSellerReleaseFee(seller, seller.division, player);
+    if (!releaseGate.ok) {
+      return {
+        ok: false,
+        reason: releaseGate.reason || 'release_fee',
+        releaseFee: releaseGate.releaseFee,
+        fee,
+        payroll,
+        from: sellerName,
+        playerName: player.name,
+        clubName: sellerName,
+      };
+    }
+
     const paid = spend(buyer, fee, {
       reason: 'transfer',
       label: `Contratação · ${player.name}`,
@@ -1333,14 +1397,14 @@ export function createTransfersEngine(deps) {
     const moved = { ...player, listed: false, askingPrice: null };
     clearLoanState(moved);
     markPlayerMoved(moved);
-    refreshMarketFields(moved, { division: buyer.division, season: getCareerSeason() });
+    applyTransferContract(moved, buyer.division);
     buyer.roster.push(moved);
 
     if (sellerName !== buyerName) {
       credit(seller, fee, {
         reason: 'transfer',
         label: `Venda · ${player.name}`,
-        meta: { playerId, from: sellerName, to: buyerName, fee },
+        meta: { playerId, from: sellerName, to: buyerName, fee, releaseFee: releaseGate.releaseFee || 0 },
       });
     }
 
@@ -1349,6 +1413,7 @@ export function createTransfersEngine(deps) {
       type: 'buy',
       player: moved,
       fee,
+      releaseFee: releaseGate.releaseFee || 0,
       from: sellerName,
       to: buyerName,
       value: verdict.value,
@@ -1454,20 +1519,28 @@ export function createTransfersEngine(deps) {
       };
     }
 
+    const releaseGate = chargeSellerReleaseFee(seller, seller.division, player);
+    if (!releaseGate.ok) {
+      return {
+        ok: false,
+        reason: releaseGate.reason || 'release_fee',
+        releaseFee: releaseGate.releaseFee,
+        fee,
+        value,
+      };
+    }
+
     seller.roster.splice(index, 1);
     const moved = { ...player, listed: false, askingPrice: null };
     clearLoanState(moved);
     markPlayerMoved(moved);
-    refreshMarketFields(moved, {
-      division: buyerEntry.club.division,
-      season: getCareerSeason(),
-    });
+    applyTransferContract(moved, buyerEntry.club.division);
     buyerEntry.club.roster.push(moved);
 
     credit(seller, fee, {
       reason: 'transfer',
       label: `Venda · ${player.name}`,
-      meta: { playerId, from: sellerName, to: buyerEntry.name, fee },
+      meta: { playerId, from: sellerName, to: buyerEntry.name, fee, releaseFee: releaseGate.releaseFee || 0 },
     });
 
     const result = {
@@ -1475,6 +1548,7 @@ export function createTransfersEngine(deps) {
       type: 'sell',
       player: moved,
       fee,
+      releaseFee: releaseGate.releaseFee || 0,
       from: sellerName,
       to: buyerEntry.name,
       value,
@@ -1740,6 +1814,10 @@ export function createTransfersEngine(deps) {
       return { ok: false, reason: payroll.reason || 'payroll_pressure', payroll, fee };
     }
     if (!canAfford(buyer, fee)) return { ok: false, reason: 'cannot_afford', fee, payroll };
+    const releaseGate = chargeSellerReleaseFee(seller, seller.division, player);
+    if (!releaseGate.ok) {
+      return { ok: false, reason: releaseGate.reason || 'release_fee', releaseFee: releaseGate.releaseFee, fee, payroll };
+    }
     const paid = spend(buyer, fee, {
       reason: 'transfer',
       label: `Contratação · ${player.name}`,
@@ -1750,18 +1828,19 @@ export function createTransfersEngine(deps) {
     const moved = { ...player, listed: false, askingPrice: null, loanListed: false };
     clearLoanState(moved);
     markPlayerMoved(moved);
-    refreshMarketFields(moved, { division: buyer.division, season: getCareerSeason() });
+    applyTransferContract(moved, buyer.division);
     buyer.roster.push(moved);
     credit(seller, fee, {
       reason: 'transfer',
       label: `Venda · ${player.name}`,
-      meta: { playerId: resolvePlayerId(player), from: sellerName, to: buyerName, fee },
+      meta: { playerId: resolvePlayerId(player), from: sellerName, to: buyerName, fee, releaseFee: releaseGate.releaseFee || 0 },
     });
     const result = {
       ok: true,
       type: 'ai_buy',
       player: moved,
       fee,
+      releaseFee: releaseGate.releaseFee || 0,
       from: sellerName,
       to: buyerName,
       value: Number(player.marketValue) || estimatePlayerValue(player, seller.division),

@@ -60,6 +60,75 @@ function sideResultDelta(homeGoals, awayGoals, side) {
   return -0.35;
 }
 
+/** Bônus/penalidade coletiva — margem, domínio (posse/xG/chutes) e clean sheet. */
+export function teamMatchRatingContext(game, side) {
+  const hg = Number(game?.homeGoals) || 0;
+  const ag = Number(game?.awayGoals) || 0;
+  const won = side === 'home' ? hg > ag : ag > hg;
+  const drew = hg === ag;
+  const lost = !won && !drew;
+  const margin = Math.abs(hg - ag);
+  const goalsAgainst = side === 'home' ? ag : hg;
+  const data = game?.data || {};
+  const prefix = side === 'home' ? 'home' : 'away';
+  const oppPrefix = side === 'home' ? 'away' : 'home';
+
+  let marginBonus = 0;
+  if (won) {
+    if (margin >= 4) marginBonus = 0.35;
+    else if (margin >= 3) marginBonus = 0.28;
+    else if (margin >= 2) marginBonus = 0.15;
+  } else if (lost) {
+    if (margin >= 3) marginBonus = -0.2;
+    else if (margin >= 2) marginBonus = -0.1;
+  }
+
+  const possession = Number(data[`${prefix}Possession`]) || 0;
+  const oppPossession = Number(data[`${oppPrefix}Possession`]) || 0;
+  const shots = Number(data[`${prefix}Shots`]) || 0;
+  const oppShots = Number(data[`${oppPrefix}Shots`]) || 0;
+  const xg = Number(data[`${prefix}Xg`] ?? data[`${prefix}xg`]) || 0;
+  const oppXg = Number(data[`${oppPrefix}Xg`] ?? data[`${oppPrefix}xg`]) || 0;
+  const possEdge = possession - oppPossession;
+  const xgEdge = xg - oppXg;
+  const shotEdge = shots - oppShots;
+
+  let dominanceBonus = 0;
+  if (won || drew) {
+    if (possession >= 62 || possEdge >= 18) dominanceBonus += 0.1;
+    else if (possession >= 58 || possEdge >= 12) dominanceBonus += 0.06;
+
+    if (xgEdge >= 1.1) dominanceBonus += 0.12;
+    else if (xgEdge >= 0.65) dominanceBonus += 0.07;
+    else if (xgEdge >= 0.35) dominanceBonus += 0.03;
+
+    if (shotEdge >= 7) dominanceBonus += 0.06;
+    else if (shotEdge >= 4) dominanceBonus += 0.03;
+
+    dominanceBonus = Math.min(0.25, dominanceBonus);
+  } else if (lost) {
+    if (xgEdge <= -1.0 || possEdge <= -18) dominanceBonus = -0.12;
+    else if (xgEdge <= -0.55 || possEdge <= -12) dominanceBonus = -0.06;
+  }
+
+  return {
+    marginBonus,
+    dominanceBonus,
+    cleanSheet: goalsAgainst === 0,
+    comfortableWin: won && margin >= 2,
+    won,
+    drew,
+    lost,
+  };
+}
+
+function cleanSheetRoleBonus(role) {
+  if (role === 'GOL') return 0.25;
+  if (role === 'ZAG' || role === 'LAT') return 0.18;
+  if (role === 'VOL') return 0.1;
+  return 0;
+}
+
 function countByName(list, field = 'name') {
   const map = new Map();
   (list || []).forEach(item => {
@@ -124,7 +193,7 @@ export function computeMatchRating(sheet, ctx = {}) {
 
   const role = sheet.role || 'MEI';
   const minuteFactor = Math.min(1, minutes / 90);
-  let rating = 6.0;
+  let rating = ctx.comfortableWin ? 6.5 : 6.0;
 
   rating += (Number(ctx.resultDelta) || 0) * (0.55 + 0.45 * minuteFactor);
 
@@ -155,6 +224,11 @@ export function computeMatchRating(sheet, ctx = {}) {
   if (passes >= 40) rating += 0.3;
   else if (passes >= 25) rating += 0.15;
   else if (minutes >= 60 && passes < 10 && role !== 'GOL') rating -= 0.15;
+
+  const teamScale = 0.55 + 0.45 * minuteFactor;
+  rating += (Number(ctx.teamMarginBonus) || 0) * teamScale;
+  rating += (Number(ctx.teamDominanceBonus) || 0) * teamScale;
+  if (ctx.cleanSheet) rating += cleanSheetRoleBonus(role) * teamScale;
 
   return clampMatchRating(rating);
 }
@@ -200,6 +274,7 @@ export function buildMatchPlayerSheets(game, deps = {}) {
 
     const passMap = estimatePlayerPasses(workload, rosterByName, teamPasses);
     const resultDelta = sideResultDelta(game.homeGoals, game.awayGoals, side);
+    const teamCtx = teamMatchRatingContext(game, side);
     const gkNames = workload.filter(entry => normalizeRole(rosterByName.get(entry.name)) === 'GOL');
     const gkShare = gkNames.length ? keeperSaves / gkNames.length : 0;
 
@@ -244,6 +319,10 @@ export function buildMatchPlayerSheets(game, deps = {}) {
       };
       sheet.rating = computeMatchRating(sheet, {
         resultDelta,
+        comfortableWin: teamCtx.comfortableWin,
+        teamMarginBonus: teamCtx.marginBonus,
+        teamDominanceBonus: teamCtx.dominanceBonus,
+        cleanSheet: teamCtx.cleanSheet,
         keeperSavesShare: role === 'GOL' ? gkShare : 0,
         goalsAgainst: role === 'GOL' ? oppGoals : 0,
       });

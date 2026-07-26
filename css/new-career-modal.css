@@ -1,0 +1,232 @@
+/* Nova carreira — layout claro (painéis + tabela, inspirado em setup clássico) */
+
+.new-career-v2 {
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  text-align: left;
+}
+
+body.dark-mode .modal-card.new-career-v2 {
+  background: linear-gradient(145deg, #0c1d26, #0a171e);
+  border-color: #2d6578;
+  color: #edf8f5;
+}
+
+.new-career-v2 .new-career-head {
+  margin-bottom: 14px;
+}
+
+.new-career-v2 .new-career-head h2 {
+  margin: 0 0 4px;
+  font: 700 30px 'Barlow Condensed', sans-serif;
+  color: #eef8f6;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.new-career-v2 .new-career-lead {
+  margin: 6px 0 0;
+  color: #9eb6b8;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.new-career-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.new-career-panel {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 12px;
+  border: 1px solid #2a6578;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #0b1e28 0%, #091821 100%);
+}
+
+.new-career-panel-title {
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #244f61;
+  color: #79cce7;
+  font: 700 11px DM Sans, sans-serif;
+  letter-spacing: 0.65px;
+  text-transform: uppercase;
+}
+
+.new-career-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.new-career-uf-field label {
+  display: block;
+  margin-bottom: 5px;
+  color: #63d9ff;
+  font: 700 9px DM Sans, sans-serif;
+  letter-spacing: 0.55px;
+}
+
+.new-career-uf-field select,
+.new-career-filters input,
+.new-career-filters select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  background: #102b35;
+  color: #edf8f5;
+  border: 1px solid #315b68;
+  border-radius: 5px;
+  outline: 0;
+  font: 500 12px DM Sans, sans-serif;
+}
+
+.new-career-uf-field select:focus,
+.new-career-filters input:focus,
+.new-career-filters select:focus {
+  border-color: #63d9ff;
+  box-shadow: 0 0 0 2px #63d9ff22;
+}
+
+.new-career-shuffle {
+  padding: 9px 12px !important;
+  font: 700 9px DM Sans, sans-serif !important;
+  letter-spacing: 0.45px;
+  white-space: nowrap;
+}
+
+.new-career-filters {
+  display: grid;
+  grid-template-columns: 1fr 130px;
+  gap: 8px;
+}
+
+.host-club-table-wrap {
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #244f61;
+  border-radius: 6px;
+  background: #0a1921;
+}
+
+.host-club-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.host-club-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 7px 10px;
+  background: #123040;
+  color: #79cce7;
+  font: 700 9px DM Sans, sans-serif;
+  letter-spacing: 0.5px;
+  text-align: left;
+  border-bottom: 1px solid #244f61;
+}
+
+.host-club-table thead th:last-child {
+  width: 72px;
+  text-align: right;
+}
+
+.host-club-row {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.host-club-row td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #1a3a48;
+  color: #dce9ea;
+}
+
+.host-club-row td:last-child {
+  text-align: right;
+  color: #9eb6b8;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.host-club-row:hover td {
+  background: #112833;
+}
+
+.host-club-row.selected td {
+  background: #173b48;
+  box-shadow: inset 3px 0 0 #63d9ff;
+}
+
+.host-club-row.selected td:first-child {
+  color: #fff;
+  font-weight: 700;
+}
+
+.host-club-row.selected td:last-child {
+  color: #b6ff38;
+}
+
+.new-career-summary {
+  margin: 0;
+  min-height: 16px;
+  color: #b6ff38;
+  font: 600 11px DM Sans, sans-serif;
+  letter-spacing: 0.2px;
+}
+
+.new-career-summary.is-empty {
+  color: #9eb6b8;
+  font-weight: 500;
+}
+
+.new-career-panel-club {
+  align-content: stretch;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.new-career-crest-mount {
+  min-height: 0;
+  display: flex;
+}
+
+.new-career-fields {
+  margin: 0 !important;
+  grid-template-columns: 1fr;
+  gap: 10px !important;
+}
+
+.new-career-fields .career-field-wide {
+  grid-column: auto;
+}
+
+.new-career-v2 .career-division-preview {
+  display: none;
+}
+
+.new-career-empty {
+  margin: 0;
+  padding: 16px 10px;
+  color: #9eb6b8;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .new-career-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .new-career-filters {
+    grid-template-columns: 1fr;
+  }
+}

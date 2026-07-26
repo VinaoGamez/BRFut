@@ -4,6 +4,7 @@ import {
   softEnvelopeFromPayroll,
   softCashEnvelope,
 } from '../../engine/economy.js';
+import { wageMonthlyFromRound } from '../../engine/player-contracts.js';
 import {
   formatSellerRejectLetter,
   formatLoanLevelPlayerReply,
@@ -25,6 +26,12 @@ const formatMoney = value => {
   if (amount >= 1_000_000) return `R$ ${(amount / 1_000_000).toFixed(amount >= 10_000_000 ? 0 : 1)} mi`;
   if (amount >= 1_000) return `R$ ${(amount / 1_000).toFixed(0)} mil`;
   return `R$ ${amount}`;
+};
+
+const formatWageCell = (wagePerRound, division = 'A') => {
+  const round = Math.round(Number(wagePerRound) || 0);
+  const monthly = wageMonthlyFromRound(round, division);
+  return `${formatMoney(round)}/rod <small class="transfers-wage-month">(${formatMoney(monthly)}/mês)</small>`;
 };
 
 const sideLetter = player => {
@@ -124,6 +131,7 @@ export function createTransfersFeature(deps) {
     getTransfersEngine,
     getBalance,
     getUserClub,
+    getUserDivision,
     formatBudget,
     pushMessage,
     onDealComplete,
@@ -960,7 +968,7 @@ export function createTransfersFeature(deps) {
           const loanTag = canLoan
             ? ' <small class="transfers-loan-tag transfers-loan-tag--offer" title="Disponível para empréstimo">EMPR.</small>'
             : '';
-          const wageCell = escapeHtml(formatMoney(wage));
+          const wageCell = formatWageCell(wage, row.division || filters.division || 'A');
           return `<tr>
           <td class="col-name">${renderMarketPlayerName(playerNameCell, p.name, p, { clubName: row.clubName, suffixHtml: loanTag })}</td>
           <td class="col-club" title="${escapeHtml(row.clubName)}"><span class="club-link" data-club="${escapeHtml(row.clubName)}" role="button" tabindex="0">${escapeHtml(row.clubName)}</span></td>
@@ -1084,7 +1092,7 @@ export function createTransfersFeature(deps) {
             <button type="button" class="transfers-action secondary" data-loan-list-id="${escapeHtml(row.playerId)}" data-loan-listed="${row.loanListed ? '1' : '0'}">${row.loanListed ? 'RET. EMPR.' : 'EMPRESTAR'}</button>
             <button type="button" class="transfers-action" data-sell-id="${escapeHtml(row.playerId)}">VENDER</button>`;
           }
-          const wageCell = escapeHtml(formatMoney(wage));
+          const wageCell = formatWageCell(wage, getUserDivision?.() || 'A');
           return `<tr>
           <td class="col-name">${nameCell}</td>
           <td>${escapeHtml(p.pos)}</td>

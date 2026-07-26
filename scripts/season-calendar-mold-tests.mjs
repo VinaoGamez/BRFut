@@ -47,9 +47,10 @@ check('FUTURE_COMPETITION_MOLD inclui todas as competições pedidas', () => {
 });
 
 check('slots semanais mapeados para competições de clube futuras', () => {
-  assert(getCompetitionSlotKey('state_league') === 'weekend_b');
-  assert(getCompetitionSlotKey('libertadores') === 'midweek_alt');
-  assert(getCompetitionSlotKey('recopa_national') === 'knockout_ida');
+  assert(getCompetitionSlotKey('state_league') === 'state_league_sun');
+  assert(getCompetitionSlotKey('libertadores') === 'continental_conmebol');
+  assert(getCompetitionSlotKey('recopa_national') === 'recopa_national');
+  assert(getCompetitionSlotKey('recopa_sudamericana') === 'continental_conmebol');
   assert(getCompetitionSlotKey('fifa_friendlies') === null);
   assert(getCompetitionSlotKey('world_cup') === null);
 });
@@ -61,9 +62,11 @@ check('Copa do Mundo: ciclo quadrienal a partir de 2026', () => {
   assert(WORLD_CUP_ANCHOR_YEAR === 2026);
 });
 
-check('getSeasonBlackouts inclui Mundial em ano de copa', () => {
+check('getSeasonBlackouts inclui Mundial travado em ano de copa', () => {
   const wc = getSeasonBlackouts(2026).find(b => b.id === 'world_cup');
   assert(wc?.blocksClubs === true);
+  assert(wc?.hard === true);
+  assert(wc?.locked === true);
   assert(!getSeasonBlackouts(2027).some(b => b.id === 'world_cup'));
 });
 
@@ -81,10 +84,12 @@ check('describeCalendarMold resume futuras + flag worldCupYear', () => {
   assert(d.future.every(entry => entry.id && entry.label));
 });
 
-check('todas as futuras disabled até implementação', () => {
+check('futuras disabled exceto recopa nacional e estadual', () => {
   Object.values(FUTURE_COMPETITION_MOLD).forEach(spec => {
+    if (spec.competitionId === 'recopa_national' || spec.competitionId === 'state_league') return;
     assert(spec.enabled === false, spec.competitionId);
   });
+  assert(FUTURE_COMPETITION_MOLD.recopa_national.enabled === true);
 });
 
 check('resolveFixtureCompetitionCode mapeia liga, copa e mata-mata', () => {

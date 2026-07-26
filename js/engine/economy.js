@@ -8,6 +8,8 @@ import {
   resolveOverdraftRate,
   getBankLoan,
 } from './bank-loan.js';
+import { addCalendarMonths, CONTRACT_TERM } from './player-contracts.js';
+import { medicalDiscountPreview } from './medical-costs.js';
 import {
   STADIUM_SECTOR_MODEL,
   STADIUM_SECTOR_DEFS,
@@ -49,6 +51,7 @@ export const INITIAL_BUDGET_BY_DIVISION = {
   B: 6_200_000,
   C: 4_200_000,
   D: 2_700_000,
+  REG: 1_800_000,
 };
 
 /** Capacidade inicial e teto por divisão (alinhado ao modelo por setores). */
@@ -538,6 +541,14 @@ export function ensureStaffContract(club, {
     existing.managerId === managerKey &&
     Number(existing.amountPerRound) > 0
   ) {
+    if (!existing.signedDate || !existing.expiresDate) {
+      const today = new Date();
+      today.setHours(12, 0, 0, 0);
+      existing.signedDate = existing.signedDate || today.toISOString().slice(0, 10);
+      existing.expiresDate =
+        existing.expiresDate || addCalendarMonths(today, 6).toISOString().slice(0, 10);
+      existing.term = existing.term || CONTRACT_TERM;
+    }
     return existing;
   }
   const score = computeStaffWageScore({
@@ -548,12 +559,17 @@ export function ensureStaffContract(club, {
     titlePoints,
   });
   const amountPerRound = computeStaffBillFromScore(score, division);
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
   club.staffContract = {
     managerId: managerKey,
     amountPerRound,
     season: season ?? existing?.season ?? null,
     score: Math.round(score * 10) / 10,
     at: new Date().toISOString(),
+    signedDate: today.toISOString().slice(0, 10),
+    expiresDate: addCalendarMonths(today, 6).toISOString().slice(0, 10),
+    term: CONTRACT_TERM,
   };
   return club.staffContract;
 }
@@ -824,12 +840,38 @@ export function chargeWageBill(club, options = {}) {
 /**
  * Investimentos estruturais (Escritório) — médico / prevenção.
  */
+export function serializeUserClubInvestments(club) {
+  if (!club || typeof club !== 'object') return null;
+  return {
+    medicalInvestment: Math.max(0, Math.min(5, Number(club.medicalInvestment) || 0)),
+    preventionProgram: Math.max(0, Math.min(3, Number(club.preventionProgram) || 0)),
+  };
+}
+
+/** Restaura níveis de investimento do Escritório (persistem entre temporadas). */
+export function applySavedUserClubInvestments(club, saved) {
+  if (!club || !saved || typeof saved !== 'object') return false;
+  if (Number.isFinite(Number(saved.medicalInvestment))) {
+    club.medicalInvestment = Math.max(0, Math.min(5, Math.round(Number(saved.medicalInvestment))));
+  }
+  if (Number.isFinite(Number(saved.preventionProgram))) {
+    club.preventionProgram = Math.max(0, Math.min(3, Math.round(Number(saved.preventionProgram))));
+  }
+  return true;
+}
+
 export const CLUB_UPGRADES = {
   medical_dept: {
     id: 'medical_dept',
     label: 'Departamento médico',
     shortLabel: 'MÉDICO',
     description: 'Melhora diagnóstico, recuperação e prevenção de lesões.',
+    describeForClub(club) {
+      const level = Math.max(0, Math.min(5, Number(club?.medicalInvestment) || 0));
+      const base = 'Melhora diagnóstico, recuperação e reduz custos de tratamento.';
+      if (level >= 5) return `${base} ${medicalDiscountPreview(level)}`;
+      return `${base} ${medicalDiscountPreview(level)} Próximo nível: ${medicalDiscountPreview(level + 1)}`;
+    },
     maxLevel: 5,
     baseCost: 1_500_000,
     costPerLevel: 400_000,
@@ -843,6 +885,14 @@ export const CLUB_UPGRADES = {
     label: 'Programa de prevenção',
     shortLabel: 'PREVENÇÃO',
     description: 'Reduz o risco de lesão ligado à carga de jogos.',
+    describeForClub(club) {
+      const level = Math.max(0, Math.min(3, Number(club?.preventionProgram) || 0));
+      const ease = Math.round((1 - Math.max(0.64, 1 - level * 0.18)) * 100);
+      const base = 'Reduz o risco de lesão ligado à carga de jogos e desgaste.';
+      if (level >= 3) return `${base} Efeito máximo: carga de risco −${ease}%.`;
+      const nextEase = Math.round((1 - Math.max(0.64, 1 - (level + 1) * 0.18)) * 100);
+      return `${base} Nível atual −${ease}% · próximo −${nextEase}%.`;
+    },
     maxLevel: 3,
     baseCost: 1_200_000,
     costPerLevel: 350_000,
@@ -977,10 +1027,10 @@ export function formatBudget(value) {
     const millions = amount / 1_000_000;
     text =
       millions >= 10
-        ? `${Math.round(millions)} mi`
-        : `${millions.toFixed(1).replace('.', ',')} mi`;
+        ? `${Math.round(millions)}\u00A0mi`
+        : `${millions.toFixed(1).replace('.', ',')}\u00A0mi`;
   } else if (amount >= 1_000) {
-    text = `${Math.round(amount / 1_000)} mil`;
+    text = `${Math.round(amount / 1_000)}\u00A0mil`;
   } else {
     text = amount.toLocaleString('pt-BR');
   }
@@ -1421,7 +1471,10 @@ function listCatalog(catalog, club) {
       id: upgrade.id,
       label: upgrade.label,
       shortLabel: upgrade.shortLabel,
-      description: upgrade.description,
+      description:
+        typeof upgrade.describeForClub === 'function'
+          ? upgrade.describeForClub(club)
+          : upgrade.description,
       level,
       maxLevel: absoluteMax,
       effectiveMax,

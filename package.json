@@ -2,7 +2,7 @@
   "name": "matchday-football-alpha",
   "version": "0.2.0-alpha",
   "private": true,
-  "description": "Matchday Football — simulador de gestão (Alpha 02 modular)",
+  "description": "BR Football — simulador de gestão (Alpha modular)",
   "type": "module",
   "scripts": {
     "dev": "vite",

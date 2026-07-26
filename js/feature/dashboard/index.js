@@ -2,14 +2,23 @@ import { MODULE_VERSIONS, SERIE_D_GROUP_ROUNDS } from '../../core/constants.js';
 import { formatKnockoutFixtureScore, isKnockoutShootoutCompetition as isKnockoutGame } from '../../engine/knockout-shootout.js';
 import { applyCompetitionBadge, competitionBadgeMarkup, resolveCompetitionBadge } from '../../ui/competition-badge.js';
 import { setHumanBadgeOnCrest } from '../../ui/human-badge.js';
-import { applyTeamCrestToElement } from '../../ui/team-crest.js';
+import { applyTeamCrestToElement, teamCrestHtml } from '../../ui/team-crest.js';
 import { resolveNationalTeam } from '../../engine/national-teams.js';
+import { formatMatchRating } from '../../engine/player-match-stats.js';
+import { isStateLeagueGame } from '../../engine/state-league-format.js';
 import {
   clubStandingContext,
+  formatClubPositionLabel,
   isWorldCupFixture,
   matchCompetitionPhaseLabel,
   matchCompetitionRoundEmLabel,
 } from '../shared/match-presentation.js';
+import {
+  resolveStadiumVisualTier,
+  stadiumImageUrl,
+  stadiumPreviewKeyForClub,
+  tierMeta,
+} from '../economy/stadium-visual.js';
 
 const DASHBOARD_TABLE_ROWS = 5;
 const CLUB_UPCOMING_ROWS = 5;
@@ -23,6 +32,7 @@ export function createDashboardFeature(deps) {
     $$,
     onClick,
     getUserClub,
+    getDashboardStatsClub,
     getUserNationalTeamName,
     getUserNationalTeamCode,
     isWorldCupDashboardActive,
@@ -54,6 +64,7 @@ export function createDashboardFeature(deps) {
     isKnockoutShootoutCompetition,
     leadersFor,
     clubSeasonLeaders,
+    clubSeasonRatingSummary,
     getSeasonRoundHistory,
     getCopaFixtures,
     getNationalCompetitions,
@@ -299,7 +310,7 @@ export function createDashboardFeature(deps) {
     const assists = Number(stats.leaders?.assists) || 0;
     board.innerHTML = `
       <div class="season-review-club">
-        <div class="season-review-crest-wrap"><i aria-hidden="true">${clubCrestInitials(userClub)}</i></div>
+        <div class="season-review-crest-wrap">${teamCrestHtml(userClub)}</div>
         <b class="club-link" data-club="${userClub}" role="button" tabindex="0">${userClub}</b>
         <small>${careerSeason ? `Temporada ${careerSeason}` : 'Campanha encerrada'}${hasGames ? ` · ${stats.gameCount} jogos` : ''}</small>
       </div>
@@ -440,7 +451,7 @@ export function createDashboardFeature(deps) {
       .slice(0, DASHBOARD_TABLE_ROWS)
       .map(
         (row, index) =>
-          `<div class="standing-row ${row.club === userClub ? 'highlight' : ''}" data-club="${row.club}" role="button" tabindex="0"><span>${userDivision === 'D' ? index + 1 : clubs[row.club].position}</span><span class="club-link">${row.club}</span><span>${row.played}</span><span>${row.goalDiff >= 0 ? '+' : ''}${row.goalDiff}</span><span>${row.points}</span></div>`
+          `<div class="standing-row ${row.club === userClub ? 'highlight' : ''}" data-club="${row.club}" role="button" tabindex="0"><span>${userDivision === 'D' ? index + 1 : clubs[row.club].position}</span><span class="club-link standing-club-cell">${teamCrestHtml(row.club, { className: 'standing-row-crest' })}<span>${row.club}</span></span><span>${row.played}</span><span>${row.goalDiff >= 0 ? '+' : ''}${row.goalDiff}</span><span>${row.points}</span></div>`
       )
       .join('');
   };
@@ -456,7 +467,7 @@ export function createDashboardFeature(deps) {
     $('#upcomingMatches').innerHTML = dashboardUpcomingGames()
       .map(game => {
         const isUser = isUserFixture(game);
-        return `<div class="dashboard-fixture-row ${isUser ? 'user-game' : ''}"><span class="fixture-home">${bindFixtureLink(game.home)}${isUser ? '<small class="user-game-tag">SEU JOGO</small>' : ''}</span><span class="fixture-vs">×</span><span class="fixture-away">${bindFixtureLink(game.away)}</span></div>`;
+        return `<div class="dashboard-fixture-row ${isUser ? 'user-game' : ''}"><span class="fixture-home">${teamCrestHtml(game.home, { className: 'dashboard-fixture-crest' })}${bindFixtureLink(game.home)}${isUser ? '<small class="user-game-tag">SEU JOGO</small>' : ''}</span><span class="fixture-vs">×</span><span class="fixture-away">${teamCrestHtml(game.away, { className: 'dashboard-fixture-crest' })}${bindFixtureLink(game.away)}</span></div>`;
       })
       .join('');
   };
@@ -505,11 +516,13 @@ export function createDashboardFeature(deps) {
   const syncNextMatchCrest = (nameEl, clubName, isHuman, { away = false, initials = null } = {}) => {
     const crest = resolveNextMatchCrest(nameEl);
     if (!crest) return;
-    if (resolveNationalTeam(clubName)) {
+    if (clubName && !initials) {
       applyTeamCrestToElement(crest, clubName, { away });
       setHumanBadgeOnCrest(crest, !!isHuman);
       return;
     }
+    crest.querySelector('img')?.remove();
+    crest.classList.remove('crest--flag', 'crest--club');
     const label =
       initials ||
       String(clubName || '')
@@ -521,13 +534,22 @@ export function createDashboardFeature(deps) {
         .toUpperCase() ||
       '—';
     crest.textContent = label;
-    crest.classList.remove('crest--flag');
     crest.classList.toggle('away', !!away);
     setHumanBadgeOnCrest(crest, !!isHuman);
   };
 
-  const nextMatchPositionLabel = teamName => {
-    if (getClubs()?.[teamName]) return `${displayedClubPosition(teamName)}º colocado`;
+  const nextMatchPositionLabel = (teamName, game = null) => {
+    if (getClubs()?.[teamName]) {
+      const pos = displayedClubPosition(teamName, game);
+      return formatClubPositionLabel(pos, {
+        game,
+        teamName,
+        clubs: getClubs(),
+        serieDGroups: getSerieDGroups(),
+        userDivision: getUserDivision(),
+        serieDGroupRounds: SERIE_D_GROUP_ROUNDS,
+      });
+    }
     const nt = resolveNationalTeam(teamName);
     if (nt) return `FIFA ${nt.fifaRank}º`;
     return '—';
@@ -598,7 +620,8 @@ export function createDashboardFeature(deps) {
       setNextMatchCompetition(null, userDivision, { kindOverride: 'idle' });
       bindClubLink($('#nextMatchHome'), userClub);
       bindClubLink($('#nextMatchAway'), null, { label: 'Calendário nacional' });
-      $('#nextMatchHomePosition').textContent = `${displayedClubPosition(userClub)}º na série`;
+      const idlePos = displayedClubPosition(userClub);
+      $('#nextMatchHomePosition').textContent = idlePos === '—' ? '— na série' : `${idlePos}º na série`;
       $('#nextMatchAwayPosition').textContent = 'Aguardando fechamento';
       setNextMatchPhase(matchCompetitionPhaseLabel(null, userDivision, serieDGroups, presentationOpts()));
       setNextMatchTeamContext(
@@ -681,8 +704,8 @@ export function createDashboardFeature(deps) {
       );
       bindClubLink($('#nextMatchHome'), game.home);
       bindClubLink($('#nextMatchAway'), game.away);
-      $('#nextMatchHomePosition').textContent = nextMatchPositionLabel(game.home);
-      $('#nextMatchAwayPosition').textContent = nextMatchPositionLabel(game.away);
+      $('#nextMatchHomePosition').textContent = nextMatchPositionLabel(game.home, game);
+      $('#nextMatchAwayPosition').textContent = nextMatchPositionLabel(game.away, game);
       setNextMatchPhase(matchCompetitionPhaseLabel(game, userDivision, serieDGroups, presentationOpts()));
       setNextMatchTeamContext(
         clubStandingContext(game.home, clubs, serieDGroups, game, userDivision, getCurrentRound() || 1, SERIE_D_GROUP_ROUNDS),
@@ -731,6 +754,7 @@ export function createDashboardFeature(deps) {
             const details = fixtureDetails(game);
             const isCup = game.competition === 'COPA DO BRASIL';
             const isKo = isKnockoutShootoutCompetition(game);
+            const isState = isStateLeagueGame(game);
             const badge = resolveCompetitionBadge(game, { userDivision });
             const badgeHtml = competitionBadgeMarkup({
               id: null,
@@ -739,7 +763,7 @@ export function createDashboardFeature(deps) {
               kind: badge.kind,
               extraClass: 'club-upcoming-badge',
             });
-            return `<div class="club-upcoming-row ${isCup || isKo ? 'cup-row' : ''}"><span class="club-upcoming-fixture"><span class="club-upcoming-matchup"><b class="club-link" data-club="${game.home}" role="button" tabindex="0">${game.home}</b> <i>×</i> <b class="club-link" data-club="${game.away}" role="button" tabindex="0">${game.away}</b></span>${badgeHtml}</span><span>${details.display} · ${details.time}</span><span class="${atHome ? 'home' : 'away'}">${atHome ? 'CASA' : 'FORA'}</span></div>`;
+            return `<div class="club-upcoming-row ${isCup || isKo || isState ? 'cup-row' : ''}"><span class="club-upcoming-fixture"><span class="club-upcoming-matchup"><b class="club-link" data-club="${game.home}" role="button" tabindex="0">${game.home}</b> <i>×</i> <b class="club-link" data-club="${game.away}" role="button" tabindex="0">${game.away}</b></span>${badgeHtml}</span><span>${details.display} · ${details.time}</span><span class="${atHome ? 'home' : 'away'}">${atHome ? 'CASA' : 'FORA'}</span></div>`;
           })
           .join('')
       : `<div class="club-upcoming-row idle-row"><span class="club-upcoming-fixture"><b>${idle ? 'Nenhum jogo restante do clube' : fullyComplete ? 'Temporada encerrada' : 'Agenda em atualização'}</b></span><span>${idle ? `Nacional na rodada ${currentRound}` : '—'}</span><span class="away">—</span></div>`;
@@ -978,6 +1002,65 @@ export function createDashboardFeature(deps) {
     });
   };
 
+  const renderDashboardStadiumPreview = async () => {
+    const img = $('#dashboardStadiumPreviewImg');
+    if (!img) return;
+
+    const club = getUserClub?.();
+    if (!club) return;
+
+    const division = getUserDivision?.() || club.division || 'A';
+    const previewKey = stadiumPreviewKeyForClub(club, division);
+    if (!previewKey) return;
+    if (img.dataset.previewKey === previewKey && img.complete && img.naturalWidth > 0) return;
+
+    const tier = resolveStadiumVisualTier(club, division);
+    const url = await stadiumImageUrl(division, tier);
+    if (!url) return;
+
+    img.dataset.previewKey = previewKey;
+    img.alt = tierMeta(tier).label;
+    img.src = url;
+  };
+
+  const renderTeamStatsCard = () => {
+    const statsClub =
+      typeof getDashboardStatsClub === 'function'
+        ? getDashboardStatsClub()
+        : getUserClub();
+    const scorerEl = $('#dashboardTeamScorer');
+    if (!scorerEl) return;
+
+    const leaders =
+      typeof clubSeasonLeaders === 'function'
+        ? clubSeasonLeaders(statsClub)
+        : { scorer: { name: '—' }, goals: 0, assistant: { name: '—' }, assists: 0 };
+    const teamRating =
+      typeof clubSeasonRatingSummary === 'function'
+        ? clubSeasonRatingSummary(statsClub)
+        : { average: null, matches: 0 };
+
+    scorerEl.textContent = leaders.scorer?.name || '—';
+    const scorerMeta = $('#dashboardTeamScorerMeta');
+    if (scorerMeta) scorerMeta.textContent = `${leaders.goals || 0} gol${leaders.goals === 1 ? '' : 's'}`;
+
+    const assistantEl = $('#dashboardTeamAssistant');
+    if (assistantEl) assistantEl.textContent = leaders.assistant?.name || '—';
+    const assistantMeta = $('#dashboardTeamAssistantMeta');
+    if (assistantMeta) {
+      assistantMeta.textContent = `${leaders.assists || 0} assist.`;
+    }
+
+    const overallEl = $('#dashboardTeamOverall');
+    if (overallEl) overallEl.textContent = formatMatchRating(teamRating.average);
+    const overallMeta = $('#dashboardTeamOverallMeta');
+    if (overallMeta) {
+      const matches = Number(teamRating.matches) || 0;
+      overallMeta.textContent =
+        matches === 1 ? '1 partida' : matches > 1 ? `${matches} partidas` : 'nota média';
+    }
+  };
+
   const init = () => {
     bindHandlers();
     renderDashboardMiniTable();
@@ -985,6 +1068,8 @@ export function createDashboardFeature(deps) {
     renderLeaders();
     renderUserMatchPresentation();
     renderRecentResults();
+    renderTeamStatsCard();
+    renderDashboardStadiumPreview();
   };
 
   return {
@@ -996,5 +1081,7 @@ export function createDashboardFeature(deps) {
     renderUserMatchPresentation,
     renderLeaders,
     renderRecentResults,
+    renderTeamStatsCard,
+    renderDashboardStadiumPreview,
   };
 }

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>Matchday · Lab de Times</title>
+  <link rel="icon" type="image/png" href="./brand/mark-favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/club-crest.css">
+  <link rel="stylesheet" href="css/team-lab.css">
+</head>
+<body>
+  <div class="tl-shell">
+    <header class="tl-header">
+      <div>
+        <p class="tl-kicker">LAB ISOLADO · SÓ LOCAL</p>
+        <h1>Lab de Times</h1>
+        <p class="tl-lead">Crie clubes com nome, escudo, estado e divisão. Eles entram na pirâmide e na origem estadual em <strong>novas carreiras</strong> (carreira em andamento mantém o mundo já gerado).</p>
+      </div>
+      <div class="tl-actions">
+        <button id="tlNewBtn" class="tl-btn tl-btn--primary" type="button">+ Novo clube</button>
+        <button id="tlExportBtn" class="tl-btn" type="button">Exportar JSON</button>
+        <button id="tlBrasfootBtn" class="tl-btn tl-btn--accent" type="button">Importar Brasfoot</button>
+        <label class="tl-btn tl-btn--file">
+          Importar
+          <input id="tlImportInput" type="file" accept="application/json,.json" hidden>
+        </label>
+        <a class="tl-btn" href="home.html">← Hub</a>
+      </div>
+    </header>
+
+    <div class="tl-toolbar">
+      <label class="tl-field tl-field--inline">
+        <span>País</span>
+        <select id="tlFilterCountry">
+          <option value="">Todos</option>
+        </select>
+      </label>
+      <label class="tl-field tl-field--inline">
+        <span>UF</span>
+        <select id="tlFilterUf">
+          <option value="">Todos</option>
+        </select>
+      </label>
+      <label class="tl-field tl-field--inline">
+        <span>Divisão</span>
+        <select id="tlFilterDivision">
+          <option value="">Todas</option>
+          <option value="A">Série A</option>
+          <option value="B">Série B</option>
+          <option value="C">Série C</option>
+          <option value="D">Série D</option>
+          <option value="REG">Base regional</option>
+        </select>
+      </label>
+      <label class="tl-field tl-field--inline tl-field--grow">
+        <span>Busca</span>
+        <input id="tlSearch" type="search" placeholder="Nome do clube…" autocomplete="off">
+      </label>
+      <p id="tlCount" class="tl-count"></p>
+    </div>
+
+    <div class="tl-grid">
+      <aside class="tl-list-panel">
+        <div class="tl-list-actions">
+          <button id="tlSelectAllBtn" class="tl-btn tl-btn--sm" type="button">Selecionar todos</button>
+          <button id="tlSelectVisibleBtn" class="tl-btn tl-btn--sm" type="button">Marcar visíveis</button>
+          <button id="tlClearSelectionBtn" class="tl-btn tl-btn--sm" type="button">Limpar</button>
+          <button id="tlDedupeBtn" class="tl-btn tl-btn--sm" type="button">Remover duplicados</button>
+          <button id="tlRandomizeCrestsBtn" class="tl-btn tl-btn--sm" type="button">Randomizar escudos</button>
+          <button id="tlDeleteSelectedBtn" class="tl-btn tl-btn--sm tl-btn--danger" type="button" hidden>
+            Excluir selecionados
+          </button>
+        </div>
+        <nav id="tlPager" class="tl-pager" hidden aria-label="Paginação da lista">
+          <button id="tlPagePrev" class="tl-btn tl-btn--sm" type="button">← Anterior</button>
+          <span id="tlPageInfo" class="tl-page-info"></span>
+          <button id="tlPageNext" class="tl-btn tl-btn--sm" type="button">Próxima →</button>
+        </nav>
+        <ul id="tlClubList" class="tl-club-list"></ul>
+        <p id="tlEmpty" class="tl-empty" hidden>
+          Nenhum clube customizado.
+          Clique em <strong>Importar Brasfoot</strong> para carregar times (sem escudos PNG),
+          ou em <em>Novo clube</em> para criar manualmente com escudo gerado ou upload.
+        </p>
+      </aside>
+
+      <section class="tl-editor">
+        <form id="tlForm" class="tl-form">
+          <div class="tl-form-head">
+            <h2 id="tlFormTitle">Novo clube</h2>
+            <p id="tlStatus" class="tl-status" role="status"></p>
+          </div>
+
+          <div class="tl-form-grid">
+            <label class="tl-field">
+              <span>Nome do clube</span>
+              <input id="tlName" type="text" maxlength="48" required placeholder="Ex.: Rio Branco FC">
+            </label>
+
+            <label class="tl-field">
+              <span>País</span>
+              <select id="tlCountry" required></select>
+            </label>
+
+            <label class="tl-field" id="tlUfWrap">
+              <span>Estado (UF)</span>
+              <select id="tlUf" required></select>
+            </label>
+
+            <label class="tl-field">
+              <span>Divisão</span>
+              <select id="tlDivision" required>
+                <option value="A">Série A</option>
+                <option value="B">Série B</option>
+                <option value="C" selected>Série C</option>
+                <option value="D">Série D</option>
+                <option value="REG">Base regional</option>
+              </select>
+            </label>
+          </div>
+
+          <fieldset class="tl-crest-fieldset">
+            <legend>Escudo</legend>
+            <div class="tl-crest-mode" role="radiogroup" aria-label="Tipo de escudo">
+              <label class="tl-crest-mode-opt">
+                <input type="radio" name="tlCrestMode" id="tlCrestModeGenerate" value="generate" checked>
+                <span>Gerar escudo</span>
+              </label>
+              <label class="tl-crest-mode-opt">
+                <input type="radio" name="tlCrestMode" id="tlCrestModeUpload" value="upload">
+                <span>Upload de imagem</span>
+              </label>
+            </div>
+            <div class="tl-crest-grid">
+              <div class="tl-crest-preview-wrap">
+                <div id="tlCrestPreview" class="tl-crest-preview crest crest--club crest--team-lab"></div>
+                <p class="tl-crest-hint">Preview ao vivo</p>
+              </div>
+
+              <div class="tl-crest-controls">
+                <div id="tlCrestGeneratePanel" class="tl-crest-panel">
+                  <label class="tl-field">
+                    <span>Modelo</span>
+                    <select id="tlShape">
+                      <option value="classic">Clássico</option>
+                      <option value="round">Arredondado</option>
+                      <option value="modern">Moderno</option>
+                      <option value="banner">Bandeira</option>
+                      <option value="circle">Circular</option>
+                      <option value="hex">Hexagonal</option>
+                    </select>
+                  </label>
+
+                  <label class="tl-field">
+                    <span>Padrão de cores</span>
+                    <select id="tlPattern">
+                      <option value="vertical">Vertical (meio a meio)</option>
+                      <option value="horizontal">Horizontal</option>
+                      <option value="diagonal">Diagonal</option>
+                      <option value="stripes-h">Listras horizontais</option>
+                      <option value="stripes-v">Listras verticais</option>
+                      <option value="tricolor-v">Tricolor vertical</option>
+                      <option value="chevron">Chevron</option>
+                      <option value="cross">Cruz</option>
+                      <option value="quarters">Quadrantes</option>
+                      <option value="ring">Anel</option>
+                      <option value="half-arch">Meia lua</option>
+                      <option value="solid">Sólido</option>
+                    </select>
+                  </label>
+
+                  <label class="tl-field tl-field--wide">
+                    <span>Texto no escudo</span>
+                    <input id="tlCrestLabel" type="text" maxlength="16" placeholder="Ex.: CFC ou nome curto">
+                  </label>
+
+                  <label class="tl-field">
+                    <span>Tamanho do texto</span>
+                    <div class="tl-range-field">
+                      <input id="tlLabelSize" type="range" min="0" max="28" step="1" value="0">
+                      <output id="tlLabelSizeOut" for="tlLabelSize">Auto</output>
+                    </div>
+                  </label>
+
+                  <label class="tl-field">
+                    <span>Cor do texto</span>
+                    <input id="tlLabelColor" type="color" value="#ffffff">
+                  </label>
+
+                  <label class="tl-field tl-field--check">
+                    <input id="tlLabelColorAuto" type="checkbox" checked>
+                    <span>Cor automática</span>
+                  </label>
+
+                  <label class="tl-field">
+                    <span>Cor primária</span>
+                    <input id="tlPrimary" type="color" value="#1a3fa8">
+                  </label>
+
+                  <label class="tl-field">
+                    <span>Cor secundária</span>
+                    <input id="tlSecondary" type="color" value="#ffffff">
+                  </label>
+
+                  <label class="tl-field">
+                    <span>Cor de destaque</span>
+                    <input id="tlAccent" type="color" value="#ffffff">
+                  </label>
+                </div>
+
+                <div id="tlCrestUploadPanel" class="tl-crest-panel" hidden>
+                  <label class="tl-btn tl-btn--file tl-crest-upload-btn">
+                    Escolher PNG ou JPG
+                    <input id="tlCrestUpload" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+                  </label>
+                  <button id="tlCrestClearUpload" class="tl-btn tl-btn--sm" type="button" hidden>
+                    Remover imagem
+                  </button>
+                  <p class="tl-crest-upload-hint">PNG/JPG/WebP até 512 KB. Fica salvo só neste navegador.</p>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="tl-form-actions">
+            <button id="tlSaveBtn" class="tl-btn tl-btn--primary" type="submit">Salvar clube</button>
+            <button id="tlDeleteBtn" class="tl-btn tl-btn--danger" type="button" hidden>Excluir</button>
+            <button id="tlResetBtn" class="tl-btn" type="button">Limpar formulário</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="./js/lab/team-lab.js"></script>
+</body>
+</html>

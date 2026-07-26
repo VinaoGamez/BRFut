@@ -34,20 +34,27 @@ export const ENGINE_TUNING = {
   penaltyChanceOnGoodAttackMin: 0.0007,
   penaltyChanceOnGoodAttackMax: 0.012,
   /**
-   * Calibração v5a — freio a partir de +4 OVR; piso baixo em gaps extremos.
+   * Freio em favoritos: só a partir de +6 OVR; piso menos agressivo que v5a.
    * Placar: amortece time que já lidera.
    */
-  blowoutGapStart: 4,
-  blowoutDampPerPoint: 0.13,
-  blowoutDampMin: 0.26,
+  blowoutGapStart: 6,
+  blowoutDampPerPoint: 0.10,
+  blowoutDampMin: 0.35,
   scoreGapStart: 1,
   scoreDampPerGoal: 0.235,
   scoreDampMin: 0.25,
+  /** Cerco estatístico: favorito com muitos chutes e adversário sem resposta. */
+  dominanceMinOverallGap: 4,
+  dominanceShotGap: 5,
+  dominanceRivalMaxShots: 1,
+  dominanceMaxLead: 1,
+  dominanceCreationBoost: 0.06,
+  dominanceConversionBoost: 0.1,
   xgOpenBase: 0.133,
   xgOpenDivisor: 198,
   xgOpenCeil: 0.275,
   xgOpenFloor: 0.07,
-  xgOverallGapDivisor: 720,
+  xgOverallGapDivisor: 500,
   liveShotAttackBoost: 8,
   liveShotCreationBoost: 8,
   liveCornerAttackBoost: 10,
@@ -58,17 +65,17 @@ export const ENGINE_TUNING = {
 
 /**
  * Disputa de pênaltis (mata-mata) — calibrada à parte do GPM e do pênalti in-game.
- * Alvo: ~76–78% de conversão por cobrança (inclui bolas fora).
+ * Alvo: ~76–78% de conversão por cobrança (inclui bolas fora), ~80% quando no gol.
  */
 export const SHOOTOUT_TUNING = {
-  wideBase: 0.05,
-  wideSkillDivisor: 420,
-  wideMin: 0.03,
-  wideMax: 0.08,
-  goalBase: 0.79,
-  skillGapDivisor: 110,
-  skillBiasDivisor: 320,
-  goalMin: 0.64,
+  wideBase: 0.035,
+  wideSkillDivisor: 480,
+  wideMin: 0.02,
+  wideMax: 0.055,
+  goalBase: 0.84,
+  skillGapDivisor: 130,
+  skillBiasDivisor: 360,
+  goalMin: 0.72,
   goalMax: 0.96,
   /** Máximo de cobranças por time antes de abortar simulação automática (segurança). */
   maxKicksPerClub: 24,
@@ -100,14 +107,39 @@ export const engineProgressiveFoulRisk = (otherSide, attacker, defender, tactica
     ENGINE_TUNING.progressiveFoulMax,
   );
 
-export const engineBlowoutDamp = gap =>
-  gap > ENGINE_TUNING.blowoutGapStart
-    ? clamp(
-        1 - (gap - ENGINE_TUNING.blowoutGapStart) * ENGINE_TUNING.blowoutDampPerPoint,
-        ENGINE_TUNING.blowoutDampMin,
-        1,
-      )
-    : 1;
+/** Freia conversão do favorito só quando já está na frente (evita 0–0 “preso”). */
+export const engineBlowoutDamp = (gap, lead = 0) => {
+  if (!(gap > ENGINE_TUNING.blowoutGapStart) || !(lead > 0)) return 1;
+  return clamp(
+    1 - (gap - ENGINE_TUNING.blowoutGapStart) * ENGINE_TUNING.blowoutDampPerPoint,
+    ENGINE_TUNING.blowoutDampMin,
+    1,
+  );
+};
+
+/**
+ * Bônus modesto quando um favorito domina estatisticamente sem abrir o placar.
+ * @returns {{ creationBoost: number, conversionBoost: number }}
+ */
+export const engineDominanceModifiers = (ctx = {}) => {
+  const gap = Number(ctx.gap) || 0;
+  const lead = Number(ctx.lead) || 0;
+  const ownShots = Math.max(0, Number(ctx.ownShots) || 0);
+  const rivalShots = Math.max(0, Number(ctx.rivalShots) || 0);
+  const minute = Math.max(0, Number(ctx.minute) || 0);
+  const shotGap = ownShots - rivalShots;
+  const siege =
+    gap >= (ENGINE_TUNING.dominanceMinOverallGap ?? 4) &&
+    shotGap >= (ENGINE_TUNING.dominanceShotGap ?? 5) &&
+    rivalShots <= (ENGINE_TUNING.dominanceRivalMaxShots ?? 1) &&
+    lead <= (ENGINE_TUNING.dominanceMaxLead ?? 1);
+  if (!siege) return { creationBoost: 1, conversionBoost: 1 };
+  const intensity = clamp((shotGap - 4) / 10 + Math.max(0, gap - 4) / 20 + (minute >= 60 ? 0.05 : 0), 0, 1);
+  return {
+    creationBoost: 1 + intensity * (ENGINE_TUNING.dominanceCreationBoost ?? 0.06),
+    conversionBoost: 1 + intensity * (ENGINE_TUNING.dominanceConversionBoost ?? 0.1),
+  };
+};
 
 /** Amortece finalizações do time que já lidera (vantagem > scoreGapStart). */
 export const engineScoreDamp = lead => {

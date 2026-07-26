@@ -2,10 +2,10 @@
  * Adapta jogador do elenco/jogo para o renderizador de cards.
  */
 
-import { cardDisplayPos, cardArtForPlayer, resolveCardRoleKey } from '../../engine/player-card-art.js';
+import { cardDisplayPos, resolveCardRoleKey } from '../../engine/player-card-variant-id.js';
 import { playerKey } from '../../engine/player-match-stats.js';
 
-export function rosterPlayerToCardPlayer(player, { playerHistory, careerSeason, clubName, clubDivision } = {}) {
+export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSeason, clubName, clubDivision } = {}) {
   if (!player) return null;
 
   const key = playerKey(player);
@@ -29,6 +29,7 @@ export function rosterPlayerToCardPlayer(player, { playerHistory, careerSeason, 
     },
   };
 
-  cardPlayer._cardArt = cardArtForPlayer(cardPlayer);
+  const { cardArtForPlayer } = await import('../../engine/player-card-art.js');
+  cardPlayer._cardArt = await cardArtForPlayer(cardPlayer);
   return cardPlayer;
 }

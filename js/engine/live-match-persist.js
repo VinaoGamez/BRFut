@@ -23,6 +23,19 @@ export function loadLiveMatchSave() {
 
 export function saveLiveMatchSave(snapshot) {
   if (!snapshot) return false;
+  try {
+    const raw = JSON.stringify(snapshot);
+    if (raw.length > 180_000) {
+      return writeJson(SAVE_KEYS.liveMatch, {
+        ...snapshot,
+        timelineHtml: '',
+        liveVolumeIncidents: [],
+        liveVolumeSamples: (snapshot.liveVolumeSamples || []).slice(-24),
+      });
+    }
+  } catch {
+    /* stringify probe failed — tenta gravar mesmo assim */
+  }
   return writeJson(SAVE_KEYS.liveMatch, snapshot);
 }
 
@@ -110,6 +123,7 @@ export function buildLiveMatchSnapshot(state) {
     away: Number(state.away) || 0,
     pauses: Number(state.pauses) || 0,
     halftimeShown: !!state.halftimeShown,
+    secondHalfStarted: !!state.secondHalfStarted,
     matchStarted: true,
     matchFinished: !!state.matchFinished,
     preMatchPreparation: !!state.preMatchPreparation,
@@ -130,7 +144,7 @@ export function buildLiveMatchSnapshot(state) {
     liveOpeningLineup: clonePlain(state.liveOpeningLineup),
     liveMinutesPlayed: serializeSideMaps(state.liveMinutesPlayed),
     matchDiscipline: serializeSideMaps(state.matchDiscipline),
-    liveVolumeSamples: clonePlain(state.liveVolumeSamples) || [],
+    liveVolumeSamples: (clonePlain(state.liveVolumeSamples) || []).slice(-MEMORY_LIMITS.liveVolumeSamples),
     liveVolumePrev: clonePlain(state.liveVolumePrev),
     liveVolumePulse: clonePlain(state.liveVolumePulse),
     liveVolumeIncidents: clonePlain(state.liveVolumeIncidents) || [],
@@ -156,7 +170,9 @@ export function buildLiveMatchSnapshot(state) {
     awayFormation: state.awayFormation || null,
     awayLineupOrder: Array.isArray(state.awayLineupOrder) ? [...state.awayLineupOrder] : [],
     liveClockSeconds: Number(state.liveClockSeconds) || 0,
-    timelineHtml: typeof state.timelineHtml === 'string' ? state.timelineHtml : '',
+    timelineHtml: typeof state.timelineHtml === 'string'
+      ? state.timelineHtml.slice(-8000)
+      : '',
     matchStatusText: state.matchStatusText || '',
     ui: {
       pauseOpen: !!state.ui?.pauseOpen,
@@ -187,7 +203,9 @@ export function hydrateLiveMatchSnapshot(snapshot) {
     liveInjuries: snapshot.liveInjuries || { home: [], away: [] },
     liveDeferredInjuries: snapshot.liveDeferredInjuries || { home: [], away: [] },
     liveOpeningLineup: snapshot.liveOpeningLineup || { home: [], away: [] },
-    liveVolumeSamples: Array.isArray(snapshot.liveVolumeSamples) ? snapshot.liveVolumeSamples : [],
+    liveVolumeSamples: Array.isArray(snapshot.liveVolumeSamples)
+      ? snapshot.liveVolumeSamples.slice(-MEMORY_LIMITS.liveVolumeSamples)
+      : [],
     liveVolumeIncidents: Array.isArray(snapshot.liveVolumeIncidents) ? snapshot.liveVolumeIncidents : [],
     postMatchMedicalQueue: Array.isArray(snapshot.postMatchMedicalQueue) ? snapshot.postMatchMedicalQueue : [],
   };

@@ -8,7 +8,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.05',
     date: '2026-07-23',
     publishedAt: '2026-07-23T19:20:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Copa do Mundo',
@@ -24,7 +24,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.00',
     date: '2026-07-23',
     publishedAt: '2026-07-23T15:10:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Disputa de pênaltis',
@@ -59,7 +59,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.95',
     date: '2026-07-23',
     publishedAt: '2026-07-23T13:12:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Calendário',
@@ -83,7 +83,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.90',
     date: '2026-07-23',
     publishedAt: '2026-07-23T03:15:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Cartas de jogador',
@@ -144,7 +144,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.85',
     date: '2026-07-22',
     publishedAt: '2026-07-22T14:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Calendário · temporada única',
@@ -160,7 +160,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.80',
     date: '2026-07-22',
     publishedAt: '2026-07-22T13:40:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Finanças · contratações',
@@ -188,7 +188,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.75',
     date: '2026-07-22',
     publishedAt: '2026-07-22T12:40:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Calendário · Série D',
@@ -210,7 +210,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.70',
     date: '2026-07-22',
     publishedAt: '2026-07-22T12:12:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Correção urgente',
@@ -225,7 +225,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.65',
     date: '2026-07-22',
     publishedAt: '2026-07-22T12:05:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Calendário · datas fixas',
@@ -248,7 +248,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.60',
     date: '2026-07-22',
     publishedAt: '2026-07-22T01:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Calendário · mandos',
@@ -283,7 +283,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.55',
     date: '2026-07-21',
     publishedAt: '2026-07-21T21:25:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Estádio · capacidade',
@@ -305,7 +305,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.50',
     date: '2026-07-21',
     publishedAt: '2026-07-21T20:55:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Escritório · metas de temporada',
@@ -336,7 +336,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.49',
     date: '2026-07-21',
     publishedAt: '2026-07-21T19:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Estádio · visual por divisão',
@@ -360,7 +360,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.48',
     date: '2026-07-21',
     publishedAt: '2026-07-21T17:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Estádio',
@@ -384,7 +384,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.43',
     date: '2026-07-21',
     publishedAt: '2026-07-21T14:55:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Clima do clube',
@@ -399,7 +399,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.38',
     date: '2026-07-21',
     publishedAt: '2026-07-21T13:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Mercado',
@@ -415,7 +415,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.33',
     date: '2026-07-20',
     publishedAt: '2026-07-21T00:45:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Empréstimo e falência',
@@ -436,7 +436,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.32',
     date: '2026-07-20',
     publishedAt: '2026-07-21T00:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Adiantamento de TV',
@@ -450,7 +450,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.31',
     date: '2026-07-20',
     publishedAt: '2026-07-20T23:25:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Empréstimo e falência',
@@ -465,7 +465,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.26',
     date: '2026-07-20',
     publishedAt: '2026-07-20T20:50:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Economia',
@@ -481,7 +481,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.25',
     date: '2026-07-20',
     publishedAt: '2026-07-20T05:05:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Mercado',
@@ -495,7 +495,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.20',
     date: '2026-07-20',
     publishedAt: '2026-07-20T05:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Elenco',
@@ -507,7 +507,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.15',
     date: '2026-07-20',
     publishedAt: '2026-07-20T04:55:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Elenco',
@@ -522,7 +522,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.10',
     date: '2026-07-20',
     publishedAt: '2026-07-20T04:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Elenco / Prancheta',
@@ -544,7 +544,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.05',
     date: '2026-07-20',
     publishedAt: '2026-07-20T03:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Calendário / Save',
@@ -560,7 +560,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.00',
     date: '2026-07-20',
     publishedAt: '2026-07-20T03:15:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Versão',
@@ -589,7 +589,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-35',
     date: '2026-07-20',
     publishedAt: '2026-07-20T03:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Temporada idle',
@@ -618,7 +618,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-34',
     date: '2026-07-20',
     publishedAt: '2026-07-20T01:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Mercado',
@@ -635,7 +635,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-33',
     date: '2026-07-20',
     publishedAt: '2026-07-20T01:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Motor de partida',
@@ -651,7 +651,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-32',
     date: '2026-07-20',
     publishedAt: '2026-07-20T00:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Central',
@@ -674,7 +674,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-31',
     date: '2026-07-20',
     publishedAt: '2026-07-20T00:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Elenco / Evolução',
@@ -697,7 +697,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-30',
     date: '2026-07-19',
     publishedAt: '2026-07-19T18:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Central',
@@ -712,7 +712,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-29',
     date: '2026-07-19',
     publishedAt: '2026-07-19T17:45:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Central',
@@ -727,7 +727,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-28',
     date: '2026-07-19',
     publishedAt: '2026-07-19T17:35:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Relatório / NOTAS',
@@ -757,7 +757,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-27',
     date: '2026-07-19',
     publishedAt: '2026-07-19T15:15:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Escritório',
@@ -772,7 +772,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-26',
     date: '2026-07-19',
     publishedAt: '2026-07-19T14:50:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Mata-mata',
@@ -793,7 +793,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-25',
     date: '2026-07-19',
     publishedAt: '2026-07-19T00:45:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'AO VIVO',
@@ -826,7 +826,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-24',
     date: '2026-07-18',
     publishedAt: '2026-07-19T00:15:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'AO VIVO',
@@ -841,7 +841,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-23',
     date: '2026-07-18',
     publishedAt: '2026-07-18T23:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Economia',
@@ -861,7 +861,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-22',
     date: '2026-07-18',
     publishedAt: '2026-07-18T22:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Motor de partida',
@@ -876,7 +876,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-21',
     date: '2026-07-18',
     publishedAt: '2026-07-18T21:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Integridade da partida',
@@ -899,7 +899,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-20',
     date: '2026-07-18',
     publishedAt: '2026-07-18T18:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'AO VIVO',
@@ -923,7 +923,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-19',
     date: '2026-07-17',
     publishedAt: '2026-07-17T21:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Testers',
@@ -951,7 +951,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-18',
     date: '2026-07-17',
     publishedAt: '2026-07-17T20:20:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Estabilidade',
@@ -974,7 +974,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-17',
     date: '2026-07-17',
     publishedAt: '2026-07-17T18:45:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -990,7 +990,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-16',
     date: '2026-07-17',
     publishedAt: '2026-07-17T17:35:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Correções',
@@ -1012,7 +1012,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-15',
     date: '2026-07-17',
     publishedAt: '2026-07-17T17:00:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1028,7 +1028,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-14',
     date: '2026-07-17',
     publishedAt: '2026-07-17T16:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Correções',
@@ -1043,7 +1043,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-13',
     date: '2026-07-17',
     publishedAt: '2026-07-17T16:20:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Correções',
@@ -1058,7 +1058,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-12',
     date: '2026-07-17',
     publishedAt: '2026-07-17T15:50:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1082,7 +1082,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-11',
     date: '2026-07-17',
     publishedAt: '2026-07-17T14:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Melhorias',
@@ -1098,7 +1098,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-10',
     date: '2026-07-17',
     publishedAt: '2026-07-17T13:10:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1130,7 +1130,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-9',
     date: '2026-07-16',
     publishedAt: '2026-07-16T23:15:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1158,7 +1158,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-8',
     date: '2026-07-16',
     publishedAt: '2026-07-16T22:41:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1179,7 +1179,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-7',
     date: '2026-07-16',
     publishedAt: '2026-07-16T22:30:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1200,7 +1200,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-6',
     date: '2026-07-16',
     publishedAt: '2026-07-16T22:18:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1215,7 +1215,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-5',
     date: '2026-07-16',
     publishedAt: '2026-07-16T21:55:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Correções',
@@ -1230,7 +1230,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-4',
     date: '2026-07-16',
     publishedAt: '2026-07-16T21:40:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1251,7 +1251,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-3',
     date: '2026-07-16',
     publishedAt: '2026-07-16T21:20:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Correções',
@@ -1273,7 +1273,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-2',
     date: '2026-07-16',
     publishedAt: '2026-07-16T20:50:00-03:00',
-    title: 'Matchday Football foi atualizado',
+    title: 'BR Football foi atualizado',
     topics: [
       {
         label: 'Correções',

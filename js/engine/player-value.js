@@ -3,6 +3,7 @@
  */
 
 import { estimatePlayerWage } from './economy.js';
+import { ensurePlayerContract } from './player-contracts.js';
 
 const VALUE_BASE_BY_DIVISION = {
   A: 2_800_000,
@@ -52,10 +53,11 @@ export function ensureMarketFields(player, ctx = {}) {
   if (player.wage == null || !Number.isFinite(Number(player.wage))) {
     player.wage = estimatePlayerWage(player, division);
   }
-  if (player.contractUntil == null || !Number.isFinite(Number(player.contractUntil))) {
-    const years = player.age <= 23 ? 3 : player.age <= 29 ? 2 : 1;
-    player.contractUntil = season + years;
-  }
+  ensurePlayerContract(player, {
+    division,
+    season,
+    careerDate: ctx.careerDate || null,
+  });
   if (typeof player.listed !== 'boolean') player.listed = false;
   if (player.askingPrice == null) {
     player.askingPrice = player.listed ? player.marketValue : null;
@@ -70,9 +72,11 @@ export function refreshMarketFields(player, ctx = {}) {
   const season = Number(ctx.season) || 2026;
   player.marketValue = estimatePlayerValue(player, division);
   player.wage = estimatePlayerWage(player, division);
-  if (player.contractUntil == null) {
-    player.contractUntil = season + (player.age <= 23 ? 3 : 2);
-  }
+  ensurePlayerContract(player, {
+    division,
+    season,
+    careerDate: ctx.careerDate || null,
+  });
   if (player.listed && (player.askingPrice == null || player.askingPrice <= 0)) {
     player.askingPrice = player.marketValue;
   }

@@ -31,7 +31,7 @@ import { MODULE_VERSIONS } from '../../core/constants.js';
  * @param {Function} deps.getMatchFinished
  * @param {Function} deps.getRoundCommitted
  * @param {Function} deps.advanceSeasonRound
- * @param {Function} deps.openChampionship
+ * @param {Function} deps.openChampionshipStandings — abre seção Campeonatos na competição do jogo ao vivo
  * @param {Function} deps.simulateRoundResults
  * @param {Function} deps.openRoundResults
  * @param {Function} [deps.openLiveMatchRatings] — abre relatório com notas Brasfoot
@@ -83,7 +83,7 @@ export function createMatchLiveSessionFeature(deps) {
     getMatchFinished,
     getRoundCommitted,
     advanceSeasonRound,
-    openChampionship,
+    openChampionshipStandings,
     simulateRoundResults,
     openRoundResults,
     openLiveMatchRatings,
@@ -221,7 +221,7 @@ export function createMatchLiveSessionFeature(deps) {
     // CLASSIFICAÇÃO / TABELA só navegam — não avançam a rodada (isso fica no AVANÇAR).
     actions.querySelector('#finalDashboard')?.addEventListener('click', () => {
       dismissPostMatchChrome();
-      openChampionship();
+      openChampionshipStandings();
     });
     actions.querySelector('#finalTable')?.addEventListener('click', () => {
       simulateRoundResults();

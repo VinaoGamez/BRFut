@@ -10,10 +10,10 @@ import { readJson, writeJson } from '../core/save.js';
 import { buildMatchPlayerSheets, playerKey } from './player-match-stats.js';
 
 export const PLAYER_HISTORY_LIMITS = {
-  /** Teto de segurança se o orçamento da temporada não for informado. */
-  maxMatchLogsPerSeason: 1600,
-  maxSeasonArchives: 12,
-  maxPlayersSoft: 8000,
+  /** Teto de segurança — relatórios usam só jogos recentes da temporada. */
+  maxMatchLogsPerSeason: 320,
+  maxSeasonArchives: 8,
+  maxPlayersSoft: 2500,
 };
 
 /** @deprecated use maxMatchLogsPerSeason — mantido para leitores antigos/testes. */
@@ -84,6 +84,313 @@ export function seasonAverageRating(bucket) {
   return Math.max(1, Math.min(10, Math.round(avg * 2) / 2));
 }
 
+function roundRatingValue(avg) {
+  if (avg == null || !Number.isFinite(Number(avg))) return null;
+  return Math.max(1, Math.min(10, Math.round(Number(avg) * 2) / 2));
+}
+
+function roundSeasonAverage(sum, count) {
+  if (!count) return null;
+  return roundRatingValue(sum / count);
+}
+
+function averageFromRatingBuckets(buckets) {
+  let sum = 0;
+  let count = 0;
+  (buckets || []).forEach(bucket => {
+    const c = Number(bucket?.ratingCount) || 0;
+    if (c <= 0) return;
+    sum += Number(bucket.ratingSum) || 0;
+    count += c;
+  });
+  return roundSeasonAverage(sum, count);
+}
+
+function clubRatingsFromMatchLog(log, clubName) {
+  let sum = 0;
+  let count = 0;
+  (log.players || []).forEach(sheet => {
+    if (sheet.club !== clubName || sheet.rating == null) return;
+    sum += Number(sheet.rating) || 0;
+    count += 1;
+  });
+  if (!count) return null;
+  return { sum, count, average: sum / count };
+}
+
+/**
+ * Resumo da média do time na temporada.
+ *
+ * Fórmula (preferencial, por partida):
+ * 1) Em cada jogo, NotaPartida = média das notas Brasfoot de todos os jogadores do clube em campo.
+ * 2) MédiaTemporada = média aritmética das NotaPartida (cada partida pesa igual).
+ * Após 1 jogo, o valor exibido é a NotaPartida desse jogo.
+ */
+export function clubSeasonRatingSummary(store, clubName, season, { getClub } = {}) {
+  if (!clubName || !store) return { average: null, matches: 0, appearances: 0, method: 'none' };
+
+  const logs = Array.isArray(store.matchLogs) ? store.matchLogs : [];
+  const year = season != null ? Number(season) : null;
+  const matchAverages = [];
+  let appearances = 0;
+
+  logs.forEach(log => {
+    if (year != null && Number(log.season) !== year) return;
+    if (log.home !== clubName && log.away !== clubName) return;
+    const match = clubRatingsFromMatchLog(log, clubName);
+    if (!match) return;
+    matchAverages.push(match.average);
+    appearances += match.count;
+  });
+
+  if (matchAverages.length > 0) {
+    const avg = matchAverages.reduce((total, value) => total + value, 0) / matchAverages.length;
+    return {
+      average: roundRatingValue(avg),
+      matches: matchAverages.length,
+      appearances,
+      method: 'per-match',
+    };
+  }
+
+  const seasonKey = year != null ? String(year) : null;
+  if (!seasonKey) return { average: null, matches: 0, appearances: 0, method: 'none' };
+
+  const club = typeof getClub === 'function' ? getClub(clubName) : null;
+  const rosterKeys = new Set();
+  const rosterNames = new Set();
+  (club?.roster || []).forEach(player => {
+    const key = playerKey(player);
+    if (key) rosterKeys.add(key);
+    if (player?.name) rosterNames.add(player.name);
+  });
+
+  if (club?.roster?.length) {
+    const rosterBuckets = club.roster
+      .map(player => store?.players?.[playerKey(player)]?.seasons?.[seasonKey])
+      .filter(Boolean);
+    const average = averageFromRatingBuckets(rosterBuckets);
+    const apps = rosterBuckets.reduce((total, bucket) => total + (Number(bucket?.ratingCount) || 0), 0);
+    if (average != null) {
+      return { average, matches: 0, appearances: apps, method: 'roster-fallback' };
+    }
+  }
+
+  const clubBuckets = Object.entries(store?.players || {})
+    .filter(([key, player]) =>
+      player?.club === clubName || rosterKeys.has(key) || rosterNames.has(player?.name),
+    )
+    .map(([, player]) => player.seasons?.[seasonKey])
+    .filter(Boolean);
+  const average = averageFromRatingBuckets(clubBuckets);
+  const apps = clubBuckets.reduce((total, bucket) => total + (Number(bucket?.ratingCount) || 0), 0);
+  if (average != null) {
+    return { average, matches: 0, appearances: apps, method: 'club-fallback' };
+  }
+
+  return { average: null, matches: 0, appearances: 0, method: 'none' };
+}
+
+/** Média das notas do elenco nos jogos disputados na temporada. */
+export function clubSeasonAverageRating(store, clubName, season, options = {}) {
+  return clubSeasonRatingSummary(store, clubName, season, options).average;
+}
+
+/** Artilheiro e assistências do clube/seleção a partir do histórico por jogador. */
+export function clubSeasonLeadersFromHistory(store, clubName, season, { getClub } = {}) {
+  const empty = { scorer: { name: '—' }, goals: 0, assistant: { name: '—' }, assists: 0 };
+  if (!clubName || !store) return empty;
+
+  const year = season != null ? String(season) : null;
+  if (!year) return empty;
+
+  const club = typeof getClub === 'function' ? getClub(clubName) : null;
+  const rosterKeys = new Set();
+  const rosterNames = new Set();
+  (club?.roster || []).forEach(player => {
+    const key = playerKey(player);
+    if (key) rosterKeys.add(key);
+    if (player?.name) rosterNames.add(player.name);
+  });
+
+  const belongsToClub = (key, player) =>
+    player?.club === clubName || rosterKeys.has(key) || rosterNames.has(player?.name);
+
+  let bestScorer = null;
+  let bestAssistant = null;
+
+  Object.entries(store.players || {}).forEach(([key, player]) => {
+    if (!belongsToClub(key, player)) return;
+    const bucket = player.seasons?.[year];
+    if (!bucket) return;
+    const goals = Number(bucket.goals) || 0;
+    const assists = Number(bucket.assists) || 0;
+    const apps = Number(bucket.apps) || 0;
+    if (
+      goals > 0 &&
+      (!bestScorer ||
+        goals > bestScorer.goals ||
+        (goals === bestScorer.goals && apps < bestScorer.apps))
+    ) {
+      bestScorer = { name: player.name || '—', goals, apps };
+    }
+    if (
+      assists > 0 &&
+      (!bestAssistant ||
+        assists > bestAssistant.assists ||
+        (assists === bestAssistant.assists && apps < bestAssistant.apps))
+    ) {
+      bestAssistant = { name: player.name || '—', assists, apps };
+    }
+  });
+
+  if (!bestScorer || !bestAssistant) {
+    const goalsByName = new Map();
+    const assistsByName = new Map();
+    const appsByName = new Map();
+    (store.matchLogs || []).forEach(log => {
+      if (Number(log.season) !== Number(year)) return;
+      if (log.home !== clubName && log.away !== clubName) return;
+      (log.players || []).forEach(sheet => {
+        if (sheet.club !== clubName) return;
+        const goals = Number(sheet.goals) || 0;
+        const assists = Number(sheet.assists) || 0;
+        if (goals > 0) goalsByName.set(sheet.name, (goalsByName.get(sheet.name) || 0) + goals);
+        if (assists > 0) assistsByName.set(sheet.name, (assistsByName.get(sheet.name) || 0) + assists);
+        appsByName.set(sheet.name, (appsByName.get(sheet.name) || 0) + 1);
+      });
+    });
+    goalsByName.forEach((goals, name) => {
+      const apps = appsByName.get(name) || 0;
+      if (
+        !bestScorer ||
+        goals > bestScorer.goals ||
+        (goals === bestScorer.goals && apps < bestScorer.apps)
+      ) {
+        bestScorer = { name, goals, apps };
+      }
+    });
+    assistsByName.forEach((assists, name) => {
+      const apps = appsByName.get(name) || 0;
+      if (
+        !bestAssistant ||
+        assists > bestAssistant.assists ||
+        (assists === bestAssistant.assists && apps < bestAssistant.apps)
+      ) {
+        bestAssistant = { name, assists, apps };
+      }
+    });
+  }
+
+  return {
+    scorer: bestScorer || { name: '—' },
+    goals: bestScorer?.goals || 0,
+    assistant: bestAssistant || { name: '—' },
+    assists: bestAssistant?.assists || 0,
+  };
+}
+
+function enrichRoundGameFromUserStats(game, userStats, clubName) {
+  if (!game || !userStats || (game.home !== clubName && game.away !== clubName)) return game;
+  const userSide = game.home === clubName ? 'home' : 'away';
+  const liveHome = userStats.home || {};
+  const liveAway = userStats.away || {};
+  const data =
+    game.data ||
+    (userSide === 'home'
+      ? {
+          homePasses: Number(liveHome.passes) || 0,
+          awayPasses: Number(liveAway.passes) || 0,
+          homeShots: Number(liveHome.shots) || 0,
+          awayShots: Number(liveAway.shots) || 0,
+          homeOnTarget: Number(liveHome.on) || 0,
+          awayOnTarget: Number(liveAway.on) || 0,
+          homeKeeperSaves: Number(liveHome.keeperSaves ?? liveHome.saved) || 0,
+          awayKeeperSaves: Number(liveAway.keeperSaves ?? liveAway.saved) || 0,
+          homeYellow: Number(liveHome.yellow) || 0,
+          awayYellow: Number(liveAway.yellow) || 0,
+          homeRed: Number(liveHome.red) || 0,
+          awayRed: Number(liveAway.red) || 0,
+        }
+      : {
+          homePasses: Number(liveHome.passes) || 0,
+          awayPasses: Number(liveAway.passes) || 0,
+          homeShots: Number(liveHome.shots) || 0,
+          awayShots: Number(liveAway.shots) || 0,
+          homeOnTarget: Number(liveHome.on) || 0,
+          awayOnTarget: Number(liveAway.on) || 0,
+          homeKeeperSaves: Number(liveHome.keeperSaves ?? liveHome.saved) || 0,
+          awayKeeperSaves: Number(liveAway.keeperSaves ?? liveAway.saved) || 0,
+          homeYellow: Number(liveHome.yellow) || 0,
+          awayYellow: Number(liveAway.yellow) || 0,
+          homeRed: Number(liveHome.red) || 0,
+          awayRed: Number(liveAway.red) || 0,
+        });
+  return {
+    ...game,
+    goals: userStats.goals || game.goals,
+    data,
+    completed: game.completed !== false,
+  };
+}
+
+/** Reconstrói matchLogs a partir do histórico de rodadas (saves anteriores ao histórico por jogo). */
+export function backfillClubSeasonMatchLogs(
+  engine,
+  { clubName, season, roundHistory = [], extraGames = [], competitionForRound = () => 'LEAGUE' } = {},
+) {
+  if (!engine?.recordMatch || !clubName || season == null) return 0;
+  const year = Number(season);
+  if (!Number.isFinite(year)) return 0;
+  const knownIds = new Set((engine.getStore?.().matchLogs || []).map(entry => entry.id));
+  let added = 0;
+
+  const ingest = (game, meta) => {
+    if (!game?.home || !game?.away) return;
+    if (game.home !== clubName && game.away !== clubName) return;
+    if (!Number.isFinite(Number(game.homeGoals)) || !Number.isFinite(Number(game.awayGoals))) return;
+    const competition = meta.competition || 'LEAGUE';
+    const round = meta.round ?? 'x';
+    const leg = meta.leg || '';
+    const id = meta.id || `${year}-${competition}-${round}-${game.home}-${game.away}-${leg}`;
+    if (knownIds.has(id)) return;
+    const log = engine.recordMatch(
+      { ...game, completed: game.completed !== false },
+      { season: year, persist: false, competition, round, leg: leg || null, id },
+    );
+    if (log?.id) {
+      knownIds.add(log.id);
+      added += 1;
+    }
+  };
+
+  (roundHistory || []).forEach(round => {
+    const roundNo = round?.round;
+    (round?.games || []).forEach(game => {
+      const enriched = enrichRoundGameFromUserStats(game, round?.userStats, clubName);
+      ingest(enriched, {
+        round: roundNo,
+        competition:
+          typeof competitionForRound === 'function'
+            ? competitionForRound(round, enriched)
+            : competitionForRound,
+      });
+    });
+  });
+
+  (extraGames || []).forEach(game => {
+    ingest(game, {
+      round: game.round ?? game.phaseIndex ?? null,
+      competition: game.competition || 'COPA DO BRASIL',
+      leg: game.leg || null,
+      id: `${year}-${game.competition || 'COPA DO BRASIL'}-${game.round ?? game.phaseIndex ?? 'x'}-${game.home}-${game.away}-${game.leg || ''}${game.tieId ? `-${game.tieId}` : ''}`,
+    });
+  });
+
+  if (added > 0) engine.persist?.();
+  return added;
+}
+
 /**
  * Mantém só logs da temporada corrente e aplica cap FIFO.
  * @param {Array} logs
@@ -139,11 +446,28 @@ function stampSeasonAverages(players, year) {
   });
 }
 
+function slimLogPlayer(sheet) {
+  return {
+    key: sheet.key,
+    name: sheet.name,
+    club: sheet.club,
+    pos: sheet.pos,
+    side: sheet.side,
+    minutes: sheet.minutes,
+    started: !!sheet.started,
+    goals: sheet.goals,
+    assists: sheet.assists,
+    rating: sheet.rating,
+    yellow: !!sheet.yellow,
+    red: !!sheet.red,
+  };
+}
+
 export function loadPlayerHistoryStore() {
   const raw = readJson(SAVE_KEYS.playerHistory, null);
   if (!raw || typeof raw !== 'object') return emptyStore();
   const season = raw.season ?? null;
-  return {
+  const store = {
     version: Number(raw.version) || SAVE_VERSION.playerHistory || 1,
     players: raw.players && typeof raw.players === 'object' ? raw.players : {},
     season,
@@ -153,6 +477,16 @@ export function loadPlayerHistoryStore() {
     ),
     seasonArchives: Array.isArray(raw.seasonArchives) ? raw.seasonArchives : [],
   };
+  try {
+    if (JSON.stringify(store).length > 200_000) {
+      store.matchLogs = pruneMatchLogsForSeason(store.matchLogs, season, 80);
+      store.players = prunePlayers(store.players, 1200);
+      store.seasonArchives = pruneArchives(store.seasonArchives, 4);
+    }
+  } catch {
+    store.matchLogs = [];
+  }
+  return store;
 }
 
 export function savePlayerHistoryStore(store, options = {}) {
@@ -180,14 +514,14 @@ export function savePlayerHistoryStore(store, options = {}) {
   } catch {
     rawSize = 0;
   }
-  if (rawSize > 180_000) {
+  if (rawSize > 100_000) {
     payload.matchLogs = pruneMatchLogsForSeason(
       payload.matchLogs,
       store.season ?? null,
-      Math.max(24, Math.floor(budget / 4)),
+      Math.max(24, Math.floor(budget / 6)),
     );
-    payload.players = prunePlayers(payload.players, 1500);
-    payload.seasonArchives = [];
+    payload.players = prunePlayers(payload.players, 1000);
+    payload.seasonArchives = pruneArchives(payload.seasonArchives, 4);
   }
   let ok = writeJson(SAVE_KEYS.playerHistory, payload);
   if (ok) return applyOk(payload);
@@ -248,7 +582,12 @@ export function createPlayerHistoryEngine(deps = {}) {
     } catch {
       /* ignore */
     }
-    return savePlayerHistoryStore(store, { matchLogBudget: resolveBudget() });
+    try {
+      return savePlayerHistoryStore(store, { matchLogBudget: resolveBudget() });
+    } catch (error) {
+      console.warn('[matchday] falha ao persistir histórico de jogadores', error);
+      return false;
+    }
   };
 
   const finalizeSeason = (year, { persist: doPersist = true, nextSeason = null } = {}) => {
@@ -312,20 +651,7 @@ export function createPlayerHistoryEngine(deps = {}) {
       away: game.away,
       homeGoals: Number(game.homeGoals) || 0,
       awayGoals: Number(game.awayGoals) || 0,
-      players: allSheets.map(sheet => ({
-        key: sheet.key,
-        name: sheet.name,
-        club: sheet.club,
-        pos: sheet.pos,
-        minutes: sheet.minutes,
-        started: !!sheet.started,
-        goals: sheet.goals,
-        assists: sheet.assists,
-        yellow: !!sheet.yellow,
-        red: !!sheet.red,
-        passesEst: sheet.passesEst,
-        rating: sheet.rating,
-      })),
+      players: allSheets.map(slimLogPlayer),
     };
     store.matchLogs.push(log);
     store.matchLogs = pruneMatchLogsForSeason(

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72" role="img" aria-label="Flamengo">
+  <defs>
+    <clipPath id="shield-clip"><path d="M32 3 L57 13 L57 37 C57 53 32 69 32 69 C32 69 7 53 7 37 L7 13 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#shield-clip)"><rect x="7" y="13" width="50" height="28" fill="#C3281E"/><rect x="7" y="41" width="50" height="28" fill="#000000"/></g>
+  <path d="M32 3 L57 13 L57 37 C57 53 32 69 32 69 C32 69 7 53 7 37 L7 13 Z" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.6"/>
+  <text x="32" y="44" text-anchor="middle" font-family="Barlow Condensed,Arial,sans-serif" font-weight="800" font-size="20" fill="#ffffff" stroke="rgba(0,0,0,.25)" stroke-width=".6">F</text>
+</svg>

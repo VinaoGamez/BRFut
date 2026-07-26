@@ -36,7 +36,13 @@ export const isMedicalActionRequired = message =>
 export const isTransferActionRequired = message =>
   isActionRequiredMessage(message) &&
   (message.category === 'transfer' || message.type === 'incoming-offer') &&
-  message.meta?.offerKind !== 'national-team';
+  message.meta?.offerKind !== 'national-team' &&
+  message.meta?.offerKind !== 'contract-renewal';
+
+/** Renovação de contrato semestral pendente. */
+export const isContractRenewalActionRequired = message =>
+  isActionRequiredMessage(message) &&
+  (message.type === 'contract-renewal' || message.meta?.offerKind === 'contract-renewal');
 
 /** Convite para comandar seleção na Copa do Mundo. */
 export const isNationalTeamOfferMessage = message => {
@@ -266,6 +272,7 @@ export function createMessagesFeature(deps) {
     onNationalTeamActionRequired,
     onTransferOfferRespond,
     onNationalTeamOfferRespond,
+    onContractRenewalRespond,
     onViewNationalTeam,
   } = deps;
   const getCareerDateIso = typeof deps.getCareerDateIso === 'function' ? deps.getCareerDateIso : null;
@@ -301,6 +308,8 @@ export function createMessagesFeature(deps) {
   const getMedicalActionMessages = () => careerMessages.filter(isMedicalActionRequired);
   const getActionRequiredMessages = () => careerMessages.filter(isActionRequiredMessage);
   const getTransferActionMessages = () => careerMessages.filter(isTransferActionRequired);
+  const getContractRenewalActionMessages = () =>
+    careerMessages.filter(isContractRenewalActionRequired);
 
   const unreadCount = () => careerMessages.filter(message => !message.read).length;
 
@@ -363,13 +372,29 @@ export function createMessagesFeature(deps) {
       isTransferActionRequired(message) &&
       !!message?.meta?.offerId &&
       typeof onTransferOfferRespond === 'function';
-    const show = ntOffer || transferOffer;
+    const contractRenewal =
+      isContractRenewalActionRequired(message) &&
+      !!message?.meta?.playerId &&
+      typeof onContractRenewalRespond === 'function';
+    const show = ntOffer || transferOffer || contractRenewal;
     actions.classList.toggle('hidden', !show);
-    actions.dataset.offerId = show ? message.meta.offerId : '';
-    actions.dataset.offerKind = ntOffer ? 'national-team' : transferOffer ? 'transfer' : '';
+    actions.dataset.offerId = show && (transferOffer || ntOffer) ? message.meta.offerId : '';
+    actions.dataset.playerId = contractRenewal ? message.meta.playerId : '';
+    actions.dataset.offerKind = ntOffer
+      ? 'national-team'
+      : contractRenewal
+        ? 'contract-renewal'
+        : transferOffer
+          ? 'transfer'
+          : '';
     const expire = $('#messageReaderOfferExpire');
     if (expire) {
-      if (show && transferOffer && message.meta?.expiresRound) {
+      if (show && contractRenewal) {
+        const wageAsk = Number(message.meta?.wageAsk) || 0;
+        expire.innerHTML = wageAsk
+          ? `<span>Pedido: R$ ${escapeHtml(wageAsk.toLocaleString('pt-BR'))}/rodada.</span><span>Aceitar renova por 6 meses.</span>`
+          : '<span>Renovação semestral — aceitar ou recusar.</span>';
+      } else if (show && transferOffer && message.meta?.expiresRound) {
         expire.innerHTML = `<span>Expira na rodada ${escapeHtml(message.meta.expiresRound)}.</span><span>Responda com urgência.</span>`;
       } else if (show && ntOffer) {
         expire.innerHTML = '<span>Compromisso paralelo ao seu clube na Copa do Mundo.</span>';
@@ -826,6 +851,12 @@ export function createMessagesFeature(deps) {
     onClick('#messageReaderOfferAccept', () => {
       const actions = $('#messageReaderTransferActions');
       const offerId = actions?.dataset?.offerId;
+      if (actions?.dataset?.offerKind === 'contract-renewal') {
+        const playerId = actions?.dataset?.playerId;
+        if (!playerId || typeof onContractRenewalRespond !== 'function') return;
+        onContractRenewalRespond({ playerId, accept: true, messageId: careerMessages[readerIndex]?.id });
+        return;
+      }
       if (!offerId) return;
       if (actions?.dataset?.offerKind === 'national-team') {
         if (typeof onNationalTeamOfferRespond !== 'function') return;
@@ -838,6 +869,12 @@ export function createMessagesFeature(deps) {
     onClick('#messageReaderOfferReject', () => {
       const actions = $('#messageReaderTransferActions');
       const offerId = actions?.dataset?.offerId;
+      if (actions?.dataset?.offerKind === 'contract-renewal') {
+        const playerId = actions?.dataset?.playerId;
+        if (!playerId || typeof onContractRenewalRespond !== 'function') return;
+        onContractRenewalRespond({ playerId, accept: false, messageId: careerMessages[readerIndex]?.id });
+        return;
+      }
       if (!offerId) return;
       if (actions?.dataset?.offerKind === 'national-team') {
         if (typeof onNationalTeamOfferRespond !== 'function') return;

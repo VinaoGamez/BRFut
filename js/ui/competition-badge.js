@@ -1,4 +1,5 @@
 import { isKnockoutShootoutCompetition, knockoutCompetitionLabel, KNOCKOUT_COMPETITIONS } from '../engine/knockout-shootout.js';
+import { isStateLeagueGame, stateLeagueBadgeName } from '../engine/state-league-format.js';
 
 /** SVG do troféu reutilizado no selo de campeonato. */
 export const COMPETITION_TROPHY_SVG = `<svg class="match-competition-trophy" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path class="trophy-cup" d="M8 4h16v3c0 4.5-2.2 7.8-5.5 9.5L18 20v2h4v3H10v-3h4v-2l-.5-3.5C10.2 14.8 8 11.5 8 7V4z"/><path class="trophy-shine" d="M11 6h10v1.5c0 3.2-1.5 5.6-3.8 7L16 17.5 14.8 14.5C12.5 12.6 11 10.2 11 7V6z"/><rect class="trophy-base" x="12" y="25" width="8" height="2" rx="1"/><path class="trophy-handles" fill="none" stroke-width="1.2" d="M8 6H5.5a2.5 2.5 0 0 0 0 5H8M24 6h2.5a2.5 2.5 0 0 1 0 5H24"/></svg>`;
@@ -29,6 +30,9 @@ export function resolveCompetitionBadge(game, { userDivision = 'A' } = {}) {
     }
     const label = knockoutCompetitionLabel(game).split('·')[0].trim();
     return { name: label || 'Mata-mata', kind: 'cup' };
+  }
+  if (isStateLeagueGame(game)) {
+    return { name: stateLeagueBadgeName(game), kind: 'estadual' };
   }
   // Liga: usa divisão do clube do usuário (campeonato nacional da carreira).
   return { name: `Brasileirão Série ${userDivision}`, kind: serieKind };

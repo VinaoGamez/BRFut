@@ -15,7 +15,7 @@
  * gapBuyer = rank(comprador) − rank(vendedor): + = comprador de série maior.
  */
 
-export const TRANSFER_DIV_RANK = { A: 4, B: 3, C: 2, D: 1 };
+export const TRANSFER_DIV_RANK = { A: 4, B: 3, C: 2, D: 1, REG: 0 };
 
 /**
  * Estrela do elenco vendedor (não qualquer OVR de Série A).

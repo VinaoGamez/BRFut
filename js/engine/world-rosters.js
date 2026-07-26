@@ -8,7 +8,7 @@ import { ensureMarketFields } from './player-value.js';
 import { sanitizeSetPieceForDivision } from './player-generation.js';
 import { ensureRosterNationalities } from './player-nationality.js';
 import { ensureForeignPlayerNames } from './player-names.js';
-import { ensureCardVariantId } from './player-card-art.js';
+import { ensureCardVariantId } from './player-card-variant-id.js';
 
 const WORKLOAD_DEFAULT = {
   minutesLast7Days: 0,
@@ -57,6 +57,7 @@ const PLAYER_WORLD_KEYS = [
   'marketValue',
   'wage',
   'contractUntil',
+  'contract',
   'listed',
   'askingPrice',
   'loanListed',
@@ -105,17 +106,27 @@ export function hydratePlayer(raw, context = {}) {
   return player;
 }
 
+const NATIONAL_DIVISIONS = new Set(['A', 'B', 'C', 'D']);
+
+/** Pirâmide nacional sempre persiste; regionais só após delta (mercado, etc.). */
+export function shouldPersistWorldRoster(_clubName, club) {
+  if (!Array.isArray(club?.roster) || club.roster.length < 11) return false;
+  if (NATIONAL_DIVISIONS.has(club.division)) return true;
+  return !!club._rosterPersist;
+}
+
 /**
  * Snapshot enxuto de elencos para o career save.
  * @param {Record<string, { roster?: object[], division?: string }>} clubs
- * @param {{ skipClub?: string|null }} [options] — omitir clube do usuário (já vai em userRoster)
+ * @param {{ skipClub?: string|null, filter?: (name: string, club: object) => boolean, merge?: Record<string, object[]> }} [options]
  */
 export function collectWorldRosters(clubs, options = {}) {
   const skip = options.skipClub || null;
-  const out = {};
+  const filter = options.filter || shouldPersistWorldRoster;
+  const out = { ...(options.merge && typeof options.merge === 'object' ? options.merge : {}) };
   Object.entries(clubs || {}).forEach(([clubName, club]) => {
     if (skip && clubName === skip) return;
-    if (!Array.isArray(club?.roster) || !club.roster.length) return;
+    if (!filter(clubName, club)) return;
     out[clubName] = club.roster.map(serializePlayerForWorld).filter(Boolean);
   });
   return out;

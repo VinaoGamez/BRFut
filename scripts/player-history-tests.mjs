@@ -9,11 +9,16 @@ import {
   formatMatchRating,
   playerKey,
   buildMatchPlayerSheets,
+  teamMatchRatingContext,
 } from '../js/engine/player-match-stats.js';
 import {
   createPlayerHistoryEngine,
   PLAYER_HISTORY_LIMITS,
   clearPlayerHistoryStore,
+  clubSeasonAverageRating,
+  clubSeasonRatingSummary,
+  clubSeasonLeadersFromHistory,
+  backfillClubSeasonMatchLogs,
 } from '../js/engine/player-history.js';
 import { SAVE_KEYS } from '../js/core/constants.js';
 
@@ -159,6 +164,56 @@ check('goal + assist raises rating above base', () => {
   assert.ok(scorer >= 7);
 });
 
+check('dominant win lifts starters above narrow-win baseline', () => {
+  const { game, clubs } = makeGame({ homeGoals: 3, awayGoals: 1 });
+  game.data = {
+    ...game.data,
+    homePossession: 64,
+    awayPossession: 36,
+    homeShots: 16,
+    awayShots: 7,
+    homeXg: 2.4,
+    awayXg: 0.9,
+  };
+  const built = buildMatchPlayerSheets(game, { getClub: name => clubs[name] });
+  const zag = built.home.find(row => row.name === 'Zag B');
+  assert.ok(zag);
+  assert.ok(zag.rating >= 7.5, `expected >=7.5 got ${zag.rating}`);
+});
+
+check('10.0 is rare — needs exceptional individual + team dominance', () => {
+  const hero = computeMatchRating(
+    { minutes: 90, goals: 3, assists: 2, role: 'MEI', started: true, passesEst: 48, yellow: false, red: false },
+    {
+      resultDelta: 0.4,
+      teamMarginBonus: 0.28,
+      teamDominanceBonus: 0.25,
+      cleanSheet: true,
+    },
+  );
+  assert.equal(hero, 10);
+
+  const good = computeMatchRating(
+    { minutes: 90, goals: 1, assists: 0, role: 'ATA', started: true, passesEst: 22 },
+    { resultDelta: 0.4, teamMarginBonus: 0.15, teamDominanceBonus: 0.12, cleanSheet: false },
+  );
+  assert.ok(good <= 8, `single scorer should stay <=8 got ${good}`);
+});
+
+check('teamMatchRatingContext reads margin and dominance from data', () => {
+  const ctx = teamMatchRatingContext(
+    {
+      homeGoals: 3,
+      awayGoals: 0,
+      data: { homePossession: 61, awayPossession: 39, homeXg: 2.1, awayXg: 0.4, homeShots: 14, awayShots: 4 },
+    },
+    'home',
+  );
+  assert.ok(ctx.marginBonus >= 0.28);
+  assert.ok(ctx.dominanceBonus >= 0.15);
+  assert.equal(ctx.cleanSheet, true);
+});
+
 check('yellow and red lower rating', () => {
   const clean = computeMatchRating(
     { minutes: 90, goals: 0, assists: 0, role: 'MEI', started: true, passesEst: 30 },
@@ -235,6 +290,73 @@ check('recordMatch rolls into players.seasons and matchLogs', () => {
   const found = history.findMatchLog({ home: 'Alpha', away: 'Beta', season: 2026, round: 3 });
   assert.ok(found);
   assert.equal(found.id, log.id);
+});
+
+check('clubSeasonRatingSummary uses per-match average', () => {
+  memory.clear();
+  clearPlayerHistoryStore();
+  const { game, clubs } = makeGame();
+  const history = createPlayerHistoryEngine({ getClub: name => clubs[name] });
+  history.recordMatch(
+    { ...game, homeGoals: 2, awayGoals: 0 },
+    { season: 2026, round: 1, competition: 'LEAGUE:A', id: 'm1' },
+  );
+  history.recordMatch(
+    { ...game, homeGoals: 1, awayGoals: 1, home: 'Beta', away: 'Alpha' },
+    { season: 2026, round: 2, competition: 'LEAGUE:A', id: 'm2' },
+  );
+  const summary = clubSeasonRatingSummary(history.getStore(), 'Alpha', 2026, { getClub: name => clubs[name] });
+  assert.equal(summary.matches, 2);
+  assert.ok(summary.average >= 1 && summary.average <= 10);
+  assert.equal(summary.average % 0.5, 0);
+});
+
+check('clubSeasonRatingSummary tolerates missing store', () => {
+  const summary = clubSeasonRatingSummary(null, 'Alpha', 2026);
+  assert.equal(summary.average, null);
+  assert.equal(summary.matches, 0);
+  assert.equal(summary.method, 'none');
+});
+
+check('clubSeasonLeadersFromHistory ignores zero-goal noise', () => {
+  memory.clear();
+  clearPlayerHistoryStore();
+  const { game, clubs } = makeGame({ homeScorer: 'Ata Home', assist: 'Mei Home' });
+  const history = createPlayerHistoryEngine({ getClub: name => clubs[name] });
+  history.recordMatch(game, { season: 2026, round: 1, competition: 'LEAGUE:A', id: 'leaders-1' });
+  const leaders = clubSeasonLeadersFromHistory(history.getStore(), 'Alpha', 2026, {
+    getClub: name => clubs[name],
+  });
+  assert.equal(leaders.scorer.name, 'Ata Home');
+  assert.equal(leaders.goals, 2);
+  assert.equal(leaders.assistant.name, 'Mei Home');
+  assert.equal(leaders.assists, 1);
+  const empty = clubSeasonLeadersFromHistory(history.getStore(), 'Gamma', 2026, {
+    getClub: () => null,
+  });
+  assert.equal(empty.scorer.name, '—');
+  assert.equal(empty.goals, 0);
+});
+
+check('backfillClubSeasonMatchLogs rebuilds ratings from round history', () => {
+  memory.clear();
+  clearPlayerHistoryStore();
+  const { clubs } = makeGame();
+  const history = createPlayerHistoryEngine({ getClub: name => clubs[name] });
+  const added = backfillClubSeasonMatchLogs(history, {
+    clubName: 'Alpha',
+    season: 2026,
+    roundHistory: [
+      {
+        round: 2,
+        games: [{ home: 'Alpha', away: 'Beta', homeGoals: 2, awayGoals: 1, completed: true, goals: { home: [{ name: 'Ata Home', minute: 10 }], away: [] } }],
+      },
+    ],
+    competitionForRound: () => 'LEAGUE:A',
+  });
+  assert.equal(added, 1);
+  const avg = clubSeasonAverageRating(history.getStore(), 'Alpha', 2026, { getClub: name => clubs[name] });
+  assert.ok(avg >= 1 && avg <= 10);
 });
 
 check('duplicate match id is ignored', () => {

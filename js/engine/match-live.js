@@ -1,4 +1,5 @@
 import { MODULE_VERSIONS } from '../core/constants.js';
+import { engineDominanceModifiers } from './match-tuning.js';
 import { ownGoalChance } from './match-clock.js';
 import { isFreeKickSpecialist, isPenaltySpecialist, penaltyGoalChanceRate, resolveShootoutKickOutcome, SPECIALIST_BONUS } from './player-generation.js';
 
@@ -204,7 +205,8 @@ export function createLiveMatchActions(deps) {
       const gap=current.overall-other.overall;
       const hg=(getGoals()?.home||[]).length, ag=(getGoals()?.away||[]).length;
       const lead=side==='home'?hg-ag:ag-hg;
-      goalChance*=engineBlowoutDamp(gap)*engineScoreDamp(lead);
+      const dom=engineDominanceModifiers({gap,lead,ownShots:s.shots,rivalShots:otherStats.shots,minute:getMinute()});
+      goalChance*=engineBlowoutDamp(gap,lead)*engineScoreDamp(lead)*dom.conversionBoost;
     }
     const scores = forcedOutcome
       ? forcedOutcome === 'goal'
@@ -267,7 +269,11 @@ export function createLiveMatchActions(deps) {
     const creatorName=playerFor(side,'pass'), creator=actorData(side,creatorName);
     const attackerName=playerFor(side,'shot'), attacker=actorData(side,attackerName);
     const defenderName=playerFor(otherSide,'tackle'), defender=actorData(otherSide,defenderName);
-    const creation = clamp(engineTuning.creationBase+(creator.passing*.46+creator.playmaking*.34+attacker.dribble*.12+attacker.speed*.08-defender.marking*.45-defender.tackling*.45)/130+(current.passing-other.defense)/130+(s.momentum-o.momentum)/100+openingBoost,.22,.88);
+    const gap=current.overall-other.overall;
+    const hg=(getGoals()?.home||[]).length, ag=(getGoals()?.away||[]).length;
+    const lead=side==='home'?hg-ag:ag-hg;
+    const dom=engineDominanceModifiers({gap,lead,ownShots:s.shots,rivalShots:o.shots,minute:getMinute()});
+    const creation = clamp((engineTuning.creationBase+(creator.passing*.46+creator.playmaking*.34+attacker.dribble*.12+attacker.speed*.08-defender.marking*.45-defender.tackling*.45)/130+(current.passing-other.defense)/130+(s.momentum-o.momentum)/100+openingBoost)*dom.creationBoost,.22,.92);
     s.attacks++;
     if(random() > creation){
       // O futebol brasileiro tem uma taxa alta de interrupções. A falta nasce

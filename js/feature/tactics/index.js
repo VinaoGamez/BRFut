@@ -136,8 +136,13 @@ export function createTacticsFeature(deps) {
   };
 
   const boardPlayerLabel = (name, max = 10) => {
-    const parts = name.split(' ').filter(Boolean);
-    const short = parts.length > 1 ? parts[parts.length - 1] : parts[0] || name;
+    const parts = String(name || '')
+      .trim()
+      .split(' ')
+      .filter(Boolean);
+    const meaningful = parts.filter(part => !/^\d+$/.test(part));
+    const source = meaningful.length ? meaningful : parts;
+    const short = source.length > 1 ? source[source.length - 1] : source[0] || name;
     return short.length > max ? `${short.slice(0, max - 1)}…` : short;
   };
 

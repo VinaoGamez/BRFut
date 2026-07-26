@@ -348,6 +348,7 @@
 .calendar-legend .comp-bsc { background: #c4b8ff; }
 .calendar-legend .comp-bsd { background: #ffb8e8; }
 .calendar-legend .comp-cmu { background: #ffd966; }
+.calendar-legend .comp-cmu-lock { background: #c9a227; opacity: 0.85; }
 .calendar-legend .transfer-window { background: #3d9a58; }
 .calendar-legend .transfer-deadline { background: #e8a020; }
 
@@ -375,6 +376,27 @@
     linear-gradient(180deg, rgba(180, 110, 20, 0.32), rgba(40, 28, 10, 0.55)),
     #2a2010 !important;
   box-shadow: inset 0 -2px 0 #e8a020;
+}
+
+.calendar-view button.calendar-day.world-cup-blackout:not(.user-home):not(.user-away):not(.outside) {
+  background:
+    linear-gradient(180deg, rgba(180, 150, 40, 0.22), rgba(30, 28, 12, 0.5)),
+    #1a2418 !important;
+  box-shadow: inset 0 -2px 0 #ffd966;
+}
+
+.world-cup-calendar-card .world-cup-calendar-jumps {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.world-cup-calendar-card .world-cup-calendar-jumps button {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
 }
 
 .calendar-view button.calendar-day.transfer-deadline-day:not(.outside) {

@@ -1,10 +1,15 @@
 /**
  * Calendário de tamanho da Série C (espelho CBF 2026→2028).
- * 2026: 20 | 2027: 24 | 2028+: 28 (estável com 6 rebaixados / 6 acessos da D).
+ * 2026: 20 | 2027: 24 | 2028+: 28.
+ * Série D: 4 rebaixados fixos da C (ver serie-d-formation.js).
  */
 
 export const SERIE_D_CLUBS = 96;
+export const SERIE_D_GROUPS = 16;
 export const SERIE_D_PROMOTIONS = 6;
+
+/** Rebaixados da Série C com vaga garantida na Série D (CBF). */
+export const SERIE_C_RELEGATION_TO_D = 4;
 
 /** Quantidade de clubes da Série C na temporada indicada. */
 export function serieCClubsForSeason(season) {
@@ -14,20 +19,14 @@ export function serieCClubsForSeason(season) {
   return 28;
 }
 
-/** Zonas de rebaixamento na tabela da temporada corrente. */
-export function serieCRelegationSlots(season) {
-  return serieCClubsForSeason(season) >= 28 ? 6 : 2;
+/** Zonas de rebaixamento para a Série D na tabela da Série C. */
+export function serieCRelegationSlots() {
+  return SERIE_C_RELEGATION_TO_D;
 }
 
-/**
- * Quantos caem da C nesta transição para a próxima temporada atingir o alvo CBF.
- * Premissa da pirâmide: +6 da D, troca líquida 0 com a B (−4 sobem / +4 caem da B).
- * nextSize ≈ currentSize + 6 − relC
- */
-export function serieCRelegationCountForTransition(currentSize, nextSeason) {
-  const size = Math.max(0, Number(currentSize) || 0);
-  const target = serieCClubsForSeason(nextSeason);
-  return Math.max(0, size + SERIE_D_PROMOTIONS - target);
+/** @deprecated Use SERIE_C_RELEGATION_TO_D — mantido por compatibilidade. */
+export function serieCRelegationCountForTransition(_currentSize, _nextSeason) {
+  return SERIE_C_RELEGATION_TO_D;
 }
 
 /**
@@ -38,6 +37,7 @@ export function normalizeDivisionTeamsSerieC(divisionTeams, options = {}) {
   const season = options.season;
   const userClub = options.userClub || null;
   const fillPool = Array.isArray(options.fillPool) ? options.fillPool : [];
+  const skipD = options.skipD === true;
   const dTarget = Number(options.dTarget) > 0 ? Number(options.dTarget) : SERIE_D_CLUBS;
   const target = serieCClubsForSeason(season);
 
@@ -83,26 +83,28 @@ export function normalizeDivisionTeamsSerieC(divisionTeams, options = {}) {
   }
 
   const used = new Set([...next.A, ...next.B, ...next.C, ...next.D]);
-  if (next.D.length > dTarget) {
-    while (next.D.length > dTarget) {
-      let idx = -1;
-      for (let i = next.D.length - 1; i >= 0; i -= 1) {
-        if (next.D[i] !== userClub) {
-          idx = i;
-          break;
+  if (!skipD) {
+    if (next.D.length > dTarget) {
+      while (next.D.length > dTarget) {
+        let idx = -1;
+        for (let i = next.D.length - 1; i >= 0; i -= 1) {
+          if (next.D[i] !== userClub) {
+            idx = i;
+            break;
+          }
         }
+        if (idx < 0) break;
+        next.D.splice(idx, 1);
+        changed = true;
       }
-      if (idx < 0) break;
-      next.D.splice(idx, 1);
-      changed = true;
-    }
-  } else if (next.D.length < dTarget) {
-    for (const name of fillPool) {
-      if (next.D.length >= dTarget) break;
-      if (!name || used.has(name)) continue;
-      next.D.push(name);
-      used.add(name);
-      changed = true;
+    } else if (next.D.length < dTarget) {
+      for (const name of fillPool) {
+        if (next.D.length >= dTarget) break;
+        if (!name || used.has(name)) continue;
+        next.D.push(name);
+        used.add(name);
+        changed = true;
+      }
     }
   }
 

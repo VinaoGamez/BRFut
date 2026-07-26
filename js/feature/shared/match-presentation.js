@@ -1,6 +1,12 @@
 import { resolveNationalTeam } from '../../engine/national-teams.js';
 import { WORLD_CUP_COMPETITION } from '../../engine/world-cup-calendar.js';
-import { isKnockoutShootoutCompetition } from '../../engine/knockout-shootout.js';
+import { isKnockoutShootoutCompetition, serieDKnockoutPhaseLabel } from '../../engine/knockout-shootout.js';
+import {
+  isStateLeagueGame,
+  stateLeaguePhaseLabel,
+  stateLeagueRoundEmLabel,
+  ufLabel,
+} from '../../engine/state-league-format.js';
 
 export const divisionDisplayName = division => {
   const map = { A: 'Série A', B: 'Série B', C: 'Série C', D: 'Série D' };
@@ -19,8 +25,13 @@ export const matchCompetitionRoundLabel = (game, userDivision, currentRound = 1,
     const parts = [game.phase, game.leg].filter(Boolean);
     return parts.join(' · ') || 'Copa do Brasil';
   }
+  if (isStateLeagueGame(game)) {
+    if (game.phase === 'semis') return 'Semifinal';
+    if (game.phase === 'final') return 'Final';
+    return `Rodada ${game.round || currentRound || 1}`;
+  }
   if (isKnockoutShootoutCompetition(game)) {
-    const parts = [game.phase, game.leg].filter(Boolean);
+    const parts = [serieDKnockoutPhaseLabel(game), game.leg].filter(Boolean);
     if (parts.length) return parts.join(' · ');
     return String(game.competition || '').includes('SÉRIE D') ? 'Eliminatórias' : 'Mata-mata';
   }
@@ -30,6 +41,39 @@ export const matchCompetitionRoundLabel = (game, userDivision, currentRound = 1,
 };
 
 export const isWorldCupFixture = game => game?.competition === WORLD_CUP_COMPETITION;
+
+export const isSerieDEnrolledClub = (clubName, clubs, serieDGroups) => {
+  const club = clubs?.[clubName];
+  if (!club) return false;
+  const division = club.division || 'A';
+  if (division === 'REG' && (serieDGroups || []).some(group => group.includes(clubName))) return true;
+  return division === 'D';
+};
+
+export const isSerieDGroupPhaseContext = (game, userDivision, serieDGroupRounds = 10) => {
+  if (userDivision !== 'D') return false;
+  if (game && isKnockoutShootoutCompetition(game)) return false;
+  if (game && (game.round || 0) > serieDGroupRounds) return false;
+  return true;
+};
+
+export const formatClubPositionLabel = (
+  pos,
+  { game = null, teamName = null, clubs = null, serieDGroups = [], userDivision = 'A', serieDGroupRounds = 10 } = {},
+) => {
+  if (pos === '—' || pos == null) return '—';
+  if (game && isStateLeagueGame(game) && game.phase === 'groups') {
+    return `${pos}º no grupo`;
+  }
+  if (
+    isSerieDGroupPhaseContext(game, userDivision, serieDGroupRounds)
+    && teamName
+    && isSerieDEnrolledClub(teamName, clubs, serieDGroups)
+  ) {
+    return `${pos}º no grupo`;
+  }
+  return `${pos}º colocado`;
+};
 
 export const clubStandingContext = (
   clubName,
@@ -46,7 +90,8 @@ export const clubStandingContext = (
     if (nt) return `Copa do Mundo · FIFA ${nt.fifaRank}º`;
     return '';
   }
-  const division = club.division || 'A';
+  let division = club.division || 'A';
+  if (division === 'REG' && (serieDGroups || []).some(group => group.includes(clubName))) division = 'D';
   const base = divisionDisplayName(division);
   let label = base;
   if (division === 'D') {
@@ -55,6 +100,11 @@ export const clubStandingContext = (
     label = group ? `${base} · ${group}` : base;
   }
   if (game?.competition === 'COPA DO BRASIL' || (game && isKnockoutShootoutCompetition(game))) return label;
+  if (isStateLeagueGame(game)) {
+    const tierSuffix = game.stateTier > 1 ? ` · Div. ${game.stateTier}` : '';
+    const stateName = game.stateUf ? ufLabel(game.stateUf) : '';
+    return joinMatchMeta(`Estadual · ${stateName}${tierSuffix}`, stateLeaguePhaseLabel(game));
+  }
   const roundLabel = matchCompetitionRoundLabel(game, userDivision, currentRound, serieDGroupRounds);
   return roundLabel ? joinMatchMeta(label, roundLabel) : label;
 };
@@ -71,8 +121,11 @@ export const matchCompetitionPhaseLabel = (
   if (game?.competition === 'COPA DO BRASIL') {
     return joinMatchMeta(game.phase, game.leg) || 'Copa do Brasil';
   }
+  if (isStateLeagueGame(game)) {
+    return joinMatchMeta(stateLeaguePhaseLabel(game), matchCompetitionRoundLabel(game, userDivision, currentRound, serieDGroupRounds));
+  }
   if (game && isKnockoutShootoutCompetition(game)) {
-    const parts = [game.phase, game.leg].filter(Boolean);
+    const parts = [serieDKnockoutPhaseLabel(game), game.leg].filter(Boolean);
     if (parts.length) return parts.join(' · ');
     return String(game.competition || '').includes('SÉRIE D') ? 'Eliminatórias' : 'Mata-mata';
   }
@@ -104,8 +157,11 @@ export const matchCompetitionRoundEmLabel = (game, userDivision, userSerieDGroup
   if (game.competition === 'COPA DO BRASIL') {
     return `${game.phase || 'COPA'} · ${game.leg || ''}`.replace(/\s·\s$/, '');
   }
+  if (isStateLeagueGame(game)) {
+    return stateLeagueRoundEmLabel(game);
+  }
   if (isKnockoutShootoutCompetition(game)) {
-    return `${game.leg || 'Eliminatórias'}${game.phase ? ` · ${game.phase}` : ''}`;
+    return joinMatchMeta(serieDKnockoutPhaseLabel(game), game.leg) || 'Eliminatórias';
   }
   const groupSuffix =
     userDivision === 'D' && !isKnockoutShootoutCompetition(game) ? ` · GRUPO A${userSerieDGroupIndex + 1}` : '';

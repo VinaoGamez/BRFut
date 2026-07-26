@@ -1,4 +1,5 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
+import { teamCrestHtml } from '../../ui/team-crest.js';
 import { seasonGoalGauge } from './goal-gauge.js';
 
 const LEAGUE_ORDER = [
@@ -212,7 +213,7 @@ export function createSeasonSummaryFeature(deps) {
 
   const championCard = ({ key, label, accent, trophy }, clubName) => {
     const isCup = key === 'CUP';
-    const crest = clubName ? clubCrestInitials(clubName) : '—';
+    const crest = clubName ? teamCrestHtml(clubName) : '—';
     const trophyMarkup = isCup ? cupTrophyIcon(46) : trophyIcon(trophy, `${trophy}88`, 42);
     return `<article class="season-champion-card ${isCup ? 'cup' : ''}" style="--champion-accent:${accent}">
       <span class="season-champion-badge">${label}</span>
@@ -306,7 +307,7 @@ export function createSeasonSummaryFeature(deps) {
     const summary = $('#seasonTransitionSummary');
     if (summary) {
       summary.className = `season-summary-user ${userStatus}`;
-      summary.innerHTML = `<div class="season-summary-user-crest" aria-hidden="true">${clubCrestInitials(userClub)}</div><div class="season-summary-user-copy"><strong>Situação de ${userClub}</strong><span>${userLine}${idleNote}</span></div>`;
+      summary.innerHTML = `<div class="season-summary-user-crest">${teamCrestHtml(userClub)}</div><div class="season-summary-user-copy"><strong>Situação de ${userClub}</strong><span>${userLine}${idleNote}</span></div>`;
     }
     const goalSection = $('#seasonGoalSection');
     const goalEl = $('#seasonGoalResult');

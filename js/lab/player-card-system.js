@@ -11,6 +11,7 @@ import cardVolante from '../../assets/cards/card-volante.png';
 import cardAtacante from '../../assets/cards/card-atacante.png';
 import cardMc from '../../assets/cards/card-mc.png';
 import { renderCardBack } from './card-back.js';
+import { hydrateCardBadgeImages } from './card-badges.js';
 import { applyLayoutToCard, fitCardFootNames, loadLayout } from './card-layout.js';
 import { flagImgMarkup } from './card-nation-flags.js';
 
@@ -187,6 +188,7 @@ export function mountMatchdayCard(container, player, options = {}) {
   const layout = options.layout || loadLayout(meta.roleKey);
   container.innerHTML = renderMatchdayCard(player, { ...options, flipped: false, layout });
   const card = container.querySelector('.md-card');
+  hydrateCardBadgeImages(card);
   applyLayoutToCard(card, layout);
   requestAnimationFrame(() => fitCardFootNames(card));
 

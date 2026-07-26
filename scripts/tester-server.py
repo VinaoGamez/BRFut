@@ -8,11 +8,19 @@ Servidor hardened para link externo de testers (porta 5081).
 from __future__ import annotations
 
 import argparse
+import json
 import mimetypes
 import re
+import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
+
+SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+from brfut_api.router import handle_api  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / 'dist'
@@ -113,8 +121,38 @@ class TesterHandler(SimpleHTTPRequestHandler):
         self.send_header('Cache-Control', 'no-store')
         super().end_headers()
 
+    def _header_map(self) -> dict[str, str]:
+        return {key: value for key, value in self.headers.items()}
+
+    def _read_body(self) -> bytes:
+        length = int(self.headers.get('Content-Length', '0') or 0)
+        if length <= 0:
+            return b''
+        return self.rfile.read(length)
+
+    def _dispatch_api(self, method: str) -> None:
+        parsed = urlparse(self.path)
+        try:
+            status, headers, body = handle_api(method, parsed.path, self._header_map(), self._read_body())
+        except Exception as error:  # pragma: no cover — fallback seguro
+            payload = json.dumps({'ok': False, 'code': 'internal_error', 'error': str(error)}).encode('utf-8')
+            status = 500
+            headers = {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Content-Length': str(len(payload)),
+            }
+            body = payload
+        self.send_response(status)
+        for key, value in headers.items():
+            self.send_header(key, value)
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path.startswith('/api/'):
+            self._dispatch_api('GET')
+            return
         if parsed.query and BLOCKED_QUERY_KEYS.search(parsed.query):
             self.send_error(403, 'Modo de depuração bloqueado no link de testers.')
             return
@@ -136,6 +174,24 @@ class TesterHandler(SimpleHTTPRequestHandler):
         self.send_header('Content-Length', str(len(content)))
         self.end_headers()
         self.wfile.write(content)
+
+    def do_POST(self) -> None:
+        if urlparse(self.path).path.startswith('/api/'):
+            self._dispatch_api('POST')
+            return
+        self.send_error(405, 'Método não permitido.')
+
+    def do_PUT(self) -> None:
+        if urlparse(self.path).path.startswith('/api/'):
+            self._dispatch_api('PUT')
+            return
+        self.send_error(405, 'Método não permitido.')
+
+    def do_DELETE(self) -> None:
+        if urlparse(self.path).path.startswith('/api/'):
+            self._dispatch_api('DELETE')
+            return
+        self.send_error(405, 'Método não permitido.')
 
     def is_blocked(self, rel: str) -> bool:
         lower = rel.lower()
@@ -175,8 +231,9 @@ def main() -> None:
 
     httpd = ThreadingHTTPServer((args.bind, args.port), TesterHandler)
     mode = 'dist (bundle minificado)' if serve_from == DIST else 'fallback (instale Node e rode npm run build para ocultar fontes)'
-    print(f'Matchday tester server em http://{args.bind}:{args.port}/home.html')
+    print(f'BR Football tester server em http://{args.bind}:{args.port}/home.html')
     print(f'Modo: {mode}')
+    print(f'API local: http://{args.bind}:{args.port}/api/health')
     print('Bloqueios: docs, scripts, benchmarks, inspect-save, JSON/MD/logs, query debug')
     try:
         httpd.serve_forever()

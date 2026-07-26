@@ -10,6 +10,8 @@ const GOAL_PLAY_MS = 2400;
 const GOAL_FADE_MS = 650;
 const CROWD_PLAY_MS = 2000;
 const CROWD_FADE_MS = 500;
+/** Evita fila de áudio presa se o apito não disparar ended/error. */
+const WHISTLE_PLAY_MS = 2500;
 
 /** Ganho relativo ao volume master (níveis mais baixos). */
 const CLIP_GAIN = {
@@ -229,11 +231,18 @@ export function createMatchLiveAudioFeature() {
   const drainQueue = async () => {
     if (draining) return;
     draining = true;
-    while (queue.length) {
-      const job = queue.shift();
-      await job();
+    try {
+      while (queue.length) {
+        const job = queue.shift();
+        try {
+          await job();
+        } catch {
+          /* não trava fila de áudio */
+        }
+      }
+    } finally {
+      draining = false;
     }
-    draining = false;
   };
 
   const enqueue = job =>
@@ -245,25 +254,21 @@ export function createMatchLiveAudioFeature() {
       drainQueue();
     });
 
+  const playWhistleClip = () => playClip('whistle', { maxDurationMs: WHISTLE_PLAY_MS });
+
+  /** Não bloqueia retomada do relógio — apito entra na fila em paralelo. */
   const playWhistleReady = () => {
-    let resolveWhistle = () => {};
-    const ready = new Promise(resolve => {
-      resolveWhistle = resolve;
-    });
-    enqueue(async () => {
-      resolveWhistle();
-      await playClip('whistle');
-    });
-    return ready;
+    enqueue(() => playWhistleClip());
+    return Promise.resolve();
   };
 
   const playKickoff = () => playWhistleReady();
   const playSecondHalf = () => playWhistleReady();
   const playResumeWhistle = () => playWhistleReady();
-  const playStopWhistle = () => enqueue(() => playClip('whistle'));
-  const playHalftime = () => enqueue(() => playClip('whistle'));
-  const playFulltime = () => enqueue(() => playClip('whistle'));
-  const playPenaltyKick = () => enqueue(() => playClip('whistle'));
+  const playStopWhistle = () => enqueue(() => playWhistleClip());
+  const playHalftime = () => enqueue(() => playWhistleClip());
+  const playFulltime = () => enqueue(() => playWhistleClip());
+  const playPenaltyKick = () => enqueue(() => playWhistleClip());
 
   /** Gols em paralelo; só o último da sequência encerra com fade. */
   const playGoal = () => {

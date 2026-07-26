@@ -14,6 +14,7 @@ const SUITES = [
   { label: 'season-scheduler', steps: [['scripts/season-scheduler-tests.mjs']] },
   { label: 'season-calendar-plan', steps: [['scripts/season-calendar-plan-tests.mjs']] },
   { label: 'season-calendar-mold', steps: [['scripts/season-calendar-mold-tests.mjs']] },
+  { label: 'recopa-national', steps: [['scripts/recopa-national-tests.mjs']] },
   { label: 'knockout-shootout', steps: [['scripts/knockout-shootout-tests.mjs']] },
   { label: 'shootout-live', steps: [['scripts/shootout-live-tests.mjs']] },
   { label: 'competition-rules', steps: [['scripts/competition-rules-tests.mjs']] },
@@ -40,6 +41,7 @@ const SUITES = [
   { label: 'tv-advance', steps: [['scripts/tv-advance-tests.mjs']] },
   { label: 'season-goal-live', steps: [['scripts/season-goal-live-tests.mjs']] },
   { label: 'own-goal-report', steps: [['scripts/own-goal-report-tests.mjs']] },
+  { label: 'brfut-api', steps: [['scripts/brfut_api_tests.py']] },
   { label: 'transfers', steps: [['scripts/transfers-tests.mjs']] },
   {
     label: 'match-view-all',
@@ -53,7 +55,10 @@ const SUITES = [
 
 const runStep = scriptArgs => {
   const [script, ...args] = scriptArgs;
-  return spawnSync(process.execPath, [script, ...args], {
+  const isPython = script.endsWith('.py');
+  const command = isPython ? (process.platform === 'win32' ? 'py' : 'python3') : process.execPath;
+  const stepArgs = isPython ? [script, ...args] : [script, ...args];
+  return spawnSync(command, stepArgs, {
     cwd: root,
     stdio: 'inherit',
   });

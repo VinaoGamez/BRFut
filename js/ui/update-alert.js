@@ -1,5 +1,5 @@
 import '../../css/update-alert.css';
-import { BUILD_VERSION, SAVE_KEYS } from '../core/constants.js';
+import { BUILD_VERSION, SAVE_KEYS, GAME_BRAND_UPDATE_TITLE } from '../core/constants.js';
 import { RELEASE_NOTES } from '../core/release-notes.js';
 
 const MODAL_ID = 'updateAlertModal';
@@ -91,7 +91,7 @@ export function showUpdateAlertIfNeeded(buildVersion = BUILD_VERSION) {
   const topics = document.getElementById('updateAlertTopics');
   if (!modal || !title || !versionLine || !topics) return;
 
-  title.textContent = notes?.title || 'Matchday Football foi atualizado';
+  title.textContent = notes?.title || GAME_BRAND_UPDATE_TITLE;
   versionLine.textContent = `${buildVersion} · ${formatReleaseDate(notes?.date || new Date().toISOString().slice(0, 10))}`;
   topics.innerHTML = renderTopics(notes?.topics);
 

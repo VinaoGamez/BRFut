@@ -106,6 +106,70 @@ export const COMPETITION_DATE_REGISTRY = {
 
   },
 
+  state_league: {
+
+    id: 'state_league',
+
+    label: 'Campeonatos Estaduais',
+
+    matchDays: 11,
+
+    weight: 11,
+
+    band: { start: [0, 11], end: [2, 8] },
+
+    weekSlot: 'weekend_b',
+
+  },
+
+  recopa_national: {
+
+    id: 'recopa_national',
+
+    label: 'Recopa Nacional',
+
+    matchDays: 1,
+
+    weight: 1,
+
+    band: { start: [0, 25], end: [1, 15] },
+
+    weekSlot: 'recopa_national',
+
+  },
+
+  recopa_sudamericana: {
+
+    id: 'recopa_sudamericana',
+
+    label: 'Recopa Sul-Americana',
+
+    matchDays: 2,
+
+    weight: 2,
+
+    band: { start: [1, 1], end: [2, 28] },
+
+    weekSlot: 'continental_conmebol',
+
+  },
+
+  continental_conmebol: {
+
+    id: 'continental_conmebol',
+
+    label: 'CONMEBOL (Lib / Sul-Americana)',
+
+    matchDays: 13,
+
+    weight: 13,
+
+    band: { start: [1, 1], end: [10, 30] },
+
+    weekSlot: 'continental_conmebol',
+
+  },
+
 };
 
 

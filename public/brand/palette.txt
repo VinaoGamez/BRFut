@@ -1,3 +1,7 @@
-cyan=#2abee9
+cyan=#11bbed
 lime=#bbeb27
 night=#050c17
+brand=BR Football
+monogram=BR FUT
+lockup=brfut-lockup-source.png
+mark=brfut-mark-source.png

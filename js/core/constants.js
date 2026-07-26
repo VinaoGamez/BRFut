@@ -4,6 +4,10 @@
  */
 export const BUILD_VERSION = 'Alpha V.2.05';
 
+/** Nome público do jogo (UI, títulos, alertas de update). */
+export const GAME_BRAND_NAME = 'BR Football';
+export const GAME_BRAND_UPDATE_TITLE = `${GAME_BRAND_NAME} foi atualizado`;
+
 /** Rodadas da fase de grupos da Série D (1ª fase). */
 export const SERIE_D_GROUP_ROUNDS = 10;
 
@@ -56,6 +60,8 @@ export const MODULE_VERSIONS = {
   managerRanking: 2,
   seasonGoals: 2,
   managerJob: 3,
+  careerPersistence: 1,
+  careerCalendar: 1,
   managerJobWarn: 1,
   managerSack: 1,
   clubSolvency: 2,
@@ -77,6 +83,15 @@ function readTransfersFlag() {
   }
 }
 
+/** Origem estadual + fluxo de substituição na pirâmide — só build local (5081). */
+function readStateLeagueFlag() {
+  try {
+    return Boolean(__MATCHDAY_ENABLE_STATE_LEAGUE__);
+  } catch {
+    return false;
+  }
+}
+
 /** Flags para builds de testers — evoluir sem quebrar fluxo congelado. */
 export const FEATURES = {
   messagesHub: true,
@@ -85,6 +100,8 @@ export const FEATURES = {
   externalTunnel: true,
   /** Mercado ativo em local e GitHub Pages. */
   transfers: readTransfersFlag(),
-  /** Copa do Mundo — desligada até CMU estável; saves preservam dados inertes. */
-  worldCup: false,
+  /** Copa do Mundo de Seleções — calendário FIFA 2026 + simulação progressiva. */
+  worldCup: true,
+  /** Origem estadual (UF + host) e campeonato estadual em elaboração — só local. */
+  stateLeague: readStateLeagueFlag(),
 };
