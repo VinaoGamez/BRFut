@@ -2,6 +2,7 @@ import {
   applyDevelopmentTrainingDay,
   normalizeTrainingRules,
   finalizeWeeklyTrainingReport,
+  formatTrainingWeeklyReportHtml,
   emptyWeeklyTrainingReport,
   DEVELOPMENT_FOCUSES,
   XP_PER_ATTR_POINT,
@@ -102,12 +103,19 @@ const report = finalizeWeeklyTrainingReport(
   {
     ...emptyWeeklyTrainingReport(),
     days: 3,
-    gains: [{ playerName: 'Reserva Teste', attrLabel: 'Fin', attrDelta: 1, ovrDelta: 1 }],
+    avgEnergy: 61,
+    gains: [{ playerName: 'Reserva Teste', playerId: 'res-1', attrLabel: 'Fin', attrDelta: 1, ovrDelta: 1 }],
   },
   normalizeTrainingRules({ freeMode: 'development', developmentFocus: 'finishing' }),
 );
+report.playerEntries[0].overall = 63;
+const reportHtml = formatTrainingWeeklyReportHtml(report);
 ok(report.body.includes('Desenvolvimento'), 'weekly report mentions development mode');
 ok(report.body.includes('Reserva Teste'), 'weekly report lists player');
+ok(report.body.includes('Energia Média da equipe'), 'weekly report shows team energy');
+ok(report.playerNames.includes('Reserva Teste'), 'weekly report tracks player names');
+ok(reportHtml.includes('roster-ovr-mark is-up'), 'weekly report html shows ovr arrow');
+ok(reportHtml.includes('63'), 'weekly report html shows player ovr');
 
 const progress = getTrainingProgressForPlayer(state, 'Reserva Teste');
 ok(progress && Number(progress.xpSeason) >= 0, 'training progress stored');

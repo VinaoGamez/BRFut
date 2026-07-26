@@ -3,6 +3,7 @@
  * OVR recalculado via generatedOverall (Opção A); complementa pulsos por partida.
  */
 import { MODULE_VERSIONS } from '../core/constants.js';
+import { formatOvrMarkHtml } from './player-development.js';
 import { syncOverallFromAttributes } from './player-generation.js';
 
 export const TRAINING_MODULE_VERSION = MODULE_VERSIONS.trainingDevelopment || 1;
@@ -360,42 +361,105 @@ export function finalizeWeeklyTrainingReport(accumulator, rules = {}) {
       ? `Desenvolvimento · ${DEVELOPMENT_FOCUSES[normalized.developmentFocus]?.label || 'Individual'}`
       : `Gestão de Carga · ${normalized.free || 'Treino equilibrado'}`;
 
-  const grouped = new Map();
+  const playerEntries = [];
+  const byName = new Map();
   (acc.gains || []).forEach(entry => {
-    const key = `${entry.playerName}|${entry.attrLabel}`;
-    const row = grouped.get(key) || {
-      playerName: entry.playerName,
-      attrLabel: entry.attrLabel,
-      attrDelta: 0,
-      ovrDelta: 0,
-    };
-    row.attrDelta += entry.attrDelta || 0;
-    row.ovrDelta += entry.ovrDelta || 0;
-    grouped.set(key, row);
+    const name = entry.playerName;
+    if (!name) return;
+    let row = byName.get(name);
+    if (!row) {
+      row = { name, playerId: entry.playerId || '', ovrDelta: 0, overall: null };
+      byName.set(name, row);
+      playerEntries.push(row);
+    }
+    row.ovrDelta += Number(entry.ovrDelta) || 0;
+    if (entry.playerId) row.playerId = entry.playerId;
   });
+  const playerNames = playerEntries.map(entry => entry.name);
 
-  const lines = [...grouped.values()].slice(0, 8).map(row => {
-    const ovrPart = row.ovrDelta > 0 ? ` · OVR +${row.ovrDelta}` : '';
-    return `${row.playerName}: +${row.attrDelta} ${row.attrLabel}${ovrPart}`;
-  });
+  const days = Number(acc.days) || 0;
+  const dayWord = days === 1 ? 'dia' : 'dias';
+  const introBase = `Depois de ${days} ${dayWord} de treinamento ${modeLabel}`;
 
-  let body = `${acc.days} dia(s) livre(s) simulado(s) · Modo: ${modeLabel}.`;
-  if (lines.length) body += ` Evoluíram: ${lines.join('; ')}.`;
-  else if (normalized.freeMode === TRAINING_FREE_MODES.development) {
-    body += ' Nenhum atributo subiu nesta semana (XP acumulando ou elenco no limite/teto).';
+  const formatPlayerLine = entry => {
+    if (entry.ovrDelta > 0 && entry.overall != null) {
+      return `- ${entry.name} · OVR ${entry.overall}↑`;
+    }
+    return `- ${entry.name}`;
+  };
+
+  let body;
+  if (playerEntries.length) {
+    body = `${introBase}, os seguintes jogadores evoluiram:\n\n${playerEntries.map(formatPlayerLine).join('\n')}`;
   } else {
-    body += ' Rotina de recuperação aplicada.';
+    body = `${introBase}, nenhum jogador evoluiu nesta semana.`;
   }
-  if (acc.blockedCount > 0) body += ` ${acc.blockedCount} jogador(es) não treinou por falta de energia.`;
-  if (acc.exhaustedWarning) body += ' Atenção: titulares exaustos — considere Gestão de Carga.';
-  if (acc.avgEnergy != null) body += ` Energia média do elenco: ${acc.avgEnergy}%.`;
+  if (acc.avgEnergy != null) {
+    body += `\n\nEnergia Média da equipe após treinamento é ${acc.avgEnergy}%`;
+  }
+  if (acc.blockedCount > 0) {
+    body += `\n\n${acc.blockedCount} jogador(es) não treinou por falta de energia.`;
+  }
+  if (acc.exhaustedWarning) {
+    body += '\n\nAtenção: titulares exaustos — considere Gestão de Carga.';
+  }
 
   return {
     ...acc,
     modeLabel,
+    playerNames,
+    playerEntries,
     body,
-    gainLines: lines,
+    gainLines: playerNames,
   };
+}
+
+const normalizeTrainingPlayerEntries = players => {
+  if (!Array.isArray(players)) return [];
+  return players.map(entry =>
+    typeof entry === 'string'
+      ? { name: entry, playerId: '', ovrDelta: 0, overall: null }
+      : {
+          name: entry.name || entry.playerName || '',
+          playerId: entry.playerId || '',
+          ovrDelta: Number(entry.ovrDelta) || 0,
+          overall: entry.overall != null ? Number(entry.overall) : null,
+        },
+  ).filter(entry => entry.name);
+};
+
+export function formatTrainingWeeklyReportHtml(report = {}) {
+  const days = Number(report.days) || 0;
+  const dayWord = days === 1 ? 'dia' : 'dias';
+  const modeLabel = report.modeLabel || 'Treino';
+  const players = normalizeTrainingPlayerEntries(report.playerEntries || report.playerNames);
+  const energy = report.avgEnergy;
+
+  const esc = value =>
+    String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+  const playerRowHtml = entry => {
+    const ovrPart =
+      entry.ovrDelta > 0 && entry.overall != null
+        ? `<span class="training-report-ovr">${entry.overall}${formatOvrMarkHtml(entry.ovrDelta, { weeks: 1 })}</span>`
+        : '';
+    return `<li class="training-report-player-row"><span class="training-report-player-name">${esc(entry.name)}</span>${ovrPart}</li>`;
+  };
+
+  let html = `<p class="training-report-intro">Depois de ${days} ${dayWord} de treinamento ${esc(modeLabel)}, `;
+  if (players.length) {
+    html += 'os seguintes jogadores evoluiram:</p>';
+    html += `<ul class="training-report-players">${players.map(playerRowHtml).join('')}</ul>`;
+  } else {
+    html += 'nenhum jogador evoluiu nesta semana.</p>';
+  }
+  if (energy != null) {
+    html += `<p class="training-report-energy">Energia Média da equipe após treinamento é <strong>${esc(energy)}%</strong></p>`;
+  }
+  return html;
 }
 
 export function rosterHasGoalkeeper(roster = []) {

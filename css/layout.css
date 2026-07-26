@@ -134,6 +134,33 @@ main > .view.active {
   overflow: hidden;
 }
 
+.sidebar .nav-badge.nav-badge--change-ball {
+  min-width: 0;
+  width: 11px;
+  height: 11px;
+  padding: 0;
+  margin-left: auto;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff6a8, #ffc933 45%, #e6a800 100%);
+  border: 1px solid #a67c00;
+  box-shadow: 0 0 0 1px #fff5, 0 1px 4px #0008;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
+  animation: roster-change-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes roster-change-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.92; }
+}
+
+.sidebar .nav[data-view='squad'] {
+  gap: 6px;
+}
+
 .sidebar .nav-badge.hidden {
   display: none;
 }
@@ -1077,6 +1104,104 @@ main > .view.active {
   font: 500 16px/1.55 'DM Sans', sans-serif;
   max-height: min(48vh, 360px);
   overflow: auto;
+}
+
+.message-reader-head.is-training-report {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-right: 32px;
+  min-height: 44px;
+}
+
+.message-reader-head.is-training-report small {
+  display: none;
+}
+
+.message-reader-head.is-training-report h2 {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.message-reader-head.is-training-report time {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font: 700 12px 'DM Sans', sans-serif;
+  color: #9eb8bc;
+  white-space: nowrap;
+}
+
+.message-reader-body .training-report-intro {
+  margin: 0;
+}
+
+.message-reader-body .training-report-players {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #e2efed;
+}
+
+.message-reader-body .training-report-players li {
+  margin: 4px 0;
+}
+
+.training-report-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.training-report-player-name {
+  min-width: 0;
+}
+
+.training-report-ovr {
+  font: 700 14px 'DM Sans', sans-serif;
+  color: #e2efed;
+  white-space: nowrap;
+}
+
+.message-reader-body .roster-ovr-mark,
+.training-report-ovr .roster-ovr-mark,
+.training-view .roster-ovr-mark {
+  display: inline-block;
+  font: 800 13px/1 'DM Sans', sans-serif;
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+.message-reader-body .roster-ovr-mark.is-up,
+.training-report-ovr .roster-ovr-mark.is-up,
+.training-view .roster-ovr-mark.is-up {
+  color: #5fdc7a;
+}
+
+.message-reader-body .roster-ovr-mark.is-down,
+.training-report-ovr .roster-ovr-mark.is-down,
+.training-view .roster-ovr-mark.is-down {
+  color: #ff6370;
+}
+
+.message-reader-body .roster-ovr-mark.is-flat,
+.training-report-ovr .roster-ovr-mark.is-flat,
+.training-view .roster-ovr-mark.is-flat {
+  color: #ff9b3d;
+}
+
+.message-reader-body .training-report-energy {
+  margin: 1.55em 0 0;
+  color: #a8c4ca;
+}
+
+.message-reader-body .training-report-energy strong {
+  color: #b6ff38;
 }
 
 .message-reader-offer-panel {
@@ -2315,6 +2440,24 @@ main > .view.active.training-view {
   color: #718f95;
   font-size: 13px;
   line-height: 1.55;
+}
+
+.training-report-filled .training-report-intro {
+  margin: 0;
+  color: #a8c4ca;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.training-report-energy {
+  margin: 1.5em 0 0;
+  color: #a8c4ca;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.training-report-energy strong {
+  color: #b6ff38;
 }
 
 .training-report-filled strong {

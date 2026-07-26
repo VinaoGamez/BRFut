@@ -11,7 +11,7 @@ import { isClubCalendarBlackout } from '../../engine/season-calendar-cycle.js';
 import { isWorldCupFixture } from '../../engine/world-cup-calendar.js';
 import { isStateLeagueGame, stateLeagueBadgeName, stateLeaguePhaseLabel } from '../../engine/state-league-format.js';
 import { tipKey, buildPlayerTipIndex, ownGoalTipCount } from './match-report-tips.js';
-import { DEVELOPMENT_FOCUSES } from '../../engine/training-development.js';
+import { DEVELOPMENT_FOCUSES, formatTrainingWeeklyReportHtml } from '../../engine/training-development.js';
 import goalBallUrl from '../../../assets/ui/goal-ball.png?url';
 import ownGoalBallUrl from '../../../assets/ui/goal-ball-own.png?url';
 import assistBootUrl from '../../../assets/ui/assist-boot.png?url';
@@ -606,13 +606,7 @@ export function createCalendarViewFeature(deps) {
         '<p class="training-report-empty">Avance a semana no Calendário para receber o relatório de treino na inbox e aqui.</p>';
       return;
     }
-    const gains =
-      report.gainLines?.length > 0
-        ? `<ul class="training-report-gains">${report.gainLines
-            .map(line => `<li>${line}</li>`)
-            .join('')}</ul>`
-        : '';
-    reportEl.innerHTML = `<div class="training-report-filled"><strong>${report.modeLabel || 'Treino'}</strong><p>${report.body}</p>${gains}</div>`;
+    reportEl.innerHTML = `<div class="training-report-filled">${formatTrainingWeeklyReportHtml(report)}</div>`;
   };
 
   const renderTrainingShortcut = trainingRules => {

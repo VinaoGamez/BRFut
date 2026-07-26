@@ -35,6 +35,11 @@
 .player-badge-injury:before,.player-badge-injury:after{content:"";position:absolute;background:currentColor;border-radius:1px}
 .player-badge-injury:before{width:9px;height:2.5px;top:50%;left:50%;transform:translate(-50%,-50%)}
 .player-badge-injury:after{width:2.5px;height:9px;top:50%;left:50%;transform:translate(-50%,-50%)}
+#squad .player-row.player-row--recent-change{background:#1a2420!important;box-shadow:inset 3px 0 0 #ffc94f}
+#squad .player-row.player-row--recent-change:nth-child(even){background:#1c2824!important}
+#squad .player-row.player-row--ovr-up{box-shadow:inset 3px 0 0 #5fdc7a,inset 0 0 0 9999px #5fdc7a0a}
+#squad .player-row.player-row--ovr-down{box-shadow:inset 3px 0 0 #ff6370,inset 0 0 0 9999px #ff63700a}
+#tactics .tactic-player-row.player-row--recent-change{background:#152028!important;box-shadow:inset 3px 0 0 #ffc94f}
 #squad .player-row>span:first-child .player-name-cell{width:100%}
 #squad .player-row .roster-col-ovr{font-variant-numeric:tabular-nums;padding-inline:2px}
 #squad .player-row{min-height:34px}

@@ -18,8 +18,8 @@ export const PULSE_IDS = {
 const HARD_YEAR_MAX = 3;
 const HARD_YEAR_MIN = -2;
 const MIN_PERIOD_MINUTES = 180;
-/** Quantas semanas de calendário a seta de OVR fica no Elenco após o pulso. */
-export const OVR_MARK_WEEKS = 3;
+/** Quantas semanas de calendário a seta de OVR e o alerta amarelo ficam no Elenco. */
+export const OVR_MARK_WEEKS = 1;
 const MS_PER_DAY = 86400000;
 
 const ATTR_BY_POS = {
@@ -49,6 +49,10 @@ export function emptyDevelopmentState(season = null) {
     ovrMarkByPlayer: {},
     /** XP e ganhos por treino de desenvolvimento: { [playerId]: { xpSeason, ovrFromTraining, attrGains } } */
     trainingByPlayer: {},
+    /** Alertas de status recentes: { [id]: { at } } */
+    statusAlertByPlayer: {},
+    /** Snapshot de status para detectar mudanças (não persiste). */
+    statusSnapByPlayer: {},
   };
 }
 
@@ -97,6 +101,22 @@ export function getActiveOvrMark(state, playerId, careerDate, { weeks = OVR_MARK
   return { delta: 0, tone: 'flat' };
 }
 
+/** Seta de OVR (↑ / ↓ / −) igual ao Elenco. */
+export function formatOvrMarkHtml(delta, { weeks = OVR_MARK_WEEKS } = {}) {
+  const d = Math.round(Number(delta) || 0);
+  const weekLabel = `${weeks} semana${weeks === 1 ? '' : 's'}`;
+  if (d > 0) {
+    const label = `Overall +${d} (última${weeks === 1 ? '' : 's'} ${weekLabel})`;
+    return `<i class="roster-ovr-mark is-up" title="${label}" aria-label="${label}">↑</i>`;
+  }
+  if (d < 0) {
+    const label = `Overall ${d} (última${weeks === 1 ? '' : 's'} ${weekLabel})`;
+    return `<i class="roster-ovr-mark is-down" title="${label}" aria-label="${label}">↓</i>`;
+  }
+  const label = `Overall estável no último pulso (${weekLabel})`;
+  return `<i class="roster-ovr-mark is-flat" title="${label}" aria-label="${label}">−</i>`;
+}
+
 const normalizeTrainingByPlayer = raw => {
   if (!raw || typeof raw !== 'object') return {};
   const out = {};
@@ -117,11 +137,23 @@ const normalizeTrainingByPlayer = raw => {
   return out;
 };
 
+const normalizeStatusAlertMap = raw => {
+  if (!raw || typeof raw !== 'object') return {};
+  const out = {};
+  Object.entries(raw).forEach(([id, mark]) => {
+    if (!id || !mark || typeof mark !== 'object') return;
+    const at = typeof mark.at === 'string' ? mark.at : '';
+    if (!at) return;
+    out[id] = { at };
+  });
+  return out;
+};
+
 export function normalizeDevelopmentState(raw, season) {
   const base = emptyDevelopmentState(season);
   if (!raw || typeof raw !== 'object') return base;
   const sameSeason = Number(raw.season) === Number(season);
-  return {
+  const state = {
     season: Number(season) || raw.season || null,
     pulsesDone: sameSeason && Array.isArray(raw.pulsesDone) ? [...raw.pulsesDone] : [],
     yearDeltaByPlayer:
@@ -134,7 +166,14 @@ export function normalizeDevelopmentState(raw, season) {
         : {},
     ovrMarkByPlayer: sameSeason ? normalizeOvrMarkMap(raw.ovrMarkByPlayer) : {},
     trainingByPlayer: sameSeason ? normalizeTrainingByPlayer(raw.trainingByPlayer) : {},
+    statusAlertByPlayer: sameSeason ? normalizeStatusAlertMap(raw.statusAlertByPlayer) : {},
+    statusSnapByPlayer: {},
   };
+  if (!sameSeason) {
+    state.statusAlertByPlayer = {};
+    state.statusSnapByPlayer = {};
+  }
+  return state;
 }
 
 /**

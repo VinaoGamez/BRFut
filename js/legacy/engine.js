@@ -35,6 +35,13 @@ import { createDashboardFeature } from '../feature/dashboard/index.js';
 import { createTacticsFeature } from '../feature/tactics/index.js';
 import { createSeasonSummaryFeature } from '../feature/season-summary/index.js';
 import { createRetirementModalFeature } from '../feature/retirement-modal/index.js';
+import {
+  buildPlayerStatusFingerprint,
+  countActiveRosterChangeAlerts,
+  getActiveRosterChangeAlert,
+  rosterChangeRowClass,
+  scanRosterStatusChanges,
+} from '../engine/roster-change-alerts.js';
 import { processSeasonRetirements, markRetiredInHistoryStore } from '../engine/player-retirement.js';
 import { createPlayerCells, outfield, fatigueCell } from '../feature/shared/player-cells.js';
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
@@ -93,6 +100,7 @@ import {
   runDevelopmentPulse,
   advancePlayerAges,
   getActiveOvrMark,
+  formatOvrMarkHtml,
   OVR_MARK_WEEKS,
   PULSE_IDS,
   syncClubPowers,
@@ -630,6 +638,7 @@ export async function bootEngine({ bus } = {}) {
     userLeagueDisciplineKey,
     getFocusCompetitionKey: () => fixtureCompetitionKey(liveMatchGame || nextUserGame) || userLeagueDisciplineKey(),
   });
+const rosterChangeAlertHolder = { fn: null };
   const engineTuning = ENGINE_TUNING;
   let buildSimLineup;
   let substitutionPriority;
@@ -2942,9 +2951,12 @@ export async function bootEngine({ bus } = {}) {
     return `<span class="${groupClass}${top?' is-top-attr':''}">${display}</span>`;
   };
   /** HTML da seta de OVR — preenchido após init de playerDevelopment. */
+  let playerDevelopment=null;
   let rosterOvrMarkHtml=()=> '';
   /** HTML da coluna XP de treino — preenchido após init de playerDevelopment. */
   let rosterTrainingXpHtml=()=> '';
+  let scanUserRosterChangeAlerts=()=>{};
+  let updateSquadChangeNavBadge=()=>{};
   const rosterContracts=createRosterContractsFeature({
     $,
     $$,
@@ -2955,6 +2967,7 @@ export async function bootEngine({ bus } = {}) {
     onRenewalRespond:opts=>respondToContractRenewal(opts),
   });
   const renderRoster=()=>{
+    try{scanUserRosterChangeAlerts();}catch{/* boot */}
     const list=$('#playerList');
     if(!list)return;
     syncRosterFilterOptions();
@@ -2980,7 +2993,10 @@ export async function bootEngine({ bus } = {}) {
         contractTone==='critical'?' roster-contract-critical':
         contractTone==='expired'?' roster-contract-expired':'';
       const fatiguePct=Math.round(clamp(p.fatigue,0,100));
-      return `<div class="player-row roster-expanded${contractClass}">
+      const changeId=resolvePlayerId(p)||playerKey(p)||historyPlayerKey(p);
+      const changeAlert=playerDevelopment?getActiveRosterChangeAlert(playerDevelopment,changeId,careerCalendarDate):null;
+      const changeClass=rosterChangeRowClass(changeAlert);
+      return `<div class="player-row roster-expanded${contractClass}${changeClass?` ${changeClass}`:''}">
       <span>${playerRename.renderNameCell(p,{showLoan:true,clubName:userClub})}</span>
       <span class="badge">${p.pos}</span>
       <span>${p.age}</span>
@@ -3013,6 +3029,7 @@ export async function bootEngine({ bus } = {}) {
       btn.classList.toggle('is-desc',active&&rosterSort.dir==='desc');
     });
     rosterContracts.updateButtonBadge?.();
+    try{updateSquadChangeNavBadge();}catch{/* boot */}
     const contractModal=$('#rosterContractModal');
     if(contractModal&&!contractModal.classList.contains('hidden')){
       rosterContracts.render?.();
@@ -5228,7 +5245,7 @@ export async function bootEngine({ bus } = {}) {
     playerHistory.persist();
   }
   renderTeamStatsCard?.();
-  let playerDevelopment=normalizeDevelopmentState(
+  playerDevelopment=normalizeDevelopmentState(
     validSavedSeason?savedSeason?.playerDevelopment:null,
     careerSeason,
   );
@@ -5236,14 +5253,30 @@ export async function bootEngine({ bus } = {}) {
     const id=resolvePlayerId(player)||playerKey(player)||historyPlayerKey(player);
     const mark=getActiveOvrMark(playerDevelopment,id,careerCalendarDate,{weeks:OVR_MARK_WEEKS});
     if(!mark)return '';
-    const symbol=mark.tone==='up'?'↑':mark.tone==='down'?'↓':'−';
-    const label=mark.tone==='up'
-      ?`Overall +${mark.delta} (últimas ${OVR_MARK_WEEKS} semanas)`
-      :mark.tone==='down'
-        ?`Overall ${mark.delta} (últimas ${OVR_MARK_WEEKS} semanas)`
-        :`Overall estável no último pulso (${OVR_MARK_WEEKS} semanas)`;
-    return `<i class="roster-ovr-mark is-${mark.tone}" title="${label}" aria-label="${label}">${symbol}</i>`;
+    return formatOvrMarkHtml(mark.delta,{weeks:OVR_MARK_WEEKS});
   };
+  const rosterChangePlayerId=player=>resolvePlayerId(player)||playerKey(player)||historyPlayerKey(player);
+  scanUserRosterChangeAlerts=()=>{
+    if(!playerDevelopment||!squad?.length)return;
+    scanRosterStatusChanges(squad,playerDevelopment,careerCalendarDate,{
+      getPlayerId:rosterChangePlayerId,
+      fingerprint:p=>buildPlayerStatusFingerprint(p,{injuryInAcutePhase,injuryInRestrictedPhase}),
+    });
+  };
+  updateSquadChangeNavBadge=()=>{
+    if(!playerDevelopment)return;
+    const count=countActiveRosterChangeAlerts(squad,playerDevelopment,careerCalendarDate,rosterChangePlayerId);
+    const badge=$('#squadChangeNavBadge');
+    badge?.classList.toggle('hidden',count<=0);
+    const nav=document.querySelector('.nav[data-view="squad"]');
+    if(nav&&count>0){
+      nav.dataset.changeAlerts=String(count);
+    }else if(nav){
+      delete nav.dataset.changeAlerts;
+    }
+  };
+  rosterChangeAlertHolder.fn=player=>getActiveRosterChangeAlert(playerDevelopment,rosterChangePlayerId(player),careerCalendarDate);
+  scanUserRosterChangeAlerts();
   rosterTrainingXpHtml=player=>{
     const id=resolvePlayerId(player)||playerKey(player)||historyPlayerKey(player);
     const progress=getTrainingProgressForPlayer(playerDevelopment,id);
@@ -5274,11 +5307,21 @@ export async function bootEngine({ bus } = {}) {
   const flushWeeklyTrainingReport=()=>{
     if(!weeklyTrainingAccumulator.days)return;
     const report=finalizeWeeklyTrainingReport(weeklyTrainingAccumulator,trainingRules);
+    const roster=clubs[userClub]?.roster||squad||[];
+    const rosterById=new Map();
+    roster.forEach(player=>{
+      const id=resolvePlayerId(player)||playerKey(player)||historyPlayerKey(player);
+      if(id)rosterById.set(id,player);
+    });
+    (report.playerEntries||[]).forEach(entry=>{
+      const player=rosterById.get(entry.playerId);
+      if(player)entry.overall=Number(player.overall)||null;
+    });
     lastWeeklyTrainingReport=report;
     pushMessage({
       category:'club',
       type:'training-weekly',
-      title:'Relatório semanal de treino',
+      title:'RELATÓRIOS DE TREINAMENTOS',
       body:report.body,
       round:currentRound,
       read:false,
@@ -5286,6 +5329,9 @@ export async function bootEngine({ bus } = {}) {
         trainingMode:trainingRules.freeMode,
         developmentFocus:trainingRules.developmentFocus,
         days:report.days,
+        trainingModeLabel:report.modeLabel,
+        evolvedPlayers:report.playerEntries,
+        avgEnergy:report.avgEnergy,
       },
     });
     weeklyTrainingAccumulator=emptyWeeklyTrainingReport();
@@ -5405,6 +5451,7 @@ export async function bootEngine({ bus } = {}) {
   careerCalendar.setOnAdvanced(()=>{
     autoMarkStaleMessages?.();
     syncCalendarDevelopmentPulses();
+    try{scanUserRosterChangeAlerts();updateSquadChangeNavBadge();}catch{/* boot */}
   });
   syncCalendarDevelopmentPulses();
   try{renderRoster();}catch{/* boot */}
@@ -7713,6 +7760,7 @@ export async function bootEngine({ bus } = {}) {
         pulsesDone:Array.isArray(playerDevelopment?.pulsesDone)?[...playerDevelopment.pulsesDone]:[],
         yearDeltaByPlayer:{...(playerDevelopment?.yearDeltaByPlayer||{})},
         ovrMarkByPlayer:{...(playerDevelopment?.ovrMarkByPlayer||{})},
+        statusAlertByPlayer:{...(playerDevelopment?.statusAlertByPlayer||{})},
         trainingByPlayer:{...(playerDevelopment?.trainingByPlayer||{})},
         // snapByPlayer é regenerável — não inchamos o save a cada rodada.
         snapByPlayer:{},

@@ -1,4 +1,5 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
+import { formatTrainingWeeklyReportHtml } from '../../engine/training-development.js';
 import { defaultClubCrestInitials } from '../../ui/club-label.js';
 import { teamCrestHtml } from '../../ui/team-crest.js';
 
@@ -179,6 +180,22 @@ const isMatchResultMessage = message =>
 
 const isDisciplineDigestMessage = message =>
   message?.category === 'discipline' || /^disciplina\b/i.test(message?.title || '');
+
+const isTrainingWeeklyMessage = message =>
+  message?.type === 'training-weekly' || /^relat[oó]rios de treinamentos/i.test(message?.title || '');
+
+const trainingWeeklyReaderHtml = message => {
+  const meta = message.meta || {};
+  if (Array.isArray(meta.evolvedPlayers) || meta.trainingModeLabel || meta.avgEnergy != null) {
+    return formatTrainingWeeklyReportHtml({
+      days: meta.days,
+      modeLabel: meta.trainingModeLabel,
+      playerEntries: meta.evolvedPlayers,
+      avgEnergy: meta.avgEnergy,
+    });
+  }
+  return bodyToHtml(message.body);
+};
 
 /** Pré-jogo, resultado e disciplina: cabeçalho curto "Brasileirão D" / "Rodada X". */
 const usesCompetitionShortMeta = message =>
@@ -473,12 +490,16 @@ export function createMessagesFeature(deps) {
     const offerMessage = isIncomingOfferMessage(message);
     const nationalTeamOfferMessage = isNationalTeamOfferMessage(message);
     const matchdayMessage = isMatchdayMessage(message);
+    const trainingWeeklyMessage = isTrainingWeeklyMessage(message);
     const competitionShortMeta = usesCompetitionShortMeta(message);
     const head = $('.message-reader-head');
     head?.classList.add('is-reader-grid');
     head?.classList.toggle('is-transfer-offer', !!offerMessage);
+    head?.classList.toggle('is-training-report', !!trainingWeeklyMessage);
     if (meta) {
-      if (offerMessage) {
+      if (trainingWeeklyMessage) {
+        meta.innerHTML = '';
+      } else if (offerMessage) {
         const competition = message.meta?.competition || 'Mercado';
         meta.innerHTML = `<span>RODADA ${escapeHtml(message.round)}</span><span>${escapeHtml(competition)}</span>`;
       } else if (nationalTeamOfferMessage) {
@@ -519,6 +540,9 @@ export function createMessagesFeature(deps) {
       } else if (isDisciplineDigestMessage(message)) {
         title.classList.remove('is-loan-title');
         title.textContent = 'DISCIPLINA';
+      } else if (trainingWeeklyMessage) {
+        title.classList.remove('is-loan-title');
+        title.textContent = 'RELATÓRIOS DE TREINAMENTOS';
       } else {
         title.classList.remove('is-loan-title');
         title.textContent = message.title;
@@ -564,6 +588,8 @@ export function createMessagesFeature(deps) {
           : bodyToHtml(offerText);
       } else if (matchdayMessage) {
         body.innerHTML = bodyToHtml(formatMatchdayBody(message.body));
+      } else if (trainingWeeklyMessage) {
+        body.innerHTML = trainingWeeklyReaderHtml(message);
       } else {
         body.innerHTML = bodyToHtml(message.body);
       }
@@ -598,7 +624,9 @@ export function createMessagesFeature(deps) {
                   ? 'JOGO DO DIA'
                   : isDisciplineDigestMessage(message)
                     ? 'DISCIPLINA'
-                    : message.title;
+                    : isTrainingWeeklyMessage(message)
+                      ? 'RELATÓRIOS DE TREINAMENTOS'
+                      : message.title;
             return `<article class="message-item ${message.read ? 'read' : 'unread'} message-${message.category}${urgent ? ' message-action-required' : ''}" data-message-id="${message.id}"><div class="message-item-main"><small>${CATEGORY_LABELS[message.category] || message.category.toUpperCase()} · RODADA ${message.round}${urgent ? ' · AÇÃO' : ''}</small><strong>${escapeHtml(listTitle)}</strong></div><time>${formatMessageTime(message.at)}</time></article>`;
           })
           .join('')
@@ -618,7 +646,9 @@ export function createMessagesFeature(deps) {
               ? 'JOGO DO DIA'
               : isDisciplineDigestMessage(message)
                 ? 'DISCIPLINA'
-                : message.title;
+                : isTrainingWeeklyMessage(message)
+                  ? 'RELATÓRIOS DE TREINAMENTOS'
+                  : message.title;
             return `<div class="dashboard-message-row ${message.read ? 'read' : 'unread'}${urgent ? ' message-action-required' : ''}" data-message-id="${message.id}"><small>${CATEGORY_LABELS[message.category] || message.category}${urgent ? ' · AÇÃO' : ''}</small><strong>${escapeHtml(feedTitle)}</strong></div>`;
           })
           .join('')
