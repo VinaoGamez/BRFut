@@ -5,6 +5,32 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.20',
+    date: '2026-07-26',
+    publishedAt: '2026-07-26T15:35:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Treinamento com evolução',
+        items: [
+          'Dias livres: escolha Gestão de Carga (recupera energia) ou Desenvolvimento (evolui Fin, Pas, Mar e Overall).',
+          'Sete focos de treino — Finalização, Passes & Visão, Defesa & Desarme, Condução & Velocidade, Jogo aéreo & Físico, Goleiro (se houver) e Individual.',
+          'Reservas e jovens evoluem mais rápido; titulares exaustos perdem eficiência — trade-off entre desgaste e crescimento.',
+          'Overall recalculado a partir dos atributos treinados, respeitando o Potential (POT).',
+          'Relatório semanal de treino ao avançar a semana no Calendário (também na inbox).',
+          'Tela de Treinamento reorganizada: plano ativo na sidebar, comparativo Gestão vs Desenvolvimento, pré/pós-jogo simplificados e focos em grade.',
+        ],
+      },
+      {
+        label: 'Elenco',
+        items: [
+          'Nova coluna XP TREINO: barra de progresso por jogador (100 XP ≈ +1 atributo) quando o modo Desenvolvimento está ativo.',
+          'Ordenação pela coluna XP; badge +N quando já houve ganho de atributos na temporada.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.15',
     date: '2026-07-26',
     publishedAt: '2026-07-26T07:35:00-03:00',

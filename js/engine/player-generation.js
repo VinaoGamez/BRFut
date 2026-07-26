@@ -398,7 +398,7 @@ export function topAttributeKeys(player, count = 3) {
     .map(([key]) => key);
 }
 
-const generatedOverall = (role, a) => {
+export const generatedOverall = (role, a) => {
   const weighted = {
     GOL:
       a.positioning * 0.32 +
@@ -481,6 +481,43 @@ const generatedOverall = (role, a) => {
   };
   return Math.round(weighted[role] ?? a.overallBase);
 };
+
+const clampStat = (n, min, max) => Math.max(min, Math.min(max, n));
+
+/** Atributos do jogador no formato esperado por generatedOverall. */
+export function playerAttributesForOverall(player) {
+  const overallBase = Math.round(Number(player?.overall) || 50);
+  return {
+    positioning: Number(player?.positioning) || 0,
+    reflexes: Number(player?.reflexes) || 0,
+    penaltySaving: Number(player?.penaltySaving) || 0,
+    passing: Number(player?.passing) || 0,
+    speed: Number(player?.speed) || 0,
+    playmaking: Number(player?.playmaking) || 0,
+    marking: Number(player?.marking) || 0,
+    tackling: Number(player?.tackling) || 0,
+    heading: Number(player?.heading) || 0,
+    dribble: Number(player?.dribble) || 0,
+    finishing: Number(player?.finishing) || 0,
+    overallBase,
+  };
+}
+
+/**
+ * Recalcula OVR a partir dos atributos (Opção A — treino).
+ * Nunca reduz OVR; respeita POT.
+ * @returns {{ before: number, after: number, applied: number }}
+ */
+export function syncOverallFromAttributes(player) {
+  if (!player?.pos) return { before: 0, after: 0, applied: 0 };
+  const before = Math.round(Number(player.overall) || 50);
+  const pot = Math.max(before, Number(player.potential) || before);
+  const computed = generatedOverall(player.pos, playerAttributesForOverall(player));
+  const after = clampStat(Math.max(computed, before), 1, pot);
+  const applied = after - before;
+  if (applied > 0) player.overall = after;
+  return { before, after: Number(player.overall) || before, applied };
+}
 
 /**
  * Δ OVR máx. por temporada (modelo auge 27–29 / GOL 29–32).

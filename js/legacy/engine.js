@@ -96,6 +96,19 @@ import {
   syncClubPowers,
 } from '../engine/player-development.js';
 import {
+  normalizeTrainingRules,
+  applyDevelopmentTrainingDay,
+  emptyWeeklyTrainingReport,
+  finalizeWeeklyTrainingReport,
+  DEVELOPMENT_FOCUSES,
+  TRAINING_FREE_MODES,
+  developmentFocusOptionsForRoster,
+  formatRosterTrainingXpHtml,
+  getTrainingProgressForPlayer,
+  summarizeSquadTrainingXp,
+  XP_PER_ATTR_POINT,
+} from '../engine/training-development.js';
+import {
   generatePlayer as generatePlayerCore,
   GENERIC_SQUAD_ROLES,
   DIVISION_CLUB_POWER,
@@ -2878,6 +2891,10 @@ export async function bootEngine({ bus } = {}) {
       case 'penaltySaving':return Number(p.penaltySaving)||0;
       case 'reflexes':return Number(p.reflexes)||0;
       case 'fatigue':return Number(p.fatigue)||0;
+      case 'trainingXp':{
+        const id=resolvePlayerId(p)||playerKey(p)||historyPlayerKey(p);
+        return Number(getTrainingProgressForPlayer(playerDevelopment,id)?.xpSeason)||0;
+      }
       default:return 0;
     }
   };
@@ -2920,6 +2937,8 @@ export async function bootEngine({ bus } = {}) {
   };
   /** HTML da seta de OVR — preenchido após init de playerDevelopment. */
   let rosterOvrMarkHtml=()=> '';
+  /** HTML da coluna XP de treino — preenchido após init de playerDevelopment. */
+  let rosterTrainingXpHtml=()=> '';
   const rosterContracts=createRosterContractsFeature({
     $,
     $$,
@@ -2976,6 +2995,7 @@ export async function bootEngine({ bus } = {}) {
       ${rosterAttrCell(p,'positioning','roster-group-gk',outfield(p.positioning),top)}
       ${rosterAttrCell(p,'penaltySaving','roster-group-gk',outfield(p.penaltySaving),top)}
       ${rosterAttrCell(p,'reflexes','roster-group-gk',outfield(p.reflexes),top)}
+      ${rosterTrainingXpHtml(p)}
       <span class="roster-fatigue"><i><b style="width:${fatiguePct}%"></b><em>${fatiguePct}%</em></i></span>
     </div>`;
     }).join('');
@@ -3339,9 +3359,9 @@ export async function bootEngine({ bus } = {}) {
   if(validSavedSeason)maybeSendNationalTeamOffers();
   const initialCalendarDate=validSavedSeason?careerCalendarDate:seasonStartDate();
   const trainingOptions={before:['Preparação tática','Treino leve','Descanso'],after:['Recuperação','Descanso total','Análise do jogo'],free:['Treino equilibrado','Treino técnico','Descanso intermitente']};
-  let trainingRules={before:'Preparação tática',after:'Recuperação',free:'Treino equilibrado'};
-  if(validSavedSeason&&savedSeason.trainingRules)trainingRules={...trainingRules,...savedSeason.trainingRules};
-  else try{trainingRules={...trainingRules,...JSON.parse(localStorage.getItem('matchday-training-rules')||'{}')};}catch{}
+  let trainingRules=normalizeTrainingRules({before:'Preparação tática',after:'Recuperação',free:'Treino equilibrado'});
+  if(validSavedSeason&&savedSeason.trainingRules)trainingRules=normalizeTrainingRules({...trainingRules,...savedSeason.trainingRules});
+  else try{trainingRules=normalizeTrainingRules({...trainingRules,...JSON.parse(localStorage.getItem('matchday-training-rules')||'{}')});}catch{}
   const fatigueEngine=createFatigueEngine({
     clamp,
     getClubs:()=>clubs,
@@ -3353,10 +3373,14 @@ export async function bootEngine({ bus } = {}) {
   const {
     trainingRecoveryMultiplier,
     recoverPlayers,
+    recoverOtherClubs,
     applyTrainingDay,
     applyPreMatchTraining,
     applyMinuteWearToLineup,
   }=fatigueEngine;
+  let applyCalendarTrainingDay=type=>applyTrainingDay(type);
+  let weeklyTrainingAccumulator=emptyWeeklyTrainingReport();
+  let lastWeeklyTrainingReport=null;
   const seasonEndDate=()=>planSeasonEndDate(careerSeason);
   const weekBounds=date=>{const start=new Date(date);start.setDate(start.getDate()-start.getDay());start.setHours(12,0,0,0);const end=new Date(start);end.setDate(end.getDate()+6);end.setHours(12,0,0,0);return{start,end};};
   const formatWeekDay=date=>`${String(date.getDate()).padStart(2,'0')} ${date.toLocaleDateString('pt-BR',{month:'short'}).replace('.','').toUpperCase()}`;
@@ -3368,7 +3392,7 @@ export async function bootEngine({ bus } = {}) {
   const completedUserMatchOnDate=date=>(calendarGames.get(calendarKey(date))||[]).find(game=>isUserFixture(game)&&isFixtureCompleted(game))||null;
   const isOnPendingMatchDay=()=>!!userMatchOnDate(careerCalendarDate);
   const trainingTypeForDate=date=>{const tomorrow=new Date(date);tomorrow.setDate(tomorrow.getDate()+1);if(userMatchOnDate(tomorrow))return'before';const yesterday=new Date(date);yesterday.setDate(yesterday.getDate()-1);if(completedUserMatchOnDate(yesterday))return'after';return'free';};
-  const calendarTrainingMap=()=>{const map=new Map(),add=(date,type)=>{const key=calendarKey(date);if(!map.has(key))map.set(key,[]);if(!map.get(key).some(item=>item.type===type))map.get(key).push({type,label:trainingRules[type]});};seasonCalendarFixtures.filter(isUserFixture).forEach(game=>{const matchDate=fixtureDetails(game).date,before=new Date(matchDate),after=new Date(matchDate);before.setDate(before.getDate()-1);after.setDate(after.getDate()+1);add(before,'before');add(after,'after');});const {start,end}=weekBounds(careerCalendarDate);for(let cursor=new Date(start);cursor<=end;cursor.setDate(cursor.getDate()+1)){const key=calendarKey(cursor);if(map.has(key))continue;if(!(calendarGames.get(key)||[]).some(isUserFixture))add(new Date(cursor),'free');}return map;};
+  const calendarTrainingMap=()=>{const map=new Map(),add=(date,type)=>{const key=calendarKey(date);if(!map.has(key))map.set(key,[]);if(!map.get(key).some(item=>item.type===type)){const label=type==='free'&&trainingRules.freeMode===TRAINING_FREE_MODES.development?`Desenvolvimento · ${DEVELOPMENT_FOCUSES[trainingRules.developmentFocus]?.label||'Individual'}`:trainingRules[type];map.get(key).push({type,label});}};seasonCalendarFixtures.filter(isUserFixture).forEach(game=>{const matchDate=fixtureDetails(game).date,before=new Date(matchDate),after=new Date(matchDate);before.setDate(before.getDate()-1);after.setDate(after.getDate()+1);add(before,'before');add(after,'after');});const {start,end}=weekBounds(careerCalendarDate);for(let cursor=new Date(start);cursor<=end;cursor.setDate(cursor.getDate()+1)){const key=calendarKey(cursor);if(map.has(key))continue;if(!(calendarGames.get(key)||[]).some(isUserFixture))add(new Date(cursor),'free');}return map;};
   document.body.insertAdjacentHTML('beforeend',`<div id="treatmentModal" class="modal hidden"><div class="modal-card treatment-modal"><button id="closeTreatmentModal" class="close" type="button">×</button><label>DECISÃO MÉDICA</label><h2 id="treatmentPlayerName"></h2><p id="treatmentInjuryName" class="treatment-injury-name"></p><p id="treatmentModalText"></p><p id="treatmentMedicalMeta" class="treatment-medical-meta"></p><div class="treatment-actions"><button id="treatmentConservative" type="button"><span class="treatment-choice-label">TRATAMENTO CONSERVADOR</span><span id="treatmentConservativeMeta" class="treatment-choice-meta"></span></button><button id="treatmentSurgery" type="button"><span class="treatment-choice-label">CIRURGIA</span><span id="treatmentSurgeryMeta" class="treatment-choice-meta"></span></button></div></div></div>`);
   onClick('#closeTreatmentModal',()=>{if(pendingTreatmentDecision)finishTreatmentChoice('conservative');});
   onClick('#treatmentConservative',()=>finishTreatmentChoice('conservative'));
@@ -3415,6 +3439,13 @@ export async function bootEngine({ bus } = {}) {
     getSeasonRoundHistory:()=>seasonRoundHistory,
     getTrainingRules:()=>trainingRules,
     setTrainingRule:(type,value)=>{trainingRules[type]=value;},
+    setTrainingFreeMode:mode=>{
+      trainingRules.freeMode=mode===TRAINING_FREE_MODES.development?TRAINING_FREE_MODES.development:TRAINING_FREE_MODES.load;
+      try{renderRoster();}catch{/* boot */}
+    },
+    setDevelopmentFocus:focus=>{if(DEVELOPMENT_FOCUSES[focus])trainingRules.developmentFocus=focus;},
+    getDevelopmentFocusOptions:()=>developmentFocusOptionsForRoster(clubs[userClub]?.roster||[]),
+    getLastWeeklyTrainingReport:()=>lastWeeklyTrainingReport,
     getHasCareer:()=>!!savedNewGame,
     openView:viewId=>router.openView(viewId),
     getChampionshipDivision:()=>championshipDivision,
@@ -3962,7 +3993,7 @@ export async function bootEngine({ bus } = {}) {
         if(nextDay>seasonEnd)break;
         const pendingMatch=userMatchOnDate(nextDay);
         if(pendingMatch){
-          applyTrainingDay(trainingTypeForDate(nextDay));
+          applyCalendarTrainingDay(trainingTypeForDate(nextDay));
           advanceCareerCalendarTo(nextDay);
           processContractsForDate(nextDay);
           advanceCupThroughDate(nextDay);
@@ -3973,7 +4004,7 @@ export async function bootEngine({ bus } = {}) {
           if(!batch)pushMatchDayBrief(pendingMatch);
           break;
         }
-        applyTrainingDay(trainingTypeForDate(nextDay));
+        applyCalendarTrainingDay(trainingTypeForDate(nextDay));
         advanceCareerCalendarTo(nextDay);
         processContractsForDate(nextDay);
         advanceCupThroughDate(nextDay);
@@ -4026,6 +4057,7 @@ export async function bootEngine({ bus } = {}) {
       }
     }
     if(!batch){
+      if(simulatedDays>0)flushWeeklyTrainingReport();
       persistSeason(true);
       refreshSeasonPresentation();
       transfersUi?.render?.();
@@ -5206,10 +5238,75 @@ export async function bootEngine({ bus } = {}) {
         :`Overall estável no último pulso (${OVR_MARK_WEEKS} semanas)`;
     return `<i class="roster-ovr-mark is-${mark.tone}" title="${label}" aria-label="${label}">${symbol}</i>`;
   };
+  rosterTrainingXpHtml=player=>{
+    const id=resolvePlayerId(player)||playerKey(player)||historyPlayerKey(player);
+    const progress=getTrainingProgressForPlayer(playerDevelopment,id);
+    const active=trainingRules.freeMode===TRAINING_FREE_MODES.development;
+    return formatRosterTrainingXpHtml(progress,{active});
+  };
   const getDevelopmentSeasonBucket=player=>{
     const key=historyPlayerKey(player);
     if(!key)return null;
     return playerHistory.getPlayer(key)?.seasons?.[String(careerSeason)]||null;
+  };
+  const accumulateWeeklyTraining=result=>{
+    if(!result?.dayApplied)return;
+    weeklyTrainingAccumulator.days+=1;
+    weeklyTrainingAccumulator.totalXp+=Number(result.totalXp)||0;
+    if(result.avgEnergy!=null)weeklyTrainingAccumulator.avgEnergy=result.avgEnergy;
+    if(result.blockedCount)weeklyTrainingAccumulator.blockedCount+=result.blockedCount;
+    if(result.exhaustedWarning)weeklyTrainingAccumulator.exhaustedWarning=true;
+    (result.gains||[]).forEach(entry=>{
+      const key=`${entry.playerId}|${entry.attr}`;
+      const row=weeklyTrainingAccumulator.gains.find(item=>`${item.playerId}|${item.attr}`===key);
+      if(row){
+        row.attrDelta=(row.attrDelta||0)+(entry.attrDelta||0);
+        row.ovrDelta=(row.ovrDelta||0)+(entry.ovrDelta||0);
+      }else weeklyTrainingAccumulator.gains.push({...entry});
+    });
+  };
+  const flushWeeklyTrainingReport=()=>{
+    if(!weeklyTrainingAccumulator.days)return;
+    const report=finalizeWeeklyTrainingReport(weeklyTrainingAccumulator,trainingRules);
+    lastWeeklyTrainingReport=report;
+    pushMessage({
+      category:'club',
+      type:'training-weekly',
+      title:'Relatório semanal de treino',
+      body:report.body,
+      round:currentRound,
+      read:false,
+      meta:{
+        trainingMode:trainingRules.freeMode,
+        developmentFocus:trainingRules.developmentFocus,
+        days:report.days,
+      },
+    });
+    weeklyTrainingAccumulator=emptyWeeklyTrainingReport();
+  };
+  applyCalendarTrainingDay=type=>{
+    if(type==='free'&&trainingRules.freeMode===TRAINING_FREE_MODES.development){
+      const club=clubs[userClub];
+      if(!club?.roster?.length){recoverOtherClubs(1,1);return;}
+      const result=applyDevelopmentTrainingDay({
+        roster:club.roster,
+        focus:trainingRules.developmentFocus,
+        state:playerDevelopment,
+        getPlayerId:player=>resolvePlayerId(player)||playerKey(player)||historyPlayerKey(player),
+        getSeasonMinutes:player=>Number(getDevelopmentSeasonBucket(player)?.minutes)||0,
+        institutionRecovery:clubInstitutionalContext(club).recovery,
+        careerDate:careerCalendarDate,
+      });
+      accumulateWeeklyTraining(result);
+      if(result.changed){
+        syncClubPowers(clubs);
+        if(clubs[userClub]?.roster)squad.splice(0,squad.length,...clubs[userClub].roster);
+      }
+      try{renderRoster();}catch{/* boot */}
+      recoverOtherClubs(1,1);
+      return;
+    }
+    applyTrainingDay(type);
   };
   const playerCardModal=createPlayerCardModal({
     getUserClub:()=>userClub,
@@ -7609,6 +7706,7 @@ export async function bootEngine({ bus } = {}) {
         pulsesDone:Array.isArray(playerDevelopment?.pulsesDone)?[...playerDevelopment.pulsesDone]:[],
         yearDeltaByPlayer:{...(playerDevelopment?.yearDeltaByPlayer||{})},
         ovrMarkByPlayer:{...(playerDevelopment?.ovrMarkByPlayer||{})},
+        trainingByPlayer:{...(playerDevelopment?.trainingByPlayer||{})},
         // snapByPlayer é regenerável — não inchamos o save a cada rodada.
         snapByPlayer:{},
       },
@@ -7752,7 +7850,7 @@ export async function bootEngine({ bus } = {}) {
           refreshSeasonPresentation();
           return {stopped:'match',game:pendingMatch,days:simulatedDays};
         }
-        applyTrainingDay(trainingTypeForDate(nextDay));
+        applyCalendarTrainingDay(trainingTypeForDate(nextDay));
         advanceCareerCalendarTo(nextDay);
         processContractsForDate(nextDay);
         advanceCupThroughDate(nextDay);
@@ -7764,6 +7862,7 @@ export async function bootEngine({ bus } = {}) {
       endCalendarBatch();
       flushCupScheduleRefresh();
       if(simulatedDays>0){
+        flushWeeklyTrainingReport();
         try{syncCareerRosters();}catch{/* ignore */}
         try{renderRoster();}catch{/* ignore */}
       }
@@ -7812,7 +7911,7 @@ export async function bootEngine({ bus } = {}) {
         nextDay.setDate(nextDay.getDate()+1);
         nextDay.setHours(12,0,0,0);
         if(nextDay>seasonEnd)break;
-        applyTrainingDay(trainingTypeForDate(nextDay));
+        applyCalendarTrainingDay(trainingTypeForDate(nextDay));
         advanceCareerCalendarTo(nextDay);
         processContractsForDate(nextDay);
         advanceCupThroughDate(nextDay);
@@ -7824,6 +7923,7 @@ export async function bootEngine({ bus } = {}) {
     }finally{
       endCalendarBatch();
       if(simulatedDays>0){
+        flushWeeklyTrainingReport();
         if(transferWindowTouched){
           suppressTransferOfferPopup=true;
           try{
@@ -8654,7 +8754,7 @@ export async function bootEngine({ bus } = {}) {
     nextDay.setDate(nextDay.getDate()+1);
     nextDay.setHours(12,0,0,0);
     if(nextDay>seasonEndDate())return;
-    applyTrainingDay(trainingTypeForDate(nextDay));
+    applyCalendarTrainingDay(trainingTypeForDate(nextDay));
     advanceCareerCalendarTo(nextDay);
     advanceCupThroughDate(nextDay);
     advanceStateLeagueThroughDate(nextDay);

@@ -11,6 +11,7 @@ import { isClubCalendarBlackout } from '../../engine/season-calendar-cycle.js';
 import { isWorldCupFixture } from '../../engine/world-cup-calendar.js';
 import { isStateLeagueGame, stateLeagueBadgeName, stateLeaguePhaseLabel } from '../../engine/state-league-format.js';
 import { tipKey, buildPlayerTipIndex, ownGoalTipCount } from './match-report-tips.js';
+import { DEVELOPMENT_FOCUSES } from '../../engine/training-development.js';
 import goalBallUrl from '../../../assets/ui/goal-ball.png?url';
 import ownGoalBallUrl from '../../../assets/ui/goal-ball-own.png?url';
 import assistBootUrl from '../../../assets/ui/assist-boot.png?url';
@@ -53,6 +54,10 @@ export function createCalendarViewFeature(deps) {
     getSeasonRoundHistory,
     getTrainingRules,
     setTrainingRule,
+    setTrainingFreeMode,
+    setDevelopmentFocus,
+    getDevelopmentFocusOptions,
+    getLastWeeklyTrainingReport,
     getHasCareer,
     onPersist,
     openView,
@@ -585,16 +590,95 @@ export function createCalendarViewFeature(deps) {
     reportModal.classList.remove('hidden');
   };
 
+  const freeDaySummary = trainingRules => {
+    if (trainingRules.freeMode === 'development') {
+      return `Desenvolvimento · ${DEVELOPMENT_FOCUSES[trainingRules.developmentFocus]?.label || 'Individual'}`;
+    }
+    return trainingRules.free || '—';
+  };
+
+  const renderTrainingWeeklyReport = () => {
+    const reportEl = $('#trainingWeeklyReport');
+    const report = typeof getLastWeeklyTrainingReport === 'function' ? getLastWeeklyTrainingReport() : null;
+    if (!reportEl) return;
+    if (!report?.body) {
+      reportEl.innerHTML =
+        '<p class="training-report-empty">Avance a semana no Calendário para receber o relatório de treino na inbox e aqui.</p>';
+      return;
+    }
+    const gains =
+      report.gainLines?.length > 0
+        ? `<ul class="training-report-gains">${report.gainLines
+            .map(line => `<li>${line}</li>`)
+            .join('')}</ul>`
+        : '';
+    reportEl.innerHTML = `<div class="training-report-filled"><strong>${report.modeLabel || 'Treino'}</strong><p>${report.body}</p>${gains}</div>`;
+  };
+
+  const renderTrainingShortcut = trainingRules => {
+    const wrap = $('#trainingShortcutSummary');
+    if (!wrap) return;
+    const isDev = trainingRules.freeMode === 'development';
+    const modeLabel = isDev
+      ? `Desenvolvimento · ${DEVELOPMENT_FOCUSES[trainingRules.developmentFocus]?.label || 'Individual'}`
+      : `Gestão · ${trainingRules.free || 'Treino equilibrado'}`;
+    wrap.innerHTML = `<div class="training-shortcut-mode ${isDev ? 'is-dev' : 'is-load'}"><small>MODO ATIVO</small><strong>${modeLabel}</strong></div><p class="training-shortcut-note">Pré: ${trainingRules.before || '—'} · Pós: ${trainingRules.after || '—'}</p>`;
+  };
+
   const renderTrainingRules = () => {
     const trainingRules = getTrainingRules();
+    const freeSummary = freeDaySummary(trainingRules);
     $$('#trainingRules [data-training-current]').forEach(el => {
-      el.textContent = trainingRules[el.dataset.trainingCurrent] || '—';
+      const slot = el.dataset.trainingCurrent;
+      el.textContent = slot === 'free' ? freeSummary : trainingRules[slot] || '—';
+    });
+    $$('[data-status-slot]').forEach(el => {
+      const slot = el.dataset.statusSlot;
+      el.textContent = slot === 'free' ? freeSummary : trainingRules[slot] || '—';
     });
     $$('#trainingRules [data-training-option]').forEach(button => {
       const selected = trainingRules[button.dataset.trainingRule] === button.dataset.trainingOption;
       button.classList.toggle('active', selected);
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
+    const freeMode = trainingRules.freeMode === 'development' ? 'development' : 'load';
+    $$('[data-free-mode]').forEach(button => {
+      const selected = button.dataset.freeMode === freeMode;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+    const loadPanel = $('#trainingLoadPanel');
+    const devPanel = $('#trainingDevPanel');
+    const freePanel = $('.training-free-panel');
+    const modeBadge = $('#trainingFreeModeBadge');
+    const footnote = $('#trainingFreeFootnote');
+    if (loadPanel) loadPanel.classList.toggle('hidden', freeMode === 'development');
+    if (devPanel) devPanel.classList.toggle('hidden', freeMode !== 'development');
+    if (freePanel) freePanel.classList.toggle('is-development', freeMode === 'development');
+    if (modeBadge) {
+      modeBadge.textContent = freeMode === 'development' ? 'Desenvolvimento' : 'Gestão de Carga';
+      modeBadge.classList.toggle('is-dev', freeMode === 'development');
+      modeBadge.classList.toggle('is-load', freeMode !== 'development');
+    }
+    if (footnote) {
+      footnote.classList.toggle('is-dev', freeMode === 'development');
+      footnote.textContent =
+        freeMode === 'development'
+          ? 'Desenvolvimento gasta energia por dia. Reservas evoluem mais; titulares exaustos perdem eficiência.'
+          : 'Dias livres em gestão de carga recuperam o elenco entre partidas.';
+    }
+    const focusOptions = typeof getDevelopmentFocusOptions === 'function' ? getDevelopmentFocusOptions() : [];
+    const allowedFocus = new Set(focusOptions.map(item => item.id));
+    $$('[data-dev-focus]').forEach(button => {
+      const focusId = button.dataset.devFocus;
+      const allowed = allowedFocus.has(focusId);
+      button.hidden = !allowed;
+      const selected = trainingRules.developmentFocus === focusId;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+    renderTrainingWeeklyReport();
+    renderTrainingShortcut(trainingRules);
   };
 
   const renderCalendarRoutine = () => {
@@ -606,6 +690,8 @@ export function createCalendarViewFeature(deps) {
     const afterBoost = Math.round((trainingRecoveryMultiplier('after') - 1) * 100);
     const beforeLabel = trainingRules.before;
     const afterLabel = trainingRules.after;
+    const freeLabel = freeDaySummary(trainingRules);
+    const weeklyReport = typeof getLastWeeklyTrainingReport === 'function' ? getLastWeeklyTrainingReport() : null;
     const careerDayLabel = careerCalendarDate
       .toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
       .replace('.', '')
@@ -623,7 +709,7 @@ export function createCalendarViewFeature(deps) {
           : 'Aguardando definição';
     const el = $('#calendarRoutineSummary');
     if (el) {
-      el.innerHTML = `${onMatchDay ? '<div class="routine-alert matchday">Dia de jogo · ajuste táticas e dispute a partida no dashboard antes de avançar a semana.</div>' : ''}<div class="routine-stat"><small>SEMANA EM PLANEJAMENTO</small><strong>${weekLabel}</strong></div><div class="routine-stat"><small>DATA ATUAL DA TEMPORADA</small><strong>${careerDayLabel}</strong></div><div class="routine-stat"><small>INTERVALO ATÉ O PRÓXIMO JOGO</small><strong>${next ? `${rest} ${rest === 1 ? 'dia' : 'dias'}` : '—'}</strong></div><div class="routine-stat"><small>PRÓXIMO COMPROMISSO</small><strong>${nextLabel}</strong></div><div class="routine-stat"><small>ROTINA PÓS-JOGO</small><strong>${afterLabel}${afterBoost > 0 ? ` (+${afterBoost}% recuperação)` : ''}</strong></div><div class="routine-stat"><small>ROTINA PRÉ-JOGO</small><strong>${beforeLabel}</strong></div>`;
+      el.innerHTML = `${onMatchDay ? '<div class="routine-alert matchday">Dia de jogo · ajuste táticas e dispute a partida no dashboard antes de avançar a semana.</div>' : ''}${weeklyReport?.body ? `<div class="routine-alert training-report"><small>ÚLTIMO RELATÓRIO DE TREINO</small><strong>${weeklyReport.modeLabel || 'Treino'}</strong><span>${weeklyReport.body}</span></div>` : ''}<div class="routine-stat"><small>SEMANA EM PLANEJAMENTO</small><strong>${weekLabel}</strong></div><div class="routine-stat"><small>DATA ATUAL DA TEMPORADA</small><strong>${careerDayLabel}</strong></div><div class="routine-stat"><small>INTERVALO ATÉ O PRÓXIMO JOGO</small><strong>${next ? `${rest} ${rest === 1 ? 'dia' : 'dias'}` : '—'}</strong></div><div class="routine-stat"><small>PRÓXIMO COMPROMISSO</small><strong>${nextLabel}</strong></div><div class="routine-stat"><small>ROTINA PÓS-JOGO</small><strong>${afterLabel}${afterBoost > 0 ? ` (+${afterBoost}% recuperação)` : ''}</strong></div><div class="routine-stat"><small>ROTINA PRÉ-JOGO</small><strong>${beforeLabel}</strong></div><div class="routine-stat"><small>DIAS LIVRES</small><strong>${freeLabel}</strong></div>`;
     }
     const advanceBtn = $('#calendarAdvanceWeek');
     if (advanceBtn) {
@@ -784,9 +870,10 @@ export function createCalendarViewFeature(deps) {
       )
       .join('');
     const marketRows = renderMarketDayAgenda();
+    const freeDayLabel = freeDaySummary(trainingRules);
     const freeRow =
       !games.length && !activities.length && !marketRows
-        ? `<div class="agenda-item free"><i>—</i><div><small>DIA SEM PARTIDA</small><strong>${trainingRules.free}</strong></div></div>`
+        ? `<div class="agenda-item free"><i>—</i><div><small>DIA SEM PARTIDA</small><strong>${freeDayLabel}</strong></div></div>`
         : '';
     $('#calendarDayAgenda').innerHTML = gameRows + trainingRows + marketRows + freeRow;
   };
@@ -971,6 +1058,26 @@ export function createCalendarViewFeature(deps) {
       renderCalendar();
     });
     onClick('#trainingRules', event => {
+      const modeButton = event.target.closest('[data-free-mode]');
+      if (modeButton && typeof setTrainingFreeMode === 'function') {
+        const mode = modeButton.dataset.freeMode;
+        if (getTrainingRules().freeMode === mode) return;
+        setTrainingFreeMode(mode);
+        writeJson(SAVE_KEYS.training, getTrainingRules());
+        if (getHasCareer()) persistSeason();
+        renderCalendar();
+        return;
+      }
+      const focusButton = event.target.closest('[data-dev-focus]');
+      if (focusButton && typeof setDevelopmentFocus === 'function') {
+        const focus = focusButton.dataset.devFocus;
+        if (!focus || getTrainingRules().developmentFocus === focus) return;
+        setDevelopmentFocus(focus);
+        writeJson(SAVE_KEYS.training, getTrainingRules());
+        if (getHasCareer()) persistSeason();
+        renderCalendar();
+        return;
+      }
       const button = event.target.closest('[data-training-option]');
       if (!button) return;
       const type = button.dataset.trainingRule;

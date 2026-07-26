@@ -47,6 +47,8 @@ export function emptyDevelopmentState(season = null) {
     snapByPlayer: {},
     /** Última variação de OVR por jogador: { [id]: { delta, at } } — `at` = YYYY-MM-DD. */
     ovrMarkByPlayer: {},
+    /** XP e ganhos por treino de desenvolvimento: { [playerId]: { xpSeason, ovrFromTraining, attrGains } } */
+    trainingByPlayer: {},
   };
 }
 
@@ -95,6 +97,26 @@ export function getActiveOvrMark(state, playerId, careerDate, { weeks = OVR_MARK
   return { delta: 0, tone: 'flat' };
 }
 
+const normalizeTrainingByPlayer = raw => {
+  if (!raw || typeof raw !== 'object') return {};
+  const out = {};
+  Object.entries(raw).forEach(([id, row]) => {
+    if (!id || !row || typeof row !== 'object') return;
+    const attrGains = {};
+    if (row.attrGains && typeof row.attrGains === 'object') {
+      Object.entries(row.attrGains).forEach(([key, val]) => {
+        if (Number(val) > 0) attrGains[key] = Math.round(Number(val));
+      });
+    }
+    out[id] = {
+      xpSeason: Math.max(0, Number(row.xpSeason) || 0),
+      ovrFromTraining: Math.max(0, Number(row.ovrFromTraining) || 0),
+      attrGains,
+    };
+  });
+  return out;
+};
+
 export function normalizeDevelopmentState(raw, season) {
   const base = emptyDevelopmentState(season);
   if (!raw || typeof raw !== 'object') return base;
@@ -111,6 +133,7 @@ export function normalizeDevelopmentState(raw, season) {
         ? { ...raw.snapByPlayer }
         : {},
     ovrMarkByPlayer: sameSeason ? normalizeOvrMarkMap(raw.ovrMarkByPlayer) : {},
+    trainingByPlayer: sameSeason ? normalizeTrainingByPlayer(raw.trainingByPlayer) : {},
   };
 }
 

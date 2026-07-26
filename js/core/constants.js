@@ -2,7 +2,7 @@
  * Build pública para testers.
  * Nomenclatura: Alpha V.X.YY — sobe +0.05 a cada publicação (1.00 → 1.05 → …).
  */
-export const BUILD_VERSION = 'Alpha V.2.15';
+export const BUILD_VERSION = 'Alpha V.2.20';
 
 /** Nome público do jogo (UI, títulos, alertas de update). */
 export const GAME_BRAND_NAME = 'BR Football';
@@ -46,6 +46,7 @@ export const MODULE_VERSIONS = {
   sponsorPicker: 4,
   liveDayMatches: 1,
   fatigue: 1,
+  trainingDevelopment: 1,
   matchLiveUi: 9,
   matchLiveAudio: 6,
   playerRename: 1,

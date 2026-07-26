@@ -172,6 +172,7 @@
             <button type="button" data-roster-sort="positioning" class="roster-group-gk">POS GOL</button>
             <button type="button" data-roster-sort="penaltySaving" class="roster-group-gk">PEN GOL</button>
             <button type="button" data-roster-sort="reflexes" class="roster-group-gk">REF</button>
+            <button type="button" data-roster-sort="trainingXp">XP TREINO</button>
             <button type="button" data-roster-sort="fatigue">CANSAÇO</button>
           </div>
           <div id="playerList"></div>
@@ -284,50 +285,125 @@
       </div>
     </section>
     <section id="training" class="view training-view">
-      <div class="title"><p>PREPARAÇÃO FÍSICA E TÁTICA</p><h1>Treinamento</h1><span>Defina as rotinas semanais do elenco. Os treinos são simulados dia a dia no calendário; se houver jogo do clube, a semana para nesse dia para você organizar a partida.</span></div>
+      <div class="title training-page-heading">
+        <p>PREPARAÇÃO FÍSICA · EVOLUÇÃO DO ELENCO</p>
+        <h1>Treinamento</h1>
+        <span>Pré e pós-jogo cuidam da energia. Nos dias livres, escolha recuperar o elenco ou desenvolver Fin, Pas, Mar e Overall — reservas e jovens são os que mais ganham.</span>
+      </div>
       <div class="training-layout">
-        <article class="card training-guide-card">
-          <div class="training-guide-head">
-            <label>COMO FUNCIONA</label>
-            <button type="button" id="openCalendarFromTraining" class="training-open-btn">VER CALENDÁRIO →</button>
-          </div>
-          <div class="training-guide-row">
-            <div><small>ANTES DA PARTIDA</small><strong>Ajusta a energia e o foco no dia do jogo.</strong></div>
-            <div><small>APÓS A PARTIDA</small><strong>Recupera o elenco nos dias seguintes ao confronto.</strong></div>
-            <div><small>DIAS LIVRES</small><strong>Define a rotina nos dias sem compromisso do clube.</strong></div>
-          </div>
-        </article>
-        <article class="card training-planner">
-          <label>PLANEJAMENTO SEMANAL</label>
-          <p>Escolha uma opção em cada sessão. A escolha fica salva na carreira e entra na simulação da semana.</p>
-          <div id="trainingRules" class="training-sessions">
-            <section class="training-session">
-              <header><small>ANTES DA PARTIDA</small><strong data-training-current="before"></strong></header>
-              <div class="training-options">
-                <button type="button" data-training-rule="before" data-training-option="Preparação tática" data-icon="tactics"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><rect x="4" y="5" width="24" height="22" rx="3" stroke="currentColor" stroke-width="2"/><path d="M10 12h12M10 17h8M10 22h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="22" cy="17" r="2.5" fill="currentColor"/></svg></i><span><b>Preparação tática</b><small>Equilíbrio entre foco e desgaste</small></span></button>
-                <button type="button" data-training-rule="before" data-training-option="Treino leve" data-icon="light"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M8 22c3-6 5-10 8-10s5 4 8 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="9" r="3" stroke="currentColor" stroke-width="2"/><path d="M6 25h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><span><b>Treino leve</b><small>Carga reduzida, chega mais fresco</small></span></button>
-                <button type="button" data-training-rule="before" data-training-option="Descanso" data-icon="rest"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M18 8a8 8 0 1 0 6 13 10 10 0 0 1-6-13Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i><span><b>Descanso</b><small>Prioriza recuperação no pré-jogo</small></span></button>
+        <aside class="training-sidebar">
+          <article class="card training-status-card">
+            <label>PLANO ATIVO</label>
+            <div id="trainingStatusSummary" class="training-status-summary">
+              <div class="training-status-row"><small>PRÉ-JOGO</small><strong data-status-slot="before">—</strong></div>
+              <div class="training-status-row"><small>PÓS-JOGO</small><strong data-status-slot="after">—</strong></div>
+              <div class="training-status-row is-free"><small>DIAS LIVRES</small><strong data-status-slot="free">—</strong></div>
+            </div>
+          </article>
+          <article class="card training-report-card">
+            <label>ÚLTIMO RELATÓRIO SEMANAL</label>
+            <div id="trainingWeeklyReport" class="training-weekly-report">
+              <p class="training-report-empty">Avance a semana no Calendário para receber o relatório de treino na inbox e aqui.</p>
+            </div>
+          </article>
+          <article class="card training-tradeoff-card">
+            <label>GESTÃO VS DESENVOLVIMENTO</label>
+            <div class="training-tradeoff-grid">
+              <div class="training-tradeoff-col is-load">
+                <strong>Gestão de Carga</strong>
+                <ul>
+                  <li>Recupera energia</li>
+                  <li>Ideal entre jogos</li>
+                  <li>Baixo risco físico</li>
+                </ul>
               </div>
-            </section>
-            <section class="training-session">
-              <header><small>APÓS A PARTIDA</small><strong data-training-current="after"></strong></header>
-              <div class="training-options">
-                <button type="button" data-training-rule="after" data-training-option="Recuperação" data-icon="recover"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 26s-8-5.5-8-12a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-8 12-8 12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 14h3l1.5 3 2-5 1.5 2H22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span><b>Recuperação</b><small>Regeneração padrão (+18%)</small></span></button>
-                <button type="button" data-training-rule="after" data-training-option="Descanso total" data-icon="fullrest"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M6 20h20v3a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-3Z" stroke="currentColor" stroke-width="2"/><path d="M8 20V13a4 4 0 0 1 4-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 8h2M23 11h2M20 14h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><span><b>Descanso total</b><small>Máxima regeneração (+30%)</small></span></button>
-                <button type="button" data-training-rule="after" data-training-option="Análise do jogo" data-icon="analysis"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><rect x="5" y="6" width="22" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M9 18V14M14 18v-7M19 18v-4M24 18v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 26h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><span><b>Análise do jogo</b><small>Revisão tática (+6%)</small></span></button>
+              <div class="training-tradeoff-col is-dev">
+                <strong>Desenvolvimento</strong>
+                <ul>
+                  <li>Evolui atributos e OVR</li>
+                  <li>Gasta energia por dia</li>
+                  <li>Reservas progridem mais</li>
+                </ul>
               </div>
-            </section>
-            <section class="training-session">
-              <header><small>DIAS LIVRES</small><strong data-training-current="free"></strong></header>
-              <div class="training-options">
-                <button type="button" data-training-rule="free" data-training-option="Treino equilibrado" data-icon="balanced"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 6v20M8 14h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 14l-3 8h8l-3-8M22 14l-3 8h8l-3-8" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i><span><b>Treino equilibrado</b><small>Rotina padrão nos dias livres</small></span></button>
-                <button type="button" data-training-rule="free" data-training-option="Treino técnico" data-icon="technical"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="10" stroke="currentColor" stroke-width="2"/><path d="M16 6c2.5 3 4 6.5 4 10s-1.5 7-4 10M16 6c-2.5 3-4 6.5-4 10s1.5 7 4 10M6 16h20M8.5 10.5h15M8.5 21.5h15" stroke="currentColor" stroke-width="1.6"/></svg></i><span><b>Treino técnico</b><small>Mais bola, recuperação menor</small></span></button>
-                <button type="button" data-training-rule="free" data-training-option="Descanso intermitente" data-icon="interval"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M7 22V10M13 22V14M19 22V8M25 22V16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M5 24h22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><span><b>Descanso intermitente</b><small>Alterna carga e folga (+8%)</small></span></button>
+            </div>
+          </article>
+          <article class="card training-guide-card">
+            <div class="training-guide-head">
+              <label>FLUXO DA SEMANA</label>
+              <button type="button" id="openCalendarFromTraining" class="training-open-btn">CALENDÁRIO →</button>
+            </div>
+            <ol class="training-flow-list">
+              <li><b>1</b><span>Calendário simula dia a dia até o jogo do clube.</span></li>
+              <li><b>2</b><span>Pré/pós-jogo aplicam gestão de energia automaticamente.</span></li>
+              <li><b>3</b><span>Dias livres seguem o modo escolhido abaixo (permanece até trocar).</span></li>
+              <li><b>4</b><span>Relatório semanal resume evolução e alertas de fadiga.</span></li>
+            </ol>
+          </article>
+        </aside>
+        <div class="training-main">
+          <article class="card training-planner">
+            <div class="training-planner-head">
+              <h2 class="training-planner-title">PLANEJAMENTO SEMANAL</h2>
+              <p class="training-planner-lead">Escolhas salvas na carreira. O modo de dias livres permanece até você alterar manualmente.</p>
+            </div>
+            <div id="trainingRules" class="training-sessions">
+              <div class="training-matchdays">
+                <section class="training-session training-session-compact">
+                  <p class="training-session-note">Energia no apito — não evolui atributos.</p>
+                  <div class="training-options training-options-compact">
+                    <button type="button" data-training-rule="before" data-training-option="Preparação tática" data-icon="tactics"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><rect x="4" y="5" width="24" height="22" rx="3" stroke="currentColor" stroke-width="2"/><path d="M10 12h12M10 17h8M10 22h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="22" cy="17" r="2.5" fill="currentColor"/></svg></i><span><b>Preparação tática</b><small>Equilíbrio foco/desgaste</small></span></button>
+                    <button type="button" data-training-rule="before" data-training-option="Treino leve" data-icon="light"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M8 22c3-6 5-10 8-10s5 4 8 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="9" r="3" stroke="currentColor" stroke-width="2"/><path d="M6 25h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><span><b>Treino leve</b><small>Carga reduzida</small></span></button>
+                    <button type="button" data-training-rule="before" data-training-option="Descanso" data-icon="rest"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M18 8a8 8 0 1 0 6 13 10 10 0 0 1-6-13Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i><span><b>Descanso</b><small>Prioriza recuperação</small></span></button>
+                  </div>
+                </section>
+                <section class="training-session training-session-compact">
+                  <p class="training-session-note">Regeneração pós-confronto — não evolui atributos.</p>
+                  <div class="training-options training-options-compact">
+                    <button type="button" data-training-rule="after" data-training-option="Recuperação" data-icon="recover"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 26s-8-5.5-8-12a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-8 12-8 12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 14h3l1.5 3 2-5 1.5 2H22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span><b>Recuperação</b><small>+18% regeneração</small></span></button>
+                    <button type="button" data-training-rule="after" data-training-option="Descanso total" data-icon="fullrest"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M6 20h20v3a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-3Z" stroke="currentColor" stroke-width="2"/><path d="M8 20V13a4 4 0 0 1 4-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 8h2M23 11h2M20 14h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><span><b>Descanso total</b><small>+30% regeneração</small></span></button>
+                    <button type="button" data-training-rule="after" data-training-option="Análise do jogo" data-icon="analysis"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><rect x="5" y="6" width="22" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M9 18V14M14 18v-7M19 18v-4M24 18v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 26h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><span><b>Análise do jogo</b><small>Revisão tática +6%</small></span></button>
+                  </div>
+                </section>
               </div>
-            </section>
-          </div>
-          <small class="training-note">Pós-jogo e dias livres recuperam o elenco entre partidas; pré-jogo ajusta a energia no apito inicial.</small>
-        </article>
+              <section class="training-session training-free-block training-free-panel">
+                <div class="training-free-header">
+                  <div class="training-free-header-copy">
+                    <small>DIAS LIVRES</small>
+                    <strong data-training-current="free"></strong>
+                  </div>
+                  <span id="trainingFreeModeBadge" class="training-mode-badge is-load">Gestão de Carga</span>
+                </div>
+                <p class="training-session-note">Principal escolha da temporada: recuperar ou evoluir quando não há jogo do clube.</p>
+                <div class="training-mode-toggle" role="group" aria-label="Modo nos dias livres">
+                  <button type="button" data-free-mode="load" class="training-mode-btn"><span class="training-mode-icon is-load" aria-hidden="true">⚡</span><span><b>Gestão de Carga</b><small>Recupera energia · sem evolução de attrs</small></span></button>
+                  <button type="button" data-free-mode="development" class="training-mode-btn"><span class="training-mode-icon is-dev" aria-hidden="true">↑</span><span><b>Desenvolvimento</b><small>Evolui Fin/Pas/Mar · gasta energia</small></span></button>
+                </div>
+                <div id="trainingLoadPanel" class="training-free-content is-load">
+                  <label class="training-panel-label">ROTINAS DE RECUPERAÇÃO</label>
+                  <div id="trainingLoadOptions" class="training-options training-options-dev">
+                    <button type="button" data-training-rule="free" data-training-option="Treino equilibrado" data-icon="balanced"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 6v20M8 14h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 14l-3 8h8l-3-8M22 14l-3 8h8l-3-8" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i><span><b>Treino equilibrado</b><small>Rotina padrão</small></span></button>
+                    <button type="button" data-training-rule="free" data-training-option="Treino técnico" data-icon="technical"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="10" stroke="currentColor" stroke-width="2"/><path d="M16 6c2.5 3 4 6.5 4 10s-1.5 7-4 10M16 6c-2.5 3-4 6.5-4 10s1.5 7 4 10M6 16h20M8.5 10.5h15M8.5 21.5h15" stroke="currentColor" stroke-width="1.6"/></svg></i><span><b>Treino técnico</b><small>Recuperação menor</small></span></button>
+                    <button type="button" data-training-rule="free" data-training-option="Descanso intermitente" data-icon="interval"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M7 22V10M13 22V14M19 22V8M25 22V16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M5 24h22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><span><b>Descanso intermitente</b><small>+8% regeneração</small></span></button>
+                  </div>
+                </div>
+                <div id="trainingDevPanel" class="training-free-content is-dev hidden">
+                  <label class="training-panel-label">FOCO DE DESENVOLVIMENTO</label>
+                  <p class="training-dev-hint">100 XP ≈ +1 atributo · OVR sobe quando a ficha reflete · reservas (0 min) evoluem mais rápido.</p>
+                  <div id="trainingDevOptions" class="training-options training-options-dev">
+                    <button type="button" data-dev-focus="finishing" data-icon="finishing"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="11" stroke="currentColor" stroke-width="2"/><path d="M16 5v22M5 16h22" stroke="currentColor" stroke-width="1.5" opacity=".35"/></svg></i><span><b>Finalização</b><small>Fin · Cab · carga alta</small></span></button>
+                    <button type="button" data-dev-focus="passing" data-icon="passing"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M6 16c4-8 8-10 10-10s6 2 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 16c4 8 8 10 10 10s6-2 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".45"/></svg></i><span><b>Passes & Visão</b><small>Pas · Arm · carga média</small></span></button>
+                    <button type="button" data-dev-focus="defense" data-icon="defense"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 4l10 4v8c0 7-4.5 11.5-10 12-5.5-.5-10-5-10-12V8l10-4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i><span><b>Defesa & Desarme</b><small>Mar · Des · carga alta</small></span></button>
+                    <button type="button" data-dev-focus="dribble" data-icon="dribble"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M8 24c4-14 8-18 16-18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="6" r="3" stroke="currentColor" stroke-width="2"/></svg></i><span><b>Condução & Velocidade</b><small>Dri · Vel · carga alta</small></span></button>
+                    <button type="button" data-dev-focus="aerial" data-icon="aerial"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 6v20M10 12h12M8 20h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><span><b>Jogo aéreo & Físico</b><small>Cab · Mar · carga média</small></span></button>
+                    <button type="button" data-dev-focus="goalkeeper" data-icon="goalkeeper" data-requires-gk="1"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><rect x="8" y="10" width="16" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="M12 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg></i><span><b>Goleiro</b><small>Ref · Pos · Def</small></span></button>
+                    <button type="button" data-dev-focus="individual" data-icon="individual"><i class="training-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="10" r="4" stroke="currentColor" stroke-width="2"/><path d="M8 28c0-6 3.5-9 8-9s8 3 8 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><span><b>Individual</b><small>2 piores attrs da posição</small></span></button>
+                  </div>
+                </div>
+                <footer id="trainingFreeFootnote" class="training-free-footnote is-load">Dias livres em gestão de carga recuperam o elenco entre partidas.</footer>
+              </section>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
     <section id="transfers" class="view transfers-view">
@@ -562,7 +638,14 @@
         </article>
         <aside class="calendar-sidebar">
           <article class="card day-agenda-card"><label>AGENDA DO DIA</label><div class="agenda-date"><strong id="calendarSelectedDay"></strong><small id="calendarSelectedMeta"></small></div><div id="calendarDayAgenda" class="day-agenda"></div></article>
-          <article class="card training-shortcut-card"><label>TREINAMENTO</label><p>As rotinas semanais do elenco ficam na área de Treinamento.</p><button type="button" id="openTrainingFromCalendar" class="training-open-btn">ABRIR TREINAMENTO →</button></article>
+          <article class="card training-shortcut-card">
+            <label>TREINAMENTO</label>
+            <div id="trainingShortcutSummary" class="training-shortcut-summary">
+              <div class="training-shortcut-mode is-load"><small>MODO ATIVO</small><strong>Gestão de Carga</strong></div>
+              <p class="training-shortcut-note">Configure rotinas e foco de desenvolvimento na área de Treinamento.</p>
+            </div>
+            <button type="button" id="openTrainingFromCalendar" class="training-open-btn">ABRIR TREINAMENTO →</button>
+          </article>
         </aside>
       </div>
     </section>
@@ -752,7 +835,7 @@
   #squad .roster-filters label{display:grid;gap:4px;min-width:120px;color:#75cde3;font:700 10px 'DM Sans',sans-serif;letter-spacing:.45px}
   #squad .roster-filters select{min-width:120px;padding:6px 8px;border:1px solid #315d69;border-radius:4px;background:#0c1e28;color:#edf8f5;font:600 12px 'DM Sans',sans-serif}
   #squad .roster-filters #rosterContractBtn{margin-left:auto;align-self:center}
-  .roster-head.roster-expanded,.player-row.roster-expanded{width:max-content;min-width:100%;grid-template-columns:minmax(220px,1.55fr) 52px 52px 52px 72px 78px 110px 48px 48px 48px 48px 48px 48px 48px 48px 56px 64px 64px 64px 48px 80px;gap:6px}
+  .roster-head.roster-expanded,.player-row.roster-expanded{width:max-content;min-width:100%;grid-template-columns:minmax(220px,1.55fr) 52px 52px 52px 72px 78px 110px 48px 48px 48px 48px 48px 48px 48px 48px 56px 64px 64px 64px 48px 72px 80px;gap:6px}
   #squad .roster-head>button[data-roster-sort="ovr"],#squad .player-row>.roster-col-ovr{min-width:0;padding-inline:2px}
   #squad .roster-ovr{display:inline-flex;align-items:center;justify-content:center;gap:4px;font-weight:700}
   #squad .roster-ovr-mark{display:inline-block;font:800 13px/1 'DM Sans',sans-serif;font-style:normal;letter-spacing:0}
@@ -786,6 +869,13 @@
   .dashboard-medical-label{display:block;margin-top:8px;color:#9fcfd8;font-size:9px;line-height:1.35}
   #tactics .tactic-player-row.unavailable{cursor:not-allowed;opacity:.58;background:#25171b!important}
   #squad .player-row .roster-fatigue{min-width:72px;overflow:visible}
+  #squad .player-row .roster-training-xp{display:flex!important;align-items:center;justify-content:center;gap:5px;min-width:72px;overflow:visible;white-space:nowrap;font-weight:700}
+  #squad .roster-training-xp.is-idle{color:#6a8a94;font-size:13px}
+  #squad .roster-training-xp i{position:relative;display:block;width:52px;height:14px;overflow:hidden;border-radius:99px;background:#243945;box-shadow:inset 0 0 0 1px #3a5864}
+  #squad .roster-training-xp i b{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#6a9a28,#b6ff38)}
+  #squad .roster-training-xp i em{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;color:#edf8f5;font-size:9px;font-weight:800;line-height:1;text-shadow:0 1px 2px #00000088;pointer-events:none}
+  #squad .roster-training-gain{color:#b6ff38;font:800 9px 'DM Sans',sans-serif;line-height:1}
+  #squad .roster-head>button[data-roster-sort="trainingXp"]{letter-spacing:.2px}
   .dark-mode .roster-note{color:#b9ccbe}
   .modal-card{width:min(980px,100%)}.pause-panel{margin-top:16px;text-align:left;border-top:1px solid #e5ece6;padding-top:16px}.pause-heading h2{margin:3px 0;font:700 27px 'Barlow Condensed',sans-serif}.pause-heading small{color:#718077}.pause-layout{display:grid;grid-template-columns:minmax(280px,1fr) minmax(340px,400px);gap:18px;margin-top:14px}.pause-tactic-toggle{width:100%;margin:0 0 12px;padding:11px 14px;border:1px solid #397487;border-radius:6px;background:#102833;color:#edf8f5;font:800 11px 'DM Sans',sans-serif;letter-spacing:.45px;cursor:pointer;text-align:center}.pause-tactic-toggle:hover{border-color:#63d9ff;background:#163845}.pause-tactic-toggle.open{border-color:#b6ff38;color:#b6ff38;background:#132820}.pause-tactic-adjust{display:grid;gap:0}.pause-tactic-adjust.hidden{display:none!important}.pause-panel:not(.tactics-open) .pause-layout{grid-template-columns:minmax(220px,280px) minmax(0,1fr)}.pause-panel:not(.tactics-open) .pause-layout>.tactical-board{justify-self:center;width:min(100%,420px)}.pause-pitch{height:420px;position:relative;border:6px solid #0c6941;border-radius:8px;background:#148255;background-image:linear-gradient(90deg,transparent 49.6%,#e8fff077 50%,transparent 50.4%),linear-gradient(#e8fff066 1px,transparent 1px);background-size:100% 100%,100% 52px;overflow:hidden}.pause-pitch:after{content:'';position:absolute;left:12%;right:12%;top:49.6%;border-top:2px solid #e8fff077}.board-player{position:absolute;transform:translate(-50%,-50%);width:92px;text-align:center;color:white;font:400 15px "DM Sans",sans-serif;font-weight:400;z-index:1}.board-player i{display:grid;place-items:center;margin:auto;width:30px;height:30px;background:#163d2a;border:1px solid white;border-radius:50%;font-style:normal}.board-player.yellow i{background:#e5b720;color:#26351e;border-color:#f9df77}.board-player.vacant i{background:transparent;border:2px dashed #d9f4de;color:#d9f4de}.board-player small{display:block;margin-top:5px;font:400 15px "DM Sans",sans-serif;font-weight:400;letter-spacing:0}.pause-controls{background:#f3f6f3;border-radius:7px;padding:13px}.pause-controls label{display:block;color:#678072;font-size:10px;font-weight:bold;letter-spacing:1px;margin:0 0 8px}.pause-controls select{width:100%;margin:0 0 14px;padding:8px;border:1px solid #c5d8c9;border-radius:4px}.substitution-panel{margin:4px 0 14px;padding:10px;border:1px solid #c5d8c9;border-radius:5px;background:#fff}.substitution-panel label{display:flex;justify-content:space-between}.substitution-panel label b{color:#087d58}.substitution-panel select{margin-bottom:7px}.substitution-panel button{width:100%;margin:1px 0 7px}.substitution-panel small{display:block;color:#718077;font-size:10px;line-height:1.25}.resume-match{border:0;border-radius:4px;background:#118456;color:#fff;padding:11px 22px;font:bold 10px 'DM Sans',sans-serif;cursor:pointer}.pause-resume-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:0 auto 14px;max-width:560px}.pause-resume-row .resume-match,.pause-resume-row .live-day-matches-btn{flex:1 1 220px;min-width:200px;text-align:center;padding:11px 16px;font:bold 10px 'DM Sans',sans-serif;border-radius:4px;cursor:pointer}.pause-resume-row .resume-match{border:0;background:#118456;color:#fff}.pause-resume-row .live-day-matches-btn{border:1px solid #63d9ff;background:#0f2a34;color:#d8f6ff;letter-spacing:.35px}.pause-resume-row .live-day-matches-btn:hover{background:#163845;border-color:#8ae4ff}.dark-mode .pause-resume-row .live-day-matches-btn{background:#102530;border-color:#4dbfff;color:#b8ecff}.dark-mode .pause-panel{border-color:#344b3d}.dark-mode .pause-controls,.dark-mode .substitution-panel{background:#24372c}.dark-mode .substitution-panel{border-color:#52735d}.dark-mode .substitution-panel label b{color:#b6ff38}.dark-mode .substitution-panel small,.dark-mode .pause-heading small{color:#b9ccbe}.dark-mode .pause-controls select{background:#263b2f;color:#e2eee5;border-color:#52735d}@media(max-width:700px){.pause-layout{grid-template-columns:1fr}.pause-pitch{height:360px}}
   /* Prancheta tática: campo vertical inspirado na referência do treinador. */
