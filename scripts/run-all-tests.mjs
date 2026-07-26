@@ -41,6 +41,7 @@ const SUITES = [
   { label: 'tv-advance', steps: [['scripts/tv-advance-tests.mjs']] },
   { label: 'season-goal-live', steps: [['scripts/season-goal-live-tests.mjs']] },
   { label: 'own-goal-report', steps: [['scripts/own-goal-report-tests.mjs']] },
+  { label: 'youth-academy', steps: [['scripts/youth-academy-tests.mjs']] },
   { label: 'brfut-api', steps: [['scripts/brfut_api_tests.py']] },
   { label: 'transfers', steps: [['scripts/transfers-tests.mjs']] },
   {

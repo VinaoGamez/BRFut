@@ -1094,21 +1094,15 @@ export function createEconomyFeature(deps) {
     if (!club) return;
     const medicalLevel = Number(club.medicalInvestment) || 0;
     const preventionLevel = Number(club.preventionProgram) || 0;
-    const youthRow = listUpgrades?.(club)?.find?.(row => row.id === 'youth_academy');
-    const youthMax = Number(youthRow?.maxLevel) || 5;
-    const youthLevel = Math.max(0, Math.min(youthMax, Number(youthRow?.level) || 0));
     const medicalEl = $('#officeMedicalLevel');
     const preventionEl = $('#officePreventionLevel');
-    const youthEl = $('#officeYouthLevel');
     if (medicalEl) medicalEl.textContent = `${medicalLevel}/5`;
     if (preventionEl) preventionEl.textContent = `${preventionLevel}/3`;
-    if (youthEl) youthEl.textContent = `${youthLevel}/${youthMax}`;
     document.querySelectorAll('.office-investment-levels .office-meter').forEach(meter => {
       meter.removeAttribute('data-tone');
     });
     setMeterBar('#officeMedicalBar', (medicalLevel / 5) * 100);
     setMeterBar('#officePreventionBar', (preventionLevel / 3) * 100);
-    setMeterBar('#officeYouthBar', (youthLevel / youthMax) * 100);
   };
 
   const renderInvestments = () => {

@@ -7,6 +7,7 @@ import {
   stateLeagueRoundEmLabel,
   ufLabel,
 } from '../../engine/state-league-format.js';
+import { findSerieDGroupIndex } from '../../engine/serie-d-formation.js';
 
 export const divisionDisplayName = division => {
   const map = { A: 'Série A', B: 'Série B', C: 'Série C', D: 'Série D' };
@@ -46,7 +47,7 @@ export const isSerieDEnrolledClub = (clubName, clubs, serieDGroups) => {
   const club = clubs?.[clubName];
   if (!club) return false;
   const division = club.division || 'A';
-  if (division === 'REG' && (serieDGroups || []).some(group => group.includes(clubName))) return true;
+  if (division === 'REG' && findSerieDGroupIndex(clubName, serieDGroups) >= 0) return true;
   return division === 'D';
 };
 
@@ -91,11 +92,11 @@ export const clubStandingContext = (
     return '';
   }
   let division = club.division || 'A';
-  if (division === 'REG' && (serieDGroups || []).some(group => group.includes(clubName))) division = 'D';
+  if (division === 'REG' && findSerieDGroupIndex(clubName, serieDGroups) >= 0) division = 'D';
   const base = divisionDisplayName(division);
   let label = base;
   if (division === 'D') {
-    const groupIndex = (serieDGroups || []).findIndex(group => group.includes(clubName));
+    const groupIndex = findSerieDGroupIndex(clubName, serieDGroups);
     const group = serieDGroupLabel(groupIndex);
     label = group ? `${base} · ${group}` : base;
   }
@@ -138,8 +139,10 @@ export const matchCompetitionPhaseLabel = (
       phase = currentRound <= 19 ? '1º turno' : '2º turno';
     }
   } else if (userDivision === 'D' && (game.round || 0) <= serieDGroupRounds) {
-    const groupIndex = (serieDGroups || []).findIndex(group => group.includes(game.home) && group.includes(game.away));
-    const group = serieDGroupLabel(groupIndex >= 0 ? groupIndex : userSerieDGroupIndex);
+    const groupIndex = findSerieDGroupIndex(game.home, serieDGroups);
+    const awayIndex = findSerieDGroupIndex(game.away, serieDGroups);
+    const resolvedIndex = groupIndex >= 0 && awayIndex >= 0 && groupIndex === awayIndex ? groupIndex : groupIndex >= 0 ? groupIndex : awayIndex;
+    const group = serieDGroupLabel(resolvedIndex >= 0 ? resolvedIndex : userSerieDGroupIndex);
     phase = group ? `Fase de grupos · ${group}` : 'Fase de grupos';
   } else {
     const round = game.round || currentRound || 1;

@@ -1,0 +1,176 @@
+/* Elenco — botão Contrato + modal vertical de renovações */
+#rosterContractBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 7px 14px;
+  border: 1px solid #397487;
+  border-radius: 5px;
+  background: #14303a;
+  color: #edf8f5;
+  font: 700 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.65px;
+  cursor: pointer;
+  box-shadow: none;
+  flex: 0 0 auto;
+}
+
+#rosterContractBtn:hover,
+#rosterContractBtn:focus-visible {
+  border-color: #63d9ff;
+  background: #174052;
+  outline: none;
+}
+
+#rosterContractBtn.is-open {
+  border-color: #b6ff38;
+  color: #b6ff38;
+  background: #132820;
+}
+
+#rosterContractBtn.has-action {
+  border-color: #ffc94f;
+  box-shadow: 0 0 0 1px #ffc94f33;
+}
+
+.roster-contract-btn-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: #ffc94f;
+  color: #1a1205;
+  font: 800 9px 'DM Sans', sans-serif;
+  line-height: 1;
+}
+
+.roster-contract-btn-badge.hidden {
+  display: none;
+}
+
+.roster-contract-modal-card {
+  width: min(460px, calc(100vw - 28px)) !important;
+  max-width: 460px;
+  text-align: left;
+}
+
+.roster-contract-modal-head {
+  padding-right: 28px;
+}
+
+.roster-contract-modal-head h2 {
+  margin: 0;
+  color: #edf8f5;
+  font: 700 22px 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.35px;
+  line-height: 1.15;
+}
+
+.roster-contract-modal-list {
+  margin-top: 14px;
+  max-height: min(62vh, 560px);
+  overflow: auto;
+  border: 1px solid #28505b;
+  border-radius: 6px;
+  background: #0b1d25;
+  scrollbar-color: #397487 #0b1d25;
+}
+
+.roster-contract-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-top: 1px solid #234650;
+}
+
+.roster-contract-row:first-child {
+  border-top: 0;
+}
+
+.roster-contract-row.is-warning {
+  box-shadow: inset 4px 0 #63d9ff;
+}
+
+.roster-contract-row.is-critical {
+  box-shadow: inset 4px 0 #ff9b3d;
+}
+
+.roster-contract-row.is-expired {
+  box-shadow: inset 4px 0 #ff6370;
+}
+
+.roster-contract-row-main {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.roster-contract-row-main strong {
+  color: #edf8f5;
+  font: 700 18px 'Barlow Condensed', sans-serif;
+  line-height: 1.15;
+}
+
+.roster-contract-row-wage,
+.roster-contract-row-ask {
+  display: block;
+  color: #b6c8c9;
+  font: 600 13px/1.35 'DM Sans', sans-serif;
+}
+
+.roster-contract-row-ask {
+  color: #ffb4b4;
+}
+
+.roster-contract-row-buttons {
+  flex-shrink: 0;
+}
+
+.roster-contract-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: #8eb4b8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.roster-contract-modal-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.roster-contract-modal-actions button {
+  min-width: 120px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid #315d69;
+  border-radius: 5px;
+  background: #12313c;
+  color: #edf8f5;
+  font: 700 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.55px;
+  cursor: pointer;
+}
+
+.roster-contract-modal-actions button:hover {
+  border-color: #63d9ff;
+  background: #1c5061;
+}
+
+#squad .player-row.roster-contract-warning {
+  box-shadow: inset 3px 0 0 #63d9ff;
+}
+
+#squad .player-row.roster-contract-critical {
+  box-shadow: inset 3px 0 0 #ff9b3d;
+}
+
+#squad .player-row.roster-contract-expired {
+  box-shadow: inset 3px 0 0 #ff6370;
+}

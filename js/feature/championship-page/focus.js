@@ -1,5 +1,7 @@
 /** Foca a aba Campeonatos na competição/fase do próximo jogo do usuário. */
 import { serieDPhaseIndexForRound } from '../../engine/serie-d-format.js';
+import { WORLD_CUP_COMPETITION } from '../../engine/world-cup-calendar.js';
+import { WORLD_CUP_GROUP_LETTERS } from '../../engine/world-cup-history.js';
 
 export function createChampionshipPageFocus({
   getUserDivision,
@@ -25,6 +27,7 @@ export function createChampionshipPageFocus({
     const userClub = getUserClub();
     const clubs = getClubs();
     if (!game) return userDivision;
+    if (game.competition === WORLD_CUP_COMPETITION) return 'CMU';
     if (game.competition === 'COPA DO BRASIL') return 'CUP';
     if (game.competition === 'RECOPA NACIONAL') return 'RECOPA';
     if (isStateLeagueGame(game)) {
@@ -47,6 +50,17 @@ export function createChampionshipPageFocus({
     }
     const competitionId = championshipPageIdForGame(game);
     selectChampionshipPageCompetition(competitionId);
+    if (competitionId === 'CMU') {
+      const patch = {};
+      if (Number(game.round) > 0) patch.pageWorldCupRound = Number(game.round);
+      if (game.group) {
+        const idx = WORLD_CUP_GROUP_LETTERS.indexOf(String(game.group).toUpperCase());
+        if (idx >= 0) patch.pageWorldCupGroup = idx;
+      }
+      if (Object.keys(patch).length) patchPageState(patch);
+      renderChampionshipPage();
+      return;
+    }
     if (competitionId === 'CUP') {
       const page = getPageState();
       const phaseIdx = cupPhaseDefinitions.findIndex(def => def.name === game.phase);

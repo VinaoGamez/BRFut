@@ -6,7 +6,7 @@
  * No finalizeSeason os logs são apagados; permanece players.*.seasons (médias).
  */
 import { SAVE_KEYS, SAVE_VERSION, MODULE_VERSIONS } from '../core/constants.js';
-import { readJson, writeJson } from '../core/save.js';
+import { readJson, writeJson, getStoragePressure, prepareStorageForSave } from '../core/save.js';
 import { buildMatchPlayerSheets, playerKey } from './player-match-stats.js';
 
 export const PLAYER_HISTORY_LIMITS = {
@@ -570,6 +570,24 @@ export function createPlayerHistoryEngine(deps = {}) {
   };
 
   const persist = () => {
+    const pressure = getStoragePressure();
+    prepareStorageForSave({
+      preserveKeys: [SAVE_KEYS.playerHistory, SAVE_KEYS.season, SAVE_KEYS.career],
+      aggressive: pressure.level === 'critical',
+    });
+
+    if (pressure.level === 'critical') {
+      store.matchLogs = [];
+      store.seasonArchives = pruneArchives(store.seasonArchives, 2);
+      store.players = prunePlayers(store.players, 600);
+    } else if (pressure.level === 'warn') {
+      store.matchLogs = pruneMatchLogsForSeason(
+        store.matchLogs,
+        store.season ?? null,
+        Math.max(24, Math.floor(resolveBudget() / 2)),
+      );
+    }
+
     store.matchLogs = pruneMatchLogsForSeason(
       store.matchLogs,
       store.season ?? null,

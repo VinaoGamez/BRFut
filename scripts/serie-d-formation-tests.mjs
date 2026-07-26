@@ -1,6 +1,8 @@
 import {
   buildSerieDRosterCBF,
   collectSerieDSecondPhaseClubs,
+  findSerieDGroupIndex,
+  ensureSerieDGroupMembership,
   rnfSlotTotal,
   RNF_SERIE_D_SLOTS_BY_UF,
 } from '../js/engine/serie-d-formation.js';
@@ -75,6 +77,19 @@ check('buildSerieDRosterCBF aplica 4 critérios na ordem', () => {
   assert(breakdown.stateRnf.length === 64, `RNF=${breakdown.stateRnf.length}`);
   assert(breakdown.permanence.includes('Perm 1'), 'permanência');
   assert(!roster.includes('Promovido'), 'promovido sai');
+});
+
+check('findSerieDGroupIndex normaliza acentos e caixa', () => {
+  const groups = [['Atlético Acreano', 'B', 'C', 'D', 'E', 'F']];
+  assert(findSerieDGroupIndex('atletico acreano', groups) === 0, 'match normalizado');
+  assert(findSerieDGroupIndex('X FC', groups) < 0, 'ausente');
+});
+
+check('ensureSerieDGroupMembership inclui clube D faltante', () => {
+  const groups = [['A', 'B', 'C', 'D', 'E', 'F']];
+  const divisionTeams = { D: ['A', 'B', 'C', 'D', 'E', 'F', 'Atlético Acreano'] };
+  const repaired = ensureSerieDGroupMembership(divisionTeams, groups);
+  assert(findSerieDGroupIndex('Atlético Acreano', repaired) >= 0, 'injetado em algum grupo');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

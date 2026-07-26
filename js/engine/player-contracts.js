@@ -336,6 +336,48 @@ export function processClubContractCalendar({
   return { pendingRenewals: pending, alerts, alertedKeys: keys };
 }
 
+/** Jogadores com contrato a vencer ou vencido — painel Elenco → Contratos. */
+export function listRosterContractAlerts(roster, { division = 'A', careerDate = new Date() } = {}) {
+  if (!Array.isArray(roster) || !roster.length) return [];
+  const today = careerDate instanceof Date ? careerDate : new Date(careerDate);
+  return roster
+    .map(player => {
+      ensurePlayerContract(player, { division, careerDate: today, season: today.getFullYear() });
+      const status = refreshContractStatus(player, today);
+      const tone = contractUiTone(player, today);
+      if (tone === 'ok' && status !== 'expiring' && status !== 'expired') return null;
+      const expires = contractExpiresDate(player);
+      const daysLeft = expires ? calendarDaysBetween(today, expires) : null;
+      const expired = status === 'expired' || (daysLeft != null && daysLeft < 0);
+      const inRenewal =
+        isInRenewalWindow(player, today) ||
+        expired ||
+        (daysLeft != null && daysLeft <= CONTRACT_ALERT_DAYS[0]);
+      const wageAsk = computeRenewalWageAsk(player, division, { careerDate: today, expired });
+      const wageCurrent = Math.round(Number(player.contract?.wagePerRound ?? player.wage) || 0);
+      return {
+        player,
+        playerId: player.playerId || player.name,
+        status,
+        tone,
+        expires,
+        daysLeft,
+        expired,
+        inRenewal,
+        wageAsk,
+        wageCurrent,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (a.expired && !b.expired) return -1;
+      if (b.expired && !a.expired) return 1;
+      const da = a.daysLeft ?? 999;
+      const db = b.daysLeft ?? 999;
+      return da - db;
+    });
+}
+
 /** IA: renova titulares prováveis; libera reservas caras expiradas. */
 export function processAiClubContractsSilent(club, division = 'A', careerDate = new Date(), random = Math.random) {
   if (!club?.roster?.length) return;

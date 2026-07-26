@@ -1,6 +1,15 @@
 import '../../css/update-alert.css';
 import { BUILD_VERSION, SAVE_KEYS, GAME_BRAND_UPDATE_TITLE } from '../core/constants.js';
-import { RELEASE_NOTES } from '../core/release-notes.js';
+
+/** @type {Promise<typeof import('../core/release-notes.js')> | null} */
+let releaseNotesModulePromise = null;
+
+function loadReleaseNotesModule() {
+  if (!releaseNotesModulePromise) {
+    releaseNotesModulePromise = import('../core/release-notes.js');
+  }
+  return releaseNotesModulePromise;
+}
 
 const MODAL_ID = 'updateAlertModal';
 
@@ -28,7 +37,8 @@ function markBuildSeen(version) {
   catch { /* ignore quota / privacy mode */ }
 }
 
-function getReleaseNotes(version) {
+async function getReleaseNotes(version) {
+  const { RELEASE_NOTES } = await loadReleaseNotesModule();
   return RELEASE_NOTES.find(note => note.version === version) || null;
 }
 
@@ -78,11 +88,11 @@ function dismissUpdateAlert(version) {
   document.getElementById(MODAL_ID)?.classList.add('hidden');
 }
 
-export function showUpdateAlertIfNeeded(buildVersion = BUILD_VERSION) {
+export async function showUpdateAlertIfNeeded(buildVersion = BUILD_VERSION) {
   if (!isTesterUpdateChannel() || isDebugSession()) return;
   if (getLastSeenBuild() === buildVersion) return;
 
-  const notes = getReleaseNotes(buildVersion);
+  const notes = await getReleaseNotes(buildVersion);
   ensureModal();
 
   const modal = document.getElementById(MODAL_ID);

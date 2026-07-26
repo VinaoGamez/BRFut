@@ -369,3 +369,15 @@ export function serieDCascadeReplacementsToMap(replacements = []) {
   }
   return map;
 }
+
+/** Atualiza nomes nos grupos após substituições cascade (vítima → usuário, etc.). */
+export function applySerieDCascadeReplacementsToGroups(groups, replacements = []) {
+  const map = serieDCascadeReplacementsToMap(replacements);
+  if (!Object.keys(map).length || !Array.isArray(groups)) return groups;
+  return groups.map(group =>
+    (group || []).map(name => {
+      const key = normClubKey(name);
+      return map[key] || name;
+    }),
+  );
+}

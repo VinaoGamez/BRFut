@@ -54,6 +54,7 @@
   <link rel="stylesheet" href="css/theme-matchday.css?v=20260717-css-mod">
   <link rel="stylesheet" href="css/options-polish.css?v=20260717-css-mod">
   <link rel="stylesheet" href="css/player-card-system.css?v=20260722-badge-art">
+  <link rel="stylesheet" href="css/youth-academy.css?v=20260726-scout-reports">
   <link rel="stylesheet" href="css/player-card-modal.css?v=20260722-cards3">
   <link rel="stylesheet" href="css/scout.css?v=20260720-board-hover">
   <link rel="stylesheet" href="css/tables.css?v=20260720-blue-tables">
@@ -76,6 +77,7 @@
   <link rel="stylesheet" href="css/manager-sack.css?v=20260718-sack-ui">
   <link rel="stylesheet" href="css/sponsor-picker.css?v=20260718-picker-stable">
   <link rel="stylesheet" href="css/player-status.css?v=20260721-loan-stack">
+  <link rel="stylesheet" href="css/roster-contracts.css?v=20260726-contract-modal">
 </head>
 <body>
 
@@ -90,7 +92,7 @@
     <small class="season">TEMPORADA 2026</small>
     <nav>
       <button class="nav active" data-view="dashboard">▦ Central</button>
-      <button class="nav" data-view="squad">♟ Elenco</button>
+      <button class="nav" data-view="squad">♟ Elenco <em id="squadNavBadge" class="nav-badge nav-badge--dot hidden" aria-hidden="true"></em></button>
       <button class="nav" data-view="tactics">⌁ Táticas</button>
       <button class="nav" data-view="table">▤ Campeonatos</button>
       <button class="nav" data-view="office">▥ Escritório</button>
@@ -146,6 +148,7 @@
           <label>POS<select data-roster-filter="pos" aria-label="Filtrar posição"><option value="">Todas</option></select></label>
           <label>PÉ<select data-roster-filter="foot" aria-label="Filtrar pé"><option value="">Todos</option></select></label>
           <label>PERFIL<select data-roster-filter="personality" aria-label="Filtrar perfil"><option value="">Todos</option></select></label>
+          <button type="button" id="rosterContractBtn" aria-expanded="false" aria-controls="rosterContractPanel">CONTRATO<span class="roster-contract-btn-badge hidden" aria-hidden="true">0</span></button>
         </div>
         <div class="roster-scroll">
           <div class="roster-head roster-expanded" id="rosterHead" role="row">
@@ -225,10 +228,6 @@
             <div class="office-meter" data-meter="prevention">
               <div class="office-meter-top"><small>PREVENÇÃO</small><b id="officePreventionLevel">0/3</b></div>
               <div class="office-meter-track" aria-hidden="true"><i id="officePreventionBar"></i></div>
-            </div>
-            <div class="office-meter" data-meter="youth">
-              <div class="office-meter-top"><small>CATEGORIA DE BASE</small><b id="officeYouthLevel">0/5</b></div>
-              <div class="office-meter-track" aria-hidden="true"><i id="officeYouthBar"></i></div>
             </div>
           </div>
         </article>
@@ -442,13 +441,21 @@
         </div>
       </div>
     </section>
-    <section id="youth" class="view coming-soon-view">
-      <div class="title"><p>FORMAÇÃO DE TALENTOS</p><h1>Categoria de Base</h1><span>Desenvolvimento de jovens e revelação de promessas para o elenco principal.</span></div>
-      <article class="card coming-soon-card">
-        <label>EM BREVE</label>
-        <strong>Área em desenvolvimento</strong>
-        <p>A categoria de base estará disponível em uma atualização futura. O investimento correspondente no Escritório permanece bloqueado até a abertura desta área.</p>
-      </article>
+    <section id="youth" class="view youth-view">
+      <div class="title"><p>FORMAÇÃO DE TALENTOS</p><h1>Categoria de Base</h1><span>Elenco U-20, olheiros e infraestrutura — separado do elenco profissional.</span></div>
+      <p id="youthMeta" class="youth-meta"></p>
+      <div id="youthMain">
+        <div class="youth-tabs" role="tablist">
+          <button type="button" class="youth-tab active" data-youth-tab="squad">Elenco U-20</button>
+          <button type="button" class="youth-tab" data-youth-tab="scouts">Olheiros</button>
+          <button type="button" class="youth-tab" data-youth-tab="infra">Infraestrutura</button>
+        </div>
+        <div class="youth-panels">
+          <section class="youth-panel" data-youth-panel="squad"><div id="youthSquadBody"></div></section>
+          <section class="youth-panel hidden" data-youth-panel="scouts"><div id="youthScoutsBody"></div></section>
+          <section class="youth-panel hidden" data-youth-panel="infra"><div id="youthInfraBody"></div></section>
+        </div>
+      </div>
     </section>
     <section id="table" class="view championship-view">
       <div class="card league championship-page-table">
@@ -665,6 +672,18 @@
     </footer>
   </div>
 </div>
+<div id="rosterContractModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="rosterContractTitle">
+  <div class="modal-card roster-contract-modal-card">
+    <button id="closeRosterContractModal" class="close" type="button" aria-label="Fechar">×</button>
+    <header class="roster-contract-modal-head">
+      <h2 id="rosterContractTitle">GESTÃO DE CONTRATOS</h2>
+    </header>
+    <div id="rosterContractList" class="roster-contract-modal-list"></div>
+    <footer class="roster-contract-modal-actions">
+      <button id="closeRosterContractModalFooter" type="button">FECHAR</button>
+    </footer>
+  </div>
+</div>
 <div id="messageReaderModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="messageReaderTitle">
   <div class="modal-card message-reader-card">
     <button id="closeMessageReader" class="close" type="button" aria-label="Fechar">×</button>
@@ -732,6 +751,7 @@
   #squad .roster-filters{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:end;gap:10px;padding:10px 12px;border-bottom:1px solid #234650;background:#0d222b}
   #squad .roster-filters label{display:grid;gap:4px;min-width:120px;color:#75cde3;font:700 10px 'DM Sans',sans-serif;letter-spacing:.45px}
   #squad .roster-filters select{min-width:120px;padding:6px 8px;border:1px solid #315d69;border-radius:4px;background:#0c1e28;color:#edf8f5;font:600 12px 'DM Sans',sans-serif}
+  #squad .roster-filters #rosterContractBtn{margin-left:auto;align-self:center}
   .roster-head.roster-expanded,.player-row.roster-expanded{width:max-content;min-width:100%;grid-template-columns:minmax(220px,1.55fr) 52px 52px 52px 72px 78px 110px 48px 48px 48px 48px 48px 48px 48px 48px 56px 64px 64px 64px 48px 80px;gap:6px}
   #squad .roster-head>button[data-roster-sort="ovr"],#squad .player-row>.roster-col-ovr{min-width:0;padding-inline:2px}
   #squad .roster-ovr{display:inline-flex;align-items:center;justify-content:center;gap:4px;font-weight:700}

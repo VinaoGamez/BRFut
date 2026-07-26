@@ -3,6 +3,7 @@
  */
 
 import { resolvePlayerId } from '../../engine/player-identity.js';
+import { isStaleChunkLoadError, showStaleChunkBanner } from '../../core/chunk-load.js';
 
 const MODAL_ID = 'playerCardModal';
 let cardHandlersBound = false;
@@ -61,10 +62,21 @@ export function createPlayerCardModal(deps = {}) {
 
     openCtx = { playerId: resolvePlayerId(player), isOwn, ownerClub };
 
-    const [{ mountMatchdayCard }, { rosterPlayerToCardPlayer }] = await Promise.all([
-      import('../../lab/player-card-system.js'),
-      import('../player-card/roster-card-player.js'),
-    ]);
+    let mountMatchdayCard;
+    let rosterPlayerToCardPlayer;
+    try {
+      [{ mountMatchdayCard }, { rosterPlayerToCardPlayer }] = await Promise.all([
+        import('../../lab/player-card-system.js'),
+        import('../player-card/roster-card-player.js'),
+      ]);
+    } catch (error) {
+      if (isStaleChunkLoadError(error)) {
+        showStaleChunkBanner();
+        close();
+        return false;
+      }
+      throw error;
+    }
 
     const cardPlayer = await rosterPlayerToCardPlayer(player, {
       playerHistory: deps.getPlayerHistory?.(),

@@ -115,6 +115,19 @@ export function shouldPersistWorldRoster(_clubName, club) {
   return !!club._rosterPersist;
 }
 
+/** Reduz worldRosters para divisões essenciais quando a cota estoura. */
+export function trimWorldRostersForQuota(worldRosters, clubs, { keepDivisions = ['D'], userClub = null } = {}) {
+  if (!worldRosters || typeof worldRosters !== 'object') return {};
+  const keep = new Set(keepDivisions);
+  const out = {};
+  Object.entries(worldRosters).forEach(([clubName, roster]) => {
+    if (userClub && clubName === userClub) return;
+    const division = clubs?.[clubName]?.division;
+    if (keep.has(division)) out[clubName] = roster;
+  });
+  return out;
+}
+
 /**
  * Snapshot enxuto de elencos para o career save.
  * @param {Record<string, { roster?: object[], division?: string }>} clubs

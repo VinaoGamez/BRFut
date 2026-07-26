@@ -1,37 +1,15 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
 import { teamCrestHtml } from '../../ui/team-crest.js';
+import { buildChampionEntries, renderChampionsLayout } from './champions.js';
 import { seasonGoalGauge } from './goal-gauge.js';
 
 const LEAGUE_ORDER = [
-  { key: 'A', label: 'Série A', accent: '#63d9ff', trophy: '#ffd24a' },
-  { key: 'B', label: 'Série B', accent: '#7ee787', trophy: '#c9e265' },
-  { key: 'C', label: 'Série C', accent: '#ffc94f', trophy: '#ffb347' },
-  { key: 'D', label: 'Série D', accent: '#ff9f6b', trophy: '#ff8c5a' },
-  { key: 'CUP', label: 'Copa do Brasil', accent: '#b6ff38', trophy: '#b6ff38' },
+  { key: 'A', label: 'Série A' },
+  { key: 'B', label: 'Série B' },
+  { key: 'C', label: 'Série C' },
+  { key: 'D', label: 'Série D' },
+  { key: 'CUP', label: 'Copa do Brasil' },
 ];
-
-let svgIconSeq = 0;
-
-const trophyIcon = (fill = '#ffd24a', glow = '#ffc94f66', size = 40) => {
-  const uid = ++svgIconSeq;
-  return `<svg class="season-trophy-icon" width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true" focusable="false" style="filter:drop-shadow(0 3px 6px ${glow})">
-    <defs>
-      <linearGradient id="trophyGrad-${uid}" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="${fill}" stop-opacity="1"/>
-        <stop offset="100%" stop-color="${fill}" stop-opacity=".72"/>
-      </linearGradient>
-    </defs>
-    <path fill="url(#trophyGrad-${uid})" d="M8 4h16v3c0 4.5-2.2 7.8-5.5 9.5L18 20v2h4v3H10v-3h4v-2l-.5-3.5C10.2 14.8 8 11.5 8 7V4z"/>
-    <path fill="${fill}" opacity=".35" d="M11 6h10v1.5c0 3.2-1.5 5.6-3.8 7L16 17.5 14.8 14.5C12.5 12.6 11 10.2 11 7V6z"/>
-    <rect x="12" y="25" width="8" height="2" rx="1" fill="${fill}" opacity=".85"/>
-    <path fill="none" stroke="${fill}" stroke-width="1.2" d="M8 6H5.5a2.5 2.5 0 0 0 0 5H8M24 6h2.5a2.5 2.5 0 0 1 0 5H24"/>
-  </svg>`;
-};
-
-const cupTrophyIcon = (size = 46) => {
-  const svg = trophyIcon('#b6ff38', '#b6ff3866', size);
-  return svg.replace('class="season-trophy-icon"', 'class="season-trophy-icon cup"');
-};
 
 const scorerMedalIcon = () =>
   `<svg class="season-stat-icon scorer" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true" focusable="false">
@@ -73,7 +51,14 @@ const MODAL_HTML = `
     </section>
     <section class="season-summary-section">
       <header><h3>Campeões</h3><small>Títulos conquistados em <span id="seasonSummaryYear"></span></small></header>
-      <div id="seasonChampions" class="season-champions-grid"></div>
+      <div id="seasonChampions" class="season-champions-layout">
+        <div id="seasonChampionsFeatured" class="season-champions-featured"></div>
+        <div id="seasonChampionsPyramid" class="season-champions-pyramid"></div>
+        <div id="seasonChampionsExtraWrap" class="season-champions-extra-wrap hidden">
+          <h4 class="season-champions-extra-title">Outros títulos</h4>
+          <div id="seasonChampionsExtra" class="season-champions-extra"></div>
+        </div>
+      </div>
     </section>
     <section class="season-summary-section">
       <header><h3>Líderes de estatística</h3><small>Artilheiro e assistências por competição</small></header>
@@ -211,21 +196,6 @@ export function createSeasonSummaryFeature(deps) {
     bindHandlers();
   };
 
-  const championCard = ({ key, label, accent, trophy }, clubName) => {
-    const isCup = key === 'CUP';
-    const crest = clubName ? teamCrestHtml(clubName) : '—';
-    const trophyMarkup = isCup ? cupTrophyIcon(46) : trophyIcon(trophy, `${trophy}88`, 42);
-    return `<article class="season-champion-card ${isCup ? 'cup' : ''}" style="--champion-accent:${accent}">
-      <span class="season-champion-badge">${label}</span>
-      <div class="season-champion-trophy">${trophyMarkup}</div>
-      <div class="season-champion-hero">
-        <div class="season-champion-crest" aria-hidden="true">${crest}</div>
-      </div>
-      <p class="season-champion-title">${isCup ? 'Campeão da Copa' : 'Campeão do Brasileirão'}</p>
-      <p class="season-champion-name">${clubName || '—'}</p>
-    </article>`;
-  };
-
   const leaderRow = (kind, label, entry, metric, metricLabel, iconMarkup) => {
     if (!entry?.name || entry.name === '—') {
       return `<div class="season-leader-row ${kind}">
@@ -286,6 +256,9 @@ export function createSeasonSummaryFeature(deps) {
     idleNote = '',
     userStatus = 'neutral',
     champions,
+    championEstaduais = [],
+    recopaSubtitle = null,
+    userDivision = 'A',
     leadersByDivision,
     movements,
     leadText,
@@ -356,9 +329,17 @@ export function createSeasonSummaryFeature(deps) {
         objectivesEl.innerHTML = '';
       }
     }
-    $('#seasonChampions').innerHTML = LEAGUE_ORDER.map(league =>
-      championCard(league, champions[league.key])
-    ).join('');
+    const championsRoot = $('#seasonChampions');
+    if (championsRoot) {
+      const entries = buildChampionEntries({
+        champions,
+        championEstaduais,
+        userClub,
+        userDivision,
+        recopaSubtitle,
+      });
+      renderChampionsLayout(championsRoot, entries);
+    }
     $('#seasonLeaders').innerHTML = LEAGUE_ORDER.map(({ key, label }) => {
       const leaders = leadersByDivision[key] || { scorers: [], assistants: [] };
       return leadersCard(key, label, leaders.scorers, leaders.assistants);
@@ -395,7 +376,20 @@ export function createSeasonSummaryFeature(deps) {
       userLine: 'Permanecerá na Série D em 2028. (dados fictícios do preview)',
       userStatus: 'neutral',
       leadText: 'Preview seguro: use os botões da meta para trocar o status do medidor. Fechar não altera a carreira.',
-      champions: { A: 'Clube Alfa', B: 'Clube Beta', C: 'Clube Gama', D: 'Atlético Preview', CUP: 'Clube Copa' },
+      userDivision: 'D',
+      champions: {
+        A: 'Santos',
+        B: 'Athletic',
+        C: 'Paysandu',
+        D: 'Atlético Preview',
+        CUP: 'Santos',
+        RECOPA: 'Santos',
+      },
+      recopaSubtitle: 'Título unificado (Brasileirão + Copa)',
+      championEstaduais: [
+        { key: 'EST:SP', uf: 'SP', label: 'Paulista', clubName: 'Corinthians' },
+        { key: 'EST:RJ', uf: 'RJ', label: 'Carioca', clubName: 'Flamengo' },
+      ],
       leadersByDivision: {
         A: emptyLeaders,
         B: emptyLeaders,

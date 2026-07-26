@@ -37,7 +37,24 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     minify: 'esbuild',
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules') && id.includes('/js/')) {
+            if (id.includes('/feature/youth-academy/') || id.includes('/engine/youth-academy.js')) {
+              return 'youth-academy';
+            }
+            if (id.includes('/core/release-notes.js')) return 'release-notes';
+            if (id.includes('/feature/calendar-view/')) return 'calendar-view';
+            if (id.includes('/feature/transfers/')) return 'transfers-ui';
+            if (id.includes('/feature/match-live-ui/') || id.includes('/feature/match-live-audio/')) {
+              return 'match-live';
+            }
+            if (id.includes('/lab/player-card-system.js')) return 'player-cards';
+          }
+        },
+      },
       input: {
         main: resolve(__dirname, 'index.html'),
         home: resolve(__dirname, 'home.html'),

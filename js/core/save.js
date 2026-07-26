@@ -3,6 +3,16 @@ import { normalizeWorldCupHistory } from '../engine/world-cup-history.js';
 import { stampSyncableSave } from './save-sync.js';
 import { isCloudStorageActive, queueCloudDelete, queueCloudSave } from './storage-api.js';
 
+/** Limites de cota do localStorage (~5–10 MB por origem). */
+export const STORAGE_LIMITS = {
+  warnBytes: 3_400_000,
+  criticalBytes: 4_400_000,
+  /** JSON serializado acima disso dispara slim proativo antes de gravar. */
+  largePayloadChars: 260_000,
+  /** Reclaim preventivo quando o payload passa deste tamanho. */
+  proactiveReclaimChars: 200_000,
+};
+
 /** Limites para conter crescimento de save/RAM em carreiras longas. */
 export const MEMORY_LIMITS = {
   injuryHistory: 5,
@@ -30,9 +40,135 @@ export function readJson(key, fallback = null) {
   }
 }
 
+const quotaWarnedKeys = new Set();
+
+/** Estimativa de bytes usados no localStorage (UTF-16 ≈ 2× char length). */
+export function estimateLocalStorageUsage() {
+  let total = 0;
+  const breakdown = {};
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      const value = localStorage.getItem(key) || '';
+      const bytes = (key.length + value.length) * 2;
+      breakdown[key] = bytes;
+      total += bytes;
+    }
+  } catch {
+    /* ignore */
+  }
+  return { total, breakdown };
+}
+
+/** Pressão estimada no localStorage — guia slim proativo. */
+let storagePressureCache = null;
+let storagePressureCacheAt = 0;
+const STORAGE_PRESSURE_CACHE_MS = 1200;
+
+export function getStoragePressure({ fresh = false } = {}) {
+  const now = Date.now();
+  if (!fresh && storagePressureCache && now - storagePressureCacheAt < STORAGE_PRESSURE_CACHE_MS) {
+    return storagePressureCache;
+  }
+  const { total, breakdown } = estimateLocalStorageUsage();
+  let level = 'ok';
+  if (total >= STORAGE_LIMITS.criticalBytes) level = 'critical';
+  else if (total >= STORAGE_LIMITS.warnBytes) level = 'warn';
+  storagePressureCache = { total, breakdown, level };
+  storagePressureCacheAt = now;
+  return storagePressureCache;
+}
+
+export function invalidateStoragePressureCache() {
+  storagePressureCache = null;
+  storagePressureCacheAt = 0;
+}
+
+function estimatePayloadChars(key, value) {
+  try {
+    return JSON.stringify(stampSyncableSave(key, value)).length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Libera chaves regeneráveis / secundárias antes de gravar saves críticos.
+ * @returns {number} bytes estimados liberados
+ */
+export function reclaimLocalStorageSpace({ aggressive = false, preserveKeys = [] } = {}) {
+  const preserve = new Set(preserveKeys);
+  let freed = 0;
+  const removeKey = key => {
+    if (!key || preserve.has(key)) return;
+    try {
+      const value = localStorage.getItem(key);
+      if (value) freed += (key.length + value.length) * 2;
+      localStorage.removeItem(key);
+      invalidateStoragePressureCache();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  removeKey(SAVE_KEYS.liveMatch);
+
+  try {
+    const hist = localStorage.getItem(SAVE_KEYS.playerHistory);
+    const histBytes = hist ? (SAVE_KEYS.playerHistory.length + hist.length) * 2 : 0;
+    if (aggressive || histBytes > 250_000) removeKey(SAVE_KEYS.playerHistory);
+  } catch {
+    /* ignore */
+  }
+
+  if (aggressive) {
+    removeKey(SAVE_KEYS.training);
+    removeKey(SAVE_KEYS.pace);
+  }
+
+  try {
+    const keysToDrop = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key || preserve.has(key)) continue;
+      if (
+        key.startsWith('matchday-card-lab')
+        || key.startsWith('card-lab-layout-')
+        || key.startsWith('matchday-team-lab')
+        || key === 'matchday-sponsor-offer-history'
+        || key.startsWith('transfers-col-width-')
+      ) {
+        keysToDrop.push(key);
+      }
+    }
+    keysToDrop.forEach(removeKey);
+  } catch {
+    /* ignore */
+  }
+
+  return freed;
+}
+
+/** Alias explícito para preparar gravações críticas (carreira/temporada). */
+export function prepareStorageForSave(options = {}) {
+  return reclaimLocalStorageSpace(options);
+}
+
+function warnQuotaOnce(key, error) {
+  if (quotaWarnedKeys.has(key)) return;
+  quotaWarnedKeys.add(key);
+  console.warn('[matchday] cota de localStorage esgotada', key, error);
+  try {
+    window.dispatchEvent(new CustomEvent('matchday:save-quota', { detail: { key } }));
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Grava JSON com proteção de cota. Retorna false se falhar.
- * Em QuotaExceeded, remove chave legada e tenta de novo uma vez.
+ * Em QuotaExceeded, remove chaves regeneráveis e tenta novamente.
  */
 export function writeJson(key, value) {
   const payload = stampSyncableSave(key, value);
@@ -44,8 +180,9 @@ export function writeJson(key, value) {
     return false;
   }
 
-  try {
+  const tryWrite = () => {
     localStorage.setItem(key, raw);
+    invalidateStoragePressureCache();
     if (isCloudStorageActive()) {
       try {
         queueCloudSave(key, payload);
@@ -54,6 +191,13 @@ export function writeJson(key, value) {
       }
     }
     return true;
+  };
+
+  try {
+    if (raw.length > STORAGE_LIMITS.proactiveReclaimChars) {
+      reclaimLocalStorageSpace({ preserveKeys: [key] });
+    }
+    return tryWrite();
   } catch (error) {
     const quota =
       error?.name === 'QuotaExceededError' ||
@@ -63,39 +207,68 @@ export function writeJson(key, value) {
       console.warn('[matchday] falha ao gravar save', key, error);
       return false;
     }
+
+    reclaimLocalStorageSpace({ preserveKeys: [key] });
     try {
-      // Libera espaço: live-match é regenerável; histórico grande bloqueia qualquer save.
-      localStorage.removeItem(SAVE_KEYS.liveMatch);
-      try {
-        const hist = localStorage.getItem(SAVE_KEYS.playerHistory);
-        // Se a própria gravação do histórico falhou, ou o blob já está enorme, apaga.
-        if (key === SAVE_KEYS.playerHistory || (hist && hist.length > 250_000)) {
-          localStorage.removeItem(SAVE_KEYS.playerHistory);
-        }
-      } catch {
-        /* ignore */
-      }
-      localStorage.setItem(key, raw);
-      return true;
+      return tryWrite();
+    } catch {
+      /* fall through */
+    }
+
+    reclaimLocalStorageSpace({ aggressive: true, preserveKeys: [key] });
+    try {
+      return tryWrite();
     } catch (retryError) {
-      // Último recurso: limpa histórico e tenta uma vez mais (save de carreira/temporada).
-      try {
-        localStorage.removeItem(SAVE_KEYS.playerHistory);
-        localStorage.removeItem(SAVE_KEYS.liveMatch);
-        localStorage.setItem(key, raw);
-        return true;
-      } catch {
-        /* fall through */
-      }
-      console.warn('[matchday] cota de localStorage esgotada', key, retryError);
-      try {
-        window.dispatchEvent(new CustomEvent('matchday:save-quota', { detail: { key } }));
-      } catch {
-        /* ignore */
-      }
+      warnQuotaOnce(key, retryError);
       return false;
     }
   }
+}
+
+/**
+ * Grava JSON com slim progressivo quando a cota aperta.
+ * @param {string} key
+ * @param {object} value
+ * @param {{ slimSteps?: Array<(payload: object, pressure: { level: string }) => object>, preserveKeys?: string[], proactiveSlim?: boolean }} [options]
+ * @returns {{ ok: boolean, value: object, slimmed: boolean }}
+ */
+export function writeJsonResilient(key, value, { slimSteps = [], preserveKeys = null, proactiveSlim = true } = {}) {
+  const preserve = [...(preserveKeys || [key])];
+  let current = value;
+  let pressure = getStoragePressure();
+
+  prepareStorageForSave({
+    preserveKeys: preserve,
+    aggressive: pressure.level === 'critical',
+  });
+
+  let rawLen = estimatePayloadChars(key, current);
+  const shouldSlimProactively =
+    pressure.level !== 'ok' || rawLen > STORAGE_LIMITS.largePayloadChars;
+
+  if (proactiveSlim && shouldSlimProactively && slimSteps.length) {
+    for (const slim of slimSteps) {
+      current = slim(current, pressure);
+      rawLen = estimatePayloadChars(key, current);
+      if (pressure.level === 'ok' && rawLen <= STORAGE_LIMITS.largePayloadChars) break;
+    }
+  }
+
+  if (writeJson(key, current)) {
+    return { ok: true, value: current, slimmed: current !== value };
+  }
+
+  for (const slim of slimSteps) {
+    current = slim(current, { level: 'critical' });
+    prepareStorageForSave({ aggressive: true, preserveKeys: preserve });
+    if (writeJson(key, current)) {
+      return { ok: true, value: current, slimmed: true };
+    }
+  }
+
+  pressure = getStoragePressure();
+  warnQuotaOnce(key, new DOMException('QuotaExceededError', 'QuotaExceededError'));
+  return { ok: false, value: current, slimmed: current !== value };
 }
 
 function sanitizeWorldRostersOnLoad(worldRosters) {

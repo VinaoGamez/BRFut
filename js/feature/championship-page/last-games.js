@@ -11,12 +11,13 @@ export function createChampionshipLastGamesOpener({
   setRoundBrowserDivision,
   setRoundBrowserRound,
   setRoundBrowserGroup,
+  setRoundBrowserWorldCupGroup,
   renderRoundResultsBrowser,
   openRoundResultsModal,
 }) {
   return () => {
     const pageCompetition = getPageCompetition();
-    if (pageCompetition === 'CUP') return;
+    if (pageCompetition === 'CUP' || pageCompetition === 'CMU') return;
 
     const page = getPageState();
     const userClub = getUserClub();
@@ -28,6 +29,9 @@ export function createChampionshipLastGamesOpener({
     if (String(pageCompetition || '').startsWith('EST:')) {
       setRoundBrowserRound(page.pageStateRound || stateLeagueEngine.getCurrentRound(pageCompetition, userClub));
       setRoundBrowserGroup(Math.max(0, page.pageStateGroup));
+    } else if (pageCompetition === 'CMU') {
+      setRoundBrowserRound(Math.max(1, Number(page.pageWorldCupRound) || 1));
+      setRoundBrowserWorldCupGroup(Math.max(0, Number(page.pageWorldCupGroup) || 0));
     } else if (pageCompetition === 'D') {
       if (page.pageSerieDMode === 'knockout' || championshipPageIsKnockoutView()) {
         setRoundBrowserRound(Math.max(currentRound, 11));

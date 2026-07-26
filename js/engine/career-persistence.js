@@ -5,12 +5,13 @@
 import { SAVE_KEYS } from '../core/constants.js';
 import {
   MEMORY_LIMITS,
-  writeJson,
+  writeJsonResilient,
   markSkipPersistOnce,
   consumeSkipPersistOnce,
   pruneInjuryHistory,
 } from '../core/save.js';
 import { flushCloudSync } from '../core/storage-api.js';
+import { trimWorldRostersForQuota } from './world-rosters.js';
 
 export function createCareerPersistence({
   getSavedNewGame,
@@ -26,9 +27,58 @@ export function createCareerPersistence({
   /** @type {() => void} */
   let flushLiveMatchPersist = () => {};
 
+  /** Evita TDZ quando persistCareer roda antes de `clubs` existir no boot. */
+  const safeRuntime = () => {
+    try {
+      const clubs = getClubs?.();
+      const userClub = getUserClub?.();
+      if (!clubs || typeof clubs !== 'object') return null;
+      return { clubs, userClub };
+    } catch {
+      return null;
+    }
+  };
+
   const persistCareer = payload => {
     if (careerReset.blockWrites) return true;
-    return writeJson(SAVE_KEYS.career, payload);
+    const slimSteps = [
+      data => data,
+      data => {
+        const runtime = safeRuntime();
+        if (!runtime) return data;
+        const { clubs, userClub } = runtime;
+        const userDivision = clubs?.[userClub]?.division;
+        if (!data?.worldRosters || !userDivision) return data;
+        return {
+          ...data,
+          worldRosters: trimWorldRostersForQuota(data.worldRosters, clubs, {
+            keepDivisions: [userDivision],
+            userClub,
+          }),
+        };
+      },
+      data => {
+        const runtime = safeRuntime();
+        if (!runtime) return data;
+        const { clubs, userClub } = runtime;
+        const userDivision = clubs?.[userClub]?.division;
+        if (!data?.worldRosters || !userDivision) return data;
+        return {
+          ...data,
+          worldRosters: trimWorldRostersForQuota(data.worldRosters, clubs, {
+            keepDivisions: [userDivision, 'A'],
+            userClub,
+          }),
+        };
+      },
+      data => ({ ...data, worldRosters: {} }),
+    ];
+    const result = writeJsonResilient(SAVE_KEYS.career, payload, {
+      preserveKeys: [SAVE_KEYS.career, SAVE_KEYS.season],
+      slimSteps,
+      proactiveSlim: false,
+    });
+    return result.ok;
   };
 
   const prepareForNewCareer = () => {
@@ -113,6 +163,10 @@ export function createCareerPersistence({
     });
   };
 
+  const setSkipPersistOnUnload = () => {
+    skipPersistOnUnload = true;
+  };
+
   return {
     consumeBootSkip: consumeSkipPersistOnce,
     persistCareer,
@@ -123,6 +177,7 @@ export function createCareerPersistence({
     bindWriteSeasonSave,
     bindFlushLiveMatchPersist,
     bindBeforeUnloadPersist,
+    setSkipPersistOnUnload,
     isWriteBlocked: () => careerReset.blockWrites,
   };
 }

@@ -5,6 +5,82 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.15',
+    date: '2026-07-26',
+    publishedAt: '2026-07-26T07:35:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Categoria de Base (beta)',
+        items: [
+          'Nova área Categoria de Base no menu — elenco U-20 separado do profissional (até 15 jogadores).',
+          'Desbloqueio ao investir na Estrutura do estádio até o nível 3; ao liberar, você já ganha 1 olheiro.',
+          'Abas Elenco U-20, Olheiros e Infraestrutura para revelações, captação e upgrades da base.',
+          'Olheiros com classes A, B, C e D — quanto melhor a classe, maiores as chances de achar talentos e de qualidade.',
+          'Busca manual: escolha região, olheiro e clique em BUSCAR. Missão deixa o olheiro indisponível por 6 meses.',
+          'Resultado da missão fica em RELATÓRIOS (não vai para a caixa de mensagens) e expira em 3 semanas.',
+          'Na captação, contrate ou descarte os jovens indicados. Promoção para o elenco principal a partir dos 17 anos.',
+        ],
+      },
+      {
+        label: 'Elenco e contratos',
+        items: [
+          'Nova janela GESTÃO DE CONTRATOS no Elenco — renovações com aceitar/recusar direto na tela.',
+          'Bolinha amarela no menu Elenco quando houver contrato a vencer ou vencido.',
+          'Linhas do elenco continuam destacadas (azul, laranja, vermelho) conforme a situação do contrato.',
+        ],
+      },
+      {
+        label: 'Seleção (CMU)',
+        items: [
+          'Em anos de Copa do Mundo, a partir de maio você recebe convites para comandar uma seleção (3 propostas na inbox).',
+          'Campeonatos e Tabela de Jogos mostram a CMU quando você comanda a seleção.',
+          'Renovações do clube deixam de encher a inbox enquanto você está na seleção.',
+        ],
+      },
+      {
+        label: 'Estabilidade e desempenho',
+        items: [
+          'Save do navegador mais resistente quando a memória enche — compactação automática antes de falhar.',
+          'Carregamento mais rápido ao abrir o jogo.',
+          'Categoria de Base e outras telas pesadas carregam sob demanda, sem travar a abertura.',
+          'Aviso para Ctrl+Shift+R se o navegador estiver com arquivos antigos do jogo.',
+        ],
+      },
+    ],
+  },
+  {
+    version: 'Alpha V.2.10',
+    date: '2026-07-26',
+    publishedAt: '2026-07-26T01:45:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Elenco e contratos',
+        items: [
+          'Nova janela GESTÃO DE CONTRATOS no Elenco — renovações com aceitar/recusar sem ir às mensagens.',
+          'Bolinha amarela no menu Elenco quando houver contrato a vencer ou vencido.',
+          'Linhas do elenco continuam destacadas (azul, laranja, vermelho) conforme a situação.',
+        ],
+      },
+      {
+        label: 'Copa do Mundo (seleção)',
+        items: [
+          'Campeonatos e Tabela de Jogos passam a mostrar a CMU quando você comanda a seleção.',
+          'Renovações do clube deixam de encher a inbox enquanto você está na seleção.',
+        ],
+      },
+      {
+        label: 'Estabilidade',
+        items: [
+          'Save do navegador mais resistente quando a memória enche — compactação automática antes de falhar.',
+          'Carregamento mais rápido: o jogo não regrava a temporada inteira em todo refresh.',
+          'Aviso para Ctrl+Shift+R se o navegador estiver com arquivos antigos do jogo.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.05',
     date: '2026-07-23',
     publishedAt: '2026-07-23T19:20:00-03:00',

@@ -122,6 +122,18 @@ main > .view.active {
   box-shadow: 0 0 0 2px rgba(6, 19, 27, 0.55);
 }
 
+.sidebar .nav-badge.nav-badge--dot {
+  min-width: 0;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  background: #ffc94f;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
+}
+
 .sidebar .nav-badge.hidden {
   display: none;
 }
@@ -1528,6 +1540,52 @@ main > .view.active {
   color: #ff6370 !important;
 }
 
+/* Seleção / Copa — só OVR + Ambiente no card lateral */
+#dashboard.dashboard-wc-mode .environment-card {
+  justify-content: center;
+  gap: 0;
+  padding-top: 10px;
+  padding-bottom: 14px;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-environment-note,
+#dashboard.dashboard-wc-mode .environment-card .dashboard-factors {
+  display: none !important;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-summary {
+  gap: 32px;
+  margin: auto !important;
+  padding: 16px 0 10px;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-overall {
+  width: 98px;
+  height: 98px;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-overall strong {
+  font-size: 40px;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-overall small {
+  font-size: 9px;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-environment {
+  width: 98px;
+  height: 98px;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-environment strong {
+  font-size: 30px;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-environment small {
+  font-size: 8px;
+  letter-spacing: .4px;
+}
+
 .dashboard-medical-label {
   display: block;
   margin-top: 8px;
@@ -1639,6 +1697,67 @@ main > .view.active {
 
 #dashboard .dashboard-environment strong {
   font-size: 26px !important;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-overall,
+#dashboard.dashboard-wc-mode .environment-card .dashboard-environment {
+  width: 98px !important;
+  height: 98px !important;
+  flex-basis: 98px !important;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-overall strong {
+  font-size: 40px !important;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-environment strong {
+  font-size: 30px !important;
+}
+
+#dashboard.dashboard-wc-mode .environment-card .dashboard-summary {
+  gap: 32px !important;
+  padding: 16px 0 10px !important;
+}
+
+#dashboard.dashboard-wc-mode .dashboard-team-stats {
+  padding: 16px 18px !important;
+}
+
+#dashboard.dashboard-wc-mode .dashboard-team-stats > label {
+  font-size: 11px !important;
+  letter-spacing: .8px;
+}
+
+#dashboard.dashboard-wc-mode .dashboard-team-stats-list {
+  gap: 14px;
+  align-content: center;
+}
+
+#dashboard.dashboard-wc-mode .dashboard-team-stat {
+  grid-template-columns: 60px minmax(0, 1fr);
+  gap: 14px;
+}
+
+#dashboard.dashboard-wc-mode .dashboard-team-stat-icon {
+  width: 60px !important;
+  height: 60px !important;
+}
+
+#dashboard.dashboard-wc-mode .dashboard-team-stat-copy {
+  gap: 4px;
+}
+
+#dashboard.dashboard-wc-mode .dashboard-team-stat-copy small {
+  font-size: 10px !important;
+  letter-spacing: .55px;
+}
+
+#dashboard.dashboard-wc-mode .dashboard-team-stat-copy strong {
+  font-size: 22px !important;
+}
+
+#dashboard.dashboard-wc-mode .dashboard-team-stat-copy span {
+  font-size: 12px !important;
 }
 
 #teamScoutModal .environment-gauge,

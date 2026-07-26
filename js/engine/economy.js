@@ -11,6 +11,12 @@ import {
 import { addCalendarMonths, CONTRACT_TERM } from './player-contracts.js';
 import { medicalDiscountPreview } from './medical-costs.js';
 import {
+  applyYouthClubState,
+  estimateScoutStaffBill,
+  estimateYouthWageBill,
+  serializeYouthClubState,
+} from './youth-academy.js';
+import {
   STADIUM_SECTOR_MODEL,
   STADIUM_SECTOR_DEFS,
   STRUCTURE_UPGRADE,
@@ -712,13 +718,15 @@ export function chargeRoundCosts(club, {
     titlePoints,
   };
   const wagesDue = estimateWageBill(club, division, { softCap: false });
+  const youthWagesDue = estimateYouthWageBill(club, division);
+  const scoutStaffDue = estimateScoutStaffBill(club);
   const loanOutDue =
     clubName && clubs
       ? estimateLoanOutWageBill(clubName, clubs, resolvePlayerRoundWage)
       : 0;
-  const staffDue = estimateStaffBill(club, division, staffOpts);
+  const staffDue = estimateStaffBill(club, division, staffOpts) + scoutStaffDue;
   const stadiumDue = estimateStadiumOpsBill(club, division);
-  const due = wagesDue + loanOutDue + staffDue + stadiumDue;
+  const due = wagesDue + youthWagesDue + loanOutDue + staffDue + stadiumDue;
   const balanceBefore = getBalance(club);
   // Débito integral: obrigações entram no caixa mesmo sem cobertura.
   club.budget = balanceBefore - due;
@@ -731,18 +739,20 @@ export function chargeRoundCosts(club, {
     if (!(due > 0) || !(overdraft > 0)) return 0;
     return Math.round((overdraft * partDue) / due);
   };
-  const wagesOd = splitOverdraft(wagesDue);
+  const wagesOd = splitOverdraft(wagesDue + youthWagesDue);
   const loanOutOd = splitOverdraft(loanOutDue);
   const staffOd = splitOverdraft(staffDue);
   const stadiumOd = Math.max(0, overdraft - wagesOd - loanOutOd - staffOd);
 
   club.lastWageBill = {
-    due: wagesDue,
-    paid: wagesDue,
+    due: wagesDue + youthWagesDue,
+    paid: wagesDue + youthWagesDue,
     shortfall: wagesOd,
     overdraft: wagesOd,
     round: roundKey,
     at: new Date().toISOString(),
+    youth: youthWagesDue,
+    professional: wagesDue,
   };
   club.lastLoanOutWageBill = {
     due: loanOutDue,
@@ -845,6 +855,7 @@ export function serializeUserClubInvestments(club) {
   return {
     medicalInvestment: Math.max(0, Math.min(5, Number(club.medicalInvestment) || 0)),
     preventionProgram: Math.max(0, Math.min(3, Number(club.preventionProgram) || 0)),
+    ...serializeYouthClubState(club),
   };
 }
 
@@ -857,6 +868,7 @@ export function applySavedUserClubInvestments(club, saved) {
   if (Number.isFinite(Number(saved.preventionProgram))) {
     club.preventionProgram = Math.max(0, Math.min(3, Math.round(Number(saved.preventionProgram))));
   }
+  applyYouthClubState(club, saved);
   return true;
 }
 
@@ -900,19 +912,6 @@ export const CLUB_UPGRADES = {
     applyEffect: club => {
       club.preventionProgram = Math.min(3, (Number(club.preventionProgram) || 0) + 1);
     },
-  },
-  youth_academy: {
-    id: 'youth_academy',
-    label: 'Categoria de Base',
-    shortLabel: 'BASE',
-    description: 'Desenvolve a base e revela talentos para o elenco principal.',
-    maxLevel: 5,
-    baseCost: 2_000_000,
-    costPerLevel: 500_000,
-    locked: true,
-    lockLabel: 'Em breve',
-    getLevel: () => 0,
-    applyEffect: () => {},
   },
 };
 

@@ -184,6 +184,13 @@ export function createSeasonTransitionEngine(deps) {
       D: dKnockout.champion || ranked('D')[0],
       CUP: cupCompetition.champion,
     };
+    const recopaChampion = deps.getRecopaChampion?.() || null;
+    if (recopaChampion) champions.RECOPA = recopaChampion;
+    const continentalChampions = deps.getContinentalChampions?.() || {};
+    if (continentalChampions.LIBERTADORES) champions.LIBERTADORES = continentalChampions.LIBERTADORES;
+    if (continentalChampions.SUDAMERICANA) champions.SUDAMERICANA = continentalChampions.SUDAMERICANA;
+    const championEstaduais = deps.getStateLeagueChampions?.() || [];
+    const recopaSubtitle = deps.getRecopaSubtitle?.() || null;
     deps.setPriorSeasonChampions?.({
       season: careerSeason,
       A: champions.A,
@@ -337,7 +344,10 @@ export function createSeasonTransitionEngine(deps) {
       userLine,
       idleNote,
       userStatus,
+      userDivision,
       champions,
+      championEstaduais,
+      recopaSubtitle,
       leadersByDivision,
       clubs,
       seasonRewards: {
@@ -351,7 +361,6 @@ export function createSeasonTransitionEngine(deps) {
       seasonObjectivesResult: deps.getSeasonObjectivesResult(),
       movements,
     });
-    deps.evaluateManagerJobRisk();
   };
 
   const tryPrepareSeasonTransition = () => {
@@ -360,7 +369,7 @@ export function createSeasonTransitionEngine(deps) {
     return true;
   };
 
-  const startNextSeason = () => {
+  const startNextSeason = async () => {
     if (!pendingDivisionTeams || !deps.getSavedNewGame()) return false;
     if (deps.careerCrisisBlocks()) {
       deps.openCareerCrisisModal();
@@ -374,6 +383,13 @@ export function createSeasonTransitionEngine(deps) {
     deps.setSkipPersistOnUnload(true);
     deps.pruneClubMemory(clubs, deps.getNationalRankingEntries());
     deps.advancePlayerAges(clubs);
+    const youthSummary = await Promise.resolve(deps.runYouthSeasonTransition?.(clubs, {
+      userClub,
+      season: (savedNewGame.season || 2026) + 1,
+    }));
+    if (youthSummary?.reports > 0 && userClub) {
+      deps.pushYouthReportsMessage?.(youthSummary);
+    }
     deps.resetPlayerDevelopment((savedNewGame.season || 2026) + 1);
 
     const foundingClubName = savedNewGame.foundingClubName || savedNewGame.clubName || userClub;

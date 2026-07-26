@@ -275,6 +275,8 @@ export function createMessagesFeature(deps) {
     onContractRenewalRespond,
     onViewNationalTeam,
   } = deps;
+  const getHideClubContractMessages =
+    typeof deps.getHideClubContractMessages === 'function' ? deps.getHideClubContractMessages : () => false;
   const getCareerDateIso = typeof deps.getCareerDateIso === 'function' ? deps.getCareerDateIso : null;
   const getCareerDate =
     typeof deps.getCareerDate === 'function'
@@ -303,13 +305,17 @@ export function createMessagesFeature(deps) {
     persistSeason = typeof fn === 'function' ? fn : () => {};
   };
 
+  const shouldHideClubContractMessage = message =>
+    getHideClubContractMessages() && isContractRenewalActionRequired(message);
+
   const getMessages = () => careerMessages;
 
   const getMedicalActionMessages = () => careerMessages.filter(isMedicalActionRequired);
-  const getActionRequiredMessages = () => careerMessages.filter(isActionRequiredMessage);
+  const getActionRequiredMessages = () =>
+    careerMessages.filter(message => isActionRequiredMessage(message) && !shouldHideClubContractMessage(message));
   const getTransferActionMessages = () => careerMessages.filter(isTransferActionRequired);
   const getContractRenewalActionMessages = () =>
-    careerMessages.filter(isContractRenewalActionRequired);
+    careerMessages.filter(message => isContractRenewalActionRequired(message) && !shouldHideClubContractMessage(message));
 
   const unreadCount = () => careerMessages.filter(message => !message.read).length;
 
@@ -318,7 +324,7 @@ export function createMessagesFeature(deps) {
       messageFilter === 'all'
         ? careerMessages
         : careerMessages.filter(message => message.category === messageFilter);
-    return base.filter(isInboxMessage);
+    return base.filter(message => isInboxMessage(message) && !shouldHideClubContractMessage(message));
   };
 
   const updateMessageBadge = () => {

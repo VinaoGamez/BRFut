@@ -363,10 +363,47 @@
   font:700 9px DM Sans;
   letter-spacing:.45px;
 }
-.season-champions-grid{
+.season-champions-layout{
   display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:14px;
+}
+.season-champions-featured{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:10px;
+}
+.season-champions-pyramid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+.season-champions-extra-wrap{
+  display:grid;
+  gap:8px;
+}
+.season-champions-extra-wrap.hidden{
+  display:none;
+}
+.season-champions-extra-title{
+  margin:0;
+  color:#9eb6b8;
+  font:700 10px DM Sans;
+  letter-spacing:.45px;
+  text-transform:uppercase;
+}
+.season-champions-extra{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(132px,1fr));
+  gap:10px;
+}
+.season-champions-empty{
+  margin:0;
+  padding:18px 12px;
+  border:1px dashed #28505b;
+  border-radius:10px;
+  color:#9eb6b8;
+  font:600 12px DM Sans;
+  text-align:center;
 }
 .season-champion-card{
   position:relative;
@@ -380,6 +417,31 @@
   text-align:center;
   transition:border-color .15s ease,transform .15s ease,box-shadow .15s ease;
   overflow:hidden;
+}
+.season-champion-card.is-featured{
+  padding:22px 14px 18px;
+  min-height:210px;
+}
+.season-champion-card.is-compact,
+.season-champion-card.is-extra{
+  padding:14px 8px 12px;
+  gap:6px;
+}
+.season-champion-card.is-user-club{
+  border-color:var(--champion-accent,#63d9ff);
+  box-shadow:0 8px 24px #0006,0 0 0 1px #63d9ff44;
+}
+.season-champion-user-tag{
+  position:absolute;
+  top:10px;
+  right:10px;
+  padding:3px 7px;
+  border-radius:99px;
+  background:#173544;
+  color:#b6ff38;
+  font:700 7px DM Sans;
+  letter-spacing:.45px;
+  text-transform:uppercase;
 }
 .season-champion-card:before{
   content:'';
@@ -407,6 +469,21 @@
   min-height:44px;
   margin-top:2px;
   filter:drop-shadow(0 4px 10px #0008);
+}
+.season-champion-trophy-img{
+  display:block;
+  width:auto;
+  height:auto;
+  max-width:100%;
+  object-fit:contain;
+  animation:seasonTrophyFloat 3s ease-in-out infinite;
+}
+.season-champion-card.is-compact .season-champion-trophy-img,
+.season-champion-card.is-extra .season-champion-trophy-img{
+  animation-duration:3.4s;
+}
+.season-champion-card.cup .season-champion-trophy-img{
+  animation-duration:2.6s;
 }
 .season-champion-trophy .season-trophy-icon{
   display:block;
@@ -452,7 +529,51 @@
   background:radial-gradient(ellipse,#0008 0%,transparent 72%);
   pointer-events:none;
 }
-.season-champion-crest{
+.season-champion-card .season-champion-crest.crest--club,
+.season-champion-card i.season-champion-crest.crest--club,
+.season-champion-card .season-champion-crest.crest--flag,
+.season-champion-card i.season-champion-crest.crest--flag{
+  position:relative;
+  z-index:1;
+  width:64px;
+  height:auto;
+  aspect-ratio:1 / 1.12;
+  border-radius:0 !important;
+  border:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  font-size:0 !important;
+  line-height:0;
+  color:transparent;
+}
+.season-champion-card.is-featured .season-champion-crest.crest--club,
+.season-champion-card.is-featured i.season-champion-crest.crest--club,
+.season-champion-card.is-featured .season-champion-crest.crest--flag,
+.season-champion-card.is-featured i.season-champion-crest.crest--flag{
+  width:76px;
+}
+.season-champion-card.is-compact .season-champion-crest.crest--club,
+.season-champion-card.is-compact i.season-champion-crest.crest--club,
+.season-champion-card.is-compact .season-champion-crest.crest--flag,
+.season-champion-card.is-compact i.season-champion-crest.crest--flag,
+.season-champion-card.is-extra .season-champion-crest.crest--club,
+.season-champion-card.is-extra i.season-champion-crest.crest--club,
+.season-champion-card.is-extra .season-champion-crest.crest--flag,
+.season-champion-card.is-extra i.season-champion-crest.crest--flag{
+  width:52px;
+}
+.season-champion-card .season-champion-crest.crest--club img,
+.season-champion-card i.season-champion-crest.crest--club img,
+.season-champion-card .season-champion-crest.crest--flag img,
+.season-champion-card i.season-champion-crest.crest--flag img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.28));
+}
+.season-champion-card .season-champion-crest.crest:not(.crest--club):not(.crest--flag),
+.season-champion-card i.season-champion-crest.crest:not(.crest--club):not(.crest--flag){
   position:relative;
   z-index:1;
   display:grid;
@@ -466,9 +587,18 @@
   font:800 18px Barlow Condensed;
   box-shadow:0 8px 20px #0005,inset 0 0 0 1px #63d9ff33;
 }
-.season-champion-card.cup .season-champion-crest{
+.season-champion-card.cup .season-champion-crest.crest:not(.crest--club):not(.crest--flag),
+.season-champion-card.cup i.season-champion-crest.crest:not(.crest--club):not(.crest--flag){
   background:linear-gradient(145deg,#2a4518,#1a3010);
   box-shadow:0 8px 20px #0005,inset 0 0 0 1px #b6ff3844;
+}
+.season-champion-crest{
+  position:relative;
+  z-index:1;
+  display:grid;
+  place-items:center;
+  width:56px;
+  height:56px;
 }
 .season-champion-name{
   margin:0;
@@ -476,6 +606,13 @@
   font:700 13px Barlow Condensed;
   line-height:1.25;
   word-break:break-word;
+}
+.season-champion-card.is-compact .season-champion-name,
+.season-champion-card.is-extra .season-champion-name{
+  font-size:12px;
+}
+.season-champion-card.is-featured .season-champion-name{
+  font-size:15px;
 }
 .season-champion-title{
   margin:0;
@@ -728,11 +865,14 @@
   font:700 13px DM Sans;
 }
 @media(max-width:860px){
-  .season-champions-grid,.season-leaders-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .season-champions-featured{grid-template-columns:1fr}
+  .season-champions-pyramid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .season-champions-extra{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .season-leaders-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:560px){
   .season-summary-modal{padding:22px 18px 18px!important}
-  .season-champions-grid,.season-leaders-grid,.season-movements-grid{grid-template-columns:1fr}
+  .season-champions-pyramid,.season-champions-extra,.season-leaders-grid,.season-movements-grid{grid-template-columns:1fr}
   .season-summary-user{grid-template-columns:1fr;text-align:center;justify-items:center}
   .season-summary-actions button{width:100%;min-width:0}
 }

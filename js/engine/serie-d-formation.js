@@ -124,6 +124,40 @@ export function collectSerieDSecondPhaseClubs(serieDGroups, competitionD) {
   return [...qualified];
 }
 
+/** Índice do grupo Série D (0–15) — comparação normalizada de nomes. */
+export function findSerieDGroupIndex(clubName, serieDGroups = []) {
+  if (!clubName || !Array.isArray(serieDGroups) || !serieDGroups.length) return -1;
+  const key = normClubName(clubName);
+  return serieDGroups.findIndex(
+    group => Array.isArray(group) && group.some(name => normClubName(name) === key),
+  );
+}
+
+/** Nome canônico do clube dentro do grupo (útil após substituições de nome). */
+export function resolveSerieDGroupClubName(clubName, serieDGroups = []) {
+  const groupIndex = findSerieDGroupIndex(clubName, serieDGroups);
+  if (groupIndex < 0) return clubName;
+  const key = normClubName(clubName);
+  return serieDGroups[groupIndex]?.find(name => normClubName(name) === key) || clubName;
+}
+
+/**
+ * Garante que cada clube da lista D apareça em algum grupo (corrige saves/desalinhamentos).
+ */
+export function ensureSerieDGroupMembership(divisionTeams, serieDGroups = []) {
+  const groups = (serieDGroups || []).map(group => [...(group || [])]);
+  if (!groups.length) return groups;
+  const dTeams = [...(divisionTeams?.D || [])];
+  const isListed = name =>
+    groups.some(group => group.some(entry => normClubName(entry) === normClubName(name)));
+  for (const club of dTeams) {
+    if (!club || isListed(club)) continue;
+    const target = groups.find(group => group.length < 6) ?? groups[groups.length - 1];
+    if (target) target.push(club);
+  }
+  return groups;
+}
+
 /**
  * Monta elenco da Série D (96) pelos quatro critérios CBF.
  * @returns {{ roster: string[], breakdown: object }}
