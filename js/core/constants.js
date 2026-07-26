@@ -84,7 +84,7 @@ function readTransfersFlag() {
   }
 }
 
-/** Origem estadual + fluxo de substituição na pirâmide — só build local (5081). */
+/** Origem estadual + fluxo de substituição na pirâmide — local e GitHub Pages. */
 function readStateLeagueFlag() {
   try {
     return Boolean(__MATCHDAY_ENABLE_STATE_LEAGUE__);
@@ -103,6 +103,6 @@ export const FEATURES = {
   transfers: readTransfersFlag(),
   /** Copa do Mundo de Seleções — calendário FIFA 2026 + simulação progressiva. */
   worldCup: true,
-  /** Origem estadual (UF + host) e campeonato estadual em elaboração — só local. */
+  /** Origem estadual (UF + host) e campeonato estadual. */
   stateLeague: readStateLeagueFlag(),
 };

@@ -7,8 +7,8 @@ const isGithubPages = process.env.GITHUB_PAGES === 'true';
 
 /** Mercado ativo em todos os builds (local + GitHub Pages). */
 const enableTransfers = process.env.MATCHDAY_DISABLE_TRANSFERS !== 'true';
-/** Origem estadual / campeonato estadual — só build local até validação. */
-const enableStateLeague = !isGithubPages;
+/** Origem estadual / campeonato estadual — local e GitHub Pages (opt-out via env). */
+const enableStateLeague = process.env.MATCHDAY_DISABLE_STATE_LEAGUE !== 'true';
 
 export default defineConfig({
   root: '.',
