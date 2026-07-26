@@ -61,6 +61,7 @@ export function createYouthAcademyFeature(deps) {
     firstNames,
     lastNames,
     onBudgetChanged,
+    getRetiredPool,
   } = deps;
 
   let activeTab = 'squad';
@@ -250,8 +251,14 @@ export function createYouthAcademyFeature(deps) {
             ${reports
               .map(r => {
                 const p = r.player || {};
+                const legacyTip = p.legacyOf?.retiredName
+                  ? `Filho/regen de ${p.legacyOf.retiredName} (aposentado em ${p.legacyOf.retiredSeason ?? '—'})`
+                  : '';
+                const legacyBadge = legacyTip
+                  ? `<span class="youth-legacy-badge" title="${escAttr(legacyTip)}">LEGADO</span>`
+                  : '';
                 return `<article class="youth-grid-table__row">
-                  <span class="youth-grid-table__name">${esc(p.name)}</span>
+                  <span class="youth-grid-table__name">${esc(p.name)} ${legacyBadge}</span>
                   <span class="youth-grid-table__num">${p.age ?? '—'}</span>
                   <span class="youth-grid-table__pos">${p.pos ?? '—'}</span>
                   <span class="youth-grid-table__stars" title="Potencial estimado">${starsMarkup(r.estimatedStars)}</span>
@@ -291,8 +298,14 @@ export function createYouthAcademyFeature(deps) {
         .map(p => {
           const stars = youthStarRating(p, division);
           const canPromote = (Number(p.age) || 0) >= YOUTH_PROMOTION_MIN_AGE;
+          const legacyTip = p.legacyOf?.retiredName
+            ? `Filho/regen de ${p.legacyOf.retiredName} (aposentado em ${p.legacyOf.retiredSeason ?? '—'})`
+            : '';
+          const legacyBadge = legacyTip
+            ? `<span class="youth-legacy-badge" title="${escAttr(legacyTip)}">LEGADO</span>`
+            : '';
           return `<article class="youth-grid-table__row">
-            <span class="youth-grid-table__name"><button type="button" class="youth-name-btn" data-youth-card="${escAttr(p.playerId)}">${esc(p.name)}</button></span>
+            <span class="youth-grid-table__name"><button type="button" class="youth-name-btn" data-youth-card="${escAttr(p.playerId)}">${esc(p.name)}</button> ${legacyBadge}</span>
             <span class="youth-grid-table__num">${p.age ?? '—'}</span>
             <span class="youth-grid-table__pos">${p.pos ?? '—'}</span>
             <span class="youth-grid-table__stars">${starsMarkup(stars)}</span>
@@ -312,7 +325,9 @@ export function createYouthAcademyFeature(deps) {
     careerDate: getCareerDate?.() || new Date(),
     season: getCareerSeason?.(),
     clubName: getUserClub?.(),
+    userClub: getUserClub?.(),
     clubs: getClubs?.(),
+    retiredPool: getRetiredPool?.() || [],
     evaluateRosterPayroll,
     firstNames,
     lastNames,
@@ -433,7 +448,7 @@ export function createYouthAcademyFeature(deps) {
         const res = promoteYouthPlayer(club, id, ctx());
         if (!res.ok) {
           if (res.error === 'too_young') return;
-          if (res.error === 'roster_hard_full' || res.error === 'payroll_pressure') {
+          if (res.error === 'roster_full' || res.error === 'roster_hard_full' || res.error === 'payroll_pressure') {
             pushMessage?.({
               category: 'club',
               type: 'warning',

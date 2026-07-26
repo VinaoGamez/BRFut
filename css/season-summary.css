@@ -870,6 +870,67 @@
   .season-champions-extra{grid-template-columns:repeat(2,minmax(0,1fr))}
   .season-leaders-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* Modal de aposentadorias (virada de temporada) */
+.retirement-modal-card{
+  width:min(520px,calc(100vw - 28px));
+  text-align:left;
+  padding:26px 28px 22px!important;
+}
+.retirement-modal-card>label{
+  display:block;
+  margin-bottom:4px;
+  color:#63d9ff;
+  font:700 10px DM Sans;
+  letter-spacing:1px;
+}
+.retirement-modal-card h2{
+  margin:4px 0 10px;
+  font:700 30px Barlow Condensed;
+  color:#f4fcfc;
+}
+.retirement-modal-lead{
+  margin:0 0 14px;
+  color:#9eb6b8;
+  font-size:12px;
+  line-height:1.5;
+}
+.retirement-modal-list{
+  margin:0 0 14px;
+  padding:0;
+  list-style:none;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.retirement-modal-list li{
+  padding:10px 12px;
+  border:1px solid #285769;
+  border-radius:6px;
+  background:#0b1921;
+}
+.retirement-modal-list strong{
+  display:block;
+  color:#edf8f5;
+  font:700 15px "DM Sans",sans-serif;
+  margin-bottom:2px;
+}
+.retirement-modal-list span{
+  color:#9eb6b8;
+  font:600 12px Barlow Condensed,sans-serif;
+}
+.retirement-modal-footnote{
+  margin:0 0 14px;
+  color:#7a969a;
+  font-size:11px;
+}
+.retirement-modal-actions{
+  display:flex;
+  justify-content:flex-end;
+}
+.retirement-modal-actions button{
+  min-width:220px;
+}
 @media(max-width:560px){
   .season-summary-modal{padding:22px 18px 18px!important}
   .season-champions-pyramid,.season-champions-extra,.season-leaders-grid,.season-movements-grid{grid-template-columns:1fr}

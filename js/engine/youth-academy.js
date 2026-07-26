@@ -8,6 +8,7 @@ import { rollPotential, POT_CAPS } from './player-development.js';
 import { ensurePlayerId } from './player-identity.js';
 import { ensurePlayerContract, buildPlayerContract, syncPlayerWageFromContract, addCalendarMonths } from './player-contracts.js';
 import { getRealClub } from './brazilian-clubs-by-uf.js';
+import { bumpLegacyMeta, maybeRollLegacyYouthPlayer } from './youth-legacy-regen.js';
 
 export const YOUTH_STRUCTURE_UNLOCK = 3;
 export const YOUTH_ROSTER_MAX = 15;
@@ -633,7 +634,10 @@ export function formatScoutReportBody(club, slot, careerDate = new Date()) {
       const p = r.player || {};
       const stars = r.estimatedStars ?? '—';
       const confidence = r.confidence ? `, confiança ${r.confidence}` : '';
-      return `• ${p.name || '—'}, ${p.age ?? '—'} anos, ${p.pos || '—'} — ${stars} estrela(s) (estimativa${confidence})`;
+      const legacyLine = p.legacyOf?.retiredName
+        ? ` · LEGADO (${p.legacyOf.retiredName})`
+        : '';
+      return `• ${p.name || '—'}, ${p.age ?? '—'} anos, ${p.pos || '—'} — ${stars} estrela(s) (estimativa${confidence})${legacyLine}`;
     });
     const lockLine = isScoutLocked(slot) && slot.lockedUntil
       ? `\n\nOlheiro em missão até ${formatScoutLockDate(slot.lockedUntil)}.`
@@ -655,12 +659,37 @@ function buildScoutReport({
   random = Math.random,
   firstNames,
   lastNames,
+  userClub = null,
+  retiredPool = null,
 } = {}) {
   const dept = getEffectiveScoutingLevel(club);
   const grade = scoutGradeLabel(scoutSlot?.scoutGrade || 'D');
   const error = Math.min(scoutReportStarError(dept), scoutGradeStarError(grade));
   const uf = pickUfFromRegion(region, random);
-  const player = generateYouthPlayer({ club, clubName, division, uf, random, firstNames, lastNames });
+  let player;
+  const legacyResult = maybeRollLegacyYouthPlayer({
+    club,
+    clubName,
+    division,
+    uf,
+    random,
+    firstNames,
+    lastNames,
+    userClub,
+    season,
+    retiredPool,
+    legacyMeta: club.youthLegacyMeta,
+  });
+  if (legacyResult?.player) {
+    player = legacyResult.player;
+    club.youthLegacyMeta = bumpLegacyMeta(club.youthLegacyMeta, season);
+    if (Array.isArray(retiredPool) && legacyResult.legacyEntryId) {
+      const row = retiredPool.find(entry => entry.id === legacyResult.legacyEntryId);
+      if (row) row.regenUsed = true;
+    }
+  } else {
+    player = generateYouthPlayer({ club, clubName, division, uf, random, firstNames, lastNames });
+  }
   const trueStars = rollScoutedTalentStars(grade, random);
   applyTalentStarProfile(player, trueStars, division);
   const delta = error > 0 ? intRange(random, -error, error) : 0;
@@ -867,6 +896,7 @@ export function serializeYouthClubState(club) {
       lockedUntil: s.lockedUntil || null,
       lastMissionReport: s.lastMissionReport || null,
     })),
+    youthLegacyMeta: club.youthLegacyMeta || null,
     youthRoster: club.youthRoster.map(serializeYouthPlayer).filter(Boolean),
     scoutReports: club.scoutReports.map(r => ({
       id: r.id,
@@ -907,6 +937,9 @@ export function applyYouthClubState(club, saved) {
       lastMissionReport: s.lastMissionReport || null,
     }));
   }
+  if (saved.youthLegacyMeta && typeof saved.youthLegacyMeta === 'object') {
+    club.youthLegacyMeta = { ...saved.youthLegacyMeta };
+  }
   if (Array.isArray(saved.youthRoster)) {
     club.youthRoster = saved.youthRoster.map((raw, index) => hydrateYouthPlayer(raw, { index })).filter(Boolean);
   }
@@ -922,8 +955,10 @@ export function applyYouthClubState(club, saved) {
 
 export function runYouthSeasonTransition(clubs, context = {}) {
   const summary = { aged: 0, released: 0, intakes: 0, reports: 0 };
+  const season = Number(context.season) || null;
   Object.entries(clubs || {}).forEach(([clubName, club]) => {
     ensureYouthState(club);
+    if (season) club.youthLegacyMeta = { season, count: 0 };
     if (!isYouthAcademyUnlocked(club)) return;
     const released = advanceYouthAges(club);
     summary.released += released.length;

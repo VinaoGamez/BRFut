@@ -15,8 +15,8 @@ import {
 import {
   evaluateRosterPayroll,
   resolvePlayerRoundWage,
-  ROSTER_HARD_MAX,
 } from './economy.js';
+import { ROSTER_CAREER_MIN, ROSTER_PRO_MAX } from './player-generation.js';
 import { evaluateLoanFit, loanAcceptChance } from './loan-fit.js';
 import {
   computeLoanSalaryShare,
@@ -44,9 +44,9 @@ import { isMarketBuyRestricted } from './club-solvency.js';
 import { isPlayerSpecialist } from './player-generation.js';
 
 export const TRANSFER_LIMITS = {
-  minRoster: 18,
-  /** Antifail — o gate real é folha vs receita (`evaluateRosterPayroll`). */
-  maxRoster: ROSTER_HARD_MAX,
+  minRoster: ROSTER_CAREER_MIN,
+  /** Teto de elenco profissional — gate de folha também via `evaluateRosterPayroll`. */
+  maxRoster: ROSTER_PRO_MAX,
   acceptRatio: 0.85,
   /** Empréstimos ativos (entrada ou saída) por clube. */
   maxLoans: 3,
@@ -2537,7 +2537,7 @@ export function createTransfersEngine(deps) {
       const owner = clubs[item.ownerName];
       if (!owner || !Array.isArray(owner.roster)) return;
       // Fim de temporada: devolve mesmo sob pressão de folha; só bloqueia antifail.
-      if (owner.roster.length >= ROSTER_HARD_MAX) return;
+      if (owner.roster.length >= ROSTER_PRO_MAX) return;
       const idx = item.club.roster.findIndex(p => resolvePlayerId(p) === resolvePlayerId(item.player));
       if (idx < 0) return;
       const [raw] = item.club.roster.splice(idx, 1);

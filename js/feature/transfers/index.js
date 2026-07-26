@@ -1,5 +1,5 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
-import { traitCodes } from '../../engine/player-generation.js';
+import { traitCodes, ROSTER_PRO_MAX } from '../../engine/player-generation.js';
 import {
   softEnvelopeFromPayroll,
   softCashEnvelope,
@@ -316,7 +316,7 @@ export function createTransfersFeature(deps) {
           playerName: extra.playerName,
           reasons: ['division_gap'],
         }),
-        roster_full: 'Elenco no limite antifail (40 jogadores).',
+        roster_full: `Elenco no limite (${ROSTER_PRO_MAX} jogadores).`,
         roster_hard_full: 'Elenco no limite antifail (40 jogadores).',
         payroll_pressure:
           'Folha ficaria acima do confortável para sua saúde financeira. Venda, empreste ou escolha um salário menor.',

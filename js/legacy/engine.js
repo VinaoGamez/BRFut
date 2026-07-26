@@ -34,6 +34,8 @@ import { createMessagesFeature, isNationalTeamOfferMessage, isNationalTeamAction
 import { createDashboardFeature } from '../feature/dashboard/index.js';
 import { createTacticsFeature } from '../feature/tactics/index.js';
 import { createSeasonSummaryFeature } from '../feature/season-summary/index.js';
+import { createRetirementModalFeature } from '../feature/retirement-modal/index.js';
+import { processSeasonRetirements, markRetiredInHistoryStore } from '../engine/player-retirement.js';
 import { createPlayerCells, outfield, fatigueCell } from '../feature/shared/player-cells.js';
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
@@ -113,6 +115,7 @@ import {
   GENERIC_SQUAD_ROLES,
   DIVISION_CLUB_POWER,
   pickStarterFlags,
+  rollProfessionalSquadSize,
   sanitizeSetPieceForDivision,
 } from '../engine/player-generation.js';
 import { resolvePlayerId, ensurePlayerId } from '../engine/player-identity.js';
@@ -377,6 +380,7 @@ import { rosterShootoutKickPair, simulateProbabilisticShootout } from '../engine
 export async function bootEngine({ bus } = {}) {
   try {
   const savedNewGame = loadCareerSave();
+  if (savedNewGame && !Array.isArray(savedNewGame.retiredPool)) savedNewGame.retiredPool = [];
   const persistenceCtx = { userClub: '' };
   const careerPersistence = createCareerPersistence({
     getSavedNewGame: () => savedNewGame,
@@ -915,7 +919,7 @@ export async function bootEngine({ bus } = {}) {
     const rule=divisionRules[division];
     const basePower=int(rule.power[0],rule.power[1]);
     const formation=club===userClub?'4-3-3':formationsForClubs[int(0,formationsForClubs.length-1)];
-    const roles=savedNewGame?[...GENERIC_SQUAD_ROLES]:[...starterRoles,...benchRoles];
+    const roles=[...GENERIC_SQUAD_ROLES].slice(0, rollProfessionalSquadSize(gameRandom));
     const starterFlags=pickStarterFlags(roles.length,gameRandom);
     const roster=roles.map((role,playerIndex)=>generatedPlayer(role,playerIndex+index*29,basePower,division,starterFlags[playerIndex]));
     dedupeRosterNames(roster);
@@ -1051,9 +1055,11 @@ export async function bootEngine({ bus } = {}) {
       return;
     }
     const power=int(...DIVISION_CLUB_POWER.A);
-    const starterFlags=pickStarterFlags(GENERIC_SQUAD_ROLES.length,gameRandom);
-    const roster=assignSquadJerseyNumbers(
-      GENERIC_SQUAD_ROLES.map((role,i)=>generatedPlayer(role,i+index*5,power,'A',starterFlags[i])),
+    const squadSize = rollProfessionalSquadSize(gameRandom);
+    const roles = [...GENERIC_SQUAD_ROLES].slice(0, squadSize);
+    const starterFlags = pickStarterFlags(roles.length, gameRandom);
+    const roster = assignSquadJerseyNumbers(
+      roles.map((role, i) => generatedPlayer(role, i + index * 5, power, 'A', starterFlags[i])),
     );
     const top11=[...roster].sort((a,b)=>b.overall-a.overall).slice(0,11);
     clubs[club]={
@@ -4188,7 +4194,7 @@ export async function bootEngine({ bus } = {}) {
       transfersUi?.showActionAlert?.({
         title:'Proposta não concluída',
         lead:errBody,
-        body:result?.reason==='payroll_pressure'||result?.reason==='roster_hard_full'
+        body:result?.reason==='payroll_pressure'||result?.reason==='roster_full'||result?.reason==='roster_hard_full'
           ?'O clube comprador/anfitrião não comporta a folha. Tente outro destino ou aguarde.'
           :'Revise a proposta e tente de novo.',
         tone:'block',
@@ -5339,6 +5345,7 @@ export async function bootEngine({ bus } = {}) {
       getCareerSeason:()=>careerSeason,
       getCareerDate:()=>careerCalendarDate,
       getUserUf:()=>savedNewGame?.userUf||getRealClub(userClub)?.uf||'SP',
+      getRetiredPool:()=>savedNewGame?.retiredPool||[],
       evaluateRosterPayroll,
       pushMessage,
       openPlayerCard:payload=>playerCardModal.open(payload),
@@ -8745,6 +8752,7 @@ export async function bootEngine({ bus } = {}) {
     },
   });
   seasonSummary.init();
+  const retirementModal = createRetirementModalFeature({ $ });
   openSeasonGoalPreview=()=>seasonSummary.openPreview('missed');
   if(new URLSearchParams(location.search).get('preview')==='season-goal'){
     setTimeout(()=>openSeasonGoalPreview(),0);
@@ -9161,6 +9169,33 @@ export async function bootEngine({ bus } = {}) {
     },
     setPendingSerieDFormation:payload=>{pendingSerieDFormation=payload;},
     advancePlayerAges,
+    processSeasonRetirements,
+    openRetirementModal:payload=>retirementModal.open(payload),
+    getPlayerDevelopmentState:()=>playerDevelopment,
+    getCareerCalendarDate:()=>careerCalendarDate,
+    getSeasonMinutes:player=>Number(getDevelopmentSeasonBucket(player)?.minutes)||0,
+    markRetiredInHistory:(player,meta)=>{
+      if(!playerHistory)return;
+      markRetiredInHistoryStore(playerHistory.getStore(),meta.historyKey,{
+        ...meta,
+        name:player.name,
+        retiredAge:Number(player.age)||0,
+      });
+      try{playerHistory.persist();}catch{/* quota */}
+    },
+    syncRostersAfterRetirement:()=>{
+      if(clubs[userClub]){
+        assignSquadJerseyNumbers(clubs[userClub].roster);
+        squad.splice(0,squad.length,...clubs[userClub].roster);
+      }
+      syncCareerRosters();
+      try{renderRoster();}catch{/* boot */}
+      if(savedNewGame){
+        savedNewGame.retiredPool=savedNewGame.retiredPool||[];
+        try{persistCareer({...savedNewGame});}catch{/* quota */}
+      }
+      try{persistSeason(true);}catch{/* quota */}
+    },
     runYouthSeasonTransition:(clubsList,ctx)=>import('../engine/youth-academy.js').then(({runYouthSeasonTransition})=>runYouthSeasonTransition(clubsList,{
       ...ctx,
       userClub,
@@ -9171,6 +9206,7 @@ export async function bootEngine({ bus } = {}) {
       firstNames,
       lastNames,
       userUf:savedNewGame?.userUf||getRealClub(userClub)?.uf||'SP',
+      retiredPool:savedNewGame?.retiredPool||ctx.retiredPool||[],
     })),
     resetPlayerDevelopment:year=>{playerDevelopment=emptyDevelopmentState(year);},
     pruneInjuryHistory,

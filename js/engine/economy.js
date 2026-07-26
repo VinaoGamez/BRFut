@@ -16,6 +16,7 @@ import {
   estimateYouthWageBill,
   serializeYouthClubState,
 } from './youth-academy.js';
+import { ROSTER_PRO_MAX } from './player-generation.js';
 import {
   STADIUM_SECTOR_MODEL,
   STADIUM_SECTOR_DEFS,
@@ -360,9 +361,10 @@ export function evaluateRosterPayroll(club, opts = {}) {
   const limit = Math.round(revenue * factor);
   const pctBefore = revenue > 0 ? (wageBefore / revenue) * 100 : 0;
   const pctAfter = revenue > 0 ? (wageAfter / revenue) * 100 : 0;
+  const rosterFull = rosterDelta > 0 && sizeNext > ROSTER_PRO_MAX;
   const hardFull = rosterDelta > 0 && sizeNext > ROSTER_HARD_MAX;
   const overPayroll = rosterDelta > 0 && wageAfter > limit;
-  const ok = !hardFull && !overPayroll;
+  const ok = !rosterFull && !hardFull && !overPayroll;
   let tone = 'ok';
   if (!ok) tone = 'block';
   else if (rosterDelta > 0 && wageAfter > limit * 0.85) tone = 'warn';
@@ -370,9 +372,10 @@ export function evaluateRosterPayroll(club, opts = {}) {
   return {
     ok,
     tone,
-    reason: hardFull ? 'roster_hard_full' : overPayroll ? 'payroll_pressure' : null,
+    reason: rosterFull ? 'roster_full' : hardFull ? 'roster_hard_full' : overPayroll ? 'payroll_pressure' : null,
     sizeNow,
     sizeNext,
+    proMax: ROSTER_PRO_MAX,
     hardMax: ROSTER_HARD_MAX,
     wageBefore,
     wageAfter,
@@ -400,7 +403,9 @@ export function softEnvelopeFromPayroll(payroll) {
       level: 'block',
       allow: false,
       message:
-        payroll.reason === 'roster_hard_full'
+        payroll.reason === 'roster_full'
+          ? `Elenco no limite (${ROSTER_PRO_MAX} jogadores). Libere vaga antes de contratar.`
+          : payroll.reason === 'roster_hard_full'
           ? 'Elenco no limite antifail (40). Libere vaga antes de contratar.'
           : 'Folha ficaria acima do seguro para suas Finanças. Venda, empreste ou escolha outro jogador.',
     };

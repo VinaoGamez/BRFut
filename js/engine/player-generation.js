@@ -1,6 +1,6 @@
 /**
  * Geração de jogadores — modelo Campanha Longa (validado).
- * Plantel genérico 25; OVR baixo por divisão; GOL com attrs de meta.
+ * Plantel profissional 22–30 (variável); template até 30 posições; GOL com attrs de meta.
  */
 import { rollSquadAge, rollPotential, POT_CAPS } from './player-development.js';
 import { assignRosterNationalities } from './player-nationality.js';
@@ -9,15 +9,28 @@ import { SHOOTOUT_TUNING } from './match-tuning.js';
 
 export const GENERIC_SQUAD_ROLES = [
   'GOL', 'GOL', 'GOL',
-  'ZAG', 'ZAG', 'ZAG', 'ZAG',
+  'ZAG', 'ZAG', 'ZAG', 'ZAG', 'ZAG',
   'LAT', 'LAT', 'LAT', 'LAT',
-  'VOL', 'VOL', 'VOL',
-  'MC', 'MC', 'MC',
-  'MEI', 'MEI',
+  'VOL', 'VOL', 'VOL', 'VOL',
+  'MC', 'MC', 'MC', 'MC',
+  'MEI', 'MEI', 'MEI',
   'PE', 'PE',
   'PD', 'PD',
   'ATA', 'ATA', 'ATA',
 ];
+
+/** Mínimo na geração inicial do elenco (sorteio 22–30). */
+export const ROSTER_PRO_MIN = 22;
+export const ROSTER_PRO_MAX = 30;
+
+/** Mínimo operacional durante a carreira (vendas, empréstimos, rescisões). */
+export const ROSTER_CAREER_MIN = 18;
+
+/** Sorteia tamanho inicial do elenco profissional (22–30). */
+export function rollProfessionalSquadSize(random = Math.random) {
+  const span = ROSTER_PRO_MAX - ROSTER_PRO_MIN + 1;
+  return ROSTER_PRO_MIN + Math.floor(random() * span);
+}
 
 /** Power do clube na geração. */
 export const DIVISION_CLUB_POWER = {
@@ -799,8 +812,8 @@ export function pickStarterFlags(size, random = Math.random) {
   return flags;
 }
 
-/** Tamanho do elenco gerado por divisão. */
-export const SQUAD_SIZE_BY_DIVISION = { A: 25, B: 22, C: 22, D: 22 };
+/** @deprecated Use rollProfessionalSquadSize — mantido só para scripts legados. */
+export const SQUAD_SIZE_BY_DIVISION = { A: ROSTER_PRO_MAX, B: ROSTER_PRO_MIN, C: ROSTER_PRO_MIN, D: ROSTER_PRO_MIN };
 
 /**
  * Gera elenco genérico para uma divisão.
@@ -808,14 +821,17 @@ export const SQUAD_SIZE_BY_DIVISION = { A: 25, B: 22, C: 22, D: 22 };
 export function generateSquad({
   division = 'A',
   clubPower = null,
+  squadSize = null,
   random = Math.random,
   firstNames,
   lastNames,
 } = {}) {
   const [pLo, pHi] = DIVISION_CLUB_POWER[division] || DIVISION_CLUB_POWER.D;
   const power = clubPower != null ? clubPower : int(random, pLo, pHi);
-  const squadSize = SQUAD_SIZE_BY_DIVISION[division] ?? SQUAD_SIZE_BY_DIVISION.A;
-  const roles = [...GENERIC_SQUAD_ROLES].slice(0, squadSize);
+  const size = squadSize != null
+    ? Math.max(ROSTER_PRO_MIN, Math.min(ROSTER_PRO_MAX, Math.round(Number(squadSize) || ROSTER_PRO_MIN)))
+    : rollProfessionalSquadSize(random);
+  const roles = [...GENERIC_SQUAD_ROLES].slice(0, size);
   const starterFlags = pickStarterFlags(roles.length, random);
   const roster = roles.map((role, playerIndex) =>
     generatePlayer({

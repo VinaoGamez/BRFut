@@ -10,6 +10,7 @@ import {
   generatePlayer as generatePlayerCore,
   GENERIC_SQUAD_ROLES,
   pickStarterFlags,
+  rollProfessionalSquadSize,
 } from './player-generation.js';
 import { dedupeRosterNames } from './player-names.js';
 import { getRealClub } from './brazilian-clubs-by-uf.js';
@@ -85,7 +86,7 @@ export function ensureClubRoster(clubName, clubs, options = {}) {
   const basePower = intFromRng(rng, powerRange[0], powerRange[1]);
   const genDivision = 'D';
 
-  const roles = [...GENERIC_SQUAD_ROLES];
+  const roles = [...GENERIC_SQUAD_ROLES].slice(0, rollProfessionalSquadSize(rng));
   const starterFlags = pickStarterFlags(roles.length, rng);
   const roster = roles.map((role, playerIndex) =>
     generatePlayerCore({

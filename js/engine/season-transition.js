@@ -369,23 +369,20 @@ export function createSeasonTransitionEngine(deps) {
     return true;
   };
 
-  const startNextSeason = async () => {
-    if (!pendingDivisionTeams || !deps.getSavedNewGame()) return false;
-    if (deps.careerCrisisBlocks()) {
-      deps.openCareerCrisisModal();
-      return false;
-    }
-
+  const finishStartNextSeason = async () => {
     const userClub = deps.getUserClub();
     const careerSeason = deps.getCareerSeason();
     const savedNewGame = deps.getSavedNewGame();
     const clubs = deps.getClubs();
-    deps.setSkipPersistOnUnload(true);
-    deps.pruneClubMemory(clubs, deps.getNationalRankingEntries());
-    deps.advancePlayerAges(clubs);
     const youthSummary = await Promise.resolve(deps.runYouthSeasonTransition?.(clubs, {
       userClub,
       season: (savedNewGame.season || 2026) + 1,
+      retiredPool: savedNewGame.retiredPool,
+      division: deps.getUserDivision(),
+      careerDate: deps.getCareerCalendarDate?.(),
+      firstNames: deps.getFirstNames?.(),
+      lastNames: deps.getLastNames?.(),
+      userUf: savedNewGame.userUf,
     }));
     if (youthSummary?.reports > 0 && userClub) {
       deps.pushYouthReportsMessage?.(youthSummary);
@@ -450,6 +447,7 @@ export function createSeasonTransitionEngine(deps) {
       userStadium: deps.serializeUserStadium(clubs[userClub]),
       userClubInvestments: deps.serializeUserClubInvestments(clubs[userClub]),
       pendingSponsorChoice: true,
+      retiredPool: savedNewGame.retiredPool || [],
       createdAt: new Date().toISOString(),
       version: 4,
     };
@@ -465,6 +463,55 @@ export function createSeasonTransitionEngine(deps) {
     deps.closeSeasonSummary();
     deps.redirectGame();
     return true;
+  };
+
+  const startNextSeason = async () => {
+    if (!pendingDivisionTeams || !deps.getSavedNewGame()) return false;
+    if (deps.careerCrisisBlocks()) {
+      deps.openCareerCrisisModal();
+      return false;
+    }
+
+    const userClub = deps.getUserClub();
+    const careerSeason = deps.getCareerSeason();
+    const savedNewGame = deps.getSavedNewGame();
+    const clubs = deps.getClubs();
+    deps.setSkipPersistOnUnload(true);
+    deps.pruneClubMemory(clubs, deps.getNationalRankingEntries());
+    deps.advancePlayerAges(clubs);
+
+    const retirement =
+      deps.processSeasonRetirements?.(clubs, {
+        season: careerSeason,
+        userClub,
+        retiredPool: savedNewGame.retiredPool || [],
+        developmentState: deps.getPlayerDevelopmentState?.(),
+        careerDate: deps.getCareerCalendarDate?.(),
+        getSeasonMinutes: deps.getSeasonMinutes,
+        markRetiredInHistory: deps.markRetiredInHistory,
+      }) || { userDepartures: [], retired: [], pool: savedNewGame.retiredPool || [] };
+
+    savedNewGame.retiredPool = retirement.pool;
+    deps.syncRostersAfterRetirement?.();
+
+    const userDepartures = retirement.userDepartures || [];
+    const worldCount = Math.max(0, (retirement.retired?.length || 0) - userDepartures.length);
+
+    if (userDepartures.length && deps.openRetirementModal) {
+      return new Promise(resolve => {
+        deps.openRetirementModal({
+          season: careerSeason,
+          departures: userDepartures,
+          worldCount,
+          continueFn: async () => {
+            const ok = await finishStartNextSeason();
+            resolve(ok);
+          },
+        });
+      });
+    }
+
+    return finishStartNextSeason();
   };
 
   const simulateNonHumanSeasonRemainder = () => {

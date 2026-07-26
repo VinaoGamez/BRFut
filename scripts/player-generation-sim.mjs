@@ -5,6 +5,8 @@
 import {
   generateSquad,
   GENERIC_SQUAD_ROLES,
+  ROSTER_PRO_MIN,
+  ROSTER_PRO_MAX,
   DIVISION_OVR_LIMITS,
   GENERATION_POT_CAPS,
   traitCodes,
@@ -60,6 +62,8 @@ const report = {
 };
 
 let templateFailures = 0;
+let sizeMin = ROSTER_PRO_MAX;
+let sizeMax = ROSTER_PRO_MIN;
 let reserveHigherPot = 0;
 let reservePotSamples = 0;
 const youngACareers = [];
@@ -84,9 +88,14 @@ for (const division of DIVISIONS) {
       acc[p.pos] = (acc[p.pos] || 0) + 1;
       return acc;
     }, {});
+    const squadSize = roster.length;
+    sizeMin = Math.min(sizeMin, squadSize);
+    sizeMax = Math.max(sizeMax, squadSize);
     const templateOk =
-      roster.length === GENERIC_SQUAD_ROLES.length &&
-      Object.keys(EXPECTED_COUNTS).every(pos => counts[pos] === EXPECTED_COUNTS[pos]);
+      squadSize >= ROSTER_PRO_MIN &&
+      squadSize <= ROSTER_PRO_MAX &&
+      (squadSize < GENERIC_SQUAD_ROLES.length ||
+        Object.keys(EXPECTED_COUNTS).every(pos => counts[pos] === EXPECTED_COUNTS[pos]));
     if (!templateOk) templateFailures += 1;
 
     const ranked = [...roster].sort((a, b) => b.overall - a.overall);
@@ -166,9 +175,14 @@ for (const division of DIVISIONS) {
 
 report.checks = [
   {
-    id: 'template_25',
+    id: 'template_22_30',
     ok: templateFailures === 0,
     detail: `falhas=${templateFailures} (esperado 0 em ${CLUBS * DIVISIONS.length} elencos)`,
+  },
+  {
+    id: 'squad_size_spread',
+    ok: sizeMax - sizeMin >= 3,
+    detail: `min=${sizeMin} max=${sizeMax} (faixa 22–30)`,
   },
   {
     id: 'serie_d_under_20',
