@@ -1,7 +1,7 @@
 import { MODULE_VERSIONS, BUILD_VERSION, SAVE_KEYS } from '../../core/constants.js';
 
 const GITHUB_ISSUES_NEW =
-  'https://github.com/vinaogamez/Matchday-Alpha/issues/new';
+  'https://github.com/vinaogamez/BRFut/issues/new';
 
 const GUIDE_SECTIONS = [
   {

@@ -1,32 +1,112 @@
-MATCHDAY FOOTBALL - GITHUB PAGES (LINK FIXO TESTERS)
-=====================================================
+BRFUT - GITHUB PAGES (LINK FIXO TESTERS)
+=========================================
 
 Pasta do projeto:
   C:\Users\Vinão\Documents\Matchday-Alpha
 
 Repositorio:
-  https://github.com/VinaoGamez/Matchday-Alpha
+  https://github.com/VinaoGamez/BRFut
 
-Status: PUBLICADO E FUNCIONANDO (16/07/2026)
+Status: PUBLICADO E FUNCIONANDO (renomeado de Matchday-Alpha em jul/2026)
 
 
 === LINKS FIXOS PARA TESTERS ===
 
-Pagina inicial:
-  https://vinaogamez.github.io/Matchday-Alpha/home.html
+Pagina inicial (GitHub):
+  https://vinaogamez.github.io/BRFut/home.html
+
+Pagina inicial (dominio proprio, apos DNS):
+  https://brfut.com.br/home.html
+  https://www.brfut.com.br/home.html
 
 Novo jogo:
-  https://vinaogamez.github.io/Matchday-Alpha/index.html?novo=1
+  https://vinaogamez.github.io/BRFut/index.html?novo=1
 
 Link base:
-  https://vinaogamez.github.io/Matchday-Alpha/
+  https://vinaogamez.github.io/BRFut/
 
 Estes enderecos sao permanentes. Cada git push atualiza a mesma URL em 1-3 min.
+
+(URLs antigas /Matchday-Alpha/ redirecionam por um tempo, mas use sempre /BRFut/)
+
+NOTA: Com dominio customizado ativo no GitHub, o link *.github.io/BRFut/*
+redireciona para brfut.com.br — enquanto o DNS nao estiver pronto, o site
+parece fora do ar. Configure o DNS abaixo primeiro.
+
+
+=== DOMINIO brfut.com.br (REGISTRO.BR → GITHUB PAGES) ===
+
+Erro atual no GitHub: "NotServedByPagesError" / "DNS check unsuccessful"
+Causa: brfut.com.br ainda NAO tem registros A apontando para o GitHub.
+
+PASSO A — REGISTRO.BR (DNS)
+---------------------------
+1. https://registro.br — login → Painel → brfut.com.br
+2. Secao DNS (tela que voce ja viu):
+   - Deve aparecer: "Voce esta utilizando os servidores DNS do Registro.br" ✓
+   - NAO clique em "Alterar servidores DNS"
+   - Clique em **Configurar enderecamento** (seta >)
+3. Na tela seguinte, escolha **Modo avancado** e confirme.
+   (O "Modo avancado" so aparece DEPOIS de "Configurar enderecamento".)
+4. **Aguarde a transicao terminar** — enquanto durar, a zona fica bloqueada:
+   mensagem "Dominio em transicao. Por favor, aguarde alguns minutos..."
+   O contador na tela pode mostrar ~2h; quando liberar, a tabela deixa
+   adicionar entradas (deixa de mostrar "Nenhum dado encontrado" sem botao).
+5. Volte em DNS → **Configurar zona DNS** → **Nova entrada**
+6. Adicione os registros (Registro.br NAO aceita @ no nome — deixe vazio):
+
+   Tipo A    | Nome (entrada) — VAZIO para raiz | Dados
+   ----------|----------------------------------|------------------
+   A         | (vazio)                          | 185.199.108.153
+   A         | (vazio)                          | 185.199.109.153
+   A         | (vazio)                          | 185.199.110.153
+   A         | (vazio)                          | 185.199.111.153
+
+   Tipo CNAME | Nome   | Dados
+   -----------|--------|----------------------
+   CNAME      | www    | vinaogamez.github.io
+
+7. **Salvar alteracoes**. Propagacao: de minutos a algumas horas (ate 24h).
+
+PROBLEMA COMUM: painel mostra entradas, mas internet nao ve A/CNAME
+-------------------------------------------------------------------
+Se GitHub continua "DNS check unsuccessful" apos horas:
+1. Confirme **Salvar alteracoes** (verde no fim da pagina).
+2. Valide na internet (PowerShell):
+     Resolve-DnsName brfut.com.br -Type A -Server a.auto.dns.br
+   Deve listar 4 IPs 185.199.108-111.153. Se so aparecer SOA/MX/TXT,
+   os registros NAO foram publicados — reabra a zona e recadastre.
+3. Ao criar cada A: campo Nome **vazio** (nao @). A tabela pode exibir
+   "brfut.com.br" so na listagem — ok. CNAME: Nome **www** (nao www.brfut.com.br).
+4. Remova entradas MX/TXT conflitantes se a zona nao deixar salvar A.
+5. Se persistir: suporte Registro.br ou DNS externo (Cloudflare) depois.
+
+Enquanto DNS nao propaga: GitHub Pages → **Remove** custom domain
+para liberar https://vinaogamez.github.io/BRFut/home.html
+
+PASSO B — GITHUB (Settings → Pages)
+-----------------------------------
+1. https://github.com/VinaoGamez/BRFut/settings/pages
+2. Custom domain: brfut.com.br → Save (se ainda nao salvou)
+3. Aguarde DNS propagar → clique "Check again" ate ficar verde
+4. Depois marque "Enforce HTTPS" (pode demorar ate 24h para aparecer)
+
+PASSO C — VALIDAR NO PC (PowerShell)
+------------------------------------
+  Resolve-DnsName brfut.com.br -Type A
+  Resolve-DnsName www.brfut.com.br -Type CNAME
+
+Esperado: 4 IPs 185.199.108-111.153 e CNAME www → vinaogamez.github.io
+
+PASSO D — REDEPLOY (apos ajuste de base no Vite)
+------------------------------------------------
+O build usa paths relativos (./) para funcionar tanto em github.io/BRFut
+quanto em brfut.com.br. Faca push para o CI rebuildar antes de testar o dominio.
 
 
 === CONFIGURACAO INICIAL (JA FEITA) ===
 
-1. Repositorio criado: VinaoGamez/Matchday-Alpha
+1. Repositorio: VinaoGamez/BRFut (antes Matchday-Alpha)
 2. Codigo enviado (branch main)
 3. GitHub Pages ativo com Source: GitHub Actions
 4. Workflow "Deploy testers (GitHub Pages)" executado com sucesso
@@ -37,7 +117,7 @@ Estes enderecos sao permanentes. Cada git push atualiza a mesma URL em 1-3 min.
 PASSO 1 — CRIAR REPO NO GITHUB
 -------------------------------
 1. https://github.com/new
-2. Nome sugerido: Matchday-Alpha
+2. Nome sugerido: BRFut
 3. Publico ou Privado
 4. NAO marque "Add README" se for enviar esta pasta
 5. Criar repositorio
@@ -48,7 +128,7 @@ PASSO 2 — LIGAR E ENVIAR
 Abra o terminal nesta pasta:
 
   cd "C:\Users\Vinão\Documents\Matchday-Alpha"
-  git remote add origin https://github.com/VinaoGamez/Matchday-Alpha.git
+  git remote add origin https://github.com/VinaoGamez/BRFut.git
   git push -u origin main
 
 
@@ -56,14 +136,14 @@ PASSO 3 — ATIVAR GITHUB PAGES (OBRIGATORIO)
 -------------------------------------------
 Sem este passo o link SEMPRE da 404, mesmo com os arquivos no GitHub.
 
-1. https://github.com/VinaoGamez/Matchday-Alpha/settings/pages
+1. https://github.com/VinaoGamez/BRFut/settings/pages
 2. Source: GitHub Actions (NAO use "Deploy from a branch")
 3. Salve se aparecer botao Save
 
 
 PASSO 4 — REEXECUTAR O DEPLOY (SE FALHAR)
 -----------------------------------------
-1. https://github.com/VinaoGamez/Matchday-Alpha/actions
+1. https://github.com/VinaoGamez/BRFut/actions
 2. Clique no run de "Deploy testers (GitHub Pages)"
 3. Re-run all jobs
 4. Aguarde ficar verde (1-3 min)
@@ -78,7 +158,7 @@ PASSO 4 — REEXECUTAR O DEPLOY (SE FALHAR)
 Ou execute: PUBLICAR-GITHUB.bat
 
 Acompanhe o deploy em:
-  https://github.com/VinaoGamez/Matchday-Alpha/actions
+  https://github.com/VinaoGamez/BRFut/actions
 
 
 === OBSERVACOES ===

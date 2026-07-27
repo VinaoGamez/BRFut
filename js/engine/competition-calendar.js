@@ -2,6 +2,7 @@
  * Políticas de calendário por campeonato — mando de campo, persistência e matching.
  */
 import { buildBrazilianLeagueFixtures } from './league-fixtures.js';
+import { parseCalendarDate } from './season-scheduler.js';
 
 /** @typedef {{ type: string, balanceHomeAway?: { enabled: boolean, maxStreak?: number, scope?: string }, persistFixtures?: boolean }} CalendarPolicy */
 
@@ -106,7 +107,7 @@ export function hydrateNationalFixtures(saved, expectedRounds = null) {
         away: game.away,
         round: game.round ?? null,
         competition: game.competition || null,
-        date: game.date ? new Date(game.date) : null,
+        date: parseCalendarDate(game.date),
         time: game.time || null,
       }));
   });
@@ -121,7 +122,7 @@ export function mergeSerieDFixtureRound(existing, saved) {
     .filter(game => game?.home && game?.away)
     .map(game => ({
       ...game,
-      date: game.date ? new Date(game.date) : null,
+      date: parseCalendarDate(game.date),
       time: game.time || null,
     }));
   if (!Array.isArray(existing)) return hydrated;
@@ -138,7 +139,7 @@ export function mergeSerieDFixtureRound(existing, saved) {
     return {
       ...match,
       ...savedGame,
-      date: savedGame.date || match.date,
+      date: parseCalendarDate(savedGame.date) || parseCalendarDate(match.date),
       time: savedGame.time || match.time,
     };
   });

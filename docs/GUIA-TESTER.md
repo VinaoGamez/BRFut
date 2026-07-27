@@ -4,9 +4,9 @@
 
 | Ambiente | URL |
 |---|---|
-| Público (GitHub Pages) | https://vinaogamez.github.io/Matchday-Alpha/home.html |
+| Público (GitHub Pages) | https://vinaogamez.github.io/BRFut/home.html |
 | Testers local (hardened) | http://127.0.0.1:5081/home.html |
-| Dev Vite | http://localhost:5080/Matchday-Alpha/home.html |
+| Dev Vite | http://localhost:5080/home.html |
 
 Na home: **Guia do tester** e **Enviar feedback**. No jogo: Opções → mesma seção.
 

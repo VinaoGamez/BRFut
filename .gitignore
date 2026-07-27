@@ -13,3 +13,11 @@ __pycache__/
 .Python
 tmp-*
 tmp-*/
+# Saídas regeneráveis de benchmark / sim local
+benchmark-career-*.html
+benchmark-career-*.json
+benchmark-output.html
+benchmark-demo-2000.html
+benchmark-cup-divisions-40.json
+fatigue-*.html
+fatigue-*.json

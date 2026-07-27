@@ -15,6 +15,7 @@ import { buildBrazilianLeagueFixtures } from './league-fixtures.js';
 import { FUTURE_COMPETITION_MOLD } from './season-calendar-mold.js';
 
 import { listSlotDatesInRange, WEEKDAY } from './season-week-slots.js';
+import { parseCalendarDate } from './season-scheduler.js';
 import { splitStateDivisions, pickLotteryTeams, createLotteryPicker, rostersToDivisions, STATE_LEAGUE_VISIBLE_TIERS, divisionTargetSize, isValidDivisionSize, filterValidMembershipByUf } from './state-league-divisions.js';
 
 export { splitStateDivisions, STATE_LEAGUE_VISIBLE_TIERS, collectPhaseAdvancers, extractGuaranteedTier4ByUf, divisionTargetSize, isValidDivisionSize, competitionsNeedRepair, sanitizeCompetitionsByUf, filterValidMembershipByUf } from './state-league-divisions.js';
@@ -451,6 +452,7 @@ export function repairStateLeagueCompetitionCalendar(competition, seasonYear) {
     const slot = slots[roundIndex];
     (competition.fixtures[roundIndex] || []).forEach(game => {
       if (!game?.home || !slot) return;
+      if (game.date && !parseCalendarDate(game.date)) delete game.date;
       game.date = slot.date;
       game.time = slot.time || game.time || '16:00';
     });
@@ -469,6 +471,7 @@ export function repairStateLeagueCompetitionCalendar(competition, seasonYear) {
     const slot = slots[slotIndex];
     (competition.fixtures[round - 1] || []).forEach(game => {
       if (!game?.home || !slot) return;
+      if (game.date && !parseCalendarDate(game.date)) delete game.date;
       game.date = slot.date;
       game.time = slot.time || game.time || '16:00';
     });

@@ -7,7 +7,7 @@ import { createEventBus } from './core/event-bus.js';
 import { bootEngine } from './legacy/engine.js';
 import { markBootReady } from './ui/boot-gate.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
-import { getAuthToken, initStorageBackend } from './core/storage-api.js';
+import { initStorageBackend } from './core/storage-api.js';
 
 /** Ponto de entrada modular — Alpha 02 */
 document.documentElement.dataset.build = BUILD_VERSION;
@@ -39,10 +39,5 @@ const startBoot = () => {
     });
 };
 
-// Com login cloud, aguarda merge de saves; sem token, boot imediato com localStorage.
-if (getAuthToken()) {
-  void storageInit.finally(startBoot);
-} else {
-  void storageInit;
-  startBoot();
-}
+// Com backend cloud, aguarda merge de saves antes de hidratar o motor.
+void storageInit.finally(startBoot);

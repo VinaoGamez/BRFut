@@ -6,6 +6,7 @@ import { applyTeamCrestToElement, teamCrestHtml } from '../../ui/team-crest.js';
 import { resolveNationalTeam } from '../../engine/national-teams.js';
 import { formatMatchRating } from '../../engine/player-match-stats.js';
 import { isStateLeagueGame } from '../../engine/state-league-format.js';
+import { parseCalendarDate } from '../../engine/season-scheduler.js';
 import {
   clubStandingContext,
   formatClubPositionLabel,
@@ -71,6 +72,7 @@ export function createDashboardFeature(deps) {
     getCareerMessages,
     getUserBudgetLedger,
     getUserSeasonCrowds,
+    getStateLeagueCompletedGames,
     openCalendarMatchReport,
     calendarGameResult,
     isCompletedDashboardGame,
@@ -85,7 +87,11 @@ export function createDashboardFeature(deps) {
     advanceTransferCalendar,
     advanceCalendarWeek,
     showTransferWindowReport,
+    isOnPendingMatchDay,
+    isLiveMatchInProgress,
   } = deps;
+
+  let advanceHandlerBound = false;
 
   let leaderMode = 'scorers';
   let persistSeason = () => {};
@@ -95,8 +101,11 @@ export function createDashboardFeature(deps) {
     persistSeason = typeof fn === 'function' ? fn : () => {};
   };
 
-  const formatDashboardDate = date =>
-    date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toUpperCase();
+  const formatDashboardDate = date => {
+    const valid = parseCalendarDate(date);
+    if (!valid) return '—';
+    return valid.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toUpperCase();
+  };
 
   const clubCrestInitials = name =>
     String(name || '')
@@ -651,20 +660,36 @@ export function createDashboardFeature(deps) {
       // Dia do jogo OU jogo atrasado (calendário passou da data sem disputar).
       const onMatchDay = matchDay.getTime() <= today.getTime();
       const overdueMatch = matchDay.getTime() < today.getTime();
+      const pendingMatchDay =
+        typeof isOnPendingMatchDay === 'function' ? isOnPendingMatchDay() : onMatchDay;
+      const liveMatchActive =
+        typeof isLiveMatchInProgress === 'function' ? isLiveMatchInProgress() : false;
       const todayLabel = overdueMatch
         ? `ATRASADO · ${formatDashboardDate(details.date)}`
         : `HOJE · ${formatDashboardDate(careerCalendarDate)}`;
       // Entre jogos: botão de avanço fica no Dashboard (janela aberta OU fechada).
       // Antes só aparecia com mercado aberto — após o fechamento da janela o save ficava preso.
       const showCalendarAdvance =
-        !idle && !fullyComplete && !sponsorPending && !livePostMatch && !onMatchDay;
+        !idle &&
+        !fullyComplete &&
+        !sponsorPending &&
+        !livePostMatch &&
+        !liveMatchActive &&
+        !onMatchDay &&
+        !pendingMatchDay;
       // DIA DE JOGO: atalho para chegar ao dia da partida — oculto quando já estamos nele.
       const showMatchDayBtn =
-        !idle && !fullyComplete && !sponsorPending && !livePostMatch && !onMatchDay;
+        !idle &&
+        !fullyComplete &&
+        !sponsorPending &&
+        !livePostMatch &&
+        !liveMatchActive &&
+        !onMatchDay &&
+        !pendingMatchDay;
 
       if (playBtn && !sponsorPending) {
-        playBtn.disabled = !onMatchDay;
-        playBtn.title = onMatchDay
+        playBtn.disabled = !(onMatchDay || pendingMatchDay);
+        playBtn.title = onMatchDay || pendingMatchDay
           ? overdueMatch
             ? 'Partida atrasada — dispute agora para realinhar o calendário'
             : 'Disputar a partida agendada para hoje'
@@ -740,7 +765,9 @@ export function createDashboardFeature(deps) {
     if (!fullyComplete) hideSeasonReviewBoard();
 
     // Fora do bloco "display": esconde avanço/Dia de Jogo em idle, temporada fechada, etc.
-    if (!display || idle || fullyComplete || sponsorPending || livePostMatch) {
+    const liveMatchActive =
+      typeof isLiveMatchInProgress === 'function' ? isLiveMatchInProgress() : false;
+    if (!display || idle || fullyComplete || sponsorPending || livePostMatch || liveMatchActive) {
       transferAdvanceBtn?.classList.add('hidden');
       calendarBtn?.classList.add('hidden');
     }
@@ -794,6 +821,14 @@ export function createDashboardFeature(deps) {
     return own > opponent ? 'V' : own < opponent ? 'D' : 'E';
   };
 
+  const compareSortDate = (a, b) => {
+    const aTs = parseCalendarDate(a.sortDate)?.getTime() ?? 0;
+    const bTs = parseCalendarDate(b.sortDate)?.getTime() ?? 0;
+    return aTs - bTs || (Number(a.round) || 0) - (Number(b.round) || 0);
+  };
+
+  const fixtureSortDate = game => parseCalendarDate(fixtureDetails(game).date);
+
   const userCompletedMatchResults = () => {
     const userClub = getUserClub();
     const ntName = getUserNationalTeamName?.() || '';
@@ -818,17 +853,26 @@ export function createDashboardFeature(deps) {
       entries.push({ ...game, result, points: result === 'V' ? 3 : result === 'E' ? 1 : 0, ...meta });
     };
     seasonRoundHistory.forEach(round =>
-      (round.games || []).forEach(game => register(game, { competition: 'league', label: `Rodada ${round.round}`, sortDate: fixtureDetails(game).date }))
+      (round.games || []).forEach(game => register(game, { competition: 'league', label: `Rodada ${round.round}`, sortDate: fixtureSortDate(game) }))
     );
+    (typeof getStateLeagueCompletedGames === 'function' ? getStateLeagueCompletedGames() : [])
+      .filter(isUserFixture)
+      .forEach(game =>
+        register(game, {
+          competition: 'state',
+          label: game.label || `Estadual · Rodada ${game.round || '—'}`,
+          sortDate: game.sortDate || fixtureSortDate(game),
+        }),
+      );
     copaDoBrasilFixtures.filter(game => game.completed).forEach(game =>
-      register(game, { competition: 'cup', label: `Copa · ${game.phase}${game.leg ? ` · ${game.leg}` : ''}`, sortDate: new Date(game.date) })
+      register(game, { competition: 'cup', label: `Copa · ${game.phase}${game.leg ? ` · ${game.leg}` : ''}`, sortDate: parseCalendarDate(game.date) })
     );
     nationalCompetitions.D.fixtures
       .filter(Array.isArray)
       .flat()
       .filter(game => game.completed && isKnockoutShootoutCompetition(game))
       .forEach(game =>
-        register(game, { competition: 'knockout', label: `Série D · ${game.leg || 'Eliminatórias'}`, sortDate: fixtureDetails(game).date })
+        register(game, { competition: 'knockout', label: `Série D · ${game.leg || 'Eliminatórias'}`, sortDate: fixtureSortDate(game) })
       );
     if (wcDashboardActive()) {
       worldCupFixtures
@@ -837,11 +881,11 @@ export function createDashboardFeature(deps) {
           register(game, {
             competition: 'worldcup',
             label: `Copa · ${game.phase || 'Grupos'}`,
-            sortDate: fixtureDetails(game).date,
+            sortDate: fixtureSortDate(game),
           }),
         );
     }
-    return entries.sort((a, b) => a.sortDate - b.sortDate);
+    return entries.sort(compareSortDate);
   };
 
   const dashboardCompletedGames = () => {
@@ -861,35 +905,46 @@ export function createDashboardFeature(deps) {
     };
     seasonRoundHistory.forEach(round =>
       (round.games || []).forEach(game =>
-        register(game, { competition: 'league', round: round.round, label: `Rodada ${round.round}`, sortDate: fixtureDetails(game).date })
+        register(game, { competition: 'league', round: round.round, label: `Rodada ${round.round}`, sortDate: fixtureSortDate(game) })
       )
     );
+    (typeof getStateLeagueCompletedGames === 'function' ? getStateLeagueCompletedGames() : []).forEach(game =>
+      register(game, {
+        competition: 'state',
+        round: game.round,
+        label: game.label || `Estadual · Rodada ${game.round || '—'}`,
+        sortDate: game.sortDate || fixtureSortDate(game),
+      }),
+    );
     copaDoBrasilFixtures.forEach(game =>
-      register(game, { competition: 'cup', label: `Copa · ${game.phase}${game.leg ? ` · ${game.leg}` : ''}`, sortDate: fixtureDetails(game).date })
+      register(game, { competition: 'cup', label: `Copa · ${game.phase}${game.leg ? ` · ${game.leg}` : ''}`, sortDate: fixtureSortDate(game) })
     );
     nationalCompetitions.D.fixtures
       .filter(Array.isArray)
       .flat()
       .filter(game => isKnockoutShootoutCompetition(game))
       .forEach(game =>
-        register(game, { competition: 'knockout', label: `Série D · ${game.leg || 'Eliminatórias'}`, sortDate: fixtureDetails(game).date })
+        register(game, { competition: 'knockout', label: `Série D · ${game.leg || 'Eliminatórias'}`, sortDate: fixtureSortDate(game) })
       );
     if (wcDashboardActive()) {
       worldCupFixtures.forEach(game =>
         register(game, {
           competition: 'worldcup',
           label: `Copa · ${game.phase || 'Grupos'}`,
-          sortDate: fixtureDetails(game).date,
+          sortDate: fixtureSortDate(game),
         }),
       );
     }
-    return entries.sort((a, b) => a.sortDate - b.sortDate);
+    return entries.sort(compareSortDate);
   };
 
   const dashboardRecentLabel = game => {
     if (!game) return '—';
     if (game.competition === 'worldcup' || isWorldCupFixture(game)) {
       return `COPA · ${game.phase || 'GRUPOS'}`;
+    }
+    if (game.competition === 'state' || game.dashboardCompetition === 'state' || isStateLeagueGame(game)) {
+      return `ESTADUAL · RODADA ${game.round || '—'}`;
     }
     if (game.competition === 'cup') return `COPA · ${game.phase || 'DO BRASIL'}${game.leg ? ` · ${game.leg}` : ''}`;
     if (game.competition === 'knockout') return `SÉRIE D · ${game.leg || 'ELIMINATÓRIAS'}`;
@@ -898,19 +953,32 @@ export function createDashboardFeature(deps) {
 
   const dashboardRecentGames = () => {
     const completed = dashboardCompletedGames();
-    if (!completed.length) return { label: '—', games: [] };
-    const userGame = completed.filter(isUserFixture).at(-1);
-    const recent = completed.slice(-4);
-    const picked =
-      userGame && !recent.some(game => game.home === userGame.home && game.away === userGame.away && game.competition === userGame.competition)
-        ? [...recent.slice(-3), userGame].sort((a, b) => a.sortDate - b.sortDate)
-        : recent;
-    return { label: dashboardRecentLabel(picked.at(-1)), games: picked };
+    if (completed.length) {
+      const userGame = completed.filter(isUserFixture).at(-1);
+      const recent = completed.slice(-4);
+      const competitionKey = game => game.dashboardCompetition || game.competition || '';
+      const picked =
+        userGame &&
+        !recent.some(
+          game => game.home === userGame.home && game.away === userGame.away && competitionKey(game) === competitionKey(userGame),
+        )
+          ? [...recent.slice(-3), userGame].sort(compareSortDate)
+          : recent;
+      return { label: dashboardRecentLabel(picked.at(-1)), games: picked };
+    }
+    const userGames = userCompletedMatchResults().slice(-4);
+    if (userGames.length) {
+      return { label: dashboardRecentLabel(userGames.at(-1)), games: userGames };
+    }
+    return { label: '—', games: [] };
   };
 
   const dashboardGameReport = game => {
     if (!isCompletedDashboardGame(game)) return null;
     if (game.competition === 'COPA DO BRASIL' || game.competition === 'cup') {
+      return { game, result: game, data: game.data || null, goals: game.goals || null };
+    }
+    if (isStateLeagueGame(game) || game.competition === 'state' || game.dashboardCompetition === 'state') {
       return { game, result: game, data: game.data || null, goals: game.goals || null };
     }
     if (isKnockoutShootoutCompetition(game) || game.competition === 'knockout') {
@@ -924,6 +992,9 @@ export function createDashboardFeature(deps) {
 
   const dashboardScoreLabel = game => {
     if (game.competition === 'cup' || game.competition === 'COPA DO BRASIL' || game.competition === 'knockout' || isKnockoutGame(game)) {
+      return formatKnockoutFixtureScore(game);
+    }
+    if (isStateLeagueGame(game) && (game.shootoutWinner || game.phase === 'semis' || game.phase === 'final' || game.phase === 'quarters')) {
       return formatKnockoutFixtureScore(game);
     }
     return `${game.homeGoals} — ${game.awayGoals}`;
@@ -992,14 +1063,25 @@ export function createDashboardFeature(deps) {
       const report = dashboardReportGames.get(button.dataset.matchReport);
       if (report) openCalendarMatchReport(report);
     });
-    onClick('#advanceTransferCalendar', () => {
-      // advanceCalendarWeek cobre janela aberta (delega) e fechada (+7 / para no jogo).
-      if (typeof advanceCalendarWeek === 'function') {
-        advanceCalendarWeek();
-        return;
+    const runCalendarAdvance = () => {
+      try {
+        if (typeof advanceCalendarWeek === 'function') {
+          advanceCalendarWeek();
+          return;
+        }
+        if (typeof advanceTransferCalendar === 'function') advanceTransferCalendar();
+      } catch (error) {
+        console.error('[matchday] falha ao avançar calendário', error);
       }
-      if (typeof advanceTransferCalendar === 'function') advanceTransferCalendar();
-    });
+    };
+    if (!advanceHandlerBound) {
+      advanceHandlerBound = true;
+      document.addEventListener('click', event => {
+        if (!event.target.closest('#advanceTransferCalendar')) return;
+        event.preventDefault();
+        runCalendarAdvance();
+      });
+    }
   };
 
   const renderDashboardStadiumPreview = async () => {

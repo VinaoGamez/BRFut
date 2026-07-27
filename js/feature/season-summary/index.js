@@ -49,10 +49,19 @@ const MODAL_HTML = `
       <header><h3>Metas complementares</h3><small>Avaliação da diretoria sobre objetivos extras</small></header>
       <div id="seasonObjectivesResult" class="season-objectives-result"></div>
     </section>
-    <section class="season-summary-section">
-      <header><h3>Campeões</h3><small>Títulos conquistados em <span id="seasonSummaryYear"></span></small></header>
+    <section class="season-summary-section season-champions-section">
+      <header class="season-champions-header">
+        <h3 id="seasonChampionsHeading">CAMPEÕES</h3>
+        <div class="championship-page-picker season-champions-picker">
+          <button id="seasonChampionsPickerBtn" type="button" aria-haspopup="listbox" aria-expanded="false">COMPETIÇÃO ▾</button>
+          <div id="seasonChampionsPickerMenu" class="championship-page-picker-menu hidden" role="listbox" aria-label="Competições campeãs"></div>
+        </div>
+      </header>
       <div id="seasonChampions" class="season-champions-layout">
-        <div id="seasonChampionsFeatured" class="season-champions-featured"></div>
+        <div class="season-champions-showcase">
+          <div id="seasonChampionsFeatured" class="season-champions-featured"></div>
+          <div id="seasonChampionsTeamStats" class="season-champions-team-stats-wrap"></div>
+        </div>
         <div id="seasonChampionsPyramid" class="season-champions-pyramid"></div>
         <div id="seasonChampionsExtraWrap" class="season-champions-extra-wrap hidden">
           <h4 class="season-champions-extra-title">Outros títulos</h4>
@@ -118,7 +127,15 @@ const PREVIEW_GOAL_SAMPLES = {
 };
 
 export function createSeasonSummaryFeature(deps) {
-  const { $, clubCrestInitials, onStartNextSeason, onCloseSeasonSummary } = deps;
+  const {
+    $,
+    clubCrestInitials,
+    onStartNextSeason,
+    onCloseSeasonSummary,
+    clubSeasonLeaders,
+    clubSeasonRatingSummary,
+    formatMatchRating,
+  } = deps;
   let handlersBound = false;
   let previewMode = false;
   let previewStatus = 'missed';
@@ -274,7 +291,8 @@ export function createSeasonSummaryFeature(deps) {
       previewStatus = seasonGoalResult.status;
     }
     $('#seasonSummaryTitle').textContent = `Balanço da temporada ${careerSeason}`;
-    $('#seasonSummaryYear').textContent = careerSeason;
+    const championsHeading = $('#seasonChampionsHeading');
+    if (championsHeading) championsHeading.textContent = `CAMPEÕES ${careerSeason}`;
     $('#seasonTransitionLead').textContent =
       leadText || 'Resultados finais das competições e movimentos de acesso/rebaixamento.';
     const summary = $('#seasonTransitionSummary');
@@ -338,7 +356,11 @@ export function createSeasonSummaryFeature(deps) {
         userDivision,
         recopaSubtitle,
       });
-      renderChampionsLayout(championsRoot, entries);
+      renderChampionsLayout(championsRoot, entries, {
+        clubSeasonLeaders,
+        clubSeasonRatingSummary,
+        formatMatchRating,
+      });
     }
     $('#seasonLeaders').innerHTML = LEAGUE_ORDER.map(({ key, label }) => {
       const leaders = leadersByDivision[key] || { scorers: [], assistants: [] };

@@ -1,8 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
-const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
-const githubPagesBase = repoName ? `/${repoName}/` : './';
 const isGithubPages = process.env.GITHUB_PAGES === 'true';
 
 /** Mercado ativo em todos os builds (local + GitHub Pages). */
@@ -12,7 +10,7 @@ const enableStateLeague = process.env.MATCHDAY_DISABLE_STATE_LEAGUE !== 'true';
 
 export default defineConfig({
   root: '.',
-  base: isGithubPages ? githubPagesBase : './',
+  base: './',
   define: {
     __MATCHDAY_ENABLE_TRANSFERS__: JSON.stringify(enableTransfers),
     __MATCHDAY_ENABLE_STATE_LEAGUE__: JSON.stringify(enableStateLeague),

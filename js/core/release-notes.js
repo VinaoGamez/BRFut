@@ -5,6 +5,35 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.25',
+    date: '2026-07-27',
+    publishedAt: '2026-07-27T18:40:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Site e testers',
+        items: [
+          'Jogo publicado em brfut.com.br — build corrigido para carregar CSS/JS no domínio próprio.',
+          'Repositório renomeado para BRFut; links de feedback e guia atualizados.',
+        ],
+      },
+      {
+        label: 'Temporada e hub',
+        items: [
+          'Tela de campeões no fim de temporada com destaque troféu → escudo e estatísticas do time.',
+          'Avançar Semana mais confiável no dashboard (partida pendente, jogo ao vivo e transferências).',
+          'Saves de temporada com aviso único quando o navegador enche o armazenamento local.',
+        ],
+      },
+      {
+        label: 'Motor',
+        items: [
+          'Rodadas, copas e calendário extraídos para módulos menores — base para evoluções futuras.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.20',
     date: '2026-07-26',
     publishedAt: '2026-07-26T15:35:00-03:00',

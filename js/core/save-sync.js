@@ -24,6 +24,5 @@ export function pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt = 0
 export function stampSyncableSave(key, value) {
   if (key !== SAVE_KEYS.career && key !== SAVE_KEYS.season) return value;
   if (!value || typeof value !== 'object') return value;
-  if (value.updatedAt) return value;
   return { ...value, updatedAt: new Date().toISOString() };
 }

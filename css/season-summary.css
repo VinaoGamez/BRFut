@@ -363,14 +363,53 @@
   font:700 9px DM Sans;
   letter-spacing:.45px;
 }
+.season-champions-section>header.season-champions-header{
+  padding:10px 14px;
+  border:1px solid #28505b;
+  border-radius:6px;
+  background:#0b1d25;
+}
+.season-champions-section>header.season-champions-header h3{
+  margin:0;
+  color:#edf8f5;
+  font:700 18px Barlow Condensed;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+}
+.season-champions-picker{
+  position:relative;
+  z-index:6;
+  flex:0 0 auto;
+}
 .season-champions-layout{
   display:grid;
   gap:14px;
 }
-.season-champions-featured{
+.season-champions-showcase{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   gap:10px;
+  align-items:stretch;
+}
+.season-champions-featured{
+  display:block;
+  min-width:0;
+}
+.season-champions-team-stats-wrap{
+  min-width:0;
+  display:grid;
+  align-items:stretch;
+}
+.season-champions-team-stats-wrap .season-champions-empty,
+.season-champions-featured .season-champions-empty{
+  margin:0;
+  height:100%;
+  display:grid;
+  place-items:center;
+}
+.season-champions-team-stats{
+  height:100%;
+  min-height:210px;
 }
 .season-champions-pyramid{
   display:grid;
@@ -422,10 +461,39 @@
   padding:22px 14px 18px;
   min-height:210px;
 }
+.season-champion-card.is-featured-showcase{
+  justify-items:stretch;
+  text-align:center;
+}
+.season-champion-visual-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  width:100%;
+  min-height:96px;
+}
+.season-champion-card.is-featured-showcase .season-champion-trophy{
+  width:auto;
+  flex:0 0 auto;
+  min-height:0;
+  margin-top:0;
+}
+.season-champion-card.is-featured-showcase .season-champion-hero{
+  width:auto;
+  flex:0 0 auto;
+  padding:0;
+}
+.season-champion-card.is-compact.is-selected,
+.season-champion-card.is-extra.is-selected{
+  border-color:var(--champion-accent,#63d9ff);
+  box-shadow:0 8px 24px #0006,0 0 0 1px #63d9ff44;
+}
 .season-champion-card.is-compact,
 .season-champion-card.is-extra{
   padding:14px 8px 12px;
   gap:6px;
+  cursor:pointer;
 }
 .season-champion-card.is-user-club{
   border-color:var(--champion-accent,#63d9ff);
@@ -865,7 +933,7 @@
   font:700 13px DM Sans;
 }
 @media(max-width:860px){
-  .season-champions-featured{grid-template-columns:1fr}
+  .season-champions-showcase{grid-template-columns:1fr}
   .season-champions-pyramid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .season-champions-extra{grid-template-columns:repeat(2,minmax(0,1fr))}
   .season-leaders-grid{grid-template-columns:repeat(2,minmax(0,1fr))}

@@ -77,6 +77,28 @@ function normalizeNoon(date) {
   return next;
 }
 
+/** Data de calendário válida (save antigo pode ter ISO corrompido). */
+export function isValidCalendarDate(date) {
+  if (date == null || date === '') return false;
+  const parsed = date instanceof Date ? date : new Date(date);
+  return !Number.isNaN(parsed.getTime());
+}
+
+/** Normaliza para meio-dia ou null se inválida. */
+export function parseCalendarDate(date) {
+  if (!isValidCalendarDate(date)) return null;
+  return normalizeNoon(date instanceof Date ? date : new Date(date));
+}
+
+/** Rótulo curto pt-BR (ex.: 25 FEV) ou null. */
+export function formatFixtureDateLabel(date) {
+  const valid = parseCalendarDate(date);
+  if (!valid) return null;
+  const day = String(valid.getDate()).padStart(2, '0');
+  const month = valid.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
+  return { date: valid, display: `${day} ${month}` };
+}
+
 /** Último dia do calendário da carreira (31/dez — sem estender pro ano seguinte). */
 export function calendarAdvanceLimitDate(seasonYear) {
   return planSeasonEndDate(seasonYear);
@@ -351,8 +373,13 @@ export function rebuildOccupancyFromLeagueFixtures(nationalCompetitions, occupan
     const rounds = nationalCompetitions?.[division]?.fixtures;
     if (!Array.isArray(rounds)) return;
     rounds.flat().forEach(game => {
-      if (!game?.home || !game?.away || !game.date) return;
-      const date = normalizeNoon(game.date);
+      if (!game?.home || !game?.away) return;
+      const date = parseCalendarDate(game.date);
+      if (!date) {
+        delete game.date;
+        delete game._reservedTs;
+        return;
+      }
       game.date = date;
       game._reservedTs = date.getTime();
       reserveClubDate(occupancy, game.home, date);
@@ -417,9 +444,9 @@ export function rescheduleCupFixtures(cupGames, occupancy, {
 
 /** Data efetiva de um jogo (materializada ou fallback por rodada). */
 export function gameScheduledDate(game, fallbackDate = null) {
-  if (game?.date) return normalizeNoon(game.date);
-  if (fallbackDate) return normalizeNoon(fallbackDate);
-  return null;
+  const parsed = parseCalendarDate(game?.date);
+  if (parsed) return parsed;
+  return parseCalendarDate(fallbackDate);
 }
 
 /** Conta conflitos de descanso (< minRestDays) na ocupação. */
@@ -452,7 +479,7 @@ export function serializeCompetitionWindows(season, windows = LEAGUE_CALENDAR_WI
 /** Liga precisa de materialização de datas? */
 export function leagueFixturesNeedScheduling(nationalCompetitions) {
   return Object.values(nationalCompetitions || {}).some(comp =>
-    (comp.fixtures || []).flat().some(game => game?.home && game?.away && !game.date),
+    (comp.fixtures || []).flat().some(game => game?.home && game?.away && !parseCalendarDate(game.date)),
   );
 }
 
@@ -478,8 +505,21 @@ function clearBlackoutLeagueDates(nationalCompetitions, seasonYear) {
   });
 }
 
+function clearInvalidLeagueDates(nationalCompetitions) {
+  ['A', 'B', 'C', 'D'].forEach(division => {
+    const rounds = nationalCompetitions?.[division]?.fixtures;
+    if (!Array.isArray(rounds)) return;
+    rounds.flat().forEach(game => {
+      if (!game?.date || parseCalendarDate(game.date)) return;
+      delete game.date;
+      delete game._reservedTs;
+    });
+  });
+}
+
 /** Garante Date em todos os jogos de liga a partir do save ou gera novo calendário. */
 export function ensureLeagueScheduleMaterialized(season, nationalCompetitions, options = {}) {
+  clearInvalidLeagueDates(nationalCompetitions);
   const needsDates = leagueFixturesNeedScheduling(nationalCompetitions);
   const needsBlackoutRepair = clubFixturesViolateHardBlackout(nationalCompetitions, season);
   if (!needsDates && !needsBlackoutRepair) {

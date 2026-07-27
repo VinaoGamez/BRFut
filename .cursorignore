@@ -1,0 +1,10 @@
+﻿dist/
+node_modules/
+tmp-*
+tmp-saves/
+tmp-bench*.json
+tmp-nss-ref/
+agent-transcripts/
+*.mp4
+public/data/brasfoot-clubs-import.json
+.git/

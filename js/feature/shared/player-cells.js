@@ -16,11 +16,8 @@ const hasMatchOverlay = liveState =>
   !!(liveState.red || liveState.yellow || liveState.injured || liveState.playThroughRisk);
 
 /**
- * Badges de status (cartões, lesão, suspensão) para células de jogador.
- * Temporada = acumulado por competição.
- * Pré-jogo / pausa: só a competição do jogo (foco).
- * Elenco: todas as competições com grupos separados.
- * liveState acrescenta cartão/lesão desta partida — não esconde o histórico do foco.
+ * Badges de status (suspensão, lesão, cartão ao vivo) para células de jogador.
+ * Amarelos acumulados na temporada não são exibidos no Elenco — só suspensão quando aplicável.
  */
 function escapeAttr(value) {
   return String(value ?? '')
@@ -69,49 +66,16 @@ export function createPlayerCells({
   userLeagueDisciplineKey,
   getFocusCompetitionKey,
 }) {
-  // 3 amarelos = suspensão; pip ativo máx. = 2.
-  const maxActiveYellowPips = Math.max(0, (YELLOW_SUSPENSION_LIMIT || 3) - 1);
+  // 3 amarelos = suspensão; pip ativo máx. = 2 (contagem ainda usada em suspensão).
 
   const focusKey = () =>
     (typeof getFocusCompetitionKey === 'function' && getFocusCompetitionKey()) ||
     userLeagueDisciplineKey?.() ||
     'LEAGUE:A';
 
-  const yellowPips = (count, title) =>
-    Array.from({ length: clamp(Number(count) || 0, 0, maxActiveYellowPips) }, () =>
-      `<i class="player-badge player-badge-yellow" aria-hidden="true" title="${title}"></i>`,
-    ).join('');
-
-  const seasonYellowHtml = (player, { allCompetitions = false } = {}) => {
-    const discipline = player?.discipline || {};
-    const leagueKey = userLeagueDisciplineKey?.() || 'LEAGUE:A';
-    const preferred = focusKey();
-    const compKeys = disciplineBadgeCompetitionKeys?.(discipline, { leagueKey, includeCup: true }) || [];
-    const ordered = [
-      ...compKeys.filter(key => key === preferred),
-      ...compKeys.filter(key => key !== preferred),
-    ];
-    const visible = allCompetitions
-      ? ordered
-      : ordered.filter(key => key === preferred).length
-        ? ordered.filter(key => key === preferred)
-        : ordered.slice(0, 1);
-    return visible
-      .map(key => {
-        const count = getYellowAccumulation?.(discipline, key) || 0;
-        if (count <= 0) return '';
-        const label = competitionLabel?.(key) || key;
-        const title = `${Math.min(count, maxActiveYellowPips)}/${YELLOW_SUSPENSION_LIMIT} amarelos · ${label}`;
-        return `<span class="player-yellow-group" title="${title}">${yellowPips(count, title)}</span>`;
-      })
-      .join('');
-  };
-
   const playerStatusBadges = (player, liveState = null, options = {}) => {
     const { allCompetitions = false } = options;
     const parts = [];
-    const seasonYellows = seasonYellowHtml(player, { allCompetitions });
-    if (seasonYellows) parts.push(seasonYellows);
 
     const discipline = player?.discipline || {};
     // Igual aos amarelos: no jogo/preparação só a competição em foco; elenco pode ver todas.

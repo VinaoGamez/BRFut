@@ -142,7 +142,7 @@ export function createCareerPersistence({
 
   const bindBeforeUnloadPersist = () => {
     if (typeof window === 'undefined') return;
-    window.addEventListener('beforeunload', () => {
+    const flushOnExit = () => {
       let skipForNewGame = false;
       try {
         if (sessionStorage.getItem('matchday-skip-persist-once')) {
@@ -160,7 +160,34 @@ export function createCareerPersistence({
       }
       if (getSavedNewGame?.()) persistSeason(true);
       flushCloudSync({ urgent: true });
+    };
+    window.addEventListener('beforeunload', flushOnExit);
+    // pagehide é mais confiável que beforeunload em F5 / hard refresh (desktop e mobile).
+    window.addEventListener('pagehide', event => {
+      if (event.persisted) return;
+      flushOnExit();
     });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'hidden') return;
+      if (skipPersistOnUnload) return;
+      try {
+        flushLiveMatchPersist();
+      } catch {
+        /* ignore */
+      }
+      if (getSavedNewGame?.()) persistSeason(true);
+      flushCloudSync({ urgent: true });
+    });
+  };
+
+  const bindPeriodicAutosave = () => {
+    if (typeof window === 'undefined') return;
+    const intervalMs = MEMORY_LIMITS.autosaveIntervalMs || 45_000;
+    window.setInterval(() => {
+      if (skipPersistOnUnload || careerReset.blockWrites) return;
+      if (!getSavedNewGame?.()) return;
+      persistSeason(true);
+    }, intervalMs);
   };
 
   const setSkipPersistOnUnload = () => {
@@ -177,6 +204,7 @@ export function createCareerPersistence({
     bindWriteSeasonSave,
     bindFlushLiveMatchPersist,
     bindBeforeUnloadPersist,
+    bindPeriodicAutosave,
     setSkipPersistOnUnload,
     isWriteBlocked: () => careerReset.blockWrites,
   };

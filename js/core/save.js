@@ -27,6 +27,8 @@ export const MEMORY_LIMITS = {
   seasonMessages: 80,
   /** Deals de mercado mantidos no save. */
   seasonTransferDeals: 40,
+  /** Autosave periódico enquanto a carreira está ativa (ms). */
+  autosaveIntervalMs: 45_000,
   /** HTML da timeline ao vivo — cap no snapshot. */
   liveTimelineHtml: 8000,
 };
