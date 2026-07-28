@@ -122,39 +122,22 @@ main > .view.active {
   box-shadow: 0 0 0 2px rgba(6, 19, 27, 0.55);
 }
 
-.sidebar .nav-badge.nav-badge--dot {
-  min-width: 0;
-  width: 10px;
-  height: 10px;
-  padding: 0;
-  background: #ffc94f;
-  color: transparent;
-  font-size: 0;
-  line-height: 0;
-  overflow: hidden;
-}
-
+.sidebar .nav-badge.nav-badge--dot,
 .sidebar .nav-badge.nav-badge--change-ball {
   min-width: 0;
-  width: 11px;
-  height: 11px;
+  width: 17px;
+  height: 17px;
   padding: 0;
   margin-left: auto;
-  margin-right: 4px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff6a8, #ffc933 45%, #e6a800 100%);
-  border: 1px solid #a67c00;
-  box-shadow: 0 0 0 1px #fff5, 0 1px 4px #0008;
+  margin-right: 0;
+  border-radius: 999px;
+  background: var(--md-lime, #bbeb27);
   color: transparent;
   font-size: 0;
   line-height: 0;
   overflow: hidden;
-  animation: roster-change-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes roster-change-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.08); opacity: 0.92; }
+  border: none;
+  box-shadow: 0 0 0 2px rgba(6, 19, 27, 0.55);
 }
 
 .sidebar .nav[data-view='squad'] {

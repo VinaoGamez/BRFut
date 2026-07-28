@@ -310,7 +310,7 @@ export function createRoundAdvanceEngine(deps) {
     deps.drawBoard();
     deps.advanceCupComputerTies(deps.getCupCompetition().stages.find(item => !item.completed));
     deps.setRoundCommitted(true);
-    deps.persistSeason(true);
+    deps.persistAfterRoundAdvance();
     deps.refreshSeasonPresentation();
     deps.closeRoundResultsModal();
     deps.closeMatchModal();

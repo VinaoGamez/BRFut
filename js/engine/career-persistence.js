@@ -99,6 +99,7 @@ export function createCareerPersistence({
         persistSeasonTimer = null;
       }
       writeSeasonSave();
+      flushCloudSync({ urgent: true });
       return;
     }
     if (persistSeasonTimer) clearTimeout(persistSeasonTimer);

@@ -9,6 +9,22 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.55',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T17:05:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Progresso e interface',
+        items: [
+          'Salvamento: ao atualizar a página, a rodada não volta mais por conflito com a nuvem.',
+          'Menu Elenco: alerta verde no mesmo estilo de Mensagens (sem número, um pouco menor).',
+          'Substituições: cabeçalho Pé centralizado com o ícone do pé.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.50',
     date: '2026-07-28',
     publishedAt: '2026-07-28T16:45:00-03:00',

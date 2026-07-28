@@ -704,7 +704,7 @@ export function createTacticsFeature(deps) {
     if (substitutionPanel?.querySelector('label')) {
       substitutionPanel.querySelector('label').insertAdjacentHTML(
         'afterend',
-        '<div class="substitution-pickers"><section class="substitution-picker"><strong>JOGADOR QUE SAI</strong><div class="substitution-player-head"><span>POS.</span><span>OVR</span><span>JOGADOR</span><span>PÉ</span><span>CANSAÇO</span></div><div id="substitutionOutList" class="substitution-player-list"></div></section><section class="substitution-picker"><strong>JOGADOR QUE ENTRA</strong><div class="substitution-player-head"><span>POS.</span><span>OVR</span><span>JOGADOR</span><span>PÉ</span><span>CANSAÇO</span></div><div id="substitutionInList" class="substitution-player-list"></div></section></div>'
+        '<div class="substitution-pickers"><section class="substitution-picker"><strong>JOGADOR QUE SAI</strong><div class="substitution-player-head"><span>POS.</span><span>OVR</span><span>JOGADOR</span><span class="sub-foot-col sub-foot-head">PÉ</span><span class="sub-fatigue-col sub-fatigue-head">CANSAÇO</span></div><div id="substitutionOutList" class="substitution-player-list"></div></section><section class="substitution-picker"><strong>JOGADOR QUE ENTRA</strong><div class="substitution-player-head"><span>POS.</span><span>OVR</span><span>JOGADOR</span><span class="sub-foot-col sub-foot-head">PÉ</span><span class="sub-fatigue-col sub-fatigue-head">CANSAÇO</span></div><div id="substitutionInList" class="substitution-player-list"></div></section></div>'
       );
       $('#substitutionOut')?.classList.add('substitution-native-select');
       $('#substitutionIn')?.classList.add('substitution-native-select');
