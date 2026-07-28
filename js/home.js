@@ -8,7 +8,7 @@ import { fetchPlayerStats, probeBackend } from './core/storage-api.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 import { endBrowserSession } from './core/storage-api.js';
-import { clearSessionCareerData } from './core/save.js';
+import { clearSessionCareerData, markSkipSessionEndOnce, consumeSkipSessionEndOnce } from './core/save.js';
 
 const SPONSOR_LOGO_URLS = Object.fromEntries(
   Object.entries(
@@ -168,6 +168,9 @@ const SPONSOR_ORDER = [
 
   loginBtn?.addEventListener('click', () => account.openLogin());
 
+  newGameBtn?.addEventListener('click', () => markSkipSessionEndOnce());
+  continueBtn?.addEventListener('click', () => markSkipSessionEndOnce());
+
   const initSponsorRail = () => {
     const track = $('#homeSponsorsTrack');
     const viewport = track?.parentElement;
@@ -251,6 +254,7 @@ const SPONSOR_ORDER = [
 
   window.addEventListener('pagehide', event => {
     if (event.persisted) return;
+    if (consumeSkipSessionEndOnce()) return;
     endBrowserSession();
     clearSessionCareerData();
   });

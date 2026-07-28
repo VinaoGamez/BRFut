@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.90',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T18:35:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Correção',
+        items: [
+          'Ao confirmar nova carreira, o jogo não volta mais para a tela inicial sem login.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.85',
     date: '2026-07-28',
     publishedAt: '2026-07-28T18:25:00-03:00',

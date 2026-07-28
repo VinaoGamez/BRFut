@@ -60,6 +60,18 @@ checkSync('openLogin não fecha modal ao preparar formulário', () => {
   assert(openLogin.includes('keepModalOpen: true'), 'renderLoggedOut mantém modal aberto');
 });
 
+checkSync('navegação interna preserva sessão (skip session end)', () => {
+  const save = readFileSync(join(ROOT, 'js/core/save.js'), 'utf8');
+  const dom = readFileSync(join(ROOT, 'js/ui/dom.js'), 'utf8');
+  const persist = readFileSync(join(ROOT, 'js/engine/career-persistence.js'), 'utf8');
+  const home = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  assert(save.includes('markSkipSessionEndOnce'), 'helper mark skip session');
+  assert(save.includes('consumeSkipSessionEndOnce'), 'helper consume skip session');
+  assert(dom.includes('markSkipSessionEndOnce'), 'redirectGame marca skip');
+  assert(persist.includes('consumeSkipSessionEndOnce'), 'persistência respeita skip');
+  assert(home.includes('markSkipSessionEndOnce'), 'home marca skip ao ir para o jogo');
+});
+
 checkSync('home e index encerram sessão ao fechar aba', () => {
   const home = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
   const main = readFileSync(join(ROOT, 'js/main.js'), 'utf8');

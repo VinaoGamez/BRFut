@@ -15,7 +15,7 @@ import {
   mergePreferencesIntoCareer,
 } from '../../core/save-preferences.js';
 import { endBrowserSession } from '../../core/storage-api.js';
-import { clearSessionCareerData } from '../../core/save.js';
+import { clearSessionCareerData, markSkipSessionEndOnce } from '../../core/save.js';
 
 const GAME_PACE_CONFIG = {
   ultra: { name: 'ULTRA', detail: '8 s por tempo · 16 s de jogo contínuo', ms: 250 },
@@ -289,6 +289,7 @@ export function createOptionsFeature(deps) {
   const closeCareerCreator = () => {
     $('#newGameModal').classList.add('hidden');
     if (!careerExists() && new URLSearchParams(location.search).has('novo')) {
+      markSkipSessionEndOnce();
       location.replace('home.html');
       return;
     }

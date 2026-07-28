@@ -1,3 +1,5 @@
+import { markSkipSessionEndOnce } from '../core/save.js';
+
 export const $ = selector => document.querySelector(selector);
 export const $$ = selector => [...document.querySelectorAll(selector)];
 
@@ -10,12 +12,14 @@ export const on = (target, event, handler, options) => {
 
 export const onClick = (target, handler) => on(target, 'click', handler);
 
-export const redirectGame = () =>
+export const redirectGame = () => {
+  markSkipSessionEndOnce();
   location.replace(
     location.pathname.endsWith('/')
       ? 'index.html'
       : location.pathname.split('/').pop() || 'index.html',
   );
+};
 
 export const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 

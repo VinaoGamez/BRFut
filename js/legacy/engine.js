@@ -139,6 +139,7 @@ import {
   clearSeasonSave,
   clearCareerStorage,
   markSkipPersistOnce,
+  markSkipSessionEndOnce,
   writeJson,
   MEMORY_LIMITS,
   compactMatchResult,
@@ -7806,6 +7807,7 @@ const rosterChangeAlertHolder = { fn: null };
     clubInsolvencyWarnUi.close();
     clubFinancialRestrictionUi.close();
     managerJobWarnUi.close();
+    markSkipSessionEndOnce();
     location.replace('home.html');
   };
   const managerJobWarnUi=createManagerJobWarnFeature({$});

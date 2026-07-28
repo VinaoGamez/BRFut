@@ -8,6 +8,7 @@ import {
   writeJsonResilient,
   markSkipPersistOnce,
   consumeSkipPersistOnce,
+  consumeSkipSessionEndOnce,
   pruneInjuryHistory,
   clearSessionCareerData,
 } from '../core/save.js';
@@ -200,6 +201,7 @@ export function createCareerPersistence({
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
       flushOnExit();
+      if (consumeSkipSessionEndOnce()) return;
       endBrowserSession();
       clearSessionCareerData();
     });

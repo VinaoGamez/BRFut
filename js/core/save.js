@@ -338,6 +338,27 @@ export function consumeSkipPersistOnce() {
   }
 }
 
+/** Flag one-shot: não encerra sessão/token no pagehide (reload interno, nova carreira, etc.). */
+const SKIP_SESSION_END_KEY = 'matchday-skip-session-end';
+
+export function markSkipSessionEndOnce() {
+  try {
+    sessionStorage.setItem(SKIP_SESSION_END_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}
+
+export function consumeSkipSessionEndOnce() {
+  try {
+    if (!sessionStorage.getItem(SKIP_SESSION_END_KEY)) return false;
+    sessionStorage.removeItem(SKIP_SESSION_END_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Limpa carreira + temporada + live (+ treino opcional) para liberar cota
  * e evitar conflito ao iniciar Novo Jogo.

@@ -14,7 +14,7 @@ import {
   initStorageBackend,
   probeBackend,
 } from './core/storage-api.js';
-import { clearSessionCareerData } from './core/save.js';
+import { clearSessionCareerData, markSkipSessionEndOnce } from './core/save.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 
@@ -81,6 +81,7 @@ const account = mountAccountPanel({
   onPlayLocal: () => openCareerCreatorRef?.(),
   onLoginSuccess: async () => {
     if (bootStarted) {
+      markSkipSessionEndOnce();
       location.reload();
       return;
     }
