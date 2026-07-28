@@ -104,19 +104,27 @@ const account = mountAccountPanel({
 });
 
 const beginAppSession = async () => {
-  await probeBackend();
+  try {
+    await probeBackend();
 
-  if (!getAuthToken()) {
-    clearSessionCareerData();
-    injectPreLoginWelcome();
+    if (!getAuthToken()) {
+      clearSessionCareerData();
+      injectPreLoginWelcome();
+      await account.refresh();
+      return;
+    }
+
+    await initStorageBackend();
     await account.refresh();
-    return;
+    document.getElementById('careerWelcome')?.remove();
+    startBootOnce();
+  } catch (error) {
+    console.error('[brfut] falha ao iniciar sessão', error);
+    injectPreLoginWelcome();
+  } finally {
+    // Sem login o motor não sobe — ocultar splash para exibir tela ENTRAR.
+    if (!bootStarted) markBootReady();
   }
-
-  await initStorageBackend();
-  await account.refresh();
-  document.getElementById('careerWelcome')?.remove();
-  startBootOnce();
 };
 
 void beginAppSession();

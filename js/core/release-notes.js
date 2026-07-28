@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.70',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T17:55:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Correção',
+        items: [
+          'Tela de login não fica mais presa em "Carregando…" ao abrir o jogo sem sessão ativa.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.65',
     date: '2026-07-28',
     publishedAt: '2026-07-28T17:45:00-03:00',
