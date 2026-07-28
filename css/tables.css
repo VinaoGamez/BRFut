@@ -292,12 +292,23 @@
   padding: 0;
 }
 
-.sub-energy-foot {
-  display: inline-flex;
+.sub-foot-col {
+  display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
+  justify-content: center;
   min-width: 0;
+}
+
+.sub-fatigue-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.sub-fatigue-col .roster-fatigue--compact i {
+  width: 42px;
+  height: 15px;
 }
 
 .roster-fatigue--compact {

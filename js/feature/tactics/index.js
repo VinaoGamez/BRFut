@@ -505,7 +505,7 @@ export function createTacticsFeature(deps) {
 
   const substitutionPlayerRow = (player, attributes, selected, liveState = null) => {
     const clubName = getUserClub?.() || '';
-    return `<button type="button" class="substitution-player-row ${selected ? 'selected' : ''}" ${attributes} style="display:grid!important;width:100%!important;padding:7px 8px!important;border:0!important;border-top:1px solid #234b55!important;border-radius:0!important;background:${selected ? '#173b48' : '#091820'}!important;color:#edf8f5!important;box-shadow:${selected ? 'inset 3px 0 0 #b6ff38' : 'none'}!important;transform:none!important"><span class="sub-pos">${player.pos}</span><span class="sub-ovr">${player.overall}</span><span class="sub-name">${playerNameCell(player.name, player, { liveState, openCard: true, clubName })}</span><span class="sub-energy-foot">${rosterFatigueCell(player, { compact: true })}${renderTableFootIcon(player, 'sub')}</span></button>`;
+    return `<button type="button" class="substitution-player-row ${selected ? 'selected' : ''}" ${attributes} style="display:grid!important;width:100%!important;padding:8px 8px!important;border:0!important;border-top:1px solid #234b55!important;border-radius:0!important;background:${selected ? '#173b48' : '#091820'}!important;color:#edf8f5!important;box-shadow:${selected ? 'inset 3px 0 0 #b6ff38' : 'none'}!important;transform:none!important"><span class="sub-pos">${player.pos}</span><span class="sub-ovr">${player.overall}</span><span class="sub-name">${playerNameCell(player.name, player, { liveState, openCard: true, clubName })}</span><span class="sub-foot-col">${renderTableFootIcon(player, 'sub')}</span><span class="sub-fatigue-col">${rosterFatigueCell(player, { compact: true })}</span></button>`;
   };
 
   const renderSubstitutionControls = () => {
@@ -704,7 +704,7 @@ export function createTacticsFeature(deps) {
     if (substitutionPanel?.querySelector('label')) {
       substitutionPanel.querySelector('label').insertAdjacentHTML(
         'afterend',
-        '<div class="substitution-pickers"><section class="substitution-picker"><strong>JOGADOR QUE SAI</strong><div class="substitution-player-head"><span>POS.</span><span>OVR</span><span>JOGADOR</span><span>CANSAÇO</span></div><div id="substitutionOutList" class="substitution-player-list"></div></section><section class="substitution-picker"><strong>JOGADOR QUE ENTRA</strong><div class="substitution-player-head"><span>POS.</span><span>OVR</span><span>JOGADOR</span><span>CANSAÇO</span></div><div id="substitutionInList" class="substitution-player-list"></div></section></div>'
+        '<div class="substitution-pickers"><section class="substitution-picker"><strong>JOGADOR QUE SAI</strong><div class="substitution-player-head"><span>POS.</span><span>OVR</span><span>JOGADOR</span><span>PÉ</span><span>CANSAÇO</span></div><div id="substitutionOutList" class="substitution-player-list"></div></section><section class="substitution-picker"><strong>JOGADOR QUE ENTRA</strong><div class="substitution-player-head"><span>POS.</span><span>OVR</span><span>JOGADOR</span><span>PÉ</span><span>CANSAÇO</span></div><div id="substitutionInList" class="substitution-player-list"></div></section></div>'
       );
       $('#substitutionOut')?.classList.add('substitution-native-select');
       $('#substitutionIn')?.classList.add('substitution-native-select');

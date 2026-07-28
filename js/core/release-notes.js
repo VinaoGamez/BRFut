@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.50',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T16:45:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Partida',
+        items: [
+          'Substituições: coluna Pé após o nome e cansaço com mais espaço entre as barras.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.45',
     date: '2026-07-28',
     publishedAt: '2026-07-28T16:30:00-03:00',
