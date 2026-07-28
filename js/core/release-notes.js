@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.95',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T19:00:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Site',
+        items: [
+          'Link compartilhado no WhatsApp e redes exibe o título correto do jogo.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.90',
     date: '2026-07-28',
     publishedAt: '2026-07-28T18:35:00-03:00',
