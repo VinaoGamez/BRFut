@@ -2731,13 +2731,26 @@ const rosterChangeAlertHolder = { fn: null };
   /** Nacional encerrado e sem partidas do usuário (inclui Copa) — UI de temporada fechada. */
   const seasonFullyComplete=()=>seasonComplete()&&!hasPendingUserFixtures();
   const isUserSeasonIdle=()=>!!savedNewGame&&!pendingUserSchedule().length&&!seasonComplete();
+  let calendarBootRepaired=false;
   if(validSavedSeason){
+    const played=userLeaguePlayed();
+    const atSeasonStart=sameCalendarDay(careerCalendarDate,seasonStartDate());
+    const lastCompleted=userSchedule().filter(entry=>isFixtureCompleted(entry.game)).pop();
+    const nextPending=nextPendingUserEntry();
+    const progressDate=lastCompleted?.details?.date
+      ??nextPending?.details?.date
+      ??(played>0||currentRound>1?fixtureDate(Math.max(1,Math.max(played,currentRound-1))):null);
     if(!savedSeason.careerCalendarDate){
-      const lastCompleted=userSchedule().filter(entry=>isFixtureCompleted(entry.game)).pop(),nextPending=nextPendingUserEntry();
-      advanceCareerCalendarTo(lastCompleted?.details.date??nextPending?.details.date??(currentRound>1?fixtureDate(Math.max(1,currentRound-1)):null)??seasonStartDate());
-    }else if(currentRound>1&&sameCalendarDay(careerCalendarDate,seasonStartDate())){
-      const lastCompleted=userSchedule().filter(entry=>isFixtureCompleted(entry.game)).pop();
-      if(lastCompleted)advanceCareerCalendarTo(lastCompleted.details.date);
+      if(progressDate){
+        advanceCareerCalendarTo(progressDate);
+        calendarBootRepaired=true;
+      }
+    }else if(lastCompleted?.details?.date&&careerCalendarDate.getTime()<lastCompleted.details.date.getTime()){
+      advanceCareerCalendarTo(lastCompleted.details.date);
+      calendarBootRepaired=true;
+    }else if(atSeasonStart&&(played>0||currentRound>1)&&progressDate){
+      advanceCareerCalendarTo(progressDate);
+      calendarBootRepaired=true;
     }
     ensureCalendarMatchConsistency();
   }
@@ -7227,6 +7240,7 @@ const rosterChangeAlertHolder = { fn: null };
   void ensureTransfersUi().then(ui=>ui.setPersist?.(persistSeason));
   let bootPersistPending=false;
   if(validSavedSeason&&(savedSeason.currentRound!==currentRound||knockoutShootoutSanitized))bootPersistPending=true;
+  if(calendarBootRepaired&&validSavedSeason)bootPersistPending=true;
   if(leagueScheduleMaterializedFresh&&validSavedSeason)bootPersistPending=true;
   careerPersistence.bindBeforeUnloadPersist();
   careerPersistence.bindPeriodicAutosave();

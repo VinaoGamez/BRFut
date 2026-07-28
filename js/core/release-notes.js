@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.60',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T17:15:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Calendário e save',
+        items: [
+          'Hard refresh não reinicia mais o calendário para o primeiro jogo — a data da carreira acompanha rodadas e jogos já disputados.',
+          'Merge com nuvem prioriza rodada e data do calendário antes do timestamp do servidor.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.55',
     date: '2026-07-28',
     publishedAt: '2026-07-28T17:05:00-03:00',

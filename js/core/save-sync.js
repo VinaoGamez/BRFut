@@ -1,4 +1,5 @@
 import { SAVE_KEYS } from './constants.js';
+import { parseSavedCalendarDate } from '../engine/career-calendar.js';
 
 /** Timestamp comparável para resolver conflito local vs nuvem. */
 export function saveFreshness(value, key = '') {
@@ -12,16 +13,21 @@ export function saveFreshness(value, key = '') {
   return 0;
 }
 
+function seasonCalendarTs(value) {
+  const date = parseSavedCalendarDate(value?.careerCalendarDate, null);
+  return date ? date.getTime() : 0;
+}
+
 function pickNewerSeasonSave(localValue, remoteValue) {
   const localRound = Number(localValue.currentRound) || 0;
   const remoteRound = Number(remoteValue.currentRound) || 0;
   if (localRound !== remoteRound) {
-    const localCal = Date.parse(localValue.careerCalendarDate || '') || 0;
-    const remoteCal = Date.parse(remoteValue.careerCalendarDate || '') || 0;
-    if (localCal > 0 && remoteCal > 0 && localCal !== remoteCal) {
-      return localCal > remoteCal ? localValue : remoteValue;
-    }
     return localRound > remoteRound ? localValue : remoteValue;
+  }
+  const localCal = seasonCalendarTs(localValue);
+  const remoteCal = seasonCalendarTs(remoteValue);
+  if (localCal !== remoteCal) {
+    return localCal > remoteCal ? localValue : remoteValue;
   }
   return null;
 }
