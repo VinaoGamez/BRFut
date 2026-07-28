@@ -230,3 +230,41 @@ body.dark-mode .modal-card.new-career-v2 {
     grid-template-columns: 1fr;
   }
 }
+
+/* Fundo da Home (estádio) enquanto o modal Nova Carreira está aberto */
+.new-career-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  pointer-events: none;
+  background:
+    url('../public/brand/home-stadium.png') center right / cover no-repeat,
+    #050c17;
+}
+
+.new-career-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, #050c17f2 0%, #050c17d6 26%, #050c1799 48%, #050c1733 72%, #050c171a 100%),
+    linear-gradient(180deg, #050c17c4 0%, transparent 30%, transparent 58%, #050c17e0 100%),
+    radial-gradient(circle at 72% 48%, #2abee914, transparent 42%);
+}
+
+.new-career-backdrop.hidden {
+  display: none;
+}
+
+body.new-career-open {
+  overflow: hidden;
+}
+
+body.new-career-open .game-shell {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.new-career-open #newGameModal {
+  z-index: 40;
+}

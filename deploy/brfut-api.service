@@ -1,0 +1,25 @@
+[Unit]
+Description=BR Football API (brfut-api)
+After=network.target
+
+[Service]
+Type=simple
+User=brfut
+Group=brfut
+WorkingDirectory=/opt/brfut
+EnvironmentFile=/etc/brfut/brfut.env
+Environment=BRFUT_ENV_FILE=/etc/brfut/brfut.env
+ExecStart=/usr/bin/python3 /opt/brfut/scripts/tester-server.py --bind 127.0.0.1 --port 5081 --api-only
+Restart=on-failure
+RestartSec=5
+
+# Hardening básico
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/brfut
+# brfut.env: root:brfut 640 — load_local_env() lê o arquivo como User=brfut
+
+[Install]
+WantedBy=multi-user.target

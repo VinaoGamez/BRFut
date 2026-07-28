@@ -5,6 +5,29 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.30',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T14:55:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Conta e nuvem',
+        items: [
+          'Entrada com ENTRAR na welcome — cadastro, login e Google na conta BR Football.',
+          'Saves na nuvem quando logado (api.brfut.com.br); contagem de cadastros e jogadores ON.',
+          'Opção Salvar login no dispositivo ou sessão só até fechar o navegador.',
+        ],
+      },
+      {
+        label: 'Site',
+        items: [
+          'Home e welcome com copy de carreira completa; COMEÇAR CARREIRA na página marketing.',
+          'Site em brfut.com.br conectado à API na VPS (HTTPS).',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.25',
     date: '2026-07-27',
     publishedAt: '2026-07-27T18:40:00-03:00',

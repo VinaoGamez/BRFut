@@ -47,6 +47,7 @@ import { createPlayerCells, outfield, fatigueCell } from '../feature/shared/play
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
 import { SAVE_KEYS, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
+import { isCloudStorageActive, probeBackend } from '../core/storage-api.js';
 import { collectWorldRosters, applyWorldRosters, stampWorldPlayers } from '../engine/world-rosters.js';
 import {
   computeRenewalWageAsk,
@@ -390,7 +391,12 @@ import { createCupTieAdvanceEngine } from '../engine/cup-tie-advance.js';
 import { createSerieDKnockoutAdvance } from '../engine/serie-d-knockout-advance.js';
 
 /** Motor legado — migração incremental para módulos (Alpha 02). */
-export async function bootEngine({ bus } = {}) {
+export async function bootEngine({
+  bus,
+  openAccountLogin,
+  registerWelcomeAuthSync,
+  registerCareerCreator,
+} = {}) {
   try {
   const savedNewGame = loadCareerSave();
   if (savedNewGame && !Array.isArray(savedNewGame.retiredPool)) savedNewGame.retiredPool = [];
@@ -679,11 +685,17 @@ const rosterChangeAlertHolder = { fn: null };
     defaultCareerSeason: DEFAULT_CAREER_SEASON,
     initialEnvironmentRanges,
     matchLiveAudio,
+    openAccountLogin,
     onPaceChanged: () => {
       const penaltyClosed=$('#penaltyDuelModal')?$('#penaltyDuelModal').classList.contains('hidden'):$('#penaltyChoice').classList.contains('hidden');
       if(matchStarted&&!matchFinished&&$('#pausePanel').classList.contains('hidden')&&$('#liveOpponentModal').classList.contains('hidden')&&penaltyClosed&&!shootoutState)startMatchClock();
     },
     onPreviewSeasonGoal:()=>openSeasonGoalPreview(),
+  });
+  registerWelcomeAuthSync?.(optionsUi.syncWelcomeAuth);
+  registerCareerCreator?.(optionsUi.openCareerCreator);
+  void probeBackend().then(ok => {
+    optionsUi.syncWelcomeAuth?.({ loggedIn: isCloudStorageActive(), hasBackend: ok });
   });
   
   const clubInitials=userClub.split(/\s+/).map(part=>part[0]).join('').slice(0,2).toUpperCase();

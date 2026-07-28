@@ -32,11 +32,11 @@
 
     <main class="home-main">
       <section class="home-hero">
-        <p class="home-kicker">SIMULADOR DE CARREIRA NO BRASIL</p>
-        <h1>Comande o clube do gramado ao caixa.</h1>
-        <p class="home-lead">Brasileirão A–D e Copa do Brasil, partidas ao vivo, Escritório, Estádio e rotina de treinos — gestão completa em um só hub.</p>
+        <p class="home-kicker">SUA CARREIRA COMEÇA AQUI</p>
+        <h1>DO FUTEBOL REGIONAL À CONQUISTA DO BRASIL E DO MUNDO!</h1>
+        <p class="home-lead">Assuma um clube, monte seu elenco e encare uma carreira completa no futebol brasileiro. Defina táticas, dispute partidas ao vivo, desenvolva seu estádio e tome decisões que podem transformar um desconhecido em campeão.</p>
         <div class="home-actions">
-          <button id="loginBtn" type="button" class="home-btn primary">LOGIN</button>
+          <button id="loginBtn" type="button" class="home-btn primary">COMEÇAR CARREIRA</button>
           <a id="newGameBtn" class="home-btn secondary hidden" href="index.html?novo=1">NOVO JOGO</a>
           <a id="continueBtn" class="home-btn secondary hidden" href="index.html">CONTINUAR CARREIRA</a>
         </div>
@@ -60,73 +60,6 @@
       <span id="homePlayerStats" class="home-player-stats hidden" aria-live="polite"></span>
       <span id="homeStorageHint">Carreira salva neste navegador</span>
     </footer>
-  </div>
-
-  <div id="accountModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
-    <div class="modal-card home-account-modal">
-      <button id="accountModalClose" class="close" type="button" aria-label="Fechar">×</button>
-      <label>CONTA</label>
-      <h2 id="accountModalTitle">Entrar</h2>
-      <div id="accountForm" class="home-account-form">
-        <div class="home-account-tabs">
-          <button type="button" data-account-tab="login" class="active">Entrar</button>
-          <button type="button" data-account-tab="register">Criar conta</button>
-        </div>
-        <label class="home-account-field">
-          <span>Usuário</span>
-          <input id="accountUsername" type="text" autocomplete="username" maxlength="24">
-        </label>
-        <label class="home-account-field">
-          <span>Senha</span>
-          <input id="accountPassword" type="password" autocomplete="current-password">
-        </label>
-        <div id="accountRegisterFields" class="home-account-register hidden">
-          <label class="home-account-field">
-            <span>Nome exibido</span>
-            <input id="accountDisplayName" type="text" maxlength="40" placeholder="Opcional">
-          </label>
-        </div>
-        <p id="accountError" class="home-account-error hidden"></p>
-        <button id="accountSubmit" type="button" class="home-account-btn primary">Continuar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="accountProfileModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="accountProfileTitle">
-    <div class="modal-card home-profile-modal">
-      <button id="accountProfileClose" class="close" type="button" aria-label="Fechar">×</button>
-      <label>PERFIL</label>
-      <h2 id="accountProfileTitle">Sua conta</h2>
-      <div class="home-profile-photo">
-        <button id="accountPhotoBtn" type="button" class="home-profile-photo-btn" aria-label="Escolher foto">
-          <img id="accountPhotoPreview" class="hidden" alt="">
-          <span id="accountPhotoPlaceholder">FOTO</span>
-        </button>
-        <input id="accountPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-        <div id="accountPhotoAdjust" class="home-profile-adjust hidden">
-          <label for="accountPhotoZoom" class="home-profile-adjust-label">
-            <span>Enquadramento</span>
-            <output id="accountPhotoZoomValue" for="accountPhotoZoom">100%</output>
-          </label>
-          <input id="accountPhotoZoom" type="range" min="100" max="250" step="1" value="100" aria-label="Zoom da foto">
-          <small class="home-profile-adjust-hint">Arraste para reposicionar · controle para zoom · duplo clique para trocar.</small>
-        </div>
-        <small id="accountProfileUsername" class="home-profile-username">@—</small>
-      </div>
-      <label class="home-account-field">
-        <span>Nome exibido</span>
-        <input id="accountProfileDisplayName" type="text" maxlength="40" autocomplete="nickname">
-      </label>
-      <section class="home-profile-storage" aria-label="Armazenamento local">
-        <small>SAVES LOCAIS</small>
-        <p>Suas carreiras ficam sincronizadas neste computador.</p>
-        <p id="accountProfileDataRoot" class="home-profile-path">—</p>
-      </section>
-      <p id="accountProfileError" class="home-account-error hidden"></p>
-      <div class="home-profile-actions">
-        <button id="accountProfileSave" type="button" class="home-account-btn primary">Salvar</button>
-      </div>
-    </div>
   </div>
 
   <script type="module" src="js/home.js"></script>

@@ -2,10 +2,11 @@
  * Cliente da API local BR Football (porta 5081).
  * Espelha saves do localStorage em Documentos/BR Fut quando o usuário está logado.
  */
-import { SAVE_KEYS } from './constants.js';
+import { SAVE_KEYS, BRFUT_API_ORIGIN } from './constants.js';
 import { pickNewerSave, saveFreshness } from './save-sync.js';
 
 const AUTH_TOKEN_KEY = 'brfut-auth-token';
+const AUTH_REMEMBER_KEY = 'brfut-auth-remember';
 const SYNCABLE_KEYS = Object.values(SAVE_KEYS);
 const SYNC_DEBOUNCE_MS = 400;
 const PRESENCE_INTERVAL_MS = 120_000;
@@ -17,7 +18,7 @@ const syncQueue = new Map();
 let syncTimer = 0;
 let presenceTimer = 0;
 
-const apiUrl = path => new URL(path, window.location.origin).toString();
+const apiUrl = path => new URL(path, BRFUT_API_ORIGIN || window.location.origin).toString();
 
 async function parseJsonResponse(response) {
   const text = await response.text();
@@ -30,16 +31,39 @@ async function parseJsonResponse(response) {
 
 export function getAuthToken() {
   try {
+    const remembered = localStorage.getItem(AUTH_REMEMBER_KEY) === '1';
+    if (remembered) {
+      return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+    }
     return sessionStorage.getItem(AUTH_TOKEN_KEY) || '';
   } catch {
     return '';
   }
 }
 
-function setAuthToken(token) {
+export function isAuthRememberEnabled() {
   try {
-    if (token) sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-    else sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    return localStorage.getItem(AUTH_REMEMBER_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function setAuthToken(token, { remember = false } = {}) {
+  try {
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    if (token) {
+      if (remember) {
+        localStorage.setItem(AUTH_TOKEN_KEY, token);
+        localStorage.setItem(AUTH_REMEMBER_KEY, '1');
+      } else {
+        sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+        localStorage.removeItem(AUTH_REMEMBER_KEY);
+      }
+      return;
+    }
+    localStorage.removeItem(AUTH_REMEMBER_KEY);
   } catch {
     /* ignore */
   }
@@ -228,23 +252,34 @@ export function queueCloudDelete(key) {
   });
 }
 
-export async function loginAccount(username, password) {
+export async function loginWithGoogleIdToken(idToken, { remember = false } = {}) {
+  const body = await authedFetch('/api/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+  });
+  setAuthToken(body.token, { remember });
+  currentUser = body.user;
+  cloudActive = true;
+  return initStorageBackend({ skipProbe: true, preferMigrate: true });
+}
+
+export async function loginAccount(username, password, { remember = false } = {}) {
   const body = await authedFetch('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ username, password }),
   });
-  setAuthToken(body.token);
+  setAuthToken(body.token, { remember });
   currentUser = body.user;
   cloudActive = true;
   return initStorageBackend({ skipProbe: true });
 }
 
-export async function registerAccount(username, password, displayName) {
+export async function registerAccount(username, password, displayName, { remember = false } = {}) {
   const body = await authedFetch('/api/auth/register', {
     method: 'POST',
     body: JSON.stringify({ username, password, displayName }),
   });
-  setAuthToken(body.token);
+  setAuthToken(body.token, { remember });
   currentUser = body.user;
   cloudActive = true;
   return initStorageBackend({ skipProbe: true, preferMigrate: true });
@@ -334,6 +369,27 @@ export async function fetchBackendHealth() {
     return await authedFetch('/api/health');
   } catch {
     return null;
+  }
+}
+
+/** Config do login Google (health ou endpoint dedicado). */
+export async function fetchGoogleAuthConfig() {
+  const health = await fetchBackendHealth();
+  if (health && ('googleAuthEnabled' in health || 'googleClientId' in health)) {
+    const clientId = health.googleClientId || '';
+    return {
+      enabled: !!health.googleAuthEnabled && !!clientId,
+      clientId,
+    };
+  }
+  try {
+    const response = await fetch(apiUrl('/api/auth/google/config'), { cache: 'no-store' });
+    if (!response.ok) return { enabled: false, clientId: '' };
+    const body = await parseJsonResponse(response);
+    const clientId = body?.clientId || '';
+    return { enabled: !!body?.enabled && !!clientId, clientId };
+  } catch {
+    return { enabled: false, clientId: '' };
   }
 }
 

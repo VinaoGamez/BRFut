@@ -1,9 +1,10 @@
 import './security/tester-hardening.js';
-import { BUILD_VERSION, SAVE_KEYS } from './core/constants.js';
+import { BUILD_VERSION, SAVE_KEYS, BRFUT_API_ORIGIN } from './core/constants.js';
 import { SPONSOR_EXTERNAL_LINKS } from './core/sponsor-links.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
 import { createTesterHubFeature } from './feature/tester-hub/index.js';
 import { fetchPlayerStats, probeBackend } from './core/storage-api.js';
+import { injectAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 
 const SPONSOR_LOGO_URLS = Object.fromEntries(
@@ -42,6 +43,7 @@ const SPONSOR_ORDER = [
 ];
 
 (() => {
+  injectAccountModals();
   showUpdateAlertIfNeeded(BUILD_VERSION);
   const $ = selector => document.querySelector(selector);
 
@@ -125,14 +127,15 @@ const SPONSOR_ORDER = [
   };
 
   const syncHeroActions = ({ loggedIn, hasBackend }) => {
-    if (hasBackend) {
+    const wantsLogin = hasBackend || !!BRFUT_API_ORIGIN;
+    if (wantsLogin) {
       loginBtn?.classList.toggle('hidden', loggedIn);
       newGameBtn?.classList.toggle('hidden', !loggedIn);
     } else {
       loginBtn?.classList.add('hidden');
       newGameBtn?.classList.remove('hidden');
     }
-    syncStorageHint({ loggedIn, hasBackend });
+    syncStorageHint({ loggedIn, hasBackend: wantsLogin && hasBackend });
   };
 
   const account = mountAccountPanel({

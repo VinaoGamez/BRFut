@@ -14,6 +14,7 @@ export default defineConfig({
   define: {
     __MATCHDAY_ENABLE_TRANSFERS__: JSON.stringify(enableTransfers),
     __MATCHDAY_ENABLE_STATE_LEAGUE__: JSON.stringify(enableStateLeague),
+    __BRFUT_API_ORIGIN__: JSON.stringify(process.env.BRFUT_API_ORIGIN || ''),
   },
   plugins: [
     {

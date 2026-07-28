@@ -168,11 +168,13 @@
         bootError: doc.documentElement.dataset.bootError || null,
         modalOpen: $('#newGameModal') && !$('#newGameModal').classList.contains('hidden'),
         confirmBtn: !!$('#confirmNewGame'),
-        shellUnlocked: !doc.body.classList.contains('career-locked'),
+        newCareerBackdrop: $('#newCareerBackdrop') && !$('#newCareerBackdrop').classList.contains('hidden'),
+        shellHidden: doc.body.classList.contains('new-career-open'),
       }));
       check('?novo=1 — sem bootError', !novoFlow.bootError, novoFlow.bootError || 'ok');
       check('?novo=1 — modal aberto', novoFlow.modalOpen, '');
-      check('?novo=1 — shell desbloqueado', novoFlow.shellUnlocked, '');
+      check('?novo=1 — fundo estádio (sem hub)', novoFlow.newCareerBackdrop, '');
+      check('?novo=1 — shell oculto', novoFlow.shellHidden, '');
 
       // 7) Simular Criar Carreira
       frameCheck(({ $ }) => {

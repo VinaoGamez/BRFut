@@ -29,6 +29,7 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
+          BRFUT_API_ORIGIN: 'https://api.brfut.com.br'
 
       - uses: actions/upload-pages-artifact@v3
         with:

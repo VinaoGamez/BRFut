@@ -4,6 +4,7 @@ dist/
 .DS_Store
 .env
 .env.*
+scripts/brfut-local.env
 .cursor/
 tools/cloudflared.exe
 agent-transcripts/

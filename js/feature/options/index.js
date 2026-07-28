@@ -1,4 +1,4 @@
-import { MODULE_VERSIONS, FEATURES } from '../../core/constants.js';
+import { MODULE_VERSIONS, FEATURES, SITE_MAINTENANCE } from '../../core/constants.js';
 import '../../../css/new-career-modal.css';
 import { initReleaseNotesViewer, renderOptionsUpdateSummary } from '../../ui/release-notes-viewer.js';
 import { createTesterHubFeature } from '../tester-hub/index.js';
@@ -38,6 +38,7 @@ const GAME_PACE_CONFIG = {
  * @param {Function} [deps.onPaceChanged]
  * @param {Function} [deps.onPreviewSeasonGoal] Preview do medidor da meta (não altera save)
  * @param {object} [deps.matchLiveAudio] Sons da partida ao vivo
+ * @param {() => void | Promise<void>} [deps.openAccountLogin]
  */
 export function createOptionsFeature(deps) {
   const {
@@ -60,10 +61,50 @@ export function createOptionsFeature(deps) {
     onPaceChanged,
     onPreviewSeasonGoal,
     matchLiveAudio,
+    openAccountLogin,
   } = deps;
 
   let gamePace = localStorage.getItem(SAVE_KEYS.pace) || 'standard';
   if (!GAME_PACE_CONFIG[gamePace]) gamePace = 'standard';
+
+  const careerExists = () => !!localStorage.getItem(SAVE_KEYS.career);
+
+  const ensureNewCareerBackdrop = () => {
+    let backdrop = $('#newCareerBackdrop');
+    if (backdrop) return backdrop;
+    document.body.insertAdjacentHTML(
+      'afterbegin',
+      '<div id="newCareerBackdrop" class="new-career-backdrop hidden" aria-hidden="true"></div>',
+    );
+    return $('#newCareerBackdrop');
+  };
+
+  const showNewCareerBackdrop = () => {
+    ensureNewCareerBackdrop()?.classList.remove('hidden');
+    document.body.classList.add('new-career-open');
+    document.body.classList.remove('career-locked');
+    $('#careerWelcome')?.remove();
+    const shell = $('.game-shell');
+    if (shell) {
+      shell.inert = true;
+      shell.setAttribute('aria-hidden', 'true');
+    }
+  };
+
+  const hideNewCareerBackdrop = () => {
+    $('#newCareerBackdrop')?.classList.add('hidden');
+    document.body.classList.remove('new-career-open');
+    const shell = $('.game-shell');
+    if (!shell) return;
+    if (careerExists()) {
+      shell.inert = false;
+      shell.removeAttribute('aria-hidden');
+    } else {
+      shell.inert = true;
+      shell.setAttribute('aria-hidden', 'true');
+      document.body.classList.add('career-locked');
+    }
+  };
 
 
   const buildNewGameModalHtml = () => {
@@ -97,12 +138,52 @@ export function createOptionsFeature(deps) {
     }
     document.body.insertAdjacentHTML(
       'beforeend',
-      '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.png" alt="BR Football" width="480" height="72"></div><button id="welcomeNewGame" type="button">NOVO JOGO</button></div></section>',
+      '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.png" alt="BR Football" width="480" height="72"></div><div class="career-welcome-actions"><button id="welcomeLogin" type="button">ENTRAR</button><button id="welcomeNewGame" type="button" class="primary hidden">NOVO JOGO</button></div><p id="welcomeHint" class="career-welcome-hint hidden"></p></div></section>',
     );
+  };
+
+  const syncWelcomeAuth = ({ loggedIn, hasBackend }) => {
+    const loginBtn = $('#welcomeLogin');
+    const newBtn = $('#welcomeNewGame');
+    const hint = $('#welcomeHint');
+    if (!loginBtn || !newBtn) return;
+
+    if (SITE_MAINTENANCE.enabled) {
+      loginBtn.classList.add('hidden');
+      newBtn.classList.add('hidden');
+      hint?.classList.remove('hidden');
+      hint?.classList.add('is-maintenance');
+      if (hint) hint.textContent = SITE_MAINTENANCE.message;
+      return;
+    }
+
+    hint?.classList.remove('is-maintenance');
+
+    if (loggedIn && hasBackend) {
+      loginBtn.classList.add('hidden');
+      newBtn.classList.remove('hidden');
+      hint?.classList.remove('hidden');
+      if (hint) hint.textContent = 'Conta conectada — crie sua carreira.';
+      return;
+    }
+
+    if (loggedIn && !hasBackend) {
+      loginBtn.classList.add('hidden');
+      newBtn.classList.remove('hidden');
+      hint?.classList.add('hidden');
+      return;
+    }
+
+    loginBtn.classList.remove('hidden');
+    newBtn.classList.add('hidden');
+    hint?.classList.add('hidden');
   };
 
   injectModals();
   injectCareerWelcome();
+  if (SITE_MAINTENANCE.enabled) {
+    syncWelcomeAuth({ loggedIn: false, hasBackend: false });
+  }
 
   const careerCrestMount = $('#careerCrestEditorMount');
   const careerCrestEditor = careerCrestMount
@@ -153,6 +234,7 @@ export function createOptionsFeature(deps) {
   };
 
   const openCareerCreator = () => {
+    showNewCareerBackdrop();
     $('#careerClubName').value = '';
     $('#careerManagerName').value = '';
     $('#careerStadiumName').value = '';
@@ -177,22 +259,21 @@ export function createOptionsFeature(deps) {
 
   const closeCareerCreator = () => {
     $('#newGameModal').classList.add('hidden');
-    if (!localStorage.getItem(SAVE_KEYS.career) && new URLSearchParams(location.search).has('novo')) {
+    if (!careerExists() && new URLSearchParams(location.search).has('novo')) {
       location.replace('home.html');
+      return;
     }
+    hideNewCareerBackdrop();
   };
 
   onClick('#openNewGame', openCareerCreator);
+  onClick('#welcomeLogin', () => {
+    void openAccountLogin?.();
+  });
   onClick('#welcomeNewGame', openCareerCreator);
 
   if (new URLSearchParams(location.search).has('novo')) {
-    $('#careerWelcome')?.remove();
-    document.body.classList.remove('career-locked');
-    const shell = $('.game-shell');
-    if (shell) {
-      shell.inert = false;
-      shell.removeAttribute('aria-hidden');
-    }
+    showNewCareerBackdrop();
     setTimeout(openCareerCreator, 0);
   }
 
@@ -312,6 +393,7 @@ export function createOptionsFeature(deps) {
     }
     $('#newGameModal').classList.add('hidden');
     $('#optionsModal').classList.add('hidden');
+    hideNewCareerBackdrop();
     redirectGame();
   });
 
@@ -331,5 +413,6 @@ export function createOptionsFeature(deps) {
     getPaceConfig: () => GAME_PACE_CONFIG,
     renderOptions,
     openCareerCreator,
+    syncWelcomeAuth,
   };
 }

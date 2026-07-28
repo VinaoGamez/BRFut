@@ -6,6 +6,7 @@ from typing import Any
 from urllib.parse import unquote
 
 from .auth import ApiError, get_user_avatar, get_player_stats, login_user, logout_user, register_user, resolve_session, update_user_profile
+from .google_auth import google_auth_enabled, google_client_id, login_with_google_id_token
 from .paths import default_data_root, ensure_layout
 from .saves import (
     ALLOWED_SAVE_KEYS,
@@ -68,9 +69,20 @@ def handle_api(
                     'version': 1,
                     'dataRoot': str(root),
                     'allowedKeys': sorted(ALLOWED_SAVE_KEYS),
+                    'googleAuthEnabled': google_auth_enabled(),
+                    'googleClientId': google_client_id() or '',
                     **get_player_stats(root),
                 },
             )
+
+        if method == 'GET' and rel == 'auth/google/config':
+            cid = google_client_id()
+            return _json_response(200, {'enabled': bool(cid), 'clientId': cid or ''})
+
+        if method == 'POST' and rel == 'auth/google':
+            data = _parse_json(body) or {}
+            token, profile = login_with_google_id_token(root, data.get('idToken', ''))
+            return _json_response(200, {'token': token, 'user': profile})
 
         if method == 'GET' and rel == 'stats':
             return _json_response(200, get_player_stats(root))
