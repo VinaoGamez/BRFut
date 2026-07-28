@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.05',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T20:40:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Central',
+        items: [
+          'Últimos resultados na dashboard não duplicam mais o jogo recém-disputado.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.00',
     date: '2026-07-28',
     publishedAt: '2026-07-28T19:40:00-03:00',

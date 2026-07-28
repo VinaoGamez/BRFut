@@ -441,6 +441,8 @@ export function compactMatchResult(game, { keepData = false } = {}) {
   }
   // Metadados de mata-mata — necessários para reabrir confrontos.
   if (game.competition) compact.competition = game.competition;
+  if (game.round != null) compact.round = game.round;
+  if (game.phase) compact.phase = game.phase;
   if (game.leg) compact.leg = game.leg;
   if (game.tieId) compact.tieId = game.tieId;
   if (game.penalties) compact.penalties = game.penalties;

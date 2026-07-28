@@ -1,6 +1,7 @@
 import { FEATURES } from '../core/constants.js';
 import { parseCalendarDate } from './season-scheduler.js';
 import { STATE_LEAGUE_COMPETITION, stateLeaguePhaseLabel } from './state-league-format.js';
+import { userMatchResultIdentityKey } from './user-match-results.js';
 
 /**
  * Histórico estadual concluído para dashboard (Últimos Jogos / faixa V-E-D).
@@ -21,8 +22,8 @@ export function collectStateLeagueDashboardGames({
     if (!game?.home || !game?.away) return;
     const scored = game.completed || game.homeGoals != null || game.awayGoals != null;
     if (!scored) return;
-    const key = `${game.home}|${game.away}|${game.round || ''}|${game.phase || ''}|state`;
-    if (seen.has(key)) return;
+    const key = userMatchResultIdentityKey(game, meta);
+    if (!key || seen.has(key)) return;
     seen.add(key);
     const enriched = { ...game, competition: game.competition || STATE_LEAGUE_COMPETITION, ...meta };
     const details = fixtureDetails(enriched);
@@ -33,19 +34,42 @@ export function collectStateLeagueDashboardGames({
   };
 
   const uf = stateLeagueEngine.userUf;
+  const liveFixtures = stateLeagueEngine.getUserFixtures(userClub);
+  const liveFixtureFor = (game, roundNo) =>
+    liveFixtures.find(
+      item =>
+        item.home === game.home &&
+        item.away === game.away &&
+        Number(item.round ?? roundNo) === Number(game.round ?? roundNo),
+    );
+
   (stateLeagueEngine.history[uf] || []).forEach(round => {
-    (round.games || []).forEach(game => register(game, {
-      dashboardCompetition: 'state',
-      label: `Estadual · Rodada ${round.round}`,
-      round: game.round ?? round.round,
-    }));
+    (round.games || []).forEach(game => {
+      const live = liveFixtureFor(game, round.round);
+      register(
+        {
+          ...game,
+          round: game.round ?? live?.round ?? round.round,
+          phase: game.phase ?? live?.phase,
+          leg: game.leg ?? live?.leg,
+        },
+        {
+          dashboardCompetition: 'state',
+          label: `Estadual · Rodada ${round.round}`,
+          round: game.round ?? live?.round ?? round.round,
+          phase: game.phase ?? live?.phase,
+        },
+      );
+    });
   });
 
-  stateLeagueEngine.getUserFixtures(userClub).forEach(game => {
+  liveFixtures.forEach(game => {
     if (!stateLeagueEngine.isGameComplete(game, userClub)) return;
     register(game, {
       dashboardCompetition: 'state',
       label: `Estadual · ${stateLeaguePhaseLabel(game)}`,
+      round: game.round,
+      phase: game.phase,
     });
   });
 

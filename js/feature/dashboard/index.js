@@ -7,6 +7,7 @@ import { resolveNationalTeam } from '../../engine/national-teams.js';
 import { formatMatchRating } from '../../engine/player-match-stats.js';
 import { isStateLeagueGame } from '../../engine/state-league-format.js';
 import { parseCalendarDate } from '../../engine/season-scheduler.js';
+import { userMatchResultIdentityKey } from '../../engine/user-match-results.js';
 import {
   clubStandingContext,
   formatClubPositionLabel,
@@ -845,15 +846,22 @@ export function createDashboardFeature(deps) {
       if (!game || (!isNt && !isClub)) return;
       const scored = game.completed || game.homeGoals != null || game.awayGoals != null;
       if (!scored) return;
-      const key = `${game.home}|${game.away}|${game.round || ''}|${game.leg || ''}|${game.phase || ''}|${meta.competition}`;
-      if (seen.has(key)) return;
+      const key = userMatchResultIdentityKey(game, meta);
+      if (!key || seen.has(key)) return;
       seen.add(key);
       const side = isNt ? ntName : userClub;
       const result = userMatchResultLetter(game, side);
       entries.push({ ...game, result, points: result === 'V' ? 3 : result === 'E' ? 1 : 0, ...meta });
     };
     seasonRoundHistory.forEach(round =>
-      (round.games || []).forEach(game => register(game, { competition: 'league', label: `Rodada ${round.round}`, sortDate: fixtureSortDate(game) }))
+      (round.games || []).forEach(game =>
+        register(game, {
+          competition: 'league',
+          label: `Rodada ${round.round}`,
+          sortDate: fixtureSortDate(game),
+          round: round.round,
+        }),
+      ),
     );
     (typeof getStateLeagueCompletedGames === 'function' ? getStateLeagueCompletedGames() : [])
       .filter(isUserFixture)
