@@ -9,10 +9,22 @@ def allowed_origins() -> list[str]:
     return [origin.strip() for origin in raw.split(',') if origin.strip()]
 
 
+def _origin_allowed(origin: str, allowed: list[str]) -> bool:
+    if origin in allowed:
+        return True
+    # Front ainda em HTTP enquanto HTTPS propaga no domínio customizado.
+    if origin.startswith('http://'):
+        https_alt = 'https://' + origin[7:]
+        if https_alt in allowed:
+            return True
+    return False
+
+
 def cors_headers(origin: str | None) -> dict[str, str]:
     if not origin:
         return {}
-    if origin not in allowed_origins():
+    allowed = allowed_origins()
+    if not _origin_allowed(origin, allowed):
         return {}
     return {
         'Access-Control-Allow-Origin': origin,

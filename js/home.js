@@ -1,3 +1,4 @@
+import './security/https-upgrade.js';
 import './security/tester-hardening.js';
 import { BUILD_VERSION, SAVE_KEYS, BRFUT_API_ORIGIN } from './core/constants.js';
 import { SPONSOR_EXTERNAL_LINKS } from './core/sponsor-links.js';

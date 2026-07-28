@@ -5,6 +5,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.35',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T15:30:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Site',
+        items: [
+          'brfut.com.br passa a redirecionar automaticamente para HTTPS — login e API voltam a funcionar.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.30',
     date: '2026-07-28',
     publishedAt: '2026-07-28T14:55:00-03:00',
