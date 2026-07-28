@@ -56,8 +56,7 @@ export function buildPlayerStatusFingerprint(player, { injuryInAcutePhase, injur
       .map(([key, count]) => `${key}:${count}`)
       .sort()
       .join('|') || 'none';
-  const contract = player?.contract?.expiresDate || player?.contractUntil || 'none';
-  return `${injPart}::${susp}::${yellows}::${contract}`;
+  return `${injPart}::${susp}::${yellows}`;
 }
 
 export function getActiveStatusAlert(state, playerId, careerDate, { weeks = ROSTER_CHANGE_ALERT_WEEKS } = {}) {
@@ -76,8 +75,9 @@ export function getActiveStatusAlert(state, playerId, careerDate, { weeks = ROST
 export function getActiveRosterChangeAlert(state, playerId, careerDate, options = {}) {
   const ovr = getActiveOvrMark(state, playerId, careerDate, options);
   const status = getActiveStatusAlert(state, playerId, careerDate, options);
-  if (!ovr && !status) return null;
-  return { ovr, status };
+  const ovrAlert = ovr && (!options.forNav || ovr.tone !== 'flat') ? ovr : null;
+  if (!ovrAlert && !status) return null;
+  return { ovr: ovrAlert, status };
 }
 
 export function scanRosterStatusChanges(
@@ -104,11 +104,11 @@ export function scanRosterStatusChanges(
   return state;
 }
 
-export function countActiveRosterChangeAlerts(roster, state, careerDate, getPlayerId) {
+export function countActiveRosterChangeAlerts(roster, state, careerDate, getPlayerId, options = {}) {
   let count = 0;
   (roster || []).forEach(player => {
     const id = typeof getPlayerId === 'function' ? getPlayerId(player) : null;
-    if (getActiveRosterChangeAlert(state, id, careerDate)) count += 1;
+    if (getActiveRosterChangeAlert(state, id, careerDate, options)) count += 1;
   });
   return count;
 }

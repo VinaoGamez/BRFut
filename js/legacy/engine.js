@@ -5180,7 +5180,7 @@ const rosterChangeAlertHolder = { fn: null };
   };
   updateSquadChangeNavBadge=()=>{
     if(!playerDevelopment)return;
-    const count=countActiveRosterChangeAlerts(squad,playerDevelopment,careerCalendarDate,rosterChangePlayerId);
+    const count=countActiveRosterChangeAlerts(squad,playerDevelopment,careerCalendarDate,rosterChangePlayerId,{forNav:true});
     const badge=$('#squadChangeNavBadge');
     badge?.classList.toggle('hidden',count<=0);
     const nav=document.querySelector('.nav[data-view="squad"]');

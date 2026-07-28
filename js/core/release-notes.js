@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.00',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T19:40:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Elenco',
+        items: [
+          'Alerta verde no menu Elenco só aparece quando algum jogador evolui OVR ou muda de status (lesão, cartão, suspensão).',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.95',
     date: '2026-07-28',
     publishedAt: '2026-07-28T19:00:00-03:00',
