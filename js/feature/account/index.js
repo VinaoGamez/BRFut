@@ -15,6 +15,7 @@ import {
 } from '../../core/storage-api.js';
 import { SAVE_KEYS, BRFUT_API_ORIGIN } from '../../core/constants.js';
 import { clearSessionCareerData } from '../../core/save.js';
+import { ensureAccountModals } from './inject-modals.js';
 
 const AVATAR_PREVIEW_SIZE = 96;
 const AVATAR_EXPORT_SIZE = 256;
@@ -81,7 +82,7 @@ function renderFramedAvatar(sourceUrl, zoom, panX, panY, cachedImage = null) {
  * @param {() => void | Promise<void>} [opts.onLoginSuccess]
  */
 export function mountAccountPanel({
-  modal,
+  modal: modalEl,
   hasCareer = () => false,
   onCareerHint,
   onContinueVisible,
@@ -89,7 +90,15 @@ export function mountAccountPanel({
   onPlayLocal,
   onLoginSuccess,
 } = {}) {
-  if (!modal) return { refresh: async () => {}, openLogin: () => {} };
+  let modal = modalEl;
+  const resolveModal = () => {
+    if (modal && document.body.contains(modal)) return modal;
+    ensureAccountModals();
+    modal = document.getElementById('accountModal');
+    return modal;
+  };
+
+  if (!resolveModal()) return { refresh: async () => {}, openLogin: () => {} };
 
   const $ = sel => modal.querySelector(sel);
   const loggedEl = document.getElementById('accountLogged');
@@ -153,6 +162,7 @@ export function mountAccountPanel({
 
   const closeModal = () => {
     modal.classList.add('hidden');
+    document.body.classList.remove('account-login-open');
     setError('');
   };
 
@@ -209,6 +219,8 @@ export function mountAccountPanel({
   };
 
   const openModal = () => {
+    if (!resolveModal()) return;
+    document.body.classList.add('account-login-open');
     modal.classList.remove('hidden');
     window.setTimeout(() => usernameEl?.focus(), 80);
   };
@@ -437,19 +449,23 @@ export function mountAccountPanel({
   };
 
   const openLogin = async () => {
+    if (!resolveModal()) return;
     setError('');
-    const health = await fetchBackendHealth();
-    if (!health) {
-      setBackendUnavailableUi();
-      openModal();
-      return;
-    }
-    setBackendAvailableUi();
-    renderLoggedOut(true);
-    syncRememberCheckbox();
-    syncRememberUi();
-    await ensureGoogleButton();
     openModal();
+    try {
+      const health = await fetchBackendHealth();
+      if (!health) {
+        setBackendUnavailableUi();
+        return;
+      }
+      setBackendAvailableUi();
+      renderLoggedOut(true);
+      syncRememberCheckbox();
+      syncRememberUi();
+      await ensureGoogleButton();
+    } catch (error) {
+      setError(error?.message || 'Não foi possível abrir o login.');
+    }
   };
 
   const refresh = async () => {

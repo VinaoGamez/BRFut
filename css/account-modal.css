@@ -23,6 +23,14 @@
   display: grid;
   place-items: center;
   padding: 16px;
+}
+
+body.account-login-open #accountModal {
+  z-index: 100010;
+}
+
+body.account-login-open .career-welcome {
+  pointer-events: none;
   background: #02080ccc;
 }
 

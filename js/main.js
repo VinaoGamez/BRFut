@@ -15,7 +15,7 @@ import {
   probeBackend,
 } from './core/storage-api.js';
 import { clearSessionCareerData } from './core/save.js';
-import { injectAccountModals } from './feature/account/inject-modals.js';
+import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 
 /** Ponto de entrada modular — Alpha 02 */
@@ -30,7 +30,7 @@ if (!FEATURES.transfers) {
 
 const bus = createEventBus();
 
-injectAccountModals();
+ensureAccountModals();
 
 let syncCareerWelcomeAuth = null;
 let openCareerCreatorRef = null;
@@ -60,7 +60,10 @@ const injectPreLoginWelcome = () => {
     'beforeend',
     '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.png" alt="BR Football" width="480" height="72"></div><div class="career-welcome-actions"><button id="welcomeLogin" type="button">ENTRAR</button></div><p id="welcomeHint" class="career-welcome-hint">Entre na sua conta para carregar o save na nuvem.</p></div></section>',
   );
-  document.getElementById('welcomeLogin')?.addEventListener('click', () => account.openLogin());
+  document.getElementById('welcomeLogin')?.addEventListener('click', event => {
+    event.preventDefault();
+    void account.openLogin();
+  });
 };
 
 const startBootOnce = () => {
@@ -102,6 +105,17 @@ const account = mountAccountPanel({
     startBootOnce();
   },
 });
+
+document.addEventListener(
+  'click',
+  event => {
+    const loginBtn = event.target.closest('#welcomeLogin');
+    if (!loginBtn) return;
+    event.preventDefault();
+    void account.openLogin();
+  },
+  true,
+);
 
 const beginAppSession = async () => {
   try {

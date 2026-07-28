@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.75',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T18:05:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Correção',
+        items: [
+          'Botão ENTRAR na tela inicial abre o modal de login imediatamente (sem esperar a API).',
+          'Modal de conta garantido no DOM e exibido acima da tela de boas-vindas.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.70',
     date: '2026-07-28',
     publishedAt: '2026-07-28T17:55:00-03:00',
