@@ -5,8 +5,10 @@ import { SPONSOR_EXTERNAL_LINKS } from './core/sponsor-links.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
 import { createTesterHubFeature } from './feature/tester-hub/index.js';
 import { fetchPlayerStats, probeBackend } from './core/storage-api.js';
-import { injectAccountModals } from './feature/account/inject-modals.js';
+import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
+import { endBrowserSession } from './core/storage-api.js';
+import { clearSessionCareerData } from './core/save.js';
 
 const SPONSOR_LOGO_URLS = Object.fromEntries(
   Object.entries(
@@ -44,7 +46,7 @@ const SPONSOR_ORDER = [
 ];
 
 (() => {
-  injectAccountModals();
+  ensureAccountModals();
   showUpdateAlertIfNeeded(BUILD_VERSION);
   const $ = selector => document.querySelector(selector);
 
@@ -246,4 +248,10 @@ const SPONSOR_ORDER = [
   const testerHub = createTesterHubFeature();
   document.getElementById('openTesterGuide')?.addEventListener('click', () => testerHub.openGuide());
   document.getElementById('openTesterFeedback')?.addEventListener('click', () => testerHub.openFeedback());
+
+  window.addEventListener('pagehide', event => {
+    if (event.persisted) return;
+    endBrowserSession();
+    clearSessionCareerData();
+  });
 })();

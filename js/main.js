@@ -44,26 +44,11 @@ const hasCareerSave = () => {
   }
 };
 
-const lockGameShell = () => {
-  document.body.classList.add('career-locked');
-  const shell = document.querySelector('.game-shell');
-  if (shell) {
-    shell.inert = true;
-    shell.setAttribute('aria-hidden', 'true');
-  }
-};
-
-const injectPreLoginWelcome = () => {
-  if (document.getElementById('careerWelcome')) return;
-  lockGameShell();
-  document.body.insertAdjacentHTML(
-    'beforeend',
-    '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.png" alt="BR Football" width="480" height="72"></div><div class="career-welcome-actions"><button id="welcomeLogin" type="button">ENTRAR</button></div><p id="welcomeHint" class="career-welcome-hint">Entre na sua conta para carregar o save na nuvem.</p></div></section>',
-  );
-  document.getElementById('welcomeLogin')?.addEventListener('click', event => {
-    event.preventDefault();
-    void account.openLogin();
-  });
+const redirectToHomeLanding = () => {
+  markBootReady();
+  const dest = new URL('home.html', location.href);
+  if (new URLSearchParams(location.search).has('novo')) dest.searchParams.set('novo', '1');
+  location.replace(`${dest.pathname}${dest.search}`);
 };
 
 const startBootOnce = () => {
@@ -101,21 +86,9 @@ const account = mountAccountPanel({
     }
     await initStorageBackend({ skipProbe: true });
     await account.refresh();
-    document.getElementById('careerWelcome')?.remove();
     startBootOnce();
   },
 });
-
-document.addEventListener(
-  'click',
-  event => {
-    const loginBtn = event.target.closest('#welcomeLogin');
-    if (!loginBtn) return;
-    event.preventDefault();
-    void account.openLogin();
-  },
-  true,
-);
 
 const beginAppSession = async () => {
   try {
@@ -123,21 +96,16 @@ const beginAppSession = async () => {
 
     if (!getAuthToken()) {
       clearSessionCareerData();
-      injectPreLoginWelcome();
-      await account.refresh();
+      redirectToHomeLanding();
       return;
     }
 
     await initStorageBackend();
     await account.refresh();
-    document.getElementById('careerWelcome')?.remove();
     startBootOnce();
   } catch (error) {
     console.error('[brfut] falha ao iniciar sessão', error);
-    injectPreLoginWelcome();
-  } finally {
-    // Sem login o motor não sobe — ocultar splash para exibir tela ENTRAR.
-    if (!bootStarted) markBootReady();
+    redirectToHomeLanding();
   }
 };
 

@@ -9,6 +9,22 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.80',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T18:15:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Entrada no jogo',
+        items: [
+          'Sem login, o jogo abre a página inicial (home) em vez de pedir conta dentro do simulador.',
+          'Login só ao clicar em COMEÇAR CARREIRA na home — como era antes.',
+          'Após entrar, use CONTINUAR CARREIRA ou NOVO JOGO para ir ao jogo.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.75',
     date: '2026-07-28',
     publishedAt: '2026-07-28T18:05:00-03:00',

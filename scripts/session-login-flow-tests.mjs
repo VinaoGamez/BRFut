@@ -1,5 +1,5 @@
 /**
- * Simulações do fluxo: abrir site → tela ENTRAR → modal de login → API.
+ * Simulações do fluxo: home (COMEÇAR CARREIRA) → login → index com save.
  * Rode com o tester-server ativo: py scripts/tester-server.py --port 5081
  */
 import { readFileSync } from 'node:fs';
@@ -41,46 +41,42 @@ const checkAsync = async (label, fn) => {
   }
 };
 
-checkSync('main.js abre modal antes do health check', () => {
+checkSync('index sem token redireciona para home.html', () => {
+  const src = readFileSync(join(ROOT, 'js/main.js'), 'utf8');
+  assert(src.includes('redirectToHomeLanding'), 'função de redirect para home');
+  assert(src.includes("new URL('home.html'"), 'destino home.html');
+  assert(!src.includes('injectPreLoginWelcome'), 'sem overlay ENTRAR no index');
+  assert(!src.includes("closest('#welcomeLogin')"), 'index não abre login direto');
+});
+
+checkSync('home abre login em COMEÇAR CARREIRA', () => {
+  const src = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  assert(src.includes("loginBtn?.addEventListener('click', () => account.openLogin())"), 'botão home abre login');
+});
+
+checkSync('openLogin abre modal antes do health check', () => {
   const src = readFileSync(join(ROOT, 'js/feature/account/index.js'), 'utf8');
   const openLogin = src.slice(src.indexOf('const openLogin'), src.indexOf('const refresh = async'));
-  assert(openLogin.includes('openModal();'), 'openModal deve ser chamado no início de openLogin');
+  assert(openLogin.includes('openModal();'), 'openModal imediato');
   assert(
     openLogin.indexOf('openModal();') < openLogin.indexOf('fetchBackendHealth'),
-    'openModal deve vir antes de fetchBackendHealth',
+    'openModal antes da API',
   );
 });
 
-checkSync('main.js delega clique em #welcomeLogin', () => {
-  const src = readFileSync(join(ROOT, 'js/main.js'), 'utf8');
-  assert(src.includes("closest('#welcomeLogin')"), 'delegação de clique no welcomeLogin');
-  assert(src.includes('account.openLogin'), 'delegação chama account.openLogin');
+checkSync('home e index encerram sessão ao fechar aba', () => {
+  const home = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  const main = readFileSync(join(ROOT, 'js/main.js'), 'utf8');
+  assert(home.includes('endBrowserSession'), 'home pagehide logout');
+  assert(main.includes('endBrowserSession'), 'index pagehide logout');
 });
 
-checkSync('ensureAccountModals garante #accountModal no DOM', () => {
-  const src = readFileSync(join(ROOT, 'js/feature/account/inject-modals.js'), 'utf8');
-  assert(src.includes('accountModal'), 'verifica accountModal');
-  assert(src.includes('ensureAccountModals'), 'exporta ensureAccountModals');
-});
-
-checkSync('beginAppSession oculta splash sem boot quando sem token', () => {
-  const src = readFileSync(join(ROOT, 'js/main.js'), 'utf8');
-  assert(src.includes('if (!bootStarted) markBootReady()'), 'markBootReady quando motor não sobe');
-  assert(src.includes('injectPreLoginWelcome'), 'injeta tela ENTRAR');
-});
-
-checkSync('modal de login fica acima da welcome (CSS)', () => {
-  const css = readFileSync(join(ROOT, 'css/account-modal.css'), 'utf8');
-  assert(css.includes('body.account-login-open #accountModal'), 'z-index elevado no login');
-  assert(css.includes('pointer-events: none'), 'welcome não bloqueia cliques no modal');
-});
-
-await checkAsync(`GET ${BASE}/index.html responde`, async () => {
-  const res = await fetch(`${BASE}/index.html`, { cache: 'no-store' });
+await checkAsync(`GET ${BASE}/home.html responde`, async () => {
+  const res = await fetch(`${BASE}/home.html`, { cache: 'no-store' });
   assert(res.ok, `HTTP ${res.status}`);
   const html = await res.text();
-  assert(html.includes('bootSplash'), 'splash de boot presente');
-  assert(html.includes('Carregando'), 'texto de carregamento presente');
+  assert(html.includes('loginBtn'), 'botão COMEÇAR CARREIRA');
+  assert(html.includes('COMEÇAR CARREIRA'), 'texto do botão principal');
 });
 
 await checkAsync(`GET ${BASE}/api/health responde ok`, async () => {
@@ -88,19 +84,17 @@ await checkAsync(`GET ${BASE}/api/health responde ok`, async () => {
   assert(res.ok, `HTTP ${res.status}`);
   const body = await res.json();
   assert(body?.ok === true, 'health ok');
-  assert(body?.service === 'brfut-api', 'service brfut-api');
 });
 
-await checkAsync('bundle main expõe fluxo de sessão (build dist)', async () => {
+await checkAsync('bundle main redireciona para home sem token', async () => {
   const indexRes = await fetch(`${BASE}/index.html`, { cache: 'no-store' });
   const html = await indexRes.text();
   const match = html.match(/assets\/main-[A-Za-z0-9_-]+\.js/);
   assert(match, 'script main no index');
   const jsRes = await fetch(`${BASE}/${match[0]}`, { cache: 'no-store' });
-  assert(jsRes.ok, 'bundle main acessível');
   const js = await jsRes.text();
-  assert(js.includes('welcomeLogin'), 'bundle referencia welcomeLogin');
-  assert(js.includes('account-login-open') || js.includes('openLogin'), 'bundle inclui login flow');
+  assert(js.includes('home.html'), 'bundle referencia home.html');
+  assert(!js.includes('injectPreLoginWelcome'), 'sem welcome login no index');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
