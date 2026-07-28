@@ -8,6 +8,14 @@ import {
   BRAZILIAN_UFS,
   stateCompetitionIdForUf,
 } from '../../engine/brazilian-clubs-by-uf.js';
+import {
+  getAutosaveMode,
+  setAutosaveMode,
+  listAutosaveOptions,
+  mergePreferencesIntoCareer,
+} from '../../core/save-preferences.js';
+import { endBrowserSession } from '../../core/storage-api.js';
+import { clearSessionCareerData } from '../../core/save.js';
 
 const GAME_PACE_CONFIG = {
   ultra: { name: 'ULTRA', detail: '8 s por tempo · 16 s de jogo contínuo', ms: 250 },
@@ -37,6 +45,8 @@ const GAME_PACE_CONFIG = {
  * @param {object} deps.initialEnvironmentRanges
  * @param {Function} [deps.onPaceChanged]
  * @param {Function} [deps.onPreviewSeasonGoal] Preview do medidor da meta (não altera save)
+ * @param {Function} [deps.onManualSave]
+ * @param {Function} [deps.onPreferencesPersist]
  * @param {object} [deps.matchLiveAudio] Sons da partida ao vivo
  * @param {() => void | Promise<void>} [deps.openAccountLogin]
  */
@@ -60,12 +70,15 @@ export function createOptionsFeature(deps) {
     initialEnvironmentRanges,
     onPaceChanged,
     onPreviewSeasonGoal,
+    onManualSave,
+    onPreferencesPersist,
     matchLiveAudio,
     openAccountLogin,
   } = deps;
 
   let gamePace = localStorage.getItem(SAVE_KEYS.pace) || 'standard';
   if (!GAME_PACE_CONFIG[gamePace]) gamePace = 'standard';
+  let autosaveMode = getAutosaveMode();
 
   const careerExists = () => !!localStorage.getItem(SAVE_KEYS.career);
 
@@ -121,15 +134,22 @@ export function createOptionsFeature(deps) {
     ? 'Escolha UF e divisão de estreia; a vítima do sorteio é revelada ao iniciar a carreira.'
     : 'Monte seu clube fictício e escolha a divisão de estreia na pirâmide nacional.';
 
+  const autosaveOptionsHtml = listAutosaveOptions()
+    .map(
+      opt =>
+        `<option value="${opt.value}"${opt.value === autosaveMode ? ' selected' : ''}>${opt.label}</option>`,
+    )
+    .join('');
+
   const injectModals = () => {
     document.body.insertAdjacentHTML(
       'beforeend',
-      `<div id="optionsModal" class="modal hidden"><div class="modal-card options-modal"><button id="closeOptions" class="close">×</button><label>CONFIGURAÇÕES</label><h2>Opções do Jogo</h2><section class="option-section"><label>NOVA CARREIRA</label><div class="new-game-action"><div><strong>Criar clube e iniciar carreira</strong><small>${newCareerBlurb}</small></div><button id="openNewGame" type="button">NOVO JOGO</button></div></section><section class="option-section"><label>RITMO DE JOGO</label><p>Define a duração da simulação contínua. Pausas técnicas e decisões do treinador continuam sob seu controle.</p><div id="paceChoices" class="option-choices">${Object.entries(GAME_PACE_CONFIG).map(([key, pace]) => `<button class="pace-choice" data-pace="${key}"><b>${pace.name}</b><small>${pace.detail}</small></button>`).join('')}</div></section><section class="option-section"><label>SONS AO VIVO</label><p>Apito, narração e reação da torcida durante a simulação de partida.</p><div id="liveAudioOptions" class="live-audio-options"></div></section><section class="option-section"><label>INFORMAÇÕES DE ATUALIZAÇÕES</label><div class="updates-info-row"><div class="updates-info-summary"><strong>Última Atualização</strong><span id="optionsLatestUpdate">—</span></div><button id="openReleaseNotes" type="button">CONSULTAR</button></div></section><section class="option-section"><label>TESTERS</label><div class="new-game-action"><div><strong>Guia e feedback</strong><small>Como testar a build e enviar relatório estruturado (GitHub ou copiar texto).</small></div><div class="option-choices" style="flex:none;display:flex;gap:8px;flex-wrap:wrap"><button id="openTesterGuide" type="button">GUIA</button><button id="openTesterFeedback" type="button">FEEDBACK</button><button id="previewSeasonGoalGauge" type="button" title="Abre o balanço com dados fictícios — não altera a carreira">PREVIEW META</button></div></div></section></div></div>${buildNewGameModalHtml()}`,
+      `<div id="optionsModal" class="modal hidden"><div class="modal-card options-modal"><button id="closeOptions" class="close">×</button><label>CONFIGURAÇÕES</label><h2>Opções do Jogo</h2><section class="option-section"><label>NOVA CARREIRA</label><div class="new-game-action"><div><strong>Criar clube e iniciar carreira</strong><small>${newCareerBlurb}</small></div><button id="openNewGame" type="button">NOVO JOGO</button></div></section><section class="option-section"><label>SALVAMENTO</label><p>Escolha quando o jogo grava automaticamente. O ritmo de jogo também é salvo junto com a carreira.</p><div class="save-prefs-row"><select id="autosaveMode" autocomplete="off">${autosaveOptionsHtml}</select><button id="manualSaveBtn" type="button">SALVAR</button></div></section><section class="option-section"><label>RITMO DE JOGO</label><p>Define a duração da simulação contínua. Pausas técnicas e decisões do treinador continuam sob seu controle.</p><div id="paceChoices" class="option-choices">${Object.entries(GAME_PACE_CONFIG).map(([key, pace]) => `<button class="pace-choice" data-pace="${key}"><b>${pace.name}</b><small>${pace.detail}</small></button>`).join('')}</div></section><section class="option-section"><label>SONS AO VIVO</label><p>Apito, narração e reação da torcida durante a simulação de partida.</p><div id="liveAudioOptions" class="live-audio-options"></div></section><section class="option-section"><label>INFORMAÇÕES DE ATUALIZAÇÕES</label><div class="updates-info-row"><div class="updates-info-summary"><strong>Última Atualização</strong><span id="optionsLatestUpdate">—</span></div><button id="openReleaseNotes" type="button">CONSULTAR</button></div></section><section class="option-section"><label>CONTA</label><p>Encerra a sessão e volta à tela inicial. Seus dados ficam salvos na nuvem.</p><div class="options-logout-row"><button id="optionsLogout" type="button">SAIR</button></div></section><section class="option-section"><label>TESTERS</label><div class="new-game-action"><div><strong>Guia e feedback</strong><small>Como testar a build e enviar relatório estruturado (GitHub ou copiar texto).</small></div><div class="option-choices" style="flex:none;display:flex;gap:8px;flex-wrap:wrap"><button id="openTesterGuide" type="button">GUIA</button><button id="openTesterFeedback" type="button">FEEDBACK</button><button id="previewSeasonGoalGauge" type="button" title="Abre o balanço com dados fictícios — não altera a carreira">PREVIEW META</button></div></div></section></div></div>${buildNewGameModalHtml()}`,
     );
   };
 
   const injectCareerWelcome = () => {
-    if (hasCareer) return;
+    if (hasCareer || $('#careerWelcome')) return;
     document.body.classList.add('career-locked');
     const shell = $('.game-shell');
     if (shell) {
@@ -200,7 +220,16 @@ export function createOptionsFeature(deps) {
     onOpenFeedback: () => $('#optionsModal')?.classList.add('hidden'),
   });
 
+  const persistPreferences = patch => {
+    const career = getSavedCareer?.();
+    if (career) mergePreferencesIntoCareer(career, patch);
+    onPreferencesPersist?.(patch);
+  };
+
   const renderOptions = () => {
+    autosaveMode = getAutosaveMode();
+    const autosaveEl = $('#autosaveMode');
+    if (autosaveEl) autosaveEl.value = autosaveMode;
     $$('#paceChoices button').forEach(button =>
       button.classList.toggle('selected', button.dataset.pace === gamePace),
     );
@@ -371,6 +400,11 @@ export function createOptionsFeature(deps) {
       createdAt: new Date().toISOString(),
       freshWorld: true,
       crest,
+      preferences: {
+        autosave: getAutosaveMode(),
+        pace: gamePace,
+        gamesSinceAutosave: 0,
+      },
       ...careerPayloadExtra,
     };
     if (crest) {
@@ -402,8 +436,36 @@ export function createOptionsFeature(deps) {
     if (!button) return;
     gamePace = button.dataset.pace;
     localStorage.setItem(SAVE_KEYS.pace, gamePace);
+    persistPreferences({ pace: gamePace });
     renderOptions();
     onPaceChanged?.();
+  });
+
+  $('#autosaveMode')?.addEventListener('change', event => {
+    autosaveMode = setAutosaveMode(event.target.value);
+    persistPreferences({ autosave: autosaveMode, gamesSinceAutosave: 0 });
+  });
+
+  onClick('#manualSaveBtn', async () => {
+    const btn = $('#manualSaveBtn');
+    const ok = await onManualSave?.();
+    if (btn) {
+      const prev = btn.textContent;
+      btn.textContent = ok === false ? 'SEM SAVE' : 'SALVO!';
+      btn.disabled = true;
+      window.setTimeout(() => {
+        btn.textContent = prev;
+        btn.disabled = false;
+      }, 1400);
+    }
+  });
+
+  onClick('#optionsLogout', async () => {
+    $('#optionsModal')?.classList.add('hidden');
+    await onManualSave?.();
+    endBrowserSession();
+    clearSessionCareerData();
+    location.reload();
   });
 
   return {
@@ -411,6 +473,7 @@ export function createOptionsFeature(deps) {
     getPace: () => gamePace,
     getPaceMs: () => (GAME_PACE_CONFIG[gamePace] || GAME_PACE_CONFIG.standard).ms,
     getPaceConfig: () => GAME_PACE_CONFIG,
+    getAutosaveMode: () => getAutosaveMode(),
     renderOptions,
     openCareerCreator,
     syncWelcomeAuth,

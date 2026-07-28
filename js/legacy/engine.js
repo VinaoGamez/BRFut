@@ -154,6 +154,7 @@ import {
   pruneClubMemory,
   involvesClub,
 } from '../core/save.js';
+import { applyCareerPreferences, mergePreferencesIntoCareer } from '../core/save-preferences.js';
 import { createMatchRatingsEngine, DEFAULT_USER_TACTICS, blankMatchStats } from '../engine/match-ratings.js';
 import { createSeasonTransitionEngine } from '../engine/season-transition.js';
 import { createSeasonSaveWriter } from '../engine/season-save-writer.js';
@@ -401,6 +402,14 @@ export async function bootEngine({
   try {
   const savedNewGame = loadCareerSave();
   if (savedNewGame && !Array.isArray(savedNewGame.retiredPool)) savedNewGame.retiredPool = [];
+  if (savedNewGame) {
+    applyCareerPreferences(savedNewGame);
+    if (!savedNewGame.preferences) {
+      mergePreferencesIntoCareer(savedNewGame, {
+        pace: localStorage.getItem(SAVE_KEYS.pace) || 'standard',
+      });
+    }
+  }
   const persistenceCtx = { userClub: '' };
   const careerPersistence = createCareerPersistence({
     getSavedNewGame: () => savedNewGame,
@@ -692,6 +701,12 @@ const rosterChangeAlertHolder = { fn: null };
       if(matchStarted&&!matchFinished&&$('#pausePanel').classList.contains('hidden')&&$('#liveOpponentModal').classList.contains('hidden')&&penaltyClosed&&!shootoutState)startMatchClock();
     },
     onPreviewSeasonGoal:()=>openSeasonGoalPreview(),
+    onManualSave:()=>careerPersistence.manualSaveAll(),
+    onPreferencesPersist:()=>{
+      if(!savedNewGame)return;
+      mergePreferencesIntoCareer(savedNewGame);
+      persistCareer({...savedNewGame});
+    },
   });
   registerWelcomeAuthSync?.(optionsUi.syncWelcomeAuth);
   registerCareerCreator?.(optionsUi.openCareerCreator);
@@ -1440,8 +1455,8 @@ const rosterChangeAlertHolder = { fn: null };
   };
   if(savedNewGame){
     renderEnvironmentCard();
-    const specialistRows=Object.keys(divisionRules).map(division=>{const divisionClubs=divisionTeams[division],freeClubs=divisionClubs.filter(name=>clubs[name].roster.some(player=>player.setPieceSpecialist==='freeKick'||player.setPieceSpecialist==='both')).length,penaltyClubs=divisionClubs.filter(name=>clubs[name].roster.some(player=>player.setPieceSpecialist==='penalty'||player.setPieceSpecialist==='both')).length;return `<span><b>Série ${division}</b>${divisionClubs.length} clubes · ${freeClubs} com especialista em faltas · ${penaltyClubs} em pênaltis</span>`;}).join('');
-    $('.new-game-action').insertAdjacentHTML('afterend',`<div class="generated-world-summary"><small>CARREIRA ATUAL</small><span class="career-current"><b>${userClub}</b>${careerProfile.managerName} · Série ${userDivision}</span><small>UNIVERSO NACIONAL</small>${specialistRows}</div>`);
+    const specialistRows=Object.keys(divisionRules).map(division=>{const divisionClubs=divisionTeams[division],freeClubs=divisionClubs.filter(name=>clubs[name].roster.some(player=>player.setPieceSpecialist==='freeKick'||player.setPieceSpecialist==='both')).length,penaltyClubs=divisionClubs.filter(name=>clubs[name].roster.some(player=>player.setPieceSpecialist==='penalty'||player.setPieceSpecialist==='both')).length;return `<span class="division-stat"><b>Série ${division}</b>${divisionClubs.length} clubes · ${freeClubs} com especialista em faltas · ${penaltyClubs} em pênaltis</span>`;}).join('');
+    $('.new-game-action').insertAdjacentHTML('afterend',`<div class="generated-world-summary"><small>CARREIRA ATUAL</small><span class="career-current"><b class="career-club-name">${userClub}</b><span class="career-division">Série ${userDivision}</span></span><small class="career-manager-line">${careerProfile.managerName}</small><small>UNIVERSO NACIONAL</small>${specialistRows}</div>`);
   }
   const resolveOpponentClubName=()=>{
     const game=liveMatchGame||nextUserGame;
@@ -7233,6 +7248,7 @@ const rosterChangeAlertHolder = { fn: null };
   careerPersistence.bindWriteSeasonSave(()=>writeSeasonSave());
   persistSeason=careerPersistence.persistSeason.bind(careerPersistence);
   const persistAfterRoundAdvance=careerPersistence.persistAfterRoundAdvance.bind(careerPersistence);
+  const notifyUserMatchPlayed=careerPersistence.notifyUserMatchPlayed.bind(careerPersistence);
   dashboard.setPersist(persistSeason);
   void ensureCalendarView().then(cv=>cv.setPersist?.(persistSeason));
   tactics.setPersist(persistSeason);
@@ -7950,6 +7966,7 @@ const rosterChangeAlertHolder = { fn: null };
     trainingRecoveryMultiplier,
     persistSeason,
     persistAfterRoundAdvance,
+    notifyUserMatchPlayed,
     refreshSeasonPresentation,
     renderTeamStatsCard,
     closeRoundResultsModal:()=>$('#roundResultsModal').classList.add('hidden'),

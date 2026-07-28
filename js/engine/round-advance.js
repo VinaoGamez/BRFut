@@ -262,6 +262,9 @@ export function createRoundAdvanceEngine(deps) {
       deps.advanceWorldCupThroughDateLocal(deps.getCareerCalendarDate());
       deps.maybeSendNationalTeamOffers();
       if (completedSeason) deps.finalizeNationalRankingSeason();
+      if (liveMatchGame && (liveMatchGame.home === userClub || liveMatchGame.away === userClub)) {
+        deps.notifyUserMatchPlayed?.();
+      }
       deps.persistAfterRoundAdvance();
       try {
         deps.refreshSeasonPresentation();
@@ -310,6 +313,10 @@ export function createRoundAdvanceEngine(deps) {
     deps.drawBoard();
     deps.advanceCupComputerTies(deps.getCupCompetition().stages.find(item => !item.completed));
     deps.setRoundCommitted(true);
+    const userClub = deps.getUserClub();
+    if (liveMatchGame && (liveMatchGame.home === userClub || liveMatchGame.away === userClub)) {
+      deps.notifyUserMatchPlayed?.();
+    }
     deps.persistAfterRoundAdvance();
     deps.refreshSeasonPresentation();
     deps.closeRoundResultsModal();

@@ -2,6 +2,7 @@ import {
   fetchAccountAvatarObjectUrl,
   fetchBackendHealth,
   fetchGoogleAuthConfig,
+  getAuthToken,
   getCloudUser,
   initStorageBackend,
   isAuthRememberEnabled,
@@ -13,6 +14,7 @@ import {
   updateAccountProfile,
 } from '../../core/storage-api.js';
 import { SAVE_KEYS, BRFUT_API_ORIGIN } from '../../core/constants.js';
+import { clearSessionCareerData } from '../../core/save.js';
 
 const AVATAR_PREVIEW_SIZE = 96;
 const AVATAR_EXPORT_SIZE = 256;
@@ -76,6 +78,7 @@ function renderFramedAvatar(sourceUrl, zoom, panX, panY, cachedImage = null) {
  * @param {(visible: boolean) => void} [opts.onContinueVisible]
  * @param {(state: { loggedIn: boolean, hasBackend: boolean }) => void} [opts.onAuthChange]
  * @param {() => void} [opts.onPlayLocal]
+ * @param {() => void | Promise<void>} [opts.onLoginSuccess]
  */
 export function mountAccountPanel({
   modal,
@@ -84,6 +87,7 @@ export function mountAccountPanel({
   onContinueVisible,
   onAuthChange,
   onPlayLocal,
+  onLoginSuccess,
 } = {}) {
   if (!modal) return { refresh: async () => {}, openLogin: () => {} };
 
@@ -386,6 +390,7 @@ export function mountAccountPanel({
               remember: authRememberChoice(),
             });
             renderLoggedIn(getCloudUser());
+            await onLoginSuccess?.();
           } catch (error) {
             setError(error?.message || 'Falha no login Google.');
           }
@@ -460,6 +465,12 @@ export function mountAccountPanel({
       return { mode: 'local' };
     }
 
+    if (!getAuthToken()) {
+      renderLoggedOut(true);
+      refreshCareerUi();
+      return { mode: 'local', backend: true };
+    }
+
     const state = await initStorageBackend();
     if (state.mode === 'cloud' && isCloudStorageActive()) {
       renderLoggedIn(getCloudUser());
@@ -501,6 +512,7 @@ export function mountAccountPanel({
       }
       passwordEl.value = '';
       renderLoggedIn(getCloudUser());
+      await onLoginSuccess?.();
     } catch (error) {
       setError(error?.message || 'Falha na autenticação.');
     }
@@ -513,8 +525,10 @@ export function mountAccountPanel({
 
   document.getElementById('accountLogout')?.addEventListener('click', async () => {
     await logoutAccount();
+    clearSessionCareerData();
     renderLoggedOut(true);
     refreshCareerUi();
+    location.reload();
   });
 
   openProfileBtn?.addEventListener('click', () => {

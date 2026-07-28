@@ -368,6 +368,20 @@ export function clearCareerStorage({ clearTraining = true, clearPlayerHistory = 
   }
 }
 
+/** Limpa dados locais da sessão (carreira ativa) sem apagar histórico de jogadores. */
+export function clearSessionCareerData() {
+  try {
+    localStorage.removeItem(SAVE_KEYS.career);
+    localStorage.removeItem(SAVE_KEYS.season);
+    localStorage.removeItem(SAVE_KEYS.liveMatch);
+    localStorage.removeItem(SAVE_KEYS.training);
+    localStorage.removeItem(SAVE_KEYS.pace);
+    localStorage.removeItem('matchday-autosave-mode');
+  } catch {
+    /* ignore */
+  }
+}
+
 export function hydrateMessages(season, valid) {
   if (!valid || !Array.isArray(season?.careerMessages)) return [];
   return season.careerMessages.map(message => ({ ...message, read: !!message.read }));

@@ -9,8 +9,10 @@ import {
   markSkipPersistOnce,
   consumeSkipPersistOnce,
   pruneInjuryHistory,
+  clearSessionCareerData,
 } from '../core/save.js';
-import { flushCloudSync } from '../core/storage-api.js';
+import { endBrowserSession, flushCloudSync } from '../core/storage-api.js';
+import { getAutosaveMode, mergePreferencesIntoCareer, AUTOSAVE_MODES } from '../core/save-preferences.js';
 import { trimWorldRostersForQuota } from './world-rosters.js';
 
 export function createCareerPersistence({
@@ -109,12 +111,43 @@ export function createCareerPersistence({
     }, MEMORY_LIMITS.persistDebounceMs);
   };
 
-  /** Grava temporada + carreira imediatamente após avanço de rodada. */
+  /** Grava temporada + carreira imediatamente após avanço de rodada (respeita preferência). */
   const persistAfterRoundAdvance = () => {
     if (!getSavedNewGame?.()) return;
+    const mode = getAutosaveMode();
+    if (mode === AUTOSAVE_MODES.manual) return;
+    if (mode === AUTOSAVE_MODES.every3) return;
     persistSeason(true);
     syncCareerRosters();
     flushCloudSync();
+  };
+
+  /** Conta jogos do usuário para autosave "a cada 3 jogos". */
+  const notifyUserMatchPlayed = () => {
+    if (!getSavedNewGame?.()) return;
+    if (getAutosaveMode() !== AUTOSAVE_MODES.every3) return;
+    const savedNewGame = getSavedNewGame();
+    const prefs = mergePreferencesIntoCareer(savedNewGame);
+    const nextCount = (prefs.gamesSinceAutosave || 0) + 1;
+    if (nextCount >= 3) {
+      mergePreferencesIntoCareer(savedNewGame, { gamesSinceAutosave: 0 });
+      persistCareer({ ...savedNewGame });
+      persistSeason(true);
+      syncCareerRosters();
+      flushCloudSync();
+      return;
+    }
+    mergePreferencesIntoCareer(savedNewGame, { gamesSinceAutosave: nextCount });
+    persistCareer({ ...savedNewGame });
+  };
+
+  /** Save manual acionado pelo jogador (Opções → SALVAR). */
+  const manualSaveAll = () => {
+    if (!getSavedNewGame?.()) return false;
+    persistSeason(true);
+    syncCareerRosters();
+    flushCloudSync({ urgent: true });
+    return true;
   };
 
   const syncCareerRosters = () => {
@@ -167,6 +200,8 @@ export function createCareerPersistence({
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
       flushOnExit();
+      endBrowserSession();
+      clearSessionCareerData();
     });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'hidden') return;
@@ -182,13 +217,7 @@ export function createCareerPersistence({
   };
 
   const bindPeriodicAutosave = () => {
-    if (typeof window === 'undefined') return;
-    const intervalMs = MEMORY_LIMITS.autosaveIntervalMs || 45_000;
-    window.setInterval(() => {
-      if (skipPersistOnUnload || careerReset.blockWrites) return;
-      if (!getSavedNewGame?.()) return;
-      persistSeason(true);
-    }, intervalMs);
+    /* autosave periódico desativado — preferência do jogador (rodada / 3 jogos / manual). */
   };
 
   const setSkipPersistOnUnload = () => {
@@ -201,6 +230,8 @@ export function createCareerPersistence({
     prepareForNewCareer,
     persistSeason,
     persistAfterRoundAdvance,
+    notifyUserMatchPlayed,
+    manualSaveAll,
     syncCareerRosters,
     bindWriteSeasonSave,
     bindFlushLiveMatchPersist,

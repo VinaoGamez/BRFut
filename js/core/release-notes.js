@@ -9,6 +9,30 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.65',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T17:45:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Conta e sessão',
+        items: [
+          'Ao abrir o jogo é preciso entrar na conta; a carreira não carrega mais sozinha do navegador.',
+          'Ao fechar a aba a sessão encerra; na volta você loga de novo e o save vem da nuvem.',
+          'Opções: botão SAIR para deslogar e voltar à tela inicial.',
+        ],
+      },
+      {
+        label: 'Salvamento e opções',
+        items: [
+          'Opções → Salvamento: a cada rodada, a cada 3 jogos ou só manual, com botão SALVAR.',
+          'Ritmo de jogo passa a ser salvo junto com a carreira.',
+          'Carreira atual: nome do clube e divisão em linha única, com fonte maior.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.60',
     date: '2026-07-28',
     publishedAt: '2026-07-28T17:15:00-03:00',

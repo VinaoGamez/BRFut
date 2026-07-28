@@ -8,7 +8,13 @@ import { createEventBus } from './core/event-bus.js';
 import { bootEngine } from './legacy/engine.js';
 import { markBootReady } from './ui/boot-gate.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
-import { initStorageBackend, isCloudStorageActive, probeBackend } from './core/storage-api.js';
+import {
+  endBrowserSession,
+  getAuthToken,
+  initStorageBackend,
+  probeBackend,
+} from './core/storage-api.js';
+import { clearSessionCareerData } from './core/save.js';
 import { injectAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 
@@ -28,6 +34,7 @@ injectAccountModals();
 
 let syncCareerWelcomeAuth = null;
 let openCareerCreatorRef = null;
+let bootStarted = false;
 
 const hasCareerSave = () => {
   try {
@@ -37,18 +44,28 @@ const hasCareerSave = () => {
   }
 };
 
-const account = mountAccountPanel({
-  modal: document.getElementById('accountModal'),
-  hasCareer: hasCareerSave,
-  onAuthChange: state => syncCareerWelcomeAuth?.(state),
-  onPlayLocal: () => openCareerCreatorRef?.(),
-});
+const lockGameShell = () => {
+  document.body.classList.add('career-locked');
+  const shell = document.querySelector('.game-shell');
+  if (shell) {
+    shell.inert = true;
+    shell.setAttribute('aria-hidden', 'true');
+  }
+};
 
-const storageInit = initStorageBackend().catch(error => {
-  console.warn('[brfut] storage backend indisponível', error);
-});
+const injectPreLoginWelcome = () => {
+  if (document.getElementById('careerWelcome')) return;
+  lockGameShell();
+  document.body.insertAdjacentHTML(
+    'beforeend',
+    '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.png" alt="BR Football" width="480" height="72"></div><div class="career-welcome-actions"><button id="welcomeLogin" type="button">ENTRAR</button></div><p id="welcomeHint" class="career-welcome-hint">Entre na sua conta para carregar o save na nuvem.</p></div></section>',
+  );
+  document.getElementById('welcomeLogin')?.addEventListener('click', () => account.openLogin());
+};
 
-const startBoot = () => {
+const startBootOnce = () => {
+  if (bootStarted) return;
+  bootStarted = true;
   bootEngine({
     bus,
     features: FEATURES,
@@ -69,8 +86,43 @@ const startBoot = () => {
     });
 };
 
-// Com backend cloud, aguarda merge de saves antes de hidratar o motor.
-void storageInit.finally(async () => {
+const account = mountAccountPanel({
+  modal: document.getElementById('accountModal'),
+  hasCareer: hasCareerSave,
+  onAuthChange: state => syncCareerWelcomeAuth?.(state),
+  onPlayLocal: () => openCareerCreatorRef?.(),
+  onLoginSuccess: async () => {
+    if (bootStarted) {
+      location.reload();
+      return;
+    }
+    await initStorageBackend({ skipProbe: true });
+    await account.refresh();
+    document.getElementById('careerWelcome')?.remove();
+    startBootOnce();
+  },
+});
+
+const beginAppSession = async () => {
+  await probeBackend();
+
+  if (!getAuthToken()) {
+    clearSessionCareerData();
+    injectPreLoginWelcome();
+    await account.refresh();
+    return;
+  }
+
+  await initStorageBackend();
   await account.refresh();
-  startBoot();
+  document.getElementById('careerWelcome')?.remove();
+  startBootOnce();
+};
+
+void beginAppSession();
+
+window.addEventListener('pagehide', event => {
+  if (event.persisted || bootStarted) return;
+  endBrowserSession();
+  clearSessionCareerData();
 });

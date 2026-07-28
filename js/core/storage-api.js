@@ -302,6 +302,32 @@ export async function logoutAccount() {
   }
 }
 
+/** Encerra sessão no fechamento da aba (save já deve ter sido gravado antes). */
+export function endBrowserSession() {
+  flushCloudSync({ urgent: true });
+  try {
+    const token = getAuthToken();
+    if (token && typeof fetch !== 'undefined') {
+      fetch(apiUrl('/api/auth/logout'), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        keepalive: true,
+      }).catch(() => {});
+    }
+  } catch {
+    /* ignore */
+  }
+  setAuthToken('');
+  currentUser = null;
+  cloudActive = false;
+  stopPresenceHeartbeat();
+  syncQueue.clear();
+  if (syncTimer) {
+    window.clearTimeout(syncTimer);
+    syncTimer = 0;
+  }
+}
+
 async function migrateLocalToCloud({ overwrite = false } = {}) {
   const local = localSavesSnapshot();
   if (!Object.keys(local).length) return { imported: [], skipped: [] };
