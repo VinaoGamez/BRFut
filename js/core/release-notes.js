@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.85',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T18:25:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Correção',
+        items: [
+          'Modal de login permanece aberto ao clicar em COMEÇAR CARREIRA na home.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.80',
     date: '2026-07-28',
     publishedAt: '2026-07-28T18:15:00-03:00',

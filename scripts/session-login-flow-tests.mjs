@@ -54,14 +54,10 @@ checkSync('home abre login em COMEÇAR CARREIRA', () => {
   assert(src.includes("loginBtn?.addEventListener('click', () => account.openLogin())"), 'botão home abre login');
 });
 
-checkSync('openLogin abre modal antes do health check', () => {
+checkSync('openLogin não fecha modal ao preparar formulário', () => {
   const src = readFileSync(join(ROOT, 'js/feature/account/index.js'), 'utf8');
   const openLogin = src.slice(src.indexOf('const openLogin'), src.indexOf('const refresh = async'));
-  assert(openLogin.includes('openModal();'), 'openModal imediato');
-  assert(
-    openLogin.indexOf('openModal();') < openLogin.indexOf('fetchBackendHealth'),
-    'openModal antes da API',
-  );
+  assert(openLogin.includes('keepModalOpen: true'), 'renderLoggedOut mantém modal aberto');
 });
 
 checkSync('home e index encerram sessão ao fechar aba', () => {

@@ -294,12 +294,14 @@ export function mountAccountPanel({
     }
   };
 
-  const renderLoggedOut = backend => {
+  const renderLoggedOut = (backend, { keepModalOpen = false } = {}) => {
     notifyAuth(false, backend);
-    closeModal();
-    closeProfileModal();
+    if (!keepModalOpen) {
+      closeModal();
+      closeProfileModal();
+    }
     loggedEl?.classList.add('hidden');
-    revokeAvatarUrl();
+    if (!keepModalOpen) revokeAvatarUrl();
   };
 
   const renderLoggedIn = user => {
@@ -459,7 +461,7 @@ export function mountAccountPanel({
         return;
       }
       setBackendAvailableUi();
-      renderLoggedOut(true);
+      renderLoggedOut(true, { keepModalOpen: true });
       syncRememberCheckbox();
       syncRememberUi();
       await ensureGoogleButton();
