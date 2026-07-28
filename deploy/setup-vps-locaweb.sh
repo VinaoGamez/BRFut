@@ -44,10 +44,18 @@ systemctl daemon-reload
 systemctl enable brfut-api
 
 echo "==> nginx"
+cp "$BRFUT_HOME/deploy/nginx-brfut-rate-limit.conf" /etc/nginx/conf.d/brfut-rate-limit.conf
+mkdir -p /etc/nginx/snippets
+cp "$BRFUT_HOME/deploy/nginx-brfut-api-proxy.conf" /etc/nginx/snippets/brfut-api-proxy.conf
 cp "$BRFUT_HOME/deploy/nginx-api.brfut.com.br.conf" /etc/nginx/sites-available/brfut-api
 ln -sf /etc/nginx/sites-available/brfut-api /etc/nginx/sites-enabled/brfut-api
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
+
+echo "==> backup"
+install -m 750 "$BRFUT_HOME/deploy/backup-brfut-data.sh" /usr/local/sbin/backup-brfut-data.sh
+CRON_LINE='15 3 * * * root /usr/local/sbin/backup-brfut-data.sh >> /var/log/brfut-backup.log 2>&1'
+grep -Fq 'backup-brfut-data.sh' /etc/crontab 2>/dev/null || echo "$CRON_LINE" >> /etc/crontab
 
 echo "==> Firewall (SSH + HTTP/S)"
 ufw allow OpenSSH

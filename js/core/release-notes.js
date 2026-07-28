@@ -5,6 +5,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.2.40',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T16:10:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Segurança',
+        items: [
+          'Proteção extra no site brfut.com.br (mesmo nível dos testers públicos).',
+          'API com limite de tentativas de login e backup automático dos dados na VPS.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.2.35',
     date: '2026-07-28',
     publishedAt: '2026-07-28T15:30:00-03:00',

@@ -5,8 +5,10 @@
     host === '127.0.0.1' ||
     host === '[::1]' ||
     location.protocol === 'file:';
-  // Bloqueio de F12/cópia só em links externos públicos — local (5080/5081) fica livre para debug.
+  // Bloqueio de F12/cópia em builds públicas — local (5080/5081) fica livre para debug.
   const isPublicHost =
+    host === 'brfut.com.br' ||
+    host === 'www.brfut.com.br' ||
     /\.github\.io$/i.test(host) ||
     /\.pages\.dev$/i.test(host) ||
     /\.trycloudflare\.com$/i.test(host);

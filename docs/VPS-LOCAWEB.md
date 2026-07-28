@@ -154,10 +154,18 @@ sudo -u brfut git pull
 systemctl restart brfut-api
 ```
 
-Backup dos dados:
+Backup dos dados (manual ou automático):
 
 ```bash
+/usr/local/sbin/backup-brfut-data.sh
+# ou tar manual:
 tar -czf brfut-data-$(date +%F).tar.gz -C /var/lib/brfut data
+```
+
+Após `git pull`, reaplique nginx + backup:
+
+```bash
+cd /opt/brfut && bash deploy/apply-vps-security.sh
 ```
 
 ---
@@ -177,11 +185,15 @@ Arquivos de referência: `deploy/nginx-api.brfut.com.br.conf` (adaptar para site
 
 ## Checklist de segurança (alpha → produção)
 
-- [ ] HTTPS ativo (`api.brfut.com.br`)
-- [ ] Firewall: só 22, 80, 443
-- [ ] `brfut.env` com permissão 600
-- [ ] Backup periódico de `/var/lib/brfut/data`
-- [ ] Rate limit no nginx (futuro)
+- [x] HTTPS ativo (`api.brfut.com.br`)
+- [x] Firewall: só 22, 80, 443
+- [x] `brfut.env` com permissão restrita (640, root:brfut)
+- [x] Backup periódico de `/var/lib/brfut/data` (`backup-brfut-data.sh` + cron)
+- [x] Rate limit no nginx (`deploy/nginx-brfut-rate-limit.conf`)
+- [ ] Enforce HTTPS no GitHub Pages (Settings → Pages)
+- [ ] SSH por chave (`scripts/setup-vps-ssh-key.ps1`) e senha root trocada
+
+Detalhes: [SECURITY.md](./SECURITY.md)
 
 ---
 
@@ -203,8 +215,15 @@ Arquivos de referência: `deploy/nginx-api.brfut.com.br.conf` (adaptar para site
 deploy/
   brfut-api.service
   nginx-api.brfut.com.br.conf
+  nginx-brfut-rate-limit.conf
+  nginx-brfut-api-proxy.conf
+  backup-brfut-data.sh
+  apply-vps-security.sh
   setup-vps-locaweb.sh
 scripts/
   brfut-production.env.example
+  setup-vps-ssh-key.ps1
   tester-server.py           # --api-only + CORS
+docs/
+  SECURITY.md
 ```
