@@ -241,3 +241,97 @@
     font-size: 15px !important;
   }
 }
+
+/* Pé forte compacto — mesmo ícone dos cards de jogador */
+.table-foot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.table-foot-icons {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  line-height: 0;
+}
+
+.table-foot-icon {
+  width: 9px;
+  height: 16px;
+  fill: #3a5560;
+  opacity: 0.65;
+}
+
+.table-foot-icon--left {
+  transform: scaleX(-1);
+}
+
+.table-foot-icon.is-strong {
+  fill: #c8dce6;
+  opacity: 1;
+  filter: drop-shadow(0 0 3px #ffffff22);
+}
+
+.table-foot--roster .table-foot-icon {
+  width: 10px;
+  height: 18px;
+}
+
+.table-foot--sub .table-foot-icon {
+  width: 8px;
+  height: 15px;
+}
+
+#squad .roster-foot-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0;
+}
+
+.sub-energy-foot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+
+.roster-fatigue--compact {
+  flex: 0 0 auto;
+}
+
+.roster-fatigue--compact i {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #243945;
+  box-shadow: inset 0 0 0 1px #3a5864;
+}
+
+.roster-fatigue--compact i b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4db8d4, #8fd638);
+}
+
+.roster-fatigue--compact i em {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  color: #edf8f5;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 1px 2px #00000088;
+  pointer-events: none;
+}

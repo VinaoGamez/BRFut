@@ -93,6 +93,7 @@ export async function showUpdateAlertIfNeeded(buildVersion = BUILD_VERSION) {
   if (getLastSeenBuild() === buildVersion) return;
 
   const notes = await getReleaseNotes(buildVersion);
+  if (!notes?.promptUpdate) return;
   ensureModal();
 
   const modal = document.getElementById(MODAL_ID);

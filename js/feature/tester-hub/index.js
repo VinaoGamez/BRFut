@@ -17,8 +17,8 @@ const GUIDE_SECTIONS = [
     title: 'Save e atualizações',
     body: [
       'A carreira fica salva só neste navegador (localStorage). Limpar dados do site apaga o progresso.',
-      'O modal de atualização e Opções → Consultar mostram o histórico de builds (RELEASE_NOTES).',
-      'Se o alerta de update não aparecer, limpe a chave matchday-last-seen-build e recarregue.',
+      'Opções → Consultar mostra o histórico de builds (RELEASE_NOTES).',
+      'O popup de nova atualização só aparece quando o autor liberar (`promptUpdate` na build).',
     ],
   },
   {

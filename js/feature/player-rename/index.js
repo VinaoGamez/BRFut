@@ -14,7 +14,7 @@ const escHtml = value =>
     .replace(/</g, '&lt;');
 
 /**
- * UI de renomeação do elenco (Elenco + Táticas) — 1 alteração por jogador/temporada.
+ * UI de renomeação do elenco — 1 alteração por jogador/temporada (somente seção Elencos).
  */
 export function createPlayerRenameFeature(deps) {
   const {
@@ -46,6 +46,7 @@ export function createPlayerRenameFeature(deps) {
     const playerId = resolvePlayerId(player) || '';
     const editing = activeRenameId && playerId && activeRenameId === playerId;
     const clubName = cellOptions.clubName ?? getUserClub?.() ?? '';
+    const allowRename = cellOptions.allowRename === true;
 
     if (editing) {
       const err = renameError
@@ -56,7 +57,7 @@ export function createPlayerRenameFeature(deps) {
 
     const block = blocked(player);
     let pencil = '';
-    if (canRenamePlayer() && playerId) {
+    if (allowRename && canRenamePlayer() && playerId) {
       if (block.blocked) {
         pencil = `<button type="button" class="roster-rename-btn is-disabled" disabled title="${escHtml(block.reason)}">✎</button>`;
       } else {

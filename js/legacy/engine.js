@@ -43,7 +43,8 @@ import {
   scanRosterStatusChanges,
 } from '../engine/roster-change-alerts.js';
 import { processSeasonRetirements, markRetiredInHistoryStore } from '../engine/player-retirement.js';
-import { createPlayerCells, outfield, fatigueCell } from '../feature/shared/player-cells.js';
+import { createPlayerCells, outfield, fatigueCell, rosterFatigueCell } from '../feature/shared/player-cells.js';
+import { renderTableFootIcon } from '../lab/card-back.js';
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
 import { SAVE_KEYS, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
@@ -2870,17 +2871,16 @@ const rosterChangeAlertHolder = { fn: null };
         contractTone==='warning'?' roster-contract-warning':
         contractTone==='critical'?' roster-contract-critical':
         contractTone==='expired'?' roster-contract-expired':'';
-      const fatiguePct=Math.round(clamp(p.fatigue,0,100));
       const changeId=resolvePlayerId(p)||playerKey(p)||historyPlayerKey(p);
       const changeAlert=playerDevelopment?getActiveRosterChangeAlert(playerDevelopment,changeId,careerCalendarDate):null;
       const changeClass=rosterChangeRowClass(changeAlert);
       return `<div class="player-row roster-expanded${contractClass}${changeClass?` ${changeClass}`:''}">
-      <span>${playerRename.renderNameCell(p,{showLoan:true,clubName:userClub})}</span>
+      <span>${playerRename.renderNameCell(p,{showLoan:true,clubName:userClub,allowRename:true})}</span>
       <span class="badge">${p.pos}</span>
       <span>${p.age}</span>
       <span class="roster-ovr roster-col-ovr">${p.overall}${rosterOvrMarkHtml(p)}</span>
       <span>${p.height?`${p.height} cm`:'—'}</span>
-      <span>${p.preferredFoot||'—'}</span>
+      <span class="roster-foot-col">${renderTableFootIcon(p)}</span>
       <span>${p.personality||'—'}</span>
       ${rosterAttrCell(p,'speed','roster-group-phys',p.speed,top)}
       ${rosterAttrCell(p,'dribble','roster-group-phys',p.dribble,top)}
@@ -2896,7 +2896,7 @@ const rosterChangeAlertHolder = { fn: null };
       ${rosterAttrCell(p,'penaltySaving','roster-group-gk',outfield(p.penaltySaving),top)}
       ${rosterAttrCell(p,'reflexes','roster-group-gk',outfield(p.reflexes),top)}
       ${rosterTrainingXpHtml(p)}
-      <span class="roster-fatigue"><i><b style="width:${fatiguePct}%"></b><em>${fatiguePct}%</em></i></span>
+      <span>${rosterFatigueCell(p)}</span>
     </div>`;
     }).join('');
     playerRename.focusActiveInput();
@@ -2934,7 +2934,6 @@ const rosterChangeAlertHolder = { fn: null };
     }
   });
   playerRename.bindHandlers('#squad');
-  playerRename.bindHandlers('#tactics');
   rosterContracts.bindHandlers();
   renderRoster();
   const leagueRow=(row,index)=>`<div class="league-row ${row.club === userClub ? 'highlight' : ''}" data-club="${row.club}" role="button" tabindex="0"><span>${userDivision==='D'?index+1:clubs[row.club].position}</span><span class="club-link">${row.club}</span><span>${row.played}</span><span>${row.wins}</span><span>${row.draws}</span><span>${row.losses}</span><span>${row.goalDiff>=0?'+':''}${row.goalDiff}</span><span>${row.points}</span></div>`;

@@ -11,6 +11,13 @@ export const fatigueCell = player => {
   return `<span class="table-fatigue"><i><b style="width:${clamp(fatigue, 0, 100)}%"></b></i>${Math.round(fatigue)}%</span>`;
 };
 
+/** Barra de cansaço do Elenco — percentual dentro da barra (sem texto externo). */
+export const rosterFatigueCell = (player, { compact = false } = {}) => {
+  const fatigue = Math.round(clamp(Number(player?.fatigue) ?? 100, 0, 100));
+  const mod = compact ? ' roster-fatigue--compact' : '';
+  return `<span class="roster-fatigue${mod}"><i><b style="width:${fatigue}%"></b><em>${fatigue}%</em></i></span>`;
+};
+
 const hasMatchOverlay = liveState =>
   !!liveState &&
   !!(liveState.red || liveState.yellow || liveState.injured || liveState.playThroughRisk);

@@ -16,8 +16,8 @@ Deep links: `home.html#guia` · `home.html#feedback`
 
 - Carreira só neste navegador (`localStorage`).
 - Após deploy: hard refresh (`Ctrl+Shift+R`).
-- Histórico de builds: modal de update ou Opções → Consultar.
-- Para retestar o alerta: limpe `matchday-last-seen-build`.
+- Histórico de builds: Opções → Consultar.
+- Popup de nova build: só quando o autor liberar (`promptUpdate` na release note).
 
 ## Fluxo mínimo
 

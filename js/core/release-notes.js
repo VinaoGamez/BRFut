@@ -2,8 +2,27 @@
  * Notas exibidas no alerta de atualização para testers.
  * Estilo: linguagem simples, só o que o jogador precisa saber.
  * Evitar detalhes técnicos, números de calibração e jargão de motor.
+ *
+ * Modal popup na entrada: só se `promptUpdate: true` na entrada da build atual
+ * (ativar apenas quando o autor pedir anúncio aos testers).
+ * Histórico manual: Opções → Consultar.
  */
 export const RELEASE_NOTES = [
+  {
+    version: 'Alpha V.2.45',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T16:30:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Elenco e partida',
+        items: [
+          'Renomear jogador só na seção Elencos; tabela de escalação e substituições sem lápis.',
+          'Coluna Pé no Elenco com o mesmo ícone dos cards; substituições com barra de cansaço igual ao Elenco + pé.',
+        ],
+      },
+    ],
+  },
   {
     version: 'Alpha V.2.40',
     date: '2026-07-28',

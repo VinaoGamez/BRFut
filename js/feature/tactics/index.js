@@ -1,6 +1,8 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
 import { clamp, on, onClick } from '../../ui/dom.js';
 import { bindBoardRosterHover, setBoardSlotHighlight } from '../../ui/board-roster-hover.js';
+import { rosterFatigueCell } from '../shared/player-cells.js';
+import { renderTableFootIcon } from '../../lab/card-back.js';
 
 const TACTIC_SLIDER_KEYS = ['mentality', 'possession', 'press', 'offsideLine'];
 const DEFAULT_USER_TACTICS = { mentality: 50, possession: 50, press: 50, offsideLine: 50 };
@@ -503,7 +505,7 @@ export function createTacticsFeature(deps) {
 
   const substitutionPlayerRow = (player, attributes, selected, liveState = null) => {
     const clubName = getUserClub?.() || '';
-    return `<button type="button" class="substitution-player-row ${selected ? 'selected' : ''}" ${attributes} style="display:grid!important;width:100%!important;padding:7px 8px!important;border:0!important;border-top:1px solid #234b55!important;border-radius:0!important;background:${selected ? '#173b48' : '#091820'}!important;color:#edf8f5!important;box-shadow:${selected ? 'inset 3px 0 0 #b6ff38' : 'none'}!important;transform:none!important"><span class="sub-pos">${player.pos}</span><span class="sub-ovr">${player.overall}</span><span class="sub-name">${playerNameCell(player.name, player, { liveState, openCard: true, clubName })}</span><span class="sub-fatigue"><i><b style="width:${clamp(player.fatigue, 0, 100)}%"></b></i><em>${Math.round(player.fatigue)}%</em></span></button>`;
+    return `<button type="button" class="substitution-player-row ${selected ? 'selected' : ''}" ${attributes} style="display:grid!important;width:100%!important;padding:7px 8px!important;border:0!important;border-top:1px solid #234b55!important;border-radius:0!important;background:${selected ? '#173b48' : '#091820'}!important;color:#edf8f5!important;box-shadow:${selected ? 'inset 3px 0 0 #b6ff38' : 'none'}!important;transform:none!important"><span class="sub-pos">${player.pos}</span><span class="sub-ovr">${player.overall}</span><span class="sub-name">${playerNameCell(player.name, player, { liveState, openCard: true, clubName })}</span><span class="sub-energy-foot">${rosterFatigueCell(player, { compact: true })}${renderTableFootIcon(player, 'sub')}</span></button>`;
   };
 
   const renderSubstitutionControls = () => {

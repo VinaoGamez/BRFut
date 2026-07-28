@@ -266,6 +266,19 @@ function renderFeetCore(player) {
   </div>`;
 }
 
+const TABLE_FOOT_PATH =
+  'M12 2C8 2 5 6 5 11c0 4 1 8 2 12 1 4 2 8 2 12 0 3 1 5 3 5s3-2 3-5c0-4 1-8 2-12 1-4 2-8 2-12 0-5-3-9-7-9z';
+
+/** Ícone compacto de pé forte — mesmo visual dos cards, para tabelas. */
+export function renderTableFootIcon(player, variant = 'roster') {
+  const preferredFoot = player?.preferredFoot;
+  const side = footSide(preferredFoot);
+  const label = preferredFoot || 'Direito';
+  const leftStrong = side === 'left' || side === 'both' ? ' is-strong' : '';
+  const rightStrong = side === 'right' || side === 'both' ? ' is-strong' : '';
+  return `<span class="table-foot table-foot--${variant}" title="${esc(label)}" aria-label="Pé forte: ${esc(label)}"><span class="table-foot-icons" aria-hidden="true"><svg class="table-foot-icon table-foot-icon--left${leftStrong}" viewBox="0 0 24 44"><path d="${TABLE_FOOT_PATH}"/></svg><svg class="table-foot-icon table-foot-icon--right${rightStrong}" viewBox="0 0 24 44"><path d="${TABLE_FOOT_PATH}"/></svg></span></span>`;
+}
+
 function renderHexBadge(player, { preview = false } = {}) {
   let asset = null;
   if (preview) {
