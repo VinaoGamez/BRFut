@@ -351,7 +351,9 @@ export function buildOfficialSerieDGroups(divisionDNames, options = {}) {
 
   for (const name of pool) {
     if (used.has(name)) continue;
-    const target = groups.find(group => group.length < 6);
+    const target =
+      groups.find(group => group.length < 6 && group.length % 2 === 0)
+      ?? groups.find(group => group.length < 6);
     if (target) target.push(name);
     else groups[groups.length - 1]?.push(name);
     used.add(name);

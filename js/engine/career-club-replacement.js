@@ -6,6 +6,7 @@ import {
   normClubName,
   careerDivisionForHost,
 } from './brazilian-clubs-by-uf.js';
+import { rebalanceSerieDGroups, serieDGroupsNeedRebalance } from './serie-d-formation.js';
 
 export const DIVISION_ORDER = Object.freeze(['A', 'B', 'C', 'D']);
 
@@ -316,6 +317,11 @@ export function ensureSerieDUserEnrollment({
         repaired = true;
       }
     }
+  }
+
+  if (repaired || serieDGroupsNeedRebalance(groups)) {
+    groups = rebalanceSerieDGroups(repaired ? nextTeams : divisionTeams, groups);
+    repaired = true;
   }
 
   return {

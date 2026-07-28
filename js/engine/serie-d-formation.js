@@ -8,7 +8,8 @@
  */
 
 import { getAllRealClubs, getRealClub, normClubName } from './brazilian-clubs-by-uf.js';
-import { SERIE_D_CLUBS, SERIE_C_RELEGATION_TO_D } from './serie-c-calendar.js';
+import { serieDGroupSizes } from './brazil-official-pyramid.js';
+import { SERIE_D_CLUBS, SERIE_C_RELEGATION_TO_D, SERIE_D_GROUPS } from './serie-c-calendar.js';
 import { stateLeagueAffectsSerieD } from './state-league-format.js';
 
 /** Vagas distribuídas às federações estaduais (RNF). */
@@ -141,6 +142,92 @@ export function resolveSerieDGroupClubName(clubName, serieDGroups = []) {
   return serieDGroups[groupIndex]?.find(name => normClubName(name) === key) || clubName;
 }
 
+/** Grupo ímpar ou vazio não gera calendário round-robin — exige rebalanceamento. */
+export function serieDGroupsNeedRebalance(serieDGroups = []) {
+  if (!Array.isArray(serieDGroups) || !serieDGroups.length) return true;
+  const seen = new Set();
+  for (const group of serieDGroups) {
+    if (!Array.isArray(group) || group.length < 2 || group.length % 2 !== 0) return true;
+    for (const club of group) {
+      const key = normClubName(club);
+      if (!key) return true;
+      if (seen.has(key)) return true;
+      seen.add(key);
+    }
+  }
+  return false;
+}
+
+/**
+ * Redistribui clubes da Série D em grupos de tamanho par (CBF: 96÷16).
+ * Preserva índice de grupo quando possível — corrige saves com clubes extras empilhados.
+ */
+export function rebalanceSerieDGroups(divisionTeams, serieDGroups = [], groupCount = SERIE_D_GROUPS) {
+  const dTeams = [];
+  const seen = new Set();
+  for (const club of divisionTeams?.D || []) {
+    const key = normClubName(club);
+    if (!club || !key || seen.has(key)) continue;
+    seen.add(key);
+    dTeams.push(club);
+  }
+  if (!dTeams.length) return (serieDGroups || []).map(group => [...(group || [])]);
+
+  const preferredIndex = new Map();
+  (serieDGroups || []).forEach((group, groupIndex) => {
+    (group || []).forEach(club => {
+      const key = normClubName(club);
+      if (key && dTeams.some(name => normClubName(name) === key) && !preferredIndex.has(key)) {
+        preferredIndex.set(key, groupIndex);
+      }
+    });
+  });
+
+  const rawSizes = serieDGroupSizes(dTeams.length, groupCount);
+  const sizes = rawSizes.map(size => (size % 2 === 0 ? size : Math.max(2, size - 1)));
+  let sizeTotal = sizes.reduce((sum, size) => sum + size, 0);
+  let carry = dTeams.length - sizeTotal;
+  for (let index = 0; carry > 0; index = (index + 1) % sizes.length) {
+    sizes[index] += 2;
+    carry -= 2;
+  }
+  const groups = sizes.map(() => []);
+  const unassigned = [...dTeams];
+
+  const takeFromUnassigned = key => {
+    const index = unassigned.findIndex(name => normClubName(name) === key);
+    if (index < 0) return null;
+    const [club] = unassigned.splice(index, 1);
+    return club;
+  };
+
+  for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+    const capacity = sizes[groupIndex] || 0;
+    const preferred = unassigned.filter(club => preferredIndex.get(normClubName(club)) === groupIndex);
+    for (const club of preferred) {
+      if (groups[groupIndex].length >= capacity) break;
+      const placed = takeFromUnassigned(normClubName(club));
+      if (placed) groups[groupIndex].push(placed);
+    }
+  }
+
+  for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+    const capacity = sizes[groupIndex] || 0;
+    while (groups[groupIndex].length < capacity && unassigned.length) {
+      groups[groupIndex].push(unassigned.shift());
+    }
+  }
+
+  while (unassigned.length) {
+    const club = unassigned.shift();
+    const target = groups.find(group => group.length % 2 === 1) ?? groups.find(group => group.length < 6);
+    if (target) target.push(club);
+    else groups[groups.length - 1]?.push(club);
+  }
+
+  return groups;
+}
+
 /**
  * Garante que cada clube da lista D apareça em algum grupo (corrige saves/desalinhamentos).
  */
@@ -150,12 +237,15 @@ export function ensureSerieDGroupMembership(divisionTeams, serieDGroups = []) {
   const dTeams = [...(divisionTeams?.D || [])];
   const isListed = name =>
     groups.some(group => group.some(entry => normClubName(entry) === normClubName(name)));
+  let changed = false;
   for (const club of dTeams) {
     if (!club || isListed(club)) continue;
-    const target = groups.find(group => group.length < 6) ?? groups[groups.length - 1];
-    if (target) target.push(club);
+    changed = true;
+    break;
   }
-  return groups;
+  if (serieDGroupsNeedRebalance(groups)) changed = true;
+  if (!changed) return groups;
+  return rebalanceSerieDGroups(divisionTeams, groups);
 }
 
 /**

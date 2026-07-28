@@ -212,6 +212,8 @@ import {
 import {
   findSerieDGroupIndex,
   ensureSerieDGroupMembership,
+  rebalanceSerieDGroups,
+  serieDGroupsNeedRebalance,
 } from '../engine/serie-d-formation.js';
 import {
   applyCareerHostNameSwap,
@@ -1568,6 +1570,10 @@ const rosterChangeAlertHolder = { fn: null };
     }
   }
   serieDGroups=ensureSerieDGroupMembership(divisionTeams,serieDGroups);
+  if(savedNewGame&&serieDGroupsNeedRebalance(serieDGroups)){
+    serieDGroups=rebalanceSerieDGroups(divisionTeams,serieDGroups);
+    serieDLayoutRepaired=true;
+  }
   const userSerieDGroupIndexFound=findSerieDGroupIndex(userClub,serieDGroups);
   const userSerieDGroupIndex=userSerieDGroupIndexFound>=0?userSerieDGroupIndexFound:0;
   const userSerieDGroup=serieDGroups[userSerieDGroupIndexFound]||[];
@@ -1597,7 +1603,12 @@ const rosterChangeAlertHolder = { fn: null };
     if(savedD&&(!userClub||userDivision!=='D'||divisionFixturesIncludeClub(savedD,userClub)))return normalizeSerieDGroupFixtures(savedD);
     return normalizeSerieDGroupFixtures(Array.from({length:SERIE_D_GROUP_ROUNDS},(_,roundIndex)=>groups.flatMap(group=>(buildCompetitionRoundRobinFixtures(group,'serie-d-groups')[roundIndex]||[]).map(game=>({...game,round:roundIndex+1})))));
   };
-  const serieDGroupFixtures=savedNewGame?buildSerieDGroupFixtures(serieDGroups):[];
+  let serieDGroupFixtures=savedNewGame?buildSerieDGroupFixtures(serieDGroups):[];
+  if(savedNewGame&&userDivision==='D'&&userClub&&!divisionFixturesIncludeClub(serieDGroupFixtures,userClub)){
+    serieDGroups=rebalanceSerieDGroups(divisionTeams,serieDGroups);
+    serieDLayoutRepaired=true;
+    serieDGroupFixtures=buildSerieDGroupFixtures(serieDGroups);
+  }
   const championshipFixtures=savedNewGame?{A:serieAFixtures,B:serieBFixtures,C:serieCFixtures,D:serieDGroupFixtures}[userDivision]:serieAFixtures;
   const scheduledMatchCount=(Array.isArray(championshipFixtures)?championshipFixtures:[]).reduce((total,round)=>total+(Array.isArray(round)?round.length:0),0);
   $('#calendar .title span').textContent=`${scheduledMatchCount} jogos da fase atual foram definidos no início da temporada.`;

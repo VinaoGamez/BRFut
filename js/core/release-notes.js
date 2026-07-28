@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.10',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T21:30:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Calendário',
+        items: [
+          'Após o estadual, times da Série D voltam a ver os jogos nacionais na Central — corrige grupos com número ímpar de clubes que deixavam a agenda vazia.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.05',
     date: '2026-07-28',
     publishedAt: '2026-07-28T20:40:00-03:00',
