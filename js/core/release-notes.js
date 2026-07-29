@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.55',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T19:25:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Disputa de pênaltis da Copa',
+        items: [
+          'A disputa de pênaltis agora reconhece corretamente a seleção controlada pelo jogador.',
+          'Saves parados antes da primeira cobrança retomam a disputa ao atualizar a página.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.50',
     date: '2026-07-29',
     publishedAt: '2026-07-29T19:15:00-04:00',

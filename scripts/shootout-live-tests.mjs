@@ -3,7 +3,18 @@
  * Uso: node scripts/shootout-live-tests.mjs
  */
 import assert from 'node:assert/strict';
-import { decideShootoutWinner } from '../js/engine/shootout-takers.js';
+import {
+  decideShootoutWinner,
+  resolveShootoutUserClub,
+} from '../js/engine/shootout-takers.js';
+
+// Na Copa do Mundo, o clube da carreira não é o lado controlado na disputa.
+{
+  const game = { home: 'Estados Unidos', away: 'Irã' };
+  assert.equal(resolveShootoutUserClub(game, 'Vinaz Athletic Futebol', true), 'Estados Unidos');
+  assert.equal(resolveShootoutUserClub(game, 'Vinaz Athletic Futebol', false), 'Irã');
+  assert.equal(resolveShootoutUserClub(null, 'Vinaz Athletic Futebol', true), 'Vinaz Athletic Futebol');
+}
 
 // Morte súbita normal: empate nas cobranças, gols diferentes
 {
@@ -45,4 +56,4 @@ import { decideShootoutWinner } from '../js/engine/shootout-takers.js';
   assert.equal(out.suddenDeath, true);
 }
 
-console.log('ok  shootout-live-tests (3 asserts)');
+console.log('ok  shootout-live-tests (6 asserts)');

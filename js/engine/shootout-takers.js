@@ -8,6 +8,15 @@ const sortByPenalty = (a, b) =>
   (Number(b.overall) || 0) - (Number(a.overall) || 0);
 
 /**
+ * Nome do time controlado pelo jogador na partida atual.
+ * Em jogos de seleção, `fallbackClub` ainda aponta para o clube da carreira.
+ */
+export function resolveShootoutUserClub(game, fallbackClub, userAtHome = true) {
+  if (!game) return fallbackClub;
+  return (userAtHome ? game.home : game.away) || fallbackClub;
+}
+
+/**
  * @param {Array} lineup
  * @param {Array|object} cardState — cards por índice (red)
  * @param {string[]} usedNames

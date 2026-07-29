@@ -8,6 +8,7 @@ import {
   resolveShootoutTakerPool,
   decideShootoutWinner,
   shootoutChoiceOptions,
+  resolveShootoutUserClub,
 } from './shootout-takers.js';
 import { isPenaltySpecialist, isPenaltySavingSpecialist, penaltyGoalChanceRate, shootoutKickGoalChance } from './player-generation.js';
 import penaltySpecBadgeUrl from '../../assets/cards/badges/card-badge-especialista-penalti.webp';
@@ -662,15 +663,17 @@ export function createLiveMatchOrchestration(deps) {
     const total = (shootoutState.results[c0] || []).length + (shootoutState.results[c1] || []).length;
     if (Number(shootoutState.kickIndex) !== total) shootoutState.kickIndex = total;
   };
+  const shootoutUserClub = () =>
+    resolveShootoutUserClub(getLiveMatchGame(), getUserClub(), userAtHomeInLiveMatch());
   const shootoutLineup = clubName => {
-    const userClub = getUserClub(), matchClub = getMatchClub(), clubs = getClubs();
+    const userClub = shootoutUserClub(), matchClub = getMatchClub(), clubs = getClubs();
     if (clubName === userClub) return getActiveStarters();
     const opponent = matchClub.name;
     if (clubName === opponent) return matchClub.roster.slice(0, 11);
     return clubs[clubName]?.roster?.slice(0, 11) || [];
   };
   const shootoutCardsFor = clubName => {
-    const userClub = getUserClub(), matchClub = getMatchClub(), cards = getCards();
+    const userClub = shootoutUserClub(), matchClub = getMatchClub(), cards = getCards();
     if (clubName === userClub) return cards.home;
     if (clubName === matchClub.name) return cards.away;
     return [];
@@ -1045,7 +1048,7 @@ export function createLiveMatchOrchestration(deps) {
       scheduleNextShootoutKick();
       return;
     }
-    const userClub = getUserClub();
+    const userClub = shootoutUserClub();
     const isUser = kickingClub === userClub, side = isUser ? 'home' : 'away', current = isUser ? profile() : opponentForMatch(), other = isUser ? opponentForMatch() : profile();
     shootoutState.currentKickClub = kickingClub;
     shootoutState.usedNames[kickingClub] = shootoutState.usedNames[kickingClub] || [];
@@ -1075,7 +1078,7 @@ export function createLiveMatchOrchestration(deps) {
   };
 
   const startShootoutTakerChoice = kickingClub => {
-    const shootoutState = getShootoutState(), userClub = getUserClub();
+    const shootoutState = getShootoutState(), userClub = shootoutUserClub();
     stopMatchClock(); setPendingPenalty({ mode: 'shootout', kickingClub }); $('#matchActions').classList.add('hidden');
     const section = $('#penaltyChoice'), keeperClub = shootoutState.clubs.find(name => name !== kickingClub), keeperLineup = shootoutLineup(keeperClub), keeper = keeperLineup.find(player => player.pos === 'GOL') || keeperLineup[0];
     let heading = section.querySelector('.penalty-choice-heading');
@@ -1105,7 +1108,7 @@ export function createLiveMatchOrchestration(deps) {
     const keeperClub = shootoutState.clubs.find(name => name !== kickingClub);
     const keeperLineup = shootoutLineup(keeperClub);
     const keeper = keeperLineup.find(player => player.pos === 'GOL') || keeperLineup[0];
-    const userClub = getUserClub();
+    const userClub = shootoutUserClub();
     const defendingUser = keeperClub === userClub;
     stopMatchClock();
     setPendingPenalty({
@@ -1173,7 +1176,7 @@ export function createLiveMatchOrchestration(deps) {
   };
 
   const scheduleNextShootoutKick = () => {
-    const shootoutState = getShootoutState(), userClub = getUserClub();
+    const shootoutState = getShootoutState(), userClub = shootoutUserClub();
     if (!shootoutState) return;
     reconcileShootoutState();
     const winner = evaluateShootoutWinner();
