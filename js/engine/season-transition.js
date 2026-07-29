@@ -77,6 +77,12 @@ export function createSeasonTransitionEngine(deps) {
     if (!deps.seasonComplete()) return false;
     if (deps.hasPendingUserFixtures()) return false;
     deps.advanceCupThroughDate(new Date(deps.getCareerSeason(), 11, 31, 12));
+    // Fecha a Copa do Mundo (CPU) até o fim da janela — senão some da lista de campeões.
+    const seasonYear = deps.getCareerSeason();
+    const wcEnd = deps.worldCupWindowEndDate?.(seasonYear)
+      || new Date(seasonYear, 6, 19, 12);
+    deps.advanceWorldCupThroughDateLocal?.(wcEnd);
+    deps.refreshWorldCupFixtures?.();
     deps.refreshCopaDoBrasilFixtures();
     deps.rebuildCalendarGames();
     return !deps.hasPendingUserFixtures();
@@ -94,6 +100,11 @@ export function createSeasonTransitionEngine(deps) {
     const dKnockout = deps.getDKnockout();
     const cupCompetition = deps.getCupCompetition();
     const generatedClubPool = deps.getGeneratedClubPool();
+
+    // Garante campeão da CMU antes de montar a lista (simulação idle pode ter pulado a janela).
+    const wcEnd = deps.worldCupWindowEndDate?.(careerSeason) || new Date(careerSeason, 6, 19, 12);
+    deps.advanceWorldCupThroughDateLocal?.(wcEnd);
+    deps.refreshWorldCupFixtures?.();
 
     try {
       const returnedLoans = deps.returnExpiredLoans?.() || 0;

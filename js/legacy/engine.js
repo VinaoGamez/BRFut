@@ -278,6 +278,7 @@ import {
   simulateNationalTeamMatch,
   worldCupCalendarSummary,
   earliestPendingWorldCupUserFixture,
+  worldCupWindowEndDate,
 } from '../engine/world-cup-competition.js';
 import { nationalTeamByCode, resolveNationalTeam } from '../engine/national-teams.js';
 import {
@@ -6984,6 +6985,9 @@ export async function bootEngine({
     advanceCupThroughDate,
     refreshCopaDoBrasilFixtures,
     rebuildCalendarGames,
+    advanceWorldCupThroughDateLocal,
+    refreshWorldCupFixtures,
+    worldCupWindowEndDate,
     returnExpiredLoans:()=>transfersEngine?.returnExpiredLoans?.()||0,
     assignSquadJerseyNumbers,
     syncUserSquadFromClub:()=>{if(clubs[userClub])squad.splice(0,squad.length,...clubs[userClub].roster);},

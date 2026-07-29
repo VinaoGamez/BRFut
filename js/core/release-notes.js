@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.95',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T20:55:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Copa do Mundo',
+        items: [
+          'Durante a janela da Copa, jogos de clube (Série D etc.) não roubam a vez — a CMU tem prioridade.',
+          'Ao fechar a temporada, a Copa do Mundo volta a aparecer na lista de campeões.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.90',
     date: '2026-07-29',
     publishedAt: '2026-07-29T20:40:00-04:00',

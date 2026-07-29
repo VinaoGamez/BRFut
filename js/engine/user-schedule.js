@@ -6,6 +6,7 @@ import { parseCalendarDate } from './season-scheduler.js';
 import { isRecopaNationalGame } from './recopa-national.js';
 import { isStateLeagueGame } from './state-league-format.js';
 import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
+import { isClubCalendarBlackout } from './season-calendar-cycle.js';
 
 /**
  * Agenda do usuário: fixtures pendentes/concluídos e helpers de calendário.
@@ -128,9 +129,23 @@ export function createUserScheduleEngine({
     return userScheduleCache;
   };
 
+  const isWorldCupFixture = game => game?.competition === WORLD_CUP_COMPETITION;
+
+  const isClubFixtureBlockedByWorldCup = entry => {
+    if (!entry?.game || isWorldCupFixture(entry.game)) return false;
+    const date = entry.details?.date;
+    if (!date) return false;
+    const year = Number(date.getFullYear?.() || getCareerCalendarDate()?.getFullYear?.());
+    return isClubCalendarBlackout(date, year);
+  };
+
   const pendingUserSchedule = () => {
     if (pendingUserScheduleCache) return pendingUserScheduleCache;
-    pendingUserScheduleCache = userSchedule().filter(entry => !isFixtureCompleted(entry.game));
+    // Durante a janela CMU, jogos de clube (Série D etc.) não entram na fila —
+    // slots travados; a Copa tem prioridade absoluta.
+    pendingUserScheduleCache = userSchedule()
+      .filter(entry => !isFixtureCompleted(entry.game))
+      .filter(entry => !isClubFixtureBlockedByWorldCup(entry));
     return pendingUserScheduleCache;
   };
 
@@ -155,12 +170,31 @@ export function createUserScheduleEngine({
       : championshipFixtures.length;
     for (let round = firstPendingLeagueRound(); round <= maxRound; round++) {
       const game = leagueUserGameForRound(round);
-      if (game && !isFixtureCompleted(game)) return { game, details: fixtureDetails(game) };
+      if (game && !isFixtureCompleted(game)) {
+        const entry = { game, details: fixtureDetails(game) };
+        if (isClubFixtureBlockedByWorldCup(entry)) continue;
+        return entry;
+      }
     }
     return null;
   };
 
-  const nextPendingUserEntry = () => pendingUserSchedule()[0] || nextLeagueUserEntry();
+  const nextPendingUserEntry = () => {
+    const pending = pendingUserSchedule();
+    const careerDate = getCareerCalendarDate();
+    const year = Number(careerDate?.getFullYear?.());
+    // No meio da janela CMU, prioriza sempre a próxima partida da Copa.
+    if (year && isClubCalendarBlackout(careerDate, year)) {
+      const wc = pending.find(entry => isWorldCupFixture(entry.game));
+      if (wc) return wc;
+    }
+    const next = pending[0];
+    if (next && !isWorldCupFixture(next.game)) {
+      const wc = pending.find(entry => isWorldCupFixture(entry.game));
+      if (wc) return wc;
+    }
+    return next || nextLeagueUserEntry();
+  };
 
   const isPendingFixtureOverdue = entry => {
     if (!entry?.details?.date) return false;

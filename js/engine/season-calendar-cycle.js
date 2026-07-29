@@ -92,6 +92,32 @@ export function isClubCalendarBlackout(date, seasonYear) {
   return getHardClubBlackouts(y).some(b => isDateInMoldWindow(date, b, y));
 }
 
+/**
+ * Empurra data de clube para fora do blackout hard (ex.: após 19/jul na CMU).
+ * Se a data já está livre, devolve cópia normalizada.
+ */
+export function snapOutsideClubBlackout(date, seasonYear) {
+  const y = Number(seasonYear);
+  if (!y || !date) return date ? normalizeNoon(date) : date;
+  let next = normalizeNoon(date);
+  if (!isClubCalendarBlackout(next, y)) return next;
+
+  const hard = getHardClubBlackouts(y);
+  let latestEnd = next;
+  hard.forEach(b => {
+    if (!isDateInMoldWindow(next, b, y)) return;
+    const end = moldToDate(y, b.end[0], b.end[1]);
+    if (end.getTime() > latestEnd.getTime()) latestEnd = end;
+  });
+  next = normalizeNoon(new Date(latestEnd));
+  next.setDate(next.getDate() + 1);
+  // Segurança: se ainda cair em outro hard, avança dia a dia.
+  for (let i = 0; i < 60 && isClubCalendarBlackout(next, y); i += 1) {
+    next.setDate(next.getDate() + 1);
+  }
+  return next;
+}
+
 /** Próximo ano do ciclo com o mesmo weekday que o âncora para [mês, dia]. */
 export function nextCalendarAnchorYear(fromYear = CALENDAR_ANCHOR_YEAR) {
   const y = Number(fromYear) || CALENDAR_ANCHOR_YEAR;

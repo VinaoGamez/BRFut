@@ -6,6 +6,7 @@ import {
 import { isStateLeagueGame, scheduleStateLeagueDates, STATE_LEAGUE_CALENDAR_SLOTS } from './state-league-format.js';
 import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
 import { gameMatchesRecorded } from './competition-calendar.js';
+import { isClubCalendarBlackout, snapOutsideClubBlackout } from './season-calendar-cycle.js';
 
 /**
  * Resolve data/hora de exibição para qualquer fixture (liga, copa, estadual, CM).
@@ -41,7 +42,19 @@ export function createFixtureDetailsResolver({
       gameMatchesRecorded(game, candidate),
     );
     const roundFallback = fixtureDate(game.round);
-    const date = gameScheduledDate(game, roundFallback) || roundFallback;
+    let date = gameScheduledDate(game, roundFallback) || roundFallback;
+    // Mata-mata Série D sem data caía no nominal Apr–Sep (dentro da CMU).
+    // Empurra para fora do blackout e grava a data no fixture.
+    if (date && isClubCalendarBlackout(date, careerSeason)) {
+      date = snapOutsideClubBlackout(date, careerSeason);
+      if (game && !game.completed && game.homeGoals == null) {
+        try {
+          game.date = date.toISOString().slice(0, 10);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
     const formatted = formatFixtureDateLabel(date);
     return {
       date: formatted?.date || date,

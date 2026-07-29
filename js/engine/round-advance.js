@@ -11,6 +11,7 @@ import {
 import { recordKnockoutResult, winnerFromGame, loserFromGame } from './world-cup-bracket.js';
 import { isKnockoutShootoutCompetition, KNOCKOUT_COMPETITIONS } from './knockout-shootout.js';
 import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
+import { worldCupWindowEndDate } from './world-cup-competition.js';
 
 /**
  * Histórico da rodada só conta se a tabela também refletiu o jogo — evita AVANÇAR
@@ -428,7 +429,11 @@ export function createRoundAdvanceEngine(deps) {
         : deps.fixtureDate(clamp(deps.getCurrentRound(), 1, championshipFixtures.length));
       deps.advanceCupThroughDate(cupReferenceDate);
       advanceStateLeagueThroughDate(cupReferenceDate);
-      deps.advanceWorldCupThroughDateLocal(deps.getCareerCalendarDate());
+      const wcReferenceDate = completedSeason
+        ? worldCupWindowEndDate(careerSeason)
+        : deps.getCareerCalendarDate();
+      deps.advanceWorldCupThroughDateLocal(wcReferenceDate);
+      if (completedSeason) deps.refreshWorldCupFixtures?.();
       deps.maybeSendNationalTeamOffers();
       if (completedSeason) deps.finalizeNationalRankingSeason();
       if (liveMatchGame && (liveMatchGame.home === userClub || liveMatchGame.away === userClub)) {
@@ -579,7 +584,11 @@ export function createRoundAdvanceEngine(deps) {
       : deps.fixtureDate(clamp(deps.getCurrentRound(), 1, fixtureCap));
     deps.advanceCupThroughDate(cupReferenceDate);
     advanceStateLeagueThroughDate(cupReferenceDate);
-    deps.advanceWorldCupThroughDateLocal(deps.getCareerCalendarDate());
+    const wcReferenceDate = completedSeasonNow
+      ? worldCupWindowEndDate(careerSeason)
+      : deps.getCareerCalendarDate();
+    deps.advanceWorldCupThroughDateLocal(wcReferenceDate);
+    if (completedSeasonNow) deps.refreshWorldCupFixtures?.();
     deps.maybeSendNationalTeamOffers();
     deps.setRoundPreviewResults({});
     deps.persistAfterRoundAdvance();

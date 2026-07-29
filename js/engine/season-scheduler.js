@@ -23,7 +23,7 @@ import {
   snapToNearestWeekday,
   snapToNextWeekday,
 } from './season-week-slots.js';
-import { isClubCalendarBlackout, isWorldCupClubCalendarLocked } from './season-calendar-cycle.js';
+import { isClubCalendarBlackout, isWorldCupClubCalendarLocked, snapOutsideClubBlackout } from './season-calendar-cycle.js';
 
 /** Janelas nacionais — derivadas do molde CBF 2026. */
 export const LEAGUE_CALENDAR_WINDOWS = leagueWindowsFromMold();
@@ -195,10 +195,14 @@ export function findAvailableSlotDate(occupancy, home, away, {
     probe = snapToNextWeekday(probe, slotWeekdays);
   }
 
-  return snapToNextWeekday(
+  const snapped = snapToNextWeekday(
     maxBound && maxBound.getTime() < fallbackNominal.getTime() ? maxBound : fallbackNominal,
     slotWeekdays,
   );
+  if (seasonYear && isClubCalendarBlackout(snapped, seasonYear)) {
+    return snapOutsideClubBlackout(snapped, seasonYear);
+  }
+  return snapped;
 }
 
 /**
@@ -246,7 +250,10 @@ export function findAvailableDate(occupancy, home, away, {
     let cursor = new Date(maxBound);
     const floor = minBound || normalizeNoon(nominalDate);
     while (cursor.getTime() >= floor.getTime()) {
-      if (clubsAvailable(occupancy, home, away, cursor, minRestDays)) return new Date(cursor);
+      if (!(seasonYear && isClubCalendarBlackout(cursor, seasonYear))
+        && clubsAvailable(occupancy, home, away, cursor, minRestDays)) {
+        return new Date(cursor);
+      }
       cursor.setDate(cursor.getDate() - 1);
     }
   }
@@ -267,7 +274,11 @@ export function findAvailableDate(occupancy, home, away, {
     fallback.setDate(fallback.getDate() + 1);
   } while (!seasonCap || fallback.getTime() <= seasonCap);
 
-  return maxBound ? new Date(maxBound) : normalizeNoon(nominalDate);
+  const lastResort = maxBound ? new Date(maxBound) : normalizeNoon(nominalDate);
+  if (seasonYear && isClubCalendarBlackout(lastResort, seasonYear)) {
+    return snapOutsideClubBlackout(lastResort, seasonYear);
+  }
+  return lastResort;
 }
 
 export function unreserveScheduledGame(occupancy, game) {
