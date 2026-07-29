@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.35',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T14:45:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Home',
+        items: [
+          'Contadores da home com base discreta (~10 ON / ~55 cadastros) que somam os usuários reais e crescem leve por dia.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.30',
     date: '2026-07-29',
     publishedAt: '2026-07-29T14:40:00-04:00',

@@ -236,24 +236,25 @@ if (SITE_MAINTENANCE.enabled) {
   let playerStatsTimer = 0;
 
   /**
-   * Vitrine da home: piso fictício discreto (alpha / pouca divulgação)
-   * + variação leve por dia/hora. Se a API real passar do piso, usa o valor real.
+   * Vitrine da home: base fictícia discreta + contagem real da API.
+   * Cadastros e ON reais somam à base (cada usuário novo sobe o número).
+   * Base de cadastros cresce leve por dia.
    */
   const displayPlayerStats = stats => {
     const now = new Date();
     const hour = now.getHours();
     const daySeed = Math.floor(now.getTime() / 86_400_000);
-    const registeredFloor = 22 + (daySeed % 7); // ~22–28
-    const eveningBoost = hour >= 19 && hour <= 23 ? 2 : hour >= 12 && hour <= 18 ? 1 : 0;
-    const onlineFloor = 2 + eveningBoost + ((daySeed + hour) % 2); // ~2–5
-    const realRegistered = Number(stats?.registered);
-    const realOnline = Number(stats?.online);
+    // Âncora: 29/jul/2026; +~0,7 cadastro fictício/dia.
+    const launchDay = Math.floor(Date.UTC(2026, 6, 29) / 86_400_000);
+    const daysSince = Math.max(0, daySeed - launchDay);
+    const registeredBase = 55 + Math.floor(daysSince * 0.7) + (daySeed % 3); // ~55–57 hoje
+    const eveningBoost = hour >= 19 && hour <= 23 ? 3 : hour >= 12 && hour <= 18 ? 2 : 1;
+    const onlineBase = 8 + eveningBoost + ((daySeed + hour) % 2); // ~9–13
+    const realRegistered = Math.max(0, Number.isFinite(Number(stats?.registered)) ? Number(stats.registered) : 0);
+    const realOnline = Math.max(0, Number.isFinite(Number(stats?.online)) ? Number(stats.online) : 0);
     return {
-      registered: Math.max(
-        Number.isFinite(realRegistered) ? realRegistered : 0,
-        registeredFloor,
-      ),
-      online: Math.max(Number.isFinite(realOnline) ? realOnline : 0, onlineFloor),
+      registered: registeredBase + realRegistered,
+      online: onlineBase + realOnline,
     };
   };
 
