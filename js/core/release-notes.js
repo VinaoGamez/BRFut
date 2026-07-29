@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.15',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T22:15:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Save / sessão',
+        items: [
+          'Hard refresh (Ctrl+Shift+R) não desloga mais nem apaga a carreira em andamento.',
+          'Modo "Salvar a cada 3 jogos" grava a temporada localmente a cada partida; sync na nuvem continua a cada 3.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.10',
     date: '2026-07-28',
     publishedAt: '2026-07-28T21:30:00-03:00',

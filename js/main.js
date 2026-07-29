@@ -95,7 +95,24 @@ const beginAppSession = async () => {
   try {
     await probeBackend();
 
-    if (!getAuthToken()) {
+    const token = getAuthToken();
+    const localCareer = hasCareerSave();
+    // #region agent log
+    fetch('http://127.0.0.1:7743/ingest/6125dd39-2579-4c29-a7c1-51d14474875e', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '25cc52' },
+      body: JSON.stringify({
+        sessionId: '25cc52',
+        location: 'main.js:beginAppSession',
+        message: 'boot auth state',
+        data: { hasToken: !!token, localCareer },
+        hypothesisId: 'A',
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    if (!token) {
       clearSessionCareerData();
       redirectToHomeLanding();
       return;

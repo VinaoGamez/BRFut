@@ -252,6 +252,10 @@ const SPONSOR_ORDER = [
   document.getElementById('openTesterGuide')?.addEventListener('click', () => testerHub.openGuide());
   document.getElementById('openTesterFeedback')?.addEventListener('click', () => testerHub.openFeedback());
 
+  window.addEventListener('beforeunload', () => {
+    if (hasCareer()) markSkipSessionEndOnce();
+  });
+
   window.addEventListener('pagehide', event => {
     if (event.persisted) return;
     if (consumeSkipSessionEndOnce()) return;

@@ -9,12 +9,30 @@ import {
   markSkipPersistOnce,
   consumeSkipPersistOnce,
   consumeSkipSessionEndOnce,
+  markSkipSessionEndOnce,
   pruneInjuryHistory,
   clearSessionCareerData,
 } from '../core/save.js';
 import { endBrowserSession, flushCloudSync } from '../core/storage-api.js';
 import { getAutosaveMode, mergePreferencesIntoCareer, AUTOSAVE_MODES } from '../core/save-preferences.js';
 import { trimWorldRostersForQuota } from './world-rosters.js';
+
+// #region agent log
+const __dbgSave = (location, message, data, hypothesisId) => {
+  fetch('http://127.0.0.1:7743/ingest/6125dd39-2579-4c29-a7c1-51d14474875e', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '25cc52' },
+    body: JSON.stringify({
+      sessionId: '25cc52',
+      location,
+      message,
+      data,
+      hypothesisId,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+};
+// #endregion
 
 export function createCareerPersistence({
   getSavedNewGame,
@@ -116,6 +134,12 @@ export function createCareerPersistence({
   const persistAfterRoundAdvance = () => {
     if (!getSavedNewGame?.()) return;
     const mode = getAutosaveMode();
+    // #region agent log
+    __dbgSave('career-persistence.js:persistAfterRoundAdvance', 'round advance persist gate', {
+      mode,
+      willPersistSeason: mode === AUTOSAVE_MODES.round,
+    }, 'B');
+    // #endregion
     if (mode === AUTOSAVE_MODES.manual) return;
     if (mode === AUTOSAVE_MODES.every3) return;
     persistSeason(true);
@@ -126,10 +150,17 @@ export function createCareerPersistence({
   /** Conta jogos do usuário para autosave "a cada 3 jogos". */
   const notifyUserMatchPlayed = () => {
     if (!getSavedNewGame?.()) return;
-    if (getAutosaveMode() !== AUTOSAVE_MODES.every3) return;
+    const mode = getAutosaveMode();
+    if (mode !== AUTOSAVE_MODES.every3) return;
     const savedNewGame = getSavedNewGame();
     const prefs = mergePreferencesIntoCareer(savedNewGame);
     const nextCount = (prefs.gamesSinceAutosave || 0) + 1;
+    // #region agent log
+    __dbgSave('career-persistence.js:notifyUserMatchPlayed', 'every3 counter tick', {
+      nextCount,
+      willFullSave: nextCount >= 3,
+    }, 'B');
+    // #endregion
     if (nextCount >= 3) {
       mergePreferencesIntoCareer(savedNewGame, { gamesSinceAutosave: 0 });
       persistCareer({ ...savedNewGame });
@@ -140,6 +171,7 @@ export function createCareerPersistence({
     }
     mergePreferencesIntoCareer(savedNewGame, { gamesSinceAutosave: nextCount });
     persistCareer({ ...savedNewGame });
+    persistSeason(true);
   };
 
   /** Save manual acionado pelo jogador (Opções → SALVAR). */
@@ -193,15 +225,39 @@ export function createCareerPersistence({
       } catch {
         /* ignore */
       }
-      if (getSavedNewGame?.()) persistSeason(true);
+      const hadCareer = !!getSavedNewGame?.();
+      let seasonOk = false;
+      if (hadCareer) {
+        persistSeason(true);
+        seasonOk = true;
+      }
       flushCloudSync({ urgent: true });
+      // #region agent log
+      __dbgSave('career-persistence.js:flushOnExit', 'pagehide/visibility flush', {
+        hadCareer,
+        seasonOk,
+        autosaveMode: getAutosaveMode(),
+        skipPersistOnUnload,
+        skipForNewGame,
+      }, 'C');
+      // #endregion
     };
+    window.addEventListener('beforeunload', () => {
+      if (getSavedNewGame?.()) markSkipSessionEndOnce();
+    });
     window.addEventListener('beforeunload', flushOnExit);
     // pagehide é mais confiável que beforeunload em F5 / hard refresh (desktop e mobile).
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
       flushOnExit();
-      if (consumeSkipSessionEndOnce()) return;
+      const skipSession = consumeSkipSessionEndOnce();
+      // #region agent log
+      __dbgSave('career-persistence.js:pagehide', 'session end decision', {
+        skipSession,
+        willEndSession: !skipSession,
+      }, 'A');
+      // #endregion
+      if (skipSession) return;
       endBrowserSession();
       clearSessionCareerData();
     });
