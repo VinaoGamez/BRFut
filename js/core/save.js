@@ -404,9 +404,69 @@ export function loadSeasonSave() {
   return raw;
 }
 
+/** Ano da temporada no blob (stamp explícito ou inferido do calendário). */
+export function resolveSeasonSaveYear(season) {
+  if (!season || typeof season !== 'object') return null;
+  const stamped = Number(season.careerSeason ?? season.seasonYear);
+  if (Number.isFinite(stamped) && stamped >= 2000 && stamped <= 2100) return stamped;
+  const cal = season.careerCalendarDate;
+  if (cal == null) return null;
+  const raw = typeof cal === 'string' ? cal : cal instanceof Date ? cal.toISOString() : String(cal);
+  const y = Number(raw.slice(0, 4));
+  return Number.isFinite(y) && y >= 2000 && y <= 2100 ? y : null;
+}
+
+function yearFromFixtureDate(value) {
+  if (value == null) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getFullYear();
+  const raw = String(value);
+  const y = Number(raw.slice(0, 4));
+  return Number.isFinite(y) && y >= 2000 && y <= 2100 ? y : null;
+}
+
+/** Tabela/copa incompatível com a carreira (ex.: J=42 ou final em DEZ do ano anterior). */
+export function seasonSaveLooksCorrupt(season, careerYear) {
+  if (!season || typeof season !== 'object') return false;
+  const year = Number(careerYear);
+  const standings = season.standings && typeof season.standings === 'object' ? season.standings : {};
+  const currentRound = Number(season.currentRound) || 0;
+
+  for (const [division, rows] of Object.entries(standings)) {
+    const maxPlayed = division === 'D' ? 10 : 38;
+    if (!Array.isArray(rows)) continue;
+    for (const row of rows) {
+      const played = Number(row?.played) || 0;
+      if (played > maxPlayed) return true;
+      // Virada falhou: rodada atual baixa com J alto (ex.: rodada 1 + J=10 na D).
+      if (currentRound > 0 && played > currentRound) return true;
+    }
+  }
+
+  if (Number.isFinite(year) && year >= 2000) {
+    const stages = season.cupCompetition?.stages;
+    if (Array.isArray(stages)) {
+      for (const stage of stages) {
+        const fixtures = Array.isArray(stage?.fixtures) ? stage.fixtures : [];
+        for (const game of fixtures) {
+          const y = yearFromFixtureDate(game?.date);
+          if (y != null && y < year) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 export function isSeasonValidForCareer(career, season) {
   if (!career || season?.seed !== career.seed) return false;
   if (season?._localCheckpoint) return false;
+  const careerYear = Number(career.season);
+  if (Number.isFinite(careerYear) && careerYear >= 2000) {
+    const seasonYear = resolveSeasonSaveYear(season);
+    // Blob de outra temporada (ex.: 2027 reidratado em carreira 2028) → inválido.
+    if (seasonYear != null && seasonYear !== careerYear) return false;
+  }
+  if (seasonSaveLooksCorrupt(season, careerYear)) return false;
   return true;
 }
 
@@ -445,6 +505,21 @@ export function consumeFreshCareerBoot() {
 export function clearSeasonSave({ cloudDeletes = true } = {}) {
   localStorage.removeItem(SAVE_KEYS.season);
   localStorage.removeItem(SAVE_KEYS.liveMatch);
+  // Bundle do slot também — senão loadSeasonSave reidrata a temporada antiga após a virada.
+  const slotId = readActiveSlotIdForLoad();
+  if (slotId) {
+    try {
+      const bundle = slotBundleKeys(slotId);
+      localStorage.removeItem(bundle.season);
+      localStorage.removeItem(bundle.liveMatch);
+      if (cloudDeletes && isCloudStorageActive()) {
+        queueCloudDelete(bundle.season);
+        queueCloudDelete(bundle.liveMatch);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
   if (cloudDeletes && isCloudStorageActive()) {
     queueCloudDelete(SAVE_KEYS.season);
     queueCloudDelete(SAVE_KEYS.liveMatch);

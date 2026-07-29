@@ -295,6 +295,7 @@ export function createSeasonSaveWriter({
 
     const seasonPayload = {
       seed: savedNewGame.seed,
+      careerSeason,
       userClubName: activeUserClub,
       currentRound,
       careerCalendarDate: calendarKey(careerCalendarDate),

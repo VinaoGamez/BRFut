@@ -50,13 +50,25 @@ export function createSeasonTransitionEngine(deps) {
     const competitionRoundHistory = deps.getCompetitionRoundHistory();
     for (let round = fromRound; round <= 38; round++) {
       ['A', 'B', 'C'].forEach(division => {
+        const history = competitionRoundHistory[division] || [];
+        // Idempotente: não reaplicar rodada já no histórico (evita J>38 / J=42).
+        if (history.some(entry => Number(entry?.round) === round)) return;
         const competition = nationalCompetitions[division];
         const fixtures = (Array.isArray(competition?.fixtures) ? competition.fixtures : [])[round - 1] || [];
         const clubs = deps.getClubs();
-        const playable = fixtures.filter(game => game?.home && game?.away && clubs[game.home] && clubs[game.away]);
+        const playable = fixtures.filter(game => {
+          if (!game?.home || !game?.away || !clubs[game.home] || !clubs[game.away]) return false;
+          if (game.completed) return false;
+          return true;
+        });
+        if (!playable.length) return;
         const results = playable.map(game => deps.simulateRoundMatch(game.home, game.away, game));
         results.forEach(deps.recordGameLeaders);
         results.forEach(game => deps.applySecondaryResult(game, competition));
+        results.forEach(game => {
+          if (game?.fixture) game.fixture.completed = true;
+          else if (game) game.completed = true;
+        });
         deps.creditLeagueHomeTvForGames(results, division);
         if (!competitionRoundHistory[division]) competitionRoundHistory[division] = [];
         competitionRoundHistory[division].push({
@@ -489,6 +501,9 @@ export function createSeasonTransitionEngine(deps) {
 
     deps.writeCareerSave(nextSave);
     deps.finalizePlayerHistorySeason(careerSeason, { nextSeason: (savedNewGame.season || 2026) + 1 });
+    // Impede beforeunload / nuvem de reidratar a temporada antiga no reload da virada.
+    deps.markSkipPersistOnce?.();
+    deps.markFreshCareerBoot?.();
     deps.clearSeasonSave();
     pendingDivisionTeams = null;
     pendingSerieDFormation = null;

@@ -90,13 +90,14 @@ export function parseCalendarDate(date) {
   return normalizeNoon(date instanceof Date ? date : new Date(date));
 }
 
-/** Rótulo curto pt-BR (ex.: 25 FEV) ou null. */
+/** Rótulo curto pt-BR (ex.: 25 FEV 2028) ou null. Ano evita confundir fim de temporada anterior. */
 export function formatFixtureDateLabel(date) {
   const valid = parseCalendarDate(date);
   if (!valid) return null;
   const day = String(valid.getDate()).padStart(2, '0');
   const month = valid.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
-  return { date: valid, display: `${day} ${month}` };
+  const year = valid.getFullYear();
+  return { date: valid, display: `${day} ${month} ${year}` };
 }
 
 /** Último dia do calendário da carreira (31/dez — sem estender pro ano seguinte). */

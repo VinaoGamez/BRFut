@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.30',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T17:45:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Calendário / campeonatos',
+        items: [
+          'Corrigida a virada de temporada: o save do ano anterior deixava de vazar para a temporada nova (tabelas com jogos a mais, Série D mista e finais de copa com data do ano anterior).',
+          'Datas dos jogos passam a mostrar o ano (ex.: 01 DEZ 2027).',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.25',
     date: '2026-07-29',
     publishedAt: '2026-07-29T17:30:00-04:00',
