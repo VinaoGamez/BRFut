@@ -269,6 +269,8 @@ preloadCompetitionTrophy('world-cup').then(url => {
   if (trophyImg && url) {
     trophyImg.src = url;
     trophyImg.alt = 'Troféu Copa do Mundo';
+    trophyImg.dataset.trophyKey = 'world-cup';
+    trophyImg.classList.add('competition-trophy-art--world-cup');
   }
 });
 

@@ -12,7 +12,7 @@ const MODAL_HTML = `
     <div class="nto-layout-stage">
       <p class="nto-hero-kicker">COPA DO MUNDO</p>
       <div class="nto-trophy-wrap">
-        <img id="ntOfferTrophy" class="nto-trophy" src="" alt="" width="120" height="120">
+        <img id="ntOfferTrophy" class="nto-trophy competition-trophy-art--world-cup" data-trophy-key="world-cup" src="" alt="" width="120" height="120">
       </div>
       <p class="nto-hero-dates" id="ntOfferHeroDates">11 JUN — 19 JUL · 2026</p>
       <p class="nto-hero-meta">Fase de grupos + mata-mata · Paralelo ao seu clube</p>
@@ -60,6 +60,8 @@ export function createNationalTeamOffersUiFeature(deps) {
       if (img && url) {
         img.src = url;
         img.alt = 'Troféu Copa do Mundo';
+        img.dataset.trophyKey = 'world-cup';
+        img.classList.add('competition-trophy-art--world-cup');
       }
     });
   };

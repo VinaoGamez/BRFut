@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.85',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T20:25:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Troféu da Copa do Mundo',
+        items: [
+          'Fundo preto removido: o troféu aparece em silhueta nos convites, campeonatos e resumo da temporada.',
+          'Brilho e sombra alinhados aos outros troféus do jogo.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.80',
     date: '2026-07-29',
     publishedAt: '2026-07-29T20:15:00-04:00',

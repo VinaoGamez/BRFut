@@ -5,7 +5,7 @@ const loaders = {
   estaduais: () => import('../../assets/competitions/trophies/trophy-estaduais.webp'),
   libertadores: () => import('../../assets/competitions/trophies/trophy-libertadores.webp'),
   'sul-americana': () => import('../../assets/competitions/trophies/trophy-sul-americana.webp'),
-  'world-cup': () => import('../../assets/competitions/trophies/trophy-world-cup.png'),
+  'world-cup': () => import('../../assets/competitions/trophies/trophy-world-cup.webp'),
 };
 
 const cache = new Map();
@@ -13,6 +13,12 @@ const cache = new Map();
 export const COMPETITION_TROPHY_ASSETS = Object.fromEntries(
   Object.keys(loaders).map(key => [key, { id: key, label: key, url: null }]),
 );
+
+function decorateTrophyImg(imgEl, key) {
+  if (!imgEl) return;
+  imgEl.dataset.trophyKey = key;
+  imgEl.classList.toggle('competition-trophy-art--world-cup', key === 'world-cup');
+}
 
 /** Chave visual do troféu para a página Campeonatos. */
 export function resolveChampionshipTrophyKey(pageCompetition) {
@@ -44,7 +50,9 @@ export function competitionTrophyUrl(pageCompetition) {
 export function ensureCompetitionTrophy(pageCompetition, imgEl) {
   const key = resolveChampionshipTrophyKey(pageCompetition);
   const apply = url => {
-    if (imgEl && url && imgEl.getAttribute('src') !== url) imgEl.setAttribute('src', url);
+    if (!imgEl || !url) return;
+    decorateTrophyImg(imgEl, key);
+    if (imgEl.getAttribute('src') !== url) imgEl.setAttribute('src', url);
   };
   const cached = cache.get(key);
   if (cached) {
@@ -69,8 +77,8 @@ export function hydratePickerTrophyIcons(root = document) {
     img.height = 22;
     img.decoding = 'async';
     img.loading = 'lazy';
+    decorateTrophyImg(img, key);
     img.src = url;
     slot.prepend(img);
   });
 }
-

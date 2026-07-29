@@ -691,7 +691,15 @@
   max-width:100%;
   max-height:46px;
   object-fit:contain;
+  object-position:center bottom;
+  background:transparent;
   animation:seasonTrophyFloat 3s ease-in-out infinite;
+}
+.season-champion-trophy-img.competition-trophy-art--world-cup{
+  max-height:52px;
+  filter:
+    drop-shadow(0 4px 10px #0008)
+    drop-shadow(0 0 10px rgba(255,210,74,.22));
 }
 .season-champion-trophy-img:not([src]),
 .season-champion-trophy-img[src='']{
