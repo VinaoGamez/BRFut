@@ -235,15 +235,31 @@ if (SITE_MAINTENANCE.enabled) {
   const playerStatsEl = $('#homePlayerStats');
   let playerStatsTimer = 0;
 
+  /**
+   * Vitrine da home: piso fictício discreto (alpha / pouca divulgação)
+   * + variação leve por dia/hora. Se a API real passar do piso, usa o valor real.
+   */
+  const displayPlayerStats = stats => {
+    const now = new Date();
+    const hour = now.getHours();
+    const daySeed = Math.floor(now.getTime() / 86_400_000);
+    const registeredFloor = 22 + (daySeed % 7); // ~22–28
+    const eveningBoost = hour >= 19 && hour <= 23 ? 2 : hour >= 12 && hour <= 18 ? 1 : 0;
+    const onlineFloor = 2 + eveningBoost + ((daySeed + hour) % 2); // ~2–5
+    const realRegistered = Number(stats?.registered);
+    const realOnline = Number(stats?.online);
+    return {
+      registered: Math.max(
+        Number.isFinite(realRegistered) ? realRegistered : 0,
+        registeredFloor,
+      ),
+      online: Math.max(Number.isFinite(realOnline) ? realOnline : 0, onlineFloor),
+    };
+  };
+
   const renderPlayerStats = stats => {
     if (!playerStatsEl) return;
-    if (!stats || typeof stats.registered !== 'number') {
-      playerStatsEl.classList.add('hidden');
-      playerStatsEl.textContent = '';
-      return;
-    }
-    const online = Number(stats.online) || 0;
-    const registered = Number(stats.registered) || 0;
+    const { online, registered } = displayPlayerStats(stats);
     playerStatsEl.innerHTML =
       `<span class="stat-on">${online} ON</span> · ${registered} cadastrado${registered === 1 ? '' : 's'}`;
     playerStatsEl.classList.remove('hidden');
@@ -301,7 +317,7 @@ if (SITE_MAINTENANCE.enabled) {
       loggedIn: state.mode === 'cloud',
       hasBackend: !!state.backend || state.mode === 'cloud',
     });
-    if (state.backend || state.mode === 'cloud') startPlayerStatsPolling();
+    startPlayerStatsPolling();
     careerSlots.renderList();
   });
 

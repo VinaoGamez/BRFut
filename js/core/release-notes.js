@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.30',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T14:40:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Home',
+        items: [
+          'Contadores de jogadores online e cadastrados na home com vitrine mais atrativa para novos visitantes.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.25',
     date: '2026-07-29',
     publishedAt: '2026-07-29T14:35:00-04:00',

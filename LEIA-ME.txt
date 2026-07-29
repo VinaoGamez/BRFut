@@ -19,7 +19,7 @@ Dev:     http://127.0.0.1:5080/home.html
 Testers: http://127.0.0.1:5081/home.html
 Publico: https://vinaogamez.github.io/BRFut/home.html
 
-Build atual de referencia: Alpha V.4.25
+Build atual de referencia: Alpha V.4.30
 
 Saves: localStorage (brfut-*) + sync opcional com conta.
 Ate 5 slots de carreira por usuario.
