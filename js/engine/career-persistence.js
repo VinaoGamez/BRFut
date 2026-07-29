@@ -182,7 +182,9 @@ export function createCareerPersistence({
     if (!getSavedNewGame?.()) return { ok: false, cloud: false };
     persistSeason(true, { flush: false });
     syncCareerRosters();
-    const cloud = await flushCloudSyncAsync();
+    const cloud = await flushCloudSyncAsync({
+      forceLocalKeys: [SAVE_KEYS.career, SAVE_KEYS.season],
+    });
     // #region agent log
     try {
       const seasonRaw = localStorage.getItem(SAVE_KEYS.season);
@@ -193,8 +195,10 @@ export function createCareerPersistence({
           ts: Date.now(),
           cloudOk: cloud.ok,
           cloudMode: cloud.mode,
+          cloudReason: cloud.reason || null,
           cloudSynced: cloud.synced,
           cloudFailed: cloud.failed || [],
+          cloudErrors: cloud.errors || [],
           careerCal: season?.careerCalendarDate || null,
           cloudActive: isCloudStorageActive(),
         }),
@@ -205,11 +209,19 @@ export function createCareerPersistence({
     __dbgSave('career-persistence.js:manualSaveAll', 'manual save finished', {
       cloudOk: cloud.ok,
       cloudMode: cloud.mode,
+      cloudReason: cloud.reason,
       cloudSynced: cloud.synced,
       cloudFailed: cloud.failed || [],
+      cloudErrors: cloud.errors || [],
     }, 'F');
     // #endregion
-    return { ok: true, cloud: cloud.ok, cloudMode: cloud.mode };
+    return {
+      ok: true,
+      cloud: cloud.ok,
+      cloudMode: cloud.mode,
+      cloudReason: cloud.reason,
+      cloudErrors: cloud.errors || [],
+    };
   };
 
   const syncCareerRosters = () => {

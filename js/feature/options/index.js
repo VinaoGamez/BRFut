@@ -455,10 +455,19 @@ export function createOptionsFeature(deps) {
     }
     const result = await onManualSave?.();
     const ok = result === true || (result && typeof result === 'object' && result.ok !== false);
-    const cloudOk = result === true || result?.cloud !== false;
+    const cloudOk = result?.cloud === true;
+    const cloudHint = (() => {
+      if (cloudOk) return 'SALVO!';
+      if (!ok) return 'SEM SAVE';
+      const err = result?.cloudErrors?.[0];
+      if (result?.cloudReason === 'cloud_inactive') return 'SEM LOGIN';
+      if (err?.status === 401) return 'SESSÃO';
+      if (err?.status === 413) return 'MUITO GRANDE';
+      return 'SÓ LOCAL';
+    })();
     if (btn) {
       const prev = 'SALVAR';
-      btn.textContent = !ok ? 'SEM SAVE' : cloudOk ? 'SALVO!' : 'SÓ LOCAL';
+      btn.textContent = cloudHint;
       window.setTimeout(() => {
         btn.textContent = prev;
         btn.disabled = false;

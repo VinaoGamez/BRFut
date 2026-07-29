@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.30',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T23:45:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Save na nuvem',
+        items: [
+          'SALVAR envia versão compacta à API quando o save é grande — corrige "SÓ LOCAL" no brfut.com.br.',
+          'Botão indica causa quando falha: SEM LOGIN, SESSÃO ou MUITO GRANDE.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.25',
     date: '2026-07-28',
     publishedAt: '2026-07-28T23:30:00-03:00',
