@@ -10,6 +10,18 @@ import {
   shootoutChoiceOptions,
 } from './shootout-takers.js';
 import { isPenaltySpecialist, isPenaltySavingSpecialist, penaltyGoalChanceRate, shootoutKickGoalChance } from './player-generation.js';
+import penaltySpecBadgeUrl from '../../assets/cards/badges/card-badge-especialista-penalti.webp';
+import penaltySaveBadgeUrl from '../../assets/cards/badges/card-badge-especialista-defesa-penalti.webp';
+
+/** Ícone hex no lugar do texto “ESPECIALISTA”. */
+function specialistBadgeHtml(kind = 'penalty') {
+  const src = kind === 'penaltySaving' ? penaltySaveBadgeUrl : penaltySpecBadgeUrl;
+  const label =
+    kind === 'penaltySaving'
+      ? 'Especialista em defesa de pênalti'
+      : 'Especialista em cobrança de pênalti';
+  return `<img class="penalty-specialist-icon" src="${src}" alt="${label}" title="${label}" width="32" height="32" decoding="async">`;
+}
 
 /**
  * Orquestração da partida ao vivo — desgaste por minuto, ciclo tick/advance,
@@ -884,7 +896,7 @@ export function createLiveMatchOrchestration(deps) {
           <small>${attackLabel}</small>
           <b>${taker.name}</b>
           <em>${taker.pos} · OVR ${taker.overall}</em>
-          ${specialist ? '<i class="penalty-specialist">ESPECIALISTA</i>' : ''}
+          ${specialist ? specialistBadgeHtml('penalty') : ''}
           <dl>
             <div><dt>Cobrança</dt><dd>${taker.penaltyTaking}</dd></div>
             <div><dt>Finalização</dt><dd>${taker.finishing ?? '—'}</dd></div>
@@ -899,7 +911,7 @@ export function createLiveMatchOrchestration(deps) {
           <small>${defendLabel}</small>
           <b>${keeper.name}</b>
           <em>GOL · OVR ${keeper.overall}</em>
-          ${keeperSpec ? '<i class="penalty-specialist">ESPECIALISTA</i>' : ''}
+          ${keeperSpec ? specialistBadgeHtml('penaltySaving') : ''}
           <dl>
             <div><dt>Def. pênalti</dt><dd>${keeper.penaltySaving ?? '—'}</dd></div>
             <div><dt>Reflexos</dt><dd>${keeper.reflexes ?? '—'}</dd></div>
@@ -1073,7 +1085,7 @@ export function createLiveMatchOrchestration(deps) {
     const takers = shootoutChoiceOptions(shootoutTakersFor(kickingClub), 5);
     const chanceFor = player =>
       Math.round(shootoutKickGoalChance(player.penaltyTaking, keeper.penaltySaving, player, keeper) * 100);
-    $('#penaltyTakers').innerHTML = takers.length ? takers.map((player, index) => `<button class="${index === 0 ? 'best-option' : ''}" data-taker="${player.name}"><span class="penalty-taker-title"><b>${player.name} · ${player.pos}</b>${index === 0 ? '<i class="penalty-best-badge">MELHOR OPÇÃO</i>' : isPenaltySpecialist(player) ? '<i class="penalty-specialist">ESPECIALISTA</i>' : ''}</span><span class="penalty-metric"><small>OVERALL</small><strong>${player.overall}</strong></span><span class="penalty-metric chance"><small>CHANCE ESTIMADA</small><strong>${chanceFor(player)}%</strong></span></button>`).join('') : '<p class="shootout-empty">Sem cobradores disponíveis.</p>';
+    $('#penaltyTakers').innerHTML = takers.length ? takers.map((player, index) => `<button class="${index === 0 ? 'best-option' : ''}" data-taker="${player.name}"><span class="penalty-taker-title"><b>${player.name} · ${player.pos}</b>${index === 0 ? '<i class="penalty-best-badge">MELHOR OPÇÃO</i>' : isPenaltySpecialist(player) ? specialistBadgeHtml('penalty') : ''}</span><span class="penalty-metric"><small>OVERALL</small><strong>${player.overall}</strong></span><span class="penalty-metric chance"><small>CHANCE ESTIMADA</small><strong>${chanceFor(player)}%</strong></span></button>`).join('') : '<p class="shootout-empty">Sem cobradores disponíveis.</p>';
     openPenaltyDuel(
       'Disputa de pênaltis',
       `Cobrança ${kickNo}. Escolha o batedor com calma — cada chute decide.`,
@@ -1283,7 +1295,7 @@ export function createLiveMatchOrchestration(deps) {
     const takers = getActiveStarters().filter(player => player.pos !== 'GOL').sort((a, b) => b.penaltyTaking - a.penaltyTaking || b.overall - a.overall).slice(0, 3);
     const chanceFor = player =>
       Math.round(penaltyGoalChanceRate(player.penaltyTaking, keeper.penaltySaving, player, keeper) * 100);
-    $('#penaltyTakers').innerHTML = takers.map((player, index) => `<button class="${index === 0 ? 'best-option' : ''}" data-taker="${player.name}"><span class="penalty-taker-title"><b>${player.name} · ${player.pos}</b>${index === 0 ? '<i class="penalty-best-badge">MELHOR BATEDOR</i>' : isPenaltySpecialist(player) ? '<i class="penalty-specialist">ESPECIALISTA</i>' : ''}</span><span class="penalty-metric"><small>OVERALL</small><strong>${player.overall}</strong></span><span class="penalty-metric chance"><small>CHANCE ESTIMADA</small><strong>${chanceFor(player)}%</strong></span></button>`).join('');
+    $('#penaltyTakers').innerHTML = takers.map((player, index) => `<button class="${index === 0 ? 'best-option' : ''}" data-taker="${player.name}"><span class="penalty-taker-title"><b>${player.name} · ${player.pos}</b>${index === 0 ? '<i class="penalty-best-badge">MELHOR BATEDOR</i>' : isPenaltySpecialist(player) ? specialistBadgeHtml('penalty') : ''}</span><span class="penalty-metric"><small>OVERALL</small><strong>${player.overall}</strong></span><span class="penalty-metric chance"><small>CHANCE ESTIMADA</small><strong>${chanceFor(player)}%</strong></span></button>`).join('');
     openPenaltyDuel('Pênalti!', 'O juiz aponta a marca da cal. Escolha o cobrador.');
     $('#matchStatus').textContent = 'Pênalti: escolha o cobrador na janela da disputa.';
   };

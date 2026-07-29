@@ -478,15 +478,12 @@
   font:600 11px 'DM Sans',sans-serif;
   font-style:normal;
 }
-.penalty-compare-card .penalty-specialist{
+.penalty-compare-card .penalty-specialist-icon{
   justify-self:start;
   margin-top:2px;
-  padding:2px 6px;
-  border-radius:3px;
-  background:#5a2e12;
-  color:#ffc94f;
-  font:800 8px 'DM Sans',sans-serif;
-  letter-spacing:.4px;
+  width:36px;
+  height:36px;
+  object-fit:contain;
 }
 .penalty-compare-card dl{
   display:grid;

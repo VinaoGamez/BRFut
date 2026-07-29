@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.05',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T17:00:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Pênaltis',
+        items: [
+          'Na escolha do cobrador, o especialista mostra o ícone hex no lugar do texto ESPECIALISTA.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.00',
     date: '2026-07-29',
     publishedAt: '2026-07-29T17:00:00-04:00',
