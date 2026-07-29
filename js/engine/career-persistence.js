@@ -98,29 +98,27 @@ export function createCareerPersistence({
   };
 
   const persistSeason = (immediate = false, { flush = true } = {}) => {
-    if (!getSavedNewGame?.()) return;
+    if (!getSavedNewGame?.()) return false;
     if (immediate === true) {
       if (persistSeasonTimer) {
         clearTimeout(persistSeasonTimer);
         persistSeasonTimer = null;
       }
-      writeSeasonSave();
+      const ok = writeSeasonSave();
       if (flush) flushCloudSync({ urgent: true });
-      return;
+      return ok;
     }
     if (persistSeasonTimer) clearTimeout(persistSeasonTimer);
     persistSeasonTimer = setTimeout(() => {
       persistSeasonTimer = null;
       writeSeasonSave();
     }, MEMORY_LIMITS.persistDebounceMs);
+    return true;
   };
 
-  /** Grava temporada + carreira imediatamente após avanço de rodada (respeita preferência). */
+  /** Grava temporada + carreira imediatamente após avanço de rodada (sempre — evita loop de rodada). */
   const persistAfterRoundAdvance = () => {
     if (!getSavedNewGame?.()) return;
-    const mode = getAutosaveMode();
-    if (mode === AUTOSAVE_MODES.manual) return;
-    if (mode === AUTOSAVE_MODES.every3) return;
     persistSeason(true);
     syncCareerRosters();
     flushCloudSync();
@@ -149,14 +147,19 @@ export function createCareerPersistence({
 
   /** Save manual acionado pelo jogador (Opções → SALVAR). Aguarda confirmação da nuvem quando logado. */
   const manualSaveAll = async () => {
-    if (!getSavedNewGame?.()) return { ok: false, cloud: false };
-    persistSeason(true, { flush: false });
+    if (!getSavedNewGame?.()) return { ok: false, cloud: false, localOk: false };
+    const seasonLocalOk = persistSeason(true, { flush: false });
     syncCareerRosters();
+    const careerLocalOk = persistCareer({ ...getSavedNewGame() });
     const cloud = await flushCloudSyncAsync({
       forceLocalKeys: [SAVE_KEYS.career, SAVE_KEYS.season],
     });
+    const localOk = seasonLocalOk && careerLocalOk;
     return {
-      ok: true,
+      ok: localOk,
+      localOk,
+      seasonLocalOk,
+      careerLocalOk,
       cloud: cloud.ok,
       cloudMode: cloud.mode,
       cloudReason: cloud.reason,

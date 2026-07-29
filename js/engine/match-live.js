@@ -19,6 +19,7 @@ export function createLiveMatchActions(deps) {
     getGoals,
     getUserClub,
     getMatchClub,
+    getLiveMatchGame,
     getStarters,
     getCards,
     incrementScore,
@@ -75,6 +76,12 @@ export function createLiveMatchActions(deps) {
   const penaltyGoalChance = (penaltySkill, keeperSaving, taker = null, keeper = null) =>
     penaltyGoalChanceRate(penaltySkill, keeperSaving, taker, keeper);
 
+  const sideClubName = side => {
+    const game = getLiveMatchGame?.();
+    if (game?.home && game?.away) return side === 'home' ? game.home : game.away;
+    return side === 'home' ? getUserClub() : getMatchClub().name;
+  };
+
   /** Planeja resultado/canto da cobrança (para animação + motor usarem o mesmo desfecho). */
   const planPenaltyOutcome = (side, current, other, options = {}) => {
     const attacker = options.taker || playerFor(side, 'shot');
@@ -121,7 +128,7 @@ export function createLiveMatchActions(deps) {
   };
 
   const shot = (side,current,other,options={}) => {
-    const s=getStats()[side], otherStats=getStats()[side === 'home' ? 'away' : 'home'], team=side === 'home' ? getUserClub() : getMatchClub().name;
+    const s=getStats()[side], otherStats=getStats()[side === 'home' ? 'away' : 'home'], team=sideClubName(side);
     const writeLog=options.logFn||log;
     const attacker=options.taker || playerFor(side,'shot'), attackerData=actorData(side,attacker,'shot');
     const goalkeeper=playerFor(side === 'home' ? 'away' : 'home','save'), keeperData=actorData(side === 'home' ? 'away' : 'home',goalkeeper,'save');
@@ -264,7 +271,7 @@ export function createLiveMatchActions(deps) {
   // números de passe, desarme e posse passam a decidir quais jogadas chegam ao gol.
   const buildAttack = (side,current,other,passAccuracy,openingBoost=0) => {
     const otherSide = side === 'home' ? 'away' : 'home';
-    const team = side === 'home' ? getUserClub() : getMatchClub().name;
+    const team = sideClubName(side);
     const s=getStats()[side], o=getStats()[otherSide];
     const creatorName=playerFor(side,'pass'), creator=actorData(side,creatorName);
     const attackerName=playerFor(side,'shot'), attacker=actorData(side,attackerName);
@@ -285,7 +292,7 @@ export function createLiveMatchActions(deps) {
         if(foul(otherSide,side,{foulerName:defenderName,attackerName,phase:'duel'}))return;
       } else {
         o.tackles++; influencePossession(otherSide,1.45);
-        log(`${defenderName} intercepta a tentativa de ${creatorName} e recupera para o ${side === 'home' ? getMatchClub().name : getUserClub()}.`);
+        log(`${defenderName} intercepta a tentativa de ${creatorName} e recupera para o ${sideClubName(otherSide)}.`);
         const tackleVictim=pickInjuryVictim({eventPhase:'tackle',contact:true,intensity:.58},attacker,defender);
         if(tryLiveEventInjury(tackleVictim===attacker?side:otherSide,tackleVictim.name,{eventPhase:'tackle',contact:true,intensity:.58}))return;
       }

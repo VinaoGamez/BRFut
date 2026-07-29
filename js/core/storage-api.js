@@ -210,8 +210,14 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
     }
 
     if (isLocalStorageCheckpoint(localValue) && remoteValue != null) {
+      const winner =
+        key === SAVE_KEYS.season
+          ? mergeSeasonSaves(localValue, remoteValue, remoteEnvelopeAt)
+          : key === SAVE_KEYS.career
+            ? mergeCareerSaves(localValue, remoteValue, remoteEnvelopeAt)
+            : remoteValue;
       try {
-        localStorage.setItem(key, JSON.stringify(remoteValue));
+        localStorage.setItem(key, JSON.stringify(winner));
       } catch {
         /* ignore quota during hydrate */
       }

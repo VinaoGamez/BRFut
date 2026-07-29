@@ -464,18 +464,23 @@ export function createOptionsFeature(deps) {
       btn.textContent = 'SALVANDO…';
     }
     const result = await onManualSave?.();
+    const localOk = result?.localOk ?? result?.seasonLocalOk ?? (result === true);
     const ok = result === true || (result && typeof result === 'object' && result.ok !== false);
     const cloudOk = result?.cloud === true;
     const cloudHint = (() => {
+      if (!localOk) return 'MEMÓRIA CHEIA';
       if (cloudOk) return 'SALVO!';
       if (!ok) return 'SEM SAVE';
-      if (result?.cloudReason === 'cloud_inactive') return 'SEM LOGIN';
+      if (result?.cloudReason === 'cloud_inactive') return 'SALVO LOCAL';
       const err = result?.cloudErrors?.[0];
       if (err?.status === 401) return 'SESSÃO';
       if (err?.status === 413) return 'MUITO GRANDE';
       if (err?.status === 429) return 'LIMITE API';
-      if (result?.seasonOk === false && err?.bodyChars) return `ERRO ${err.status || '?'}`;
-      return 'NUVEM FALHOU';
+      if (result?.seasonOk === false || result?.careerOk === false) {
+        if (!err?.status) return 'SALVO LOCAL';
+        return `NUVEM ${err.status}`;
+      }
+      return 'SALVO LOCAL';
     })();
     if (btn) {
       const prev = 'SALVAR';

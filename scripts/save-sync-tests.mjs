@@ -11,6 +11,7 @@ import {
 import { slimCareerForCloudUpload, slimSeasonForCloudUpload } from '../js/core/cloud-save-payload.js';
 import { slimSeasonPayloadLevel4 } from '../js/engine/season-save-quota.js';
 import { SAVE_KEYS } from '../js/core/constants.js';
+import { isSeasonValidForCareer } from '../js/core/save.js';
 
 let passed = 0;
 let failed = 0;
@@ -176,6 +177,13 @@ check('isSlimCareerCheckpoint detects cloud checkpoint', () => {
   const slim = slimCareerForCloudUpload({ seed: 1, clubName: 'X', division: 'A' });
   assert(isSlimCareerCheckpoint(slim), 'upload checkpoint is slim');
   assert(!isSlimCareerCheckpoint({ seed: 1, divisionTeams: { D: ['X'] }, userRoster: Array.from({ length: 18 }, () => ({})) }), 'pyramid save is not slim');
+});
+
+check('isSeasonValidForCareer rejects local checkpoint blob', () => {
+  const career = { seed: 42 };
+  const checkpoint = { seed: 42, currentRound: 8, _localCheckpoint: true };
+  assert(!isSeasonValidForCareer(career, checkpoint), 'checkpoint must hydrate before boot');
+  assert(isSeasonValidForCareer(career, { seed: 42, standings: { A: [] } }), 'full season ok');
 });
 
 console.log(`\nSave sync tests: ${passed} passed, ${failed} failed`);

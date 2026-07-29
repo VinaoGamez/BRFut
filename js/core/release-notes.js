@@ -9,6 +9,29 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.10',
+    date: '2026-07-29',
+    publishedAt: '2026-07-30T01:10:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Copa do Mundo',
+        items: [
+          'Corrigido travamento ao clicar AVANÇAR no pós-jogo da seleção.',
+          'Gols da seleção passam a aparecer com o nome correto no relatório ao vivo.',
+        ],
+      },
+      {
+        label: 'Salvamento',
+        items: [
+          'Autosave por rodada grava de forma confiável após cada partida (incluindo CMU).',
+          'Botão SALVAR mostra mensagens mais claras (local, nuvem ou memória cheia).',
+          'Corrigido loop em que a mesma rodada repetia após compactação do save.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.05',
     date: '2026-07-29',
     publishedAt: '2026-07-30T00:45:00-03:00',

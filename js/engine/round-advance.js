@@ -1,9 +1,38 @@
 import { FEATURES } from '../core/constants.js';
 import { clamp } from '../ui/dom.js';
 import { compactMatchResult, involvesClub, MEMORY_LIMITS } from '../core/save.js';
+import { findRecordedGame } from './competition-calendar.js';
 import { recordKnockoutResult, winnerFromGame, loserFromGame } from './world-cup-bracket.js';
 import { isKnockoutShootoutCompetition, KNOCKOUT_COMPETITIONS } from './knockout-shootout.js';
 import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
+
+/**
+ * Histórico da rodada só conta se a tabela também refletiu o jogo — evita AVANÇAR
+ * no-op quando o save foi compactado / dessincronizado.
+ */
+export function resolveRoundAlreadyRecorded(
+  seasonRoundHistory,
+  currentRound,
+  { userGame, userLeaguePlayed },
+) {
+  const historyEntry = (seasonRoundHistory || []).find(item => item.round === currentRound);
+  if (!historyEntry) return false;
+
+  const played = userLeaguePlayed?.() ?? 0;
+  if (played < currentRound) {
+    const idx = seasonRoundHistory.findIndex(item => item.round === currentRound);
+    if (idx >= 0) seasonRoundHistory.splice(idx, 1);
+    return false;
+  }
+
+  if (userGame && !findRecordedGame(userGame, historyEntry.games || [])) {
+    const idx = seasonRoundHistory.findIndex(item => item.round === currentRound);
+    if (idx >= 0) seasonRoundHistory.splice(idx, 1);
+    return false;
+  }
+
+  return true;
+}
 
 function resetLiveMatchSession(deps) {
   deps.closeRoundResultsModal();
@@ -133,15 +162,22 @@ export function createRoundAdvanceEngine(deps) {
         if (!deps.getAvailabilityCommitted()) deps.commitLiveAvailability();
         deps.recordGameLeaders(liveMatchGame);
         deps.persistPlayerHistory();
-        deps.refreshWorldCupFixtures();
+        deps.refreshWorldCupFixtures?.();
         deps.rebuildCalendarGames();
         advancePostMatchDay();
-        deps.persistSeason(true);
-        deps.refreshSeasonPresentation();
+        deps.persistAfterRoundAdvance();
+        try {
+          deps.refreshSeasonPresentation();
+        } catch (error) {
+          console.warn('[matchday] falha ao atualizar UI pós-jogo CMU', error);
+        }
         deps.renderTeamStatsCard?.();
         resetLiveMatchSession(deps);
         if (deps.evaluateManagerJobRisk()) return;
         if (navigateDashboard) deps.navigateToDashboard();
+      } catch (error) {
+        console.warn('[matchday] falha ao avançar pós-jogo CMU', error);
+        resetLiveMatchSession(deps);
       } finally {
         deps.setRoundCommitted(false);
       }
@@ -182,17 +218,10 @@ export function createRoundAdvanceEngine(deps) {
       const currentRound = deps.getCurrentRound();
       const seasonRoundHistory = deps.getSeasonRoundHistory();
       const userClub = deps.getUserClub();
-      const alreadyRecorded = (() => {
-        const userGame = deps.leagueUserGameForRound(currentRound);
-        const historyEntry = seasonRoundHistory.find(item => item.round === currentRound);
-        const userDone = !userGame || deps.isFixtureCompleted(userGame);
-        if (historyEntry && !userDone) {
-          const idx = seasonRoundHistory.findIndex(item => item.round === currentRound);
-          if (idx >= 0) seasonRoundHistory.splice(idx, 1);
-          return false;
-        }
-        return seasonRoundHistory.some(item => item.round === currentRound);
-      })();
+      const alreadyRecorded = resolveRoundAlreadyRecorded(seasonRoundHistory, currentRound, {
+        userGame: deps.leagueUserGameForRound(currentRound),
+        userLeaguePlayed: deps.userLeaguePlayed,
+      });
 
       if (!alreadyRecorded) {
         const nationalCompetitions = deps.getNationalCompetitions();
@@ -242,6 +271,8 @@ export function createRoundAdvanceEngine(deps) {
         deps.renderRoster();
         deps.drawBoard();
         deps.recoverPlayers(Math.max(1, Math.round(restDays * deps.trainingRecoveryMultiplier('after'))));
+        advancePostMatchDay();
+      } else if (liveMatchGame) {
         advancePostMatchDay();
       }
 
@@ -341,17 +372,10 @@ export function createRoundAdvanceEngine(deps) {
     const fixturesOf = competition => (Array.isArray(competition?.fixtures) ? competition.fixtures : []);
     const currentRound = deps.getCurrentRound();
     const seasonRoundHistory = deps.getSeasonRoundHistory();
-    const alreadyRecorded = (() => {
-      const userGame = deps.leagueUserGameForRound(currentRound);
-      const historyEntry = seasonRoundHistory.find(item => item.round === currentRound);
-      const userDone = !userGame || deps.isFixtureCompleted(userGame);
-      if (historyEntry && !userDone) {
-        const idx = seasonRoundHistory.findIndex(item => item.round === currentRound);
-        if (idx >= 0) seasonRoundHistory.splice(idx, 1);
-        return false;
-      }
-      return (seasonRoundHistory || []).some(item => item.round === currentRound);
-    })();
+    const alreadyRecorded = resolveRoundAlreadyRecorded(seasonRoundHistory, currentRound, {
+      userGame: deps.leagueUserGameForRound(currentRound),
+      userLeaguePlayed: deps.userLeaguePlayed,
+    });
     if (!alreadyRecorded) {
       const userDivision = deps.getUserDivision();
       const nationalCompetitions = deps.getNationalCompetitions();

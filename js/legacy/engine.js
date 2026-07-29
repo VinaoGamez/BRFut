@@ -2204,6 +2204,7 @@ const rosterChangeAlertHolder = { fn: null };
     const histMax=(seasonRoundHistory||[]).reduce((max,entry)=>Math.max(max,entry?.round||0),0);
     const floor=Math.max(played+1,histMax+1);
     if(currentRound<floor)currentRound=floor;
+    if(currentRound<=played)currentRound=played+1;
   };
   reconcileCurrentRound();
   let persistSeason=()=>{};
@@ -3414,10 +3415,17 @@ const rosterChangeAlertHolder = { fn: null };
   const seasonEndDate=()=>planSeasonEndDate(careerSeason);
   const weekBounds=date=>{const start=new Date(date);start.setDate(start.getDate()-start.getDay());start.setHours(12,0,0,0);const end=new Date(start);end.setDate(end.getDate()+6);end.setHours(12,0,0,0);return{start,end};};
   const formatWeekDay=date=>`${String(date.getDate()).padStart(2,'0')} ${date.toLocaleDateString('pt-BR',{month:'short'}).replace('.','').toUpperCase()}`;
+  const isPostMatchPendingForGame=game=>{
+    if(!(matchFinished&&!roundCommitted&&liveMatchGame&&game))return false;
+    return game.home===liveMatchGame.home
+      &&game.away===liveMatchGame.away
+      &&(game.round??null)===(liveMatchGame.round??null)
+      &&String(game.competition||'')===String(liveMatchGame.competition||'');
+  };
   const userMatchOnDate=date=>{
-    const fromMap=(calendarGames.get(calendarKey(date))||[]).find(game=>isUserFixture(game)&&!isFixtureCompleted(game));
+    const fromMap=(calendarGames.get(calendarKey(date))||[]).find(game=>isUserFixture(game)&&!isFixtureCompleted(game)&&!isPostMatchPendingForGame(game));
     if(fromMap)return fromMap;
-    return pendingUserSchedule().find(entry=>sameCalendarDay(entry.details.date,date))?.game||null;
+    return pendingUserSchedule().find(entry=>sameCalendarDay(entry.details.date,date)&&!isPostMatchPendingForGame(entry.game))?.game||null;
   };
   const completedUserMatchOnDate=date=>(calendarGames.get(calendarKey(date))||[]).find(game=>isUserFixture(game)&&isFixtureCompleted(game))||null;
   const isOnPendingMatchDay=()=>!!userMatchOnDate(careerCalendarDate);
@@ -8059,6 +8067,7 @@ const rosterChangeAlertHolder = { fn: null };
     getNationalCompetitions:()=>nationalCompetitions,
     getChampionshipFixtures:()=>championshipFixtures,
     getWorldCupCompetition:()=>worldCupCompetition,
+    refreshWorldCupFixtures,
     rebuildCalendarGames,
     persistPlayerHistory:()=>playerHistory.persist(),
     invalidateUserScheduleCache,
@@ -8102,6 +8111,7 @@ const rosterChangeAlertHolder = { fn: null };
     buildLiveKnockoutStats,
     commitLiveKnockoutResult,
     leagueUserGameForRound,
+    userLeaguePlayed,
     isFixtureCompleted,
     simulateRoundResults,
     applyRoundToTable,
@@ -8559,6 +8569,7 @@ const rosterChangeAlertHolder = { fn: null };
     getGoals: () => goals,
     getUserClub: () => userClub,
     getMatchClub: () => matchClub(),
+    getLiveMatchGame: () => liveMatchGame,
     getStarters: () => starters(),
     getCards: () => cards,
     incrementScore: side => { if (side === 'home') home++; else away++; },

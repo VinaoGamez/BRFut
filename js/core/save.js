@@ -304,7 +304,9 @@ export function loadSeasonSave() {
 }
 
 export function isSeasonValidForCareer(career, season) {
-  return !!(career && season?.seed === career.seed);
+  if (!career || season?.seed !== career.seed) return false;
+  if (season?._localCheckpoint) return false;
+  return true;
 }
 
 /** Remove temporada local incompatível com a carreira (seed divergente ou Novo Jogo). */

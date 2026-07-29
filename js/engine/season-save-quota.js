@@ -90,7 +90,7 @@ export function slimSeasonPayloadLevel3(payload, context = {}) {
       teamStrength: null,
     };
   }
-  next.nationalFixtures = { A: [], B: [], C: [], D: [] };
+  // Mantém calendário nacional no local — apagar fixtures quebra retomada da rodada.
   next.dFixtures = Array.isArray(next.dFixtures) ? next.dFixtures.slice(-4) : [];
   if (next.cupCompetition) {
     next.cupCompetition = {
