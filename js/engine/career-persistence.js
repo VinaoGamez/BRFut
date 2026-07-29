@@ -3,7 +3,6 @@
  */
 
 import { SAVE_KEYS } from '../core/constants.js';
-import { appendDebugTrail } from '../core/debug-trail.js';
 import {
   MEMORY_LIMITS,
   writeJsonResilient,
@@ -16,26 +15,9 @@ import {
   hasLocalCareerSave,
   markCareerReloadPending,
 } from '../core/save.js';
-import { endBrowserSession, flushCloudSync, flushCloudSyncAsync, isCloudStorageActive } from '../core/storage-api.js';
+import { endBrowserSession, flushCloudSync, flushCloudSyncAsync } from '../core/storage-api.js';
 import { getAutosaveMode, mergePreferencesIntoCareer, AUTOSAVE_MODES } from '../core/save-preferences.js';
 import { trimWorldRostersForQuota } from './world-rosters.js';
-
-// #region agent log
-const __dbgSave = (location, message, data, hypothesisId) => {
-  fetch('http://127.0.0.1:7743/ingest/6125dd39-2579-4c29-a7c1-51d14474875e', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '25cc52' },
-    body: JSON.stringify({
-      sessionId: '25cc52',
-      location,
-      message,
-      data,
-      hypothesisId,
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-};
-// #endregion
 
 export function createCareerPersistence({
   getSavedNewGame,
@@ -137,12 +119,6 @@ export function createCareerPersistence({
   const persistAfterRoundAdvance = () => {
     if (!getSavedNewGame?.()) return;
     const mode = getAutosaveMode();
-    // #region agent log
-    __dbgSave('career-persistence.js:persistAfterRoundAdvance', 'round advance persist gate', {
-      mode,
-      willPersistSeason: mode === AUTOSAVE_MODES.round,
-    }, 'B');
-    // #endregion
     if (mode === AUTOSAVE_MODES.manual) return;
     if (mode === AUTOSAVE_MODES.every3) return;
     persistSeason(true);
@@ -158,12 +134,6 @@ export function createCareerPersistence({
     const savedNewGame = getSavedNewGame();
     const prefs = mergePreferencesIntoCareer(savedNewGame);
     const nextCount = (prefs.gamesSinceAutosave || 0) + 1;
-    // #region agent log
-    __dbgSave('career-persistence.js:notifyUserMatchPlayed', 'every3 counter tick', {
-      nextCount,
-      willFullSave: nextCount >= 3,
-    }, 'B');
-    // #endregion
     if (nextCount >= 3) {
       mergePreferencesIntoCareer(savedNewGame, { gamesSinceAutosave: 0 });
       persistCareer({ ...savedNewGame });
@@ -185,38 +155,6 @@ export function createCareerPersistence({
     const cloud = await flushCloudSyncAsync({
       forceLocalKeys: [SAVE_KEYS.career, SAVE_KEYS.season],
     });
-    // #region agent log
-    try {
-      const seasonRaw = localStorage.getItem(SAVE_KEYS.season);
-      const season = seasonRaw ? JSON.parse(seasonRaw) : null;
-      sessionStorage.setItem(
-        'matchday-debug-manual-save',
-        JSON.stringify({
-          ts: Date.now(),
-          cloudOk: cloud.ok,
-          cloudMode: cloud.mode,
-          cloudReason: cloud.reason || null,
-          cloudSynced: cloud.synced,
-          cloudFailed: cloud.failed || [],
-          cloudErrors: cloud.errors || [],
-          seasonOk: cloud.seasonOk,
-          careerOk: cloud.careerOk,
-          careerCal: season?.careerCalendarDate || null,
-          cloudActive: isCloudStorageActive(),
-        }),
-      );
-    } catch {
-      /* ignore */
-    }
-    __dbgSave('career-persistence.js:manualSaveAll', 'manual save finished', {
-      cloudOk: cloud.ok,
-      cloudMode: cloud.mode,
-      cloudReason: cloud.reason,
-      cloudSynced: cloud.synced,
-      cloudFailed: cloud.failed || [],
-      cloudErrors: cloud.errors || [],
-    }, 'F');
-    // #endregion
     return {
       ok: true,
       cloud: cloud.ok,
@@ -277,15 +215,6 @@ export function createCareerPersistence({
         seasonOk = true;
       }
       flushCloudSync({ urgent: true });
-      // #region agent log
-      __dbgSave('career-persistence.js:flushOnExit', 'pagehide/visibility flush', {
-        hadCareer,
-        seasonOk,
-        autosaveMode: getAutosaveMode(),
-        skipPersistOnUnload,
-        skipForNewGame,
-      }, 'C');
-      // #endregion
     };
     window.addEventListener('beforeunload', () => {
       if (hasLocalCareerSave() || getSavedNewGame?.()) {
@@ -304,14 +233,6 @@ export function createCareerPersistence({
       }
       flushOnExit();
       const skipSession = hasCareer || consumeSkipSessionEndOnce();
-      // #region agent log
-      __dbgSave('career-persistence.js:pagehide', 'session end decision', {
-        skipSession,
-        hasCareer,
-        willEndSession: !skipSession,
-      }, 'A');
-      appendDebugTrail('pagehide:career-persistence', { skipSession, hasCareer });
-      // #endregion
       if (skipSession) return;
       endBrowserSession();
       clearSessionCareerData();

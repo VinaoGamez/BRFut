@@ -14,7 +14,6 @@ import {
   initStorageBackend,
   probeBackend,
 } from './core/storage-api.js';
-import { appendDebugTrail } from './core/debug-trail.js';
 import {
   clearSessionCareerData,
   consumeCareerReloadPending,
@@ -103,25 +102,9 @@ const beginAppSession = async () => {
     await probeBackend();
 
     const token = getAuthToken();
-    const localCareer = hasCareerSave();
-    // #region agent log
-    fetch('http://127.0.0.1:7743/ingest/6125dd39-2579-4c29-a7c1-51d14474875e', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '25cc52' },
-      body: JSON.stringify({
-        sessionId: '25cc52',
-        location: 'main.js:beginAppSession',
-        message: 'boot auth state',
-        data: { hasToken: !!token, localCareer },
-        hypothesisId: 'A',
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     if (!token) {
       const reloadPending = consumeCareerReloadPending();
-      appendDebugTrail('boot:no-token', { reloadPending, localCareer: localCareer });
       if (!reloadPending) clearSessionCareerData();
       redirectToHomeLanding();
       return;
@@ -145,7 +128,6 @@ window.addEventListener('pagehide', event => {
   if (hasCareer) {
     markCareerReloadPending();
     markSkipSessionEndOnce();
-    appendDebugTrail('pagehide:preserve', { source: 'main', bootStarted });
     return;
   }
   if (bootStarted) return;

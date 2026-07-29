@@ -8,7 +8,6 @@ import { fetchPlayerStats, probeBackend } from './core/storage-api.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 import { endBrowserSession } from './core/storage-api.js';
-import { appendDebugTrail } from './core/debug-trail.js';
 import {
   clearSessionCareerData,
   consumeSkipSessionEndOnce,
@@ -268,7 +267,6 @@ const SPONSOR_ORDER = [
     if (hasCareer() || hasLocalCareerSave()) {
       markCareerReloadPending();
       markSkipSessionEndOnce();
-      appendDebugTrail('pagehide:preserve', { source: 'home' });
       return;
     }
     if (consumeSkipSessionEndOnce()) return;

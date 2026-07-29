@@ -4,7 +4,6 @@
  */
 import { SAVE_KEYS, BRFUT_API_ORIGIN } from './constants.js';
 import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves } from './save-sync.js';
-import { appendDebugTrail } from './debug-trail.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
 
 const AUTH_TOKEN_KEY = 'brfut-auth-token';
@@ -183,49 +182,6 @@ function mergeRemoteSaves(saves) {
       key === SAVE_KEYS.season
         ? mergeSeasonSaves(localValue, remoteValue, remoteEnvelopeAt)
         : pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt);
-    if (key === SAVE_KEYS.season) {
-      appendDebugTrail('merge:season', {
-        localRound: localValue?.currentRound,
-        remoteRound: remoteValue?.currentRound,
-        localState: maxStateLeagueRound(localValue),
-        remoteState: maxStateLeagueRound(remoteValue),
-        mergedState: maxStateLeagueRound(winner),
-        localCal: localValue?.careerCalendarDate,
-        remoteCal: remoteValue?.careerCalendarDate,
-        winnerIsRemote: winner === remoteValue,
-        localBytes: JSON.stringify(localValue).length,
-        remoteBytes: JSON.stringify(remoteValue).length,
-        localHasState: !!localValue?.stateLeagues?.competitions,
-        remoteHasState: !!remoteValue?.stateLeagues?.competitions,
-        mergedHasState: !!winner?.stateLeagues?.competitions,
-      });
-    }
-    // #region agent log
-    if (key === SAVE_KEYS.season && typeof fetch !== 'undefined') {
-      fetch('http://127.0.0.1:7743/ingest/6125dd39-2579-4c29-a7c1-51d14474875e', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '25cc52' },
-        body: JSON.stringify({
-          sessionId: '25cc52',
-          location: 'storage-api.js:mergeRemoteSaves',
-          message: 'season merge winner',
-          data: {
-            localRound: localValue?.currentRound,
-            remoteRound: remoteValue?.currentRound,
-            localState: maxStateLeagueRound(localValue),
-            remoteState: maxStateLeagueRound(remoteValue),
-            winnerIsRemote: winner === remoteValue,
-            localCal: localValue?.careerCalendarDate,
-            remoteCal: remoteValue?.careerCalendarDate,
-            localBytes: JSON.stringify(localValue).length,
-            remoteBytes: JSON.stringify(remoteValue).length,
-          },
-          hypothesisId: 'G',
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    }
-    // #endregion
     try {
       localStorage.setItem(key, JSON.stringify(winner));
     } catch {
@@ -380,18 +336,6 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
   const failed = results.filter(entry => !entry.ok);
   const seasonOk = results.some(entry => entry.key === SAVE_KEYS.season && entry.ok);
   const careerOk = results.some(entry => entry.key === SAVE_KEYS.career && entry.ok);
-  appendDebugTrail('cloud:flush', {
-    synced: results.length - failed.length,
-    seasonOk,
-    careerOk,
-    failed: failed.map(entry => ({
-      key: entry.key,
-      status: entry.status,
-      code: entry.code,
-      bodyChars: entry.bodyChars,
-      message: entry.message,
-    })),
-  });
 
   return {
     ok: seasonOk,
