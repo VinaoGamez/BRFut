@@ -26,21 +26,23 @@ function slimStateLeaguesForCloud(stateLeagues, { ultra = false } = {}) {
   }
 
   const slimDivisions = divisions.map(division => {
-    const fixtures = (division.fixtures || [])
-      .map(round =>
-        (round || [])
-          .filter(game => game?.played || game?.completed || game?.homeGoals != null)
-          .map(game => ({
-            home: game.home,
-            away: game.away,
-            homeGoals: game.homeGoals,
-            awayGoals: game.awayGoals,
-            played: true,
-            round: game.round,
-            date: game.date,
-          })),
-      )
-      .filter(round => round.length);
+    const fixtures = (division.fixtures || []).map((round, roundIndex) =>
+      (round || []).map(game => ({
+        home: game.home,
+        away: game.away,
+        homeGoals: game.homeGoals ?? null,
+        awayGoals: game.awayGoals ?? null,
+        completed: !!(game.completed || game.homeGoals != null),
+        played: !!(game.played || game.completed || game.homeGoals != null),
+        round: game.round ?? roundIndex + 1,
+        date: game.date,
+        time: game.time,
+        phase: game.phase,
+        leg: game.leg,
+        stateUf: game.stateUf,
+        stateTier: game.stateTier,
+      })),
+    );
     if (ultra) {
       return {
         uf,
@@ -110,6 +112,9 @@ export function slimSeasonForCloudUpload(season) {
     standings: season.standings,
     userClubStatus: season.userClubStatus,
     userBudget: season.userBudget,
+    fatigue: season.fatigue,
+    availability: season.availability,
+    careerMessages: Array.isArray(season.careerMessages) ? season.careerMessages.slice(-60) : [],
     competitionRoundHistory: season.competitionRoundHistory,
     seasonRoundHistory: Array.isArray(season.seasonRoundHistory)
       ? season.seasonRoundHistory.slice(-6)

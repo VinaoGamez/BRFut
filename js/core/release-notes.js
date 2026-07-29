@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.40',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T00:10:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Save / estadual',
+        items: [
+          'Hard refresh não volta mais para Rodada 1 — merge na nuvem prioriza rodada estadual e save completo local.',
+          'Upload na nuvem mantém calendário estadual inteiro (jogos futuros inclusos).',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.35',
     date: '2026-07-28',
     publishedAt: '2026-07-28T24:00:00-03:00',

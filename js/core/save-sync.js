@@ -20,17 +20,59 @@ function seasonCalendarTs(value) {
   return date ? date.getTime() : 0;
 }
 
+/** Maior rodada estadual concluída ou currentRound da divisão — progresso real da carreira. */
+export function maxStateLeagueRound(season) {
+  if (!season?.stateLeagues?.competitions) return 0;
+  let max = 0;
+  Object.values(season.stateLeagues.competitions).forEach(divisions => {
+    (divisions || []).forEach(division => {
+      const cr = Number(division.currentRound) || 0;
+      if (cr > max) max = cr;
+      (division.fixtures || []).forEach((round, roundIndex) => {
+        const roundNo = Number(round?.[0]?.round) || roundIndex + 1;
+        (round || []).forEach(game => {
+          const played = !!(game?.completed || game?.played || game?.homeGoals != null);
+          if (played) max = Math.max(max, Number(game.round) || roundNo);
+        });
+        const hasOpen = (round || []).some(
+          game => game && !game.completed && game.homeGoals == null && game.awayGoals == null,
+        );
+        if (hasOpen) max = Math.max(max, roundNo - 1);
+      });
+    });
+  });
+  return max;
+}
+
+function seasonPayloadWeight(value) {
+  try {
+    return JSON.stringify(value).length;
+  } catch {
+    return 0;
+  }
+}
+
 function pickNewerSeasonSave(localValue, remoteValue) {
   const localCal = seasonCalendarTs(localValue);
   const remoteCal = seasonCalendarTs(remoteValue);
   if (localCal !== remoteCal) {
     return localCal > remoteCal ? localValue : remoteValue;
   }
+  const localState = maxStateLeagueRound(localValue);
+  const remoteState = maxStateLeagueRound(remoteValue);
+  if (localState !== remoteState) {
+    return localState > remoteState ? localValue : remoteValue;
+  }
   const localRound = Number(localValue.currentRound) || 0;
   const remoteRound = Number(remoteValue.currentRound) || 0;
   if (localRound !== remoteRound) {
     return localRound > remoteRound ? localValue : remoteValue;
   }
+  // Mesmo progresso: nunca substituir save completo local por checkpoint enxuto da nuvem.
+  const localWeight = seasonPayloadWeight(localValue);
+  const remoteWeight = seasonPayloadWeight(remoteValue);
+  if (localWeight > remoteWeight + 4096) return localValue;
+  if (remoteWeight > localWeight + 4096) return remoteValue;
   return null;
 }
 

@@ -3,7 +3,7 @@
  * Espelha saves do localStorage em Documentos/BR Fut quando o usuário está logado.
  */
 import { SAVE_KEYS, BRFUT_API_ORIGIN } from './constants.js';
-import { pickNewerSave, saveFreshness } from './save-sync.js';
+import { pickNewerSave, saveFreshness, maxStateLeagueRound } from './save-sync.js';
 import { appendDebugTrail } from './debug-trail.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
 
@@ -184,9 +184,13 @@ function mergeRemoteSaves(saves) {
       appendDebugTrail('merge:season', {
         localRound: localValue?.currentRound,
         remoteRound: remoteValue?.currentRound,
+        localState: maxStateLeagueRound(localValue),
+        remoteState: maxStateLeagueRound(remoteValue),
         localCal: localValue?.careerCalendarDate,
         remoteCal: remoteValue?.careerCalendarDate,
         winnerIsRemote: winner === remoteValue,
+        localBytes: JSON.stringify(localValue).length,
+        remoteBytes: JSON.stringify(remoteValue).length,
       });
     }
     // #region agent log
@@ -201,11 +205,15 @@ function mergeRemoteSaves(saves) {
           data: {
             localRound: localValue?.currentRound,
             remoteRound: remoteValue?.currentRound,
+            localState: maxStateLeagueRound(localValue),
+            remoteState: maxStateLeagueRound(remoteValue),
             winnerIsRemote: winner === remoteValue,
             localCal: localValue?.careerCalendarDate,
             remoteCal: remoteValue?.careerCalendarDate,
+            localBytes: JSON.stringify(localValue).length,
+            remoteBytes: JSON.stringify(remoteValue).length,
           },
-          hypothesisId: 'D',
+          hypothesisId: 'G',
           timestamp: Date.now(),
         }),
       }).catch(() => {});
