@@ -663,6 +663,10 @@ export function createCalendarViewFeature(deps) {
     }
     const focusOptions = typeof getDevelopmentFocusOptions === 'function' ? getDevelopmentFocusOptions() : [];
     const allowedFocus = new Set(focusOptions.map(item => item.id));
+    if (!allowedFocus.has(trainingRules.developmentFocus) && typeof setDevelopmentFocus === 'function') {
+      setDevelopmentFocus('individual');
+      trainingRules = getTrainingRules();
+    }
     $$('[data-dev-focus]').forEach(button => {
       const focusId = button.dataset.devFocus;
       const allowed = allowedFocus.has(focusId);

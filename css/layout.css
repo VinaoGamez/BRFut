@@ -2819,6 +2819,7 @@ main > .view.active.training-view {
 .training-options button[data-icon='aerial'] .training-icon { color: #d4c4a8; }
 .training-options button[data-icon='goalkeeper'] .training-icon { color: #ffd56a; }
 .training-options button[data-icon='individual'] .training-icon { color: #c4f0ff; }
+.training-options button[data-icon='youth'] .training-icon { color: #7dffb2; }
 
 .training-mode-toggle {
   display: grid;

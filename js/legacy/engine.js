@@ -115,6 +115,7 @@ import {
   DEVELOPMENT_FOCUSES,
   TRAINING_FREE_MODES,
   developmentFocusOptionsForRoster,
+  developmentFocusOptionsForClub,
   formatRosterTrainingXpHtml,
   getTrainingProgressForPlayer,
   summarizeSquadTrainingXp,
@@ -3472,7 +3473,7 @@ const rosterChangeAlertHolder = { fn: null };
       try{renderRoster();}catch{/* boot */}
     },
     setDevelopmentFocus:focus=>{if(DEVELOPMENT_FOCUSES[focus])trainingRules.developmentFocus=focus;},
-    getDevelopmentFocusOptions:()=>developmentFocusOptionsForRoster(clubs[userClub]?.roster||[]),
+    getDevelopmentFocusOptions:()=>developmentFocusOptionsForClub(clubs[userClub]||{}),
     getLastWeeklyTrainingReport:()=>lastWeeklyTrainingReport,
     getHasCareer:()=>!!savedNewGame,
     openView:viewId=>router.openView(viewId),
@@ -5362,18 +5363,20 @@ const rosterChangeAlertHolder = { fn: null };
   applyCalendarTrainingDay=type=>{
     if(type==='free'&&trainingRules.freeMode===TRAINING_FREE_MODES.development){
       const club=clubs[userClub];
-      if(!club?.roster?.length){recoverOtherClubs(1,1);return;}
+      const isYouthFocus=trainingRules.developmentFocus==='youth';
+      const roster=isYouthFocus?(club?.youthRoster||[]):(club?.roster||[]);
+      if(!roster?.length){recoverOtherClubs(1,1);return;}
       const result=applyDevelopmentTrainingDay({
-        roster:club.roster,
+        roster,
         focus:trainingRules.developmentFocus,
         state:playerDevelopment,
         getPlayerId:player=>resolvePlayerId(player)||playerKey(player)||historyPlayerKey(player),
-        getSeasonMinutes:player=>Number(getDevelopmentSeasonBucket(player)?.minutes)||0,
+        getSeasonMinutes:player=>isYouthFocus?0:(Number(getDevelopmentSeasonBucket(player)?.minutes)||0),
         institutionRecovery:clubInstitutionalContext(club).recovery,
         careerDate:careerCalendarDate,
       });
       accumulateWeeklyTraining(result);
-      if(result.changed){
+      if(result.changed&&!isYouthFocus){
         syncClubPowers(clubs);
         if(clubs[userClub]?.roster)squad.splice(0,squad.length,...clubs[userClub].roster);
       }

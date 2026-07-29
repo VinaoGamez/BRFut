@@ -5,6 +5,7 @@
 import { MODULE_VERSIONS } from '../core/constants.js';
 import { formatOvrMarkHtml } from './player-development.js';
 import { syncOverallFromAttributes } from './player-generation.js';
+import { isYouthAcademyUnlocked } from './youth-academy.js';
 
 export const TRAINING_MODULE_VERSION = MODULE_VERSIONS.trainingDevelopment || 1;
 
@@ -21,6 +22,7 @@ export const DEVELOPMENT_FOCUS_IDS = [
   'aerial',
   'goalkeeper',
   'individual',
+  'youth',
 ];
 
 /** @type {Record<string, { label: string, attrs: string[]|null, fatigue: number, positions: string[]|null }>} */
@@ -63,6 +65,12 @@ export const DEVELOPMENT_FOCUSES = {
   },
   individual: {
     label: 'Individual',
+    attrs: null,
+    fatigue: 4,
+    positions: null,
+  },
+  youth: {
+    label: 'Juvenis',
     attrs: null,
     fatigue: 4,
     positions: null,
@@ -172,7 +180,7 @@ function potentialMultiplier(player) {
 }
 
 function focusMatchMultiplier(player, focusId) {
-  if (focusId === 'individual') return 1;
+  if (focusId === 'individual' || focusId === 'youth') return 1;
   const def = DEVELOPMENT_FOCUSES[focusId];
   if (!def) return 0.65;
   if (focusId === 'goalkeeper') return player.pos === 'GOL' ? 1 : 0.45;
@@ -190,7 +198,7 @@ function pickIndividualAttrs(player) {
 }
 
 function focusAttrKeys(focusId, player) {
-  if (focusId === 'individual') return pickIndividualAttrs(player);
+  if (focusId === 'individual' || focusId === 'youth') return pickIndividualAttrs(player);
   return DEVELOPMENT_FOCUSES[focusId]?.attrs || ['passing'];
 }
 
@@ -466,9 +474,19 @@ export function rosterHasGoalkeeper(roster = []) {
   return roster.some(player => player?.pos === 'GOL');
 }
 
-export function developmentFocusOptionsForRoster(roster = []) {
-  const hasGk = rosterHasGoalkeeper(roster);
-  return DEVELOPMENT_FOCUS_IDS.filter(id => id !== 'goalkeeper' || hasGk).map(id => ({
+export function developmentFocusOptionsForRoster(roster = [], club = null) {
+  return developmentFocusOptionsForClub(club || { roster });
+}
+
+export function developmentFocusOptionsForClub(club = {}) {
+  const roster = Array.isArray(club.roster) ? club.roster : [];
+  const hasYouth = Array.isArray(club.youthRoster) && club.youthRoster.length > 0;
+  const youthUnlocked = isYouthAcademyUnlocked(club);
+  return DEVELOPMENT_FOCUS_IDS.filter(id => {
+    if (id === 'goalkeeper') return rosterHasGoalkeeper(roster);
+    if (id === 'youth') return youthUnlocked && hasYouth;
+    return true;
+  }).map(id => ({
     id,
     label: DEVELOPMENT_FOCUSES[id].label,
   }));

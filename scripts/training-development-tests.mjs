@@ -9,6 +9,7 @@ import {
   formatRosterTrainingXpHtml,
   getTrainingProgressForPlayer,
   trainingAttrGainTotal,
+  developmentFocusOptionsForClub,
 } from '../js/engine/training-development.js';
 import { syncOverallFromAttributes } from '../js/engine/player-generation.js';
 import { emptyDevelopmentState } from '../js/engine/player-development.js';
@@ -124,5 +125,35 @@ ok(idleHtml.includes('is-idle'), 'idle xp html when load mode');
 const activeHtml = formatRosterTrainingXpHtml(progress, { active: true });
 ok(activeHtml.includes('roster-training-xp') && activeHtml.includes('em>'), 'active xp bar html');
 ok(trainingAttrGainTotal(progress) >= 0, 'attr gain total');
+
+const youthPlayer = {
+  name: 'Juvenil Teste',
+  pos: 'ATA',
+  age: 17,
+  overall: 52,
+  potential: 74,
+  fatigue: 85,
+  finishing: 44,
+  heading: 40,
+  speed: 50,
+  dribble: 46,
+  passing: 42,
+  marking: 30,
+  tackling: 28,
+};
+const clubLocked = { roster: [], youthRoster: [youthPlayer], stadiumStructure: 2 };
+ok(!developmentFocusOptionsForClub(clubLocked).some(item => item.id === 'youth'), 'youth hidden when base locked');
+const clubOpen = { roster: [], youthRoster: [{ ...youthPlayer }], stadiumStructure: 3 };
+ok(developmentFocusOptionsForClub(clubOpen).some(item => item.id === 'youth'), 'youth shown when base open');
+const youthDay = applyDevelopmentTrainingDay({
+  roster: clubOpen.youthRoster,
+  focus: 'youth',
+  state: emptyDevelopmentState(2026),
+  getPlayerId: p => p.name,
+  getSeasonMinutes: () => 0,
+});
+ok(youthDay.focusId === 'youth', 'youth focus trains base roster');
+ok(youthDay.totalXp > 0, 'youth xp granted');
+ok(DEVELOPMENT_FOCUSES.youth.label === 'Juvenis', 'youth label');
 
 console.log('training-development-tests: all passed');
