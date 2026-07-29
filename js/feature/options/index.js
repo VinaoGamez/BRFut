@@ -504,6 +504,7 @@ export function createOptionsFeature(deps) {
       if (err?.status === 401) return 'LOCAL (SESSÃO)';
       if (err?.status === 413) return 'LOCAL (GRANDE)';
       if (err?.status === 429) return 'LOCAL (LIMITE)';
+      if (err?.status === 0 || err?.code === 'network_failed') return 'LOCAL (REDE)';
       if (localOk && (result?.seasonOk || result?.careerOk)) return 'LOCAL + PARCIAL';
       if (localOk) return 'SALVO LOCAL';
       return 'SEM SAVE';

@@ -15,7 +15,7 @@ import {
   markCareerReloadPending,
   shouldPreserveAuthOnPageHide,
 } from '../core/save.js';
-import { endBrowserSession, flushCloudSync, flushCloudSyncAsync } from '../core/storage-api.js';
+import { endBrowserSession, flushCloudSync, flushCloudSyncAsync, ensureCloudReady } from '../core/storage-api.js';
 import {
   getActiveSlotId,
   syncActiveSlotFromCache,
@@ -151,6 +151,8 @@ export function createCareerPersistence({
   /** Save manual acionado pelo jogador (Opções → SALVAR). Aguarda confirmação da nuvem quando logado. */
   const manualSaveAll = async () => {
     if (!getSavedNewGame?.()) return { ok: false, cloud: false, localOk: false };
+    // Reativa nuvem antes de gravar (token pode existir com cloudActive=false após reload).
+    await ensureCloudReady().catch(() => false);
     const seasonLocalOk = persistSeason(true, { flush: false });
     syncCareerRosters();
     const careerLocalOk = persistCareer({ ...getSavedNewGame() });

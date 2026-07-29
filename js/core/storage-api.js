@@ -32,6 +32,7 @@ const SYNC_AUTH_BACKOFF_MS = 30_000;
 const PRESENCE_INTERVAL_MS = 120_000;
 
 let backendAvailable = null;
+let backendProbeAt = 0;
 let cloudActive = false;
 let currentUser = null;
 /** Snapshot de GET /api/saves — evita GET por chave quando o save remoto não existe. */
@@ -187,8 +188,9 @@ export async function ensureCloudReady() {
   if (cloudActive && currentUser) return true;
   try {
     backendAvailable = null;
-    if (!(await probeBackend())) return false;
-    const me = await authedFetch('/api/auth/me');
+    backendProbeAt = 0;
+    if (!(await probeBackend({ force: true }))) return false;
+    const me = await authedFetch('/api/auth/me', { retry: true });
     currentUser = me.user;
     cloudActive = true;
     syncAuthBlockedUntil = 0;
@@ -211,12 +213,23 @@ export function getCloudUser() {
   return currentUser;
 }
 
-export async function probeBackend() {
-  if (backendAvailable != null) return backendAvailable;
+const BACKEND_OK_TTL_MS = 60_000;
+const BACKEND_FAIL_TTL_MS = 4_000;
+
+export async function probeBackend({ force = false } = {}) {
+  const now = Date.now();
+  if (
+    !force &&
+    backendAvailable != null &&
+    now - backendProbeAt < (backendAvailable ? BACKEND_OK_TTL_MS : BACKEND_FAIL_TTL_MS)
+  ) {
+    return backendAvailable;
+  }
   try {
     const response = await fetch(apiUrl('/api/health'), { cache: 'no-store' });
     if (!response.ok) {
       backendAvailable = false;
+      backendProbeAt = now;
       return false;
     }
     const body = await parseJsonResponse(response);
@@ -224,26 +237,58 @@ export async function probeBackend() {
   } catch {
     backendAvailable = false;
   }
+  backendProbeAt = now;
   return backendAvailable;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => window.setTimeout(resolve, ms));
+}
+
 async function authedFetch(path, options = {}) {
-  const headers = { ...(options.headers || {}) };
+  const { retry, ...fetchOptions } = options;
+  const headers = { ...(fetchOptions.headers || {}) };
   const token = getAuthToken();
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (options.body != null && !headers['Content-Type']) {
+  if (fetchOptions.body != null && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
-  const response = await fetch(apiUrl(path), { ...options, headers, cache: 'no-store' });
-  const body = await parseJsonResponse(response);
-  if (!response.ok) {
-    const message = body?.error || `HTTP ${response.status}`;
-    const error = new Error(message);
-    error.code = body?.code || 'request_failed';
-    error.status = response.status;
-    throw error;
+  const maxAttempts = retry === false ? 1 : 3;
+  let lastError = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(apiUrl(path), { ...fetchOptions, headers, cache: 'no-store' });
+      const body = await parseJsonResponse(response);
+      if (!response.ok) {
+        const message = body?.error || `HTTP ${response.status}`;
+        const error = new Error(message);
+        error.code = body?.code || 'request_failed';
+        error.status = response.status;
+        // Rate limit / indisponível: tenta de novo antes de desistir do SALVAR.
+        if ((response.status === 429 || response.status === 503) && attempt < maxAttempts) {
+          await sleep(400 * attempt * attempt);
+          lastError = error;
+          continue;
+        }
+        throw error;
+      }
+      return body;
+    } catch (error) {
+      lastError = error;
+      const status = error?.status || 0;
+      const retriable = status === 429 || status === 503 || status === 0;
+      if (retriable && attempt < maxAttempts) {
+        await sleep(450 * attempt * attempt);
+        continue;
+      }
+      if (!error?.status && error?.name === 'TypeError') {
+        error.status = 0;
+        error.code = error.code || 'network_failed';
+      }
+      throw error;
+    }
   }
-  return body;
+  throw lastError || new Error('request_failed');
 }
 
 /** Login/register sem Bearer antigo — evita 401 de sessão stale derrubar o fluxo. */
@@ -367,6 +412,52 @@ async function putCloudSaveValue(key, value) {
   });
   rememberRemoteSave(key, prepared);
   return prepared;
+}
+
+/**
+ * Para upload: se a chave ativa for checkpoint, prefere o bundle completo do slot.
+ * Evita gravar na nuvem um stub local depois do trim.
+ */
+function resolveLocalValueForCloudUpload(key) {
+  let value = null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) value = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!value) return null;
+  if (!isLocalStorageCheckpoint(value)) return value;
+
+  if (
+    key !== SAVE_KEYS.career &&
+    key !== SAVE_KEYS.season &&
+    key !== SAVE_KEYS.playerHistory &&
+    key !== SAVE_KEYS.liveMatch
+  ) {
+    return value;
+  }
+
+  const slotId = resolveActiveSlotId();
+  if (!slotId) return value;
+  const bundle = slotBundleKeys(slotId);
+  const altKey =
+    key === SAVE_KEYS.career
+      ? bundle.career
+      : key === SAVE_KEYS.season
+        ? bundle.season
+        : key === SAVE_KEYS.playerHistory
+          ? bundle.playerHistory
+          : bundle.liveMatch;
+  try {
+    const altRaw = localStorage.getItem(altKey);
+    if (!altRaw) return value;
+    const alt = JSON.parse(altRaw);
+    if (alt && !isLocalStorageCheckpoint(alt)) return alt;
+  } catch {
+    /* ignore */
+  }
+  return value;
 }
 
 function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
@@ -570,14 +661,16 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
   keysToSync.forEach(key => {
     if (!isSyncableSaveKey(key)) return;
     if (batch.has(key)) return;
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw) batch.set(key, JSON.parse(raw));
-    } catch {
-      /* ignore corrupt entry */
-    }
+    const value = resolveLocalValueForCloudUpload(key);
+    if (value) batch.set(key, value);
   });
 
+  // Troca checkpoints já enfileirados por payload completo do slot, se existir.
+  for (const [key, value] of [...batch.entries()]) {
+    if (!isLocalStorageCheckpoint(value)) continue;
+    const resolved = resolveLocalValueForCloudUpload(key);
+    if (resolved && resolved !== value) batch.set(key, resolved);
+  }
   if (!batch.size) {
     return {
       ok: false,
@@ -804,6 +897,7 @@ export async function logoutAccount() {
   cloudActive = false;
   remoteSavesCache = null;
   backendAvailable = null;
+  backendProbeAt = 0;
   storageInitPromise = null;
   syncAuthBlockedUntil = 0;
   syncCloudLocalTrimFlag();
@@ -852,6 +946,7 @@ let storageInitPromise = null;
 export function resetStorageBackendState() {
   storageInitPromise = null;
   backendAvailable = null;
+  backendProbeAt = 0;
   cloudActive = false;
   remoteSavesCache = null;
   currentUser = null;

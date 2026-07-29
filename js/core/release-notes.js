@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.90',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T20:40:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Save na nuvem',
+        items: [
+          'Corrigido: após novo login o SALVAR ainda podia ficar só local (rede/limite ou save incompleto).',
+          'Agora o jogo reativa a nuvem no SALVAR, repete se a API estiver ocupada e sobe o save completo do slot.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.85',
     date: '2026-07-29',
     publishedAt: '2026-07-29T20:25:00-04:00',

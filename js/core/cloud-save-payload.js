@@ -235,18 +235,30 @@ export function slimPlayerHistoryForCloudUpload(history) {
   };
 }
 
+/** Tipo lógico da chave (inclui bundles `brfut-slot-*-career`). */
+export function cloudSaveLogicalKind(key) {
+  const k = String(key || '');
+  if (k === SAVE_KEYS.career || k.endsWith('-career')) return 'career';
+  if (k === SAVE_KEYS.season || k.endsWith('-season')) return 'season';
+  if (k === SAVE_KEYS.playerHistory || k.endsWith('-player-history')) return 'playerHistory';
+  if (k === SAVE_KEYS.liveMatch || k.endsWith('-live-match')) return 'liveMatch';
+  return null;
+}
+
 export function prepareCloudSavePayload(key, value) {
   if (!value || typeof value !== 'object') return value;
+  const kind = cloudSaveLogicalKind(key);
   // Prefere o save completo quando cabe; slim só como fallback de tamanho.
-  if (key === SAVE_KEYS.career) {
+  // Bundles de slot usam o mesmo slim — senão PUT estoura limite/rede e o SALVAR falha.
+  if (kind === 'career') {
     if (payloadChars(value) <= CLOUD_PAYLOAD_TARGET) return value;
     return slimCareerForCloudUpload(value);
   }
-  if (key === SAVE_KEYS.season) {
+  if (kind === 'season') {
     if (payloadChars(value) <= CLOUD_PAYLOAD_TARGET) return value;
     return slimSeasonForCloudUpload(value);
   }
-  if (key === SAVE_KEYS.playerHistory) {
+  if (kind === 'playerHistory') {
     if (payloadChars(value) <= CLOUD_PAYLOAD_TARGET) return value;
     return slimPlayerHistoryForCloudUpload(value);
   }
