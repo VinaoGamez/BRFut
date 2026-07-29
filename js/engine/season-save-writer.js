@@ -94,6 +94,7 @@ export function createSeasonSaveWriter({
   getSeasonRoundHistory,
   getNationalRankingFinalizedSeasons,
   getNationalTeamOffersSentYear,
+  getNationalTeamOfferState,
   getPlayerDevelopment,
   getPendingSponsorChoice,
   getPendingSponsorOffers,

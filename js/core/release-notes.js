@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.75',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T23:10:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Convites CMU',
+        items: [
+          'Corrigido erro ao aceitar/negar convite de seleção (persistência da temporada).',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.70',
     date: '2026-07-29',
     publishedAt: '2026-07-29T23:00:00-03:00',
