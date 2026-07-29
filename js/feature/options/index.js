@@ -452,14 +452,15 @@ export function createOptionsFeature(deps) {
     }
     markFreshCareerBoot();
     syncActiveSlotFromCache();
-    if (isCloudStorageActive()) {
+    {
       const slotId = getActiveSlotId();
       const cloudKeys = [SAVE_KEYS.career, CAREER_INDEX_KEY];
       if (slotId) cloudKeys.push(...Object.values(slotBundleKeys(slotId)));
       try {
+        // Sempre tenta (ensureCloudReady reativa sessão se o token existir).
         await flushCloudSyncAsync({ forceLocalKeys: cloudKeys });
       } catch {
-        queueCloudSave(SAVE_KEYS.career, careerPayload);
+        if (isCloudStorageActive()) queueCloudSave(SAVE_KEYS.career, careerPayload);
       }
     }
     $('#newGameModal').classList.add('hidden');

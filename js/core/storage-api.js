@@ -52,7 +52,22 @@ function resolveApiOrigin() {
   } catch {
     /* ignore */
   }
-  return BRFUT_API_ORIGIN || window.location.origin;
+  if (BRFUT_API_ORIGIN) return BRFUT_API_ORIGIN;
+  // Builds públicos sem BRFUT_API_ORIGIN (ex.: Cloudflare Pages) — API fica na VPS.
+  try {
+    const host = String(window.location.hostname || '');
+    if (
+      host === 'brfut.com.br' ||
+      host === 'www.brfut.com.br' ||
+      host.endsWith('.pages.dev') ||
+      host.endsWith('github.io')
+    ) {
+      return 'https://api.brfut.com.br';
+    }
+  } catch {
+    /* ignore */
+  }
+  return window.location.origin;
 }
 
 const apiUrl = path => new URL(path, resolveApiOrigin()).toString();

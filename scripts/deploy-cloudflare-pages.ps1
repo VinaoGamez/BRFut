@@ -15,7 +15,9 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
   exit 1
 }
 
-Write-Host 'Gerando bundle (npm run build)...'
+Write-Host 'Gerando bundle (npm run build) com API de produção...'
+$env:BRFUT_API_ORIGIN = 'https://api.brfut.com.br'
+Remove-Item Env:GITHUB_PAGES -ErrorAction SilentlyContinue
 npm run build
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

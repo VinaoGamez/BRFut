@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.70',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T17:15:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Save na nuvem',
+        items: [
+          'No site público, o jogo volta a falar com a API (api.brfut.com.br) mesmo quando o build veio sem essa configuração.',
+          'Nova carreira tenta subir o save na nuvem assim que a conta está logada — use Opções → SALVAR e espere SALVO!.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.65',
     date: '2026-07-29',
     publishedAt: '2026-07-29T17:05:00-04:00',
