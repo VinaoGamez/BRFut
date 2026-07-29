@@ -3,7 +3,7 @@
  * Espelha saves do localStorage em Documentos/BR Fut quando o usuário está logado.
  */
 import { SAVE_KEYS, BRFUT_API_ORIGIN } from './constants.js';
-import { pickNewerSave, saveFreshness, maxStateLeagueRound } from './save-sync.js';
+import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves } from './save-sync.js';
 import { appendDebugTrail } from './debug-trail.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
 
@@ -179,18 +179,25 @@ function mergeRemoteSaves(saves) {
       return;
     }
 
-    const winner = pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt);
+    const winner =
+      key === SAVE_KEYS.season
+        ? mergeSeasonSaves(localValue, remoteValue, remoteEnvelopeAt)
+        : pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt);
     if (key === SAVE_KEYS.season) {
       appendDebugTrail('merge:season', {
         localRound: localValue?.currentRound,
         remoteRound: remoteValue?.currentRound,
         localState: maxStateLeagueRound(localValue),
         remoteState: maxStateLeagueRound(remoteValue),
+        mergedState: maxStateLeagueRound(winner),
         localCal: localValue?.careerCalendarDate,
         remoteCal: remoteValue?.careerCalendarDate,
         winnerIsRemote: winner === remoteValue,
         localBytes: JSON.stringify(localValue).length,
         remoteBytes: JSON.stringify(remoteValue).length,
+        localHasState: !!localValue?.stateLeagues?.competitions,
+        remoteHasState: !!remoteValue?.stateLeagues?.competitions,
+        mergedHasState: !!winner?.stateLeagues?.competitions,
       });
     }
     // #region agent log
@@ -227,8 +234,18 @@ function mergeRemoteSaves(saves) {
 
     const localScore = saveFreshness(localValue, key);
     const remoteScore = Math.max(saveFreshness(remoteValue, key), remoteEnvelopeAt || 0);
-    if (winner === localValue && localScore > remoteScore && isCloudStorageActive()) {
-      queueCloudSave(key, localValue);
+    if (isCloudStorageActive()) {
+      if (key === SAVE_KEYS.season) {
+        const mergedState = maxStateLeagueRound(winner);
+        const remoteState = maxStateLeagueRound(remoteValue);
+        const mergedBytes = JSON.stringify(winner).length;
+        const remoteBytes = JSON.stringify(remoteValue).length;
+        if (mergedState > remoteState || mergedBytes > remoteBytes + 4096) {
+          queueCloudSave(key, winner);
+        }
+      } else if (winner === localValue && localScore > remoteScore) {
+        queueCloudSave(key, localValue);
+      }
     }
   });
 }

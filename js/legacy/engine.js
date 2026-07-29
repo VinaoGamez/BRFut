@@ -155,6 +155,7 @@ import {
   pruneClubMemory,
   involvesClub,
 } from '../core/save.js';
+import { hasUsableStateLeagueSave } from '../core/save-sync.js';
 import { applyCareerPreferences, mergePreferencesIntoCareer } from '../core/save-preferences.js';
 import { createMatchRatingsEngine, DEFAULT_USER_TACTICS, blankMatchStats } from '../engine/match-ratings.js';
 import { createSeasonTransitionEngine } from '../engine/season-transition.js';
@@ -1643,7 +1644,7 @@ const rosterChangeAlertHolder = { fn: null };
   const stateLeagueEngine=createStateLeagueEngine();
   if(FEATURES.stateLeague&&savedNewGame){
     const userOriginUf=savedNewGame.userUf||getRealClub(userClub)?.uf||'SP';
-    if(validSavedSeason&&savedSeason.stateLeagues?.competitions){
+    if(validSavedSeason&&hasUsableStateLeagueSave(savedSeason.stateLeagues)){
       stateLeagueEngine.hydrate(savedSeason.stateLeagues,{userUf:userOriginUf,seasonYear:careerSeason,clubs});
       void ensureAllImportClubs().then(()=>hydrateRealClubsFromImport(officialBrazilWorld?.importClubs)).catch(()=>{});
     }else{

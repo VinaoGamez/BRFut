@@ -19,9 +19,9 @@ function slimStateLeaguesForCloud(stateLeagues, { ultra = false } = {}) {
     return {
       seasonYear: stateLeagues.seasonYear,
       userUf: uf,
-      competitions: {},
+      competitions: stateLeagues.competitions || {},
       historyByUf: {},
-      results: {},
+      results: stateLeagues.results || {},
     };
   }
 
@@ -48,7 +48,7 @@ function slimStateLeaguesForCloud(stateLeagues, { ultra = false } = {}) {
         uf,
         tier: division.tier,
         currentRound: division.currentRound,
-        fixtures: fixtures.slice(-4),
+        fixtures,
         champion: division.champion || null,
       };
     }
@@ -108,6 +108,7 @@ export function slimSeasonForCloudUpload(season) {
     currentRound: season.currentRound,
     careerCalendarDate: season.careerCalendarDate,
     updatedAt: season.updatedAt,
+    stateLeagueProgressRound: season.stateLeagueProgressRound,
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues),
     standings: season.standings,
     userClubStatus: season.userClubStatus,
@@ -128,6 +129,7 @@ export function slimSeasonForCloudUpload(season) {
     currentRound: season.currentRound,
     careerCalendarDate: season.careerCalendarDate,
     updatedAt: season.updatedAt,
+    stateLeagueProgressRound: season.stateLeagueProgressRound,
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues, { ultra: true }),
     standings: season.standings,
   };
@@ -139,6 +141,7 @@ export function slimSeasonForCloudUpload(season) {
     currentRound: season.currentRound,
     careerCalendarDate: season.careerCalendarDate,
     updatedAt: season.updatedAt,
+    stateLeagueProgressRound: season.stateLeagueProgressRound,
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues, { ultra: true }),
   };
 }

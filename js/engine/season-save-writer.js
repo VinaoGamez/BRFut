@@ -17,6 +17,7 @@ import { serializeUserClubInvestments } from './economy.js';
 import { NATIONAL_RANKING_FORMULA_VERSION } from './national-ranking.js';
 import { isRecopaNationalEnabled, serializeRecopaNational } from './recopa-national.js';
 import { persistSeasonPayload } from './season-save-quota.js';
+import { maxStateLeagueRound } from '../core/save-sync.js';
 import { serializeCompetitionWindows } from './season-scheduler.js';
 import { serializeUserStadium } from './stadium-sectors.js';
 import { serializeWorldCupCompetition } from './world-cup-competition.js';
@@ -423,6 +424,7 @@ export function createSeasonSaveWriter({
       liveMatchSnapshot: null,
       updatedAt: new Date().toISOString(),
     };
+    seasonPayload.stateLeagueProgressRound = maxStateLeagueRound(seasonPayload);
 
     if (savedNewGame) {
       savedNewGame.clubStatus = {

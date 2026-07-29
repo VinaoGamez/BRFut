@@ -124,7 +124,12 @@ export function slimSeasonPayloadLevel4(payload, context = {}) {
     ? next.userBudgetLedger.slice(-40)
     : [];
   next.managerRanking = null;
-  next.stateLeagues = null;
+  if (next.stateLeagues) {
+    next.stateLeagues = {
+      ...next.stateLeagues,
+      historyByUf: {},
+    };
+  }
   if (next.playerDevelopment) {
     next.playerDevelopment = {
       season: next.playerDevelopment.season,

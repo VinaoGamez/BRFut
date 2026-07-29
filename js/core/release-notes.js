@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.45',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T01:00:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Save / nuvem',
+        items: [
+          'Merge local+nuvem combina temporada sem perder rodada estadual — checkpoint enxuto não sobrescreve mais o save completo.',
+          'Quota do navegador não apaga mais stateLeagues; progresso estadual gravado em stateLeagueProgressRound.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.40',
     date: '2026-07-29',
     publishedAt: '2026-07-29T00:10:00-03:00',
