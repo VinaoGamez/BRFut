@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.40',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T18:40:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Copa do Mundo',
+        items: [
+          'Ao aceitar uma seleção, o clube continua ativo até o início da janela oficial da Copa.',
+          'O módulo da seleção passa a assumir a interface somente entre 11 de junho e 19 de julho.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.35',
     date: '2026-07-29',
     publishedAt: '2026-07-29T17:50:00-04:00',
