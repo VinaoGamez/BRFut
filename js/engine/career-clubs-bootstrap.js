@@ -1,7 +1,7 @@
 import { clamp } from '../ui/dom.js';
 import {
   generatePlayer as generatePlayerCore,
-  GENERIC_SQUAD_ROLES,
+  buildSquadRoles,
   DIVISION_CLUB_POWER,
   pickStarterFlags,
   rollProfessionalSquadSize,
@@ -79,7 +79,7 @@ export function bootstrapCareerClubs({
     const rule = divisionRules[division];
     const basePower = int(rule.power[0], rule.power[1]);
     const formation = club === userClub ? '4-3-3' : FORMATIONS_FOR_CLUBS[int(0, FORMATIONS_FOR_CLUBS.length - 1)];
-    const roles = [...GENERIC_SQUAD_ROLES].slice(0, rollProfessionalSquadSize(gameRandom));
+    const roles = buildSquadRoles(rollProfessionalSquadSize(gameRandom));
     const starterFlags = pickStarterFlags(roles.length, gameRandom);
     const roster = roles.map((role, playerIndex) =>
       generatedPlayer(role, playerIndex + index * 29, basePower, division, starterFlags[playerIndex]),
@@ -264,7 +264,7 @@ export function bootstrapCareerClubs({
       }
       const power = int(...DIVISION_CLUB_POWER.A);
       const squadSize = rollProfessionalSquadSize(gameRandom);
-      const roles = [...GENERIC_SQUAD_ROLES].slice(0, squadSize);
+      const roles = buildSquadRoles(squadSize);
       const starterFlags = pickStarterFlags(roles.length, gameRandom);
       const roster = assignSquadJerseyNumbers(
         roles.map((role, i) => generatedPlayer(role, i + index * 5, power, 'A', starterFlags[i])),

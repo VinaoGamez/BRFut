@@ -8,7 +8,7 @@ import { createSeededRandom } from './brazil-official-pyramid.js';
 import { hashSeedString, rosterSeedKey } from './club-roster-seed.js';
 import {
   generatePlayer as generatePlayerCore,
-  GENERIC_SQUAD_ROLES,
+  buildSquadRoles,
   pickStarterFlags,
   rollProfessionalSquadSize,
 } from './player-generation.js';
@@ -86,7 +86,7 @@ export function ensureClubRoster(clubName, clubs, options = {}) {
   const basePower = intFromRng(rng, powerRange[0], powerRange[1]);
   const genDivision = 'D';
 
-  const roles = [...GENERIC_SQUAD_ROLES].slice(0, rollProfessionalSquadSize(rng));
+  const roles = buildSquadRoles(rollProfessionalSquadSize(rng));
   const starterFlags = pickStarterFlags(roles.length, rng);
   const roster = roles.map((role, playerIndex) =>
     generatePlayerCore({

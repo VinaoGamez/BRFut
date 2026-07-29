@@ -1,27 +1,72 @@
 /**
  * Geração de jogadores — modelo Campanha Longa (validado).
  * Plantel profissional 22–30 (variável); template até 30 posições; GOL com attrs de meta.
+ *
+ * Ordem do template: núcleo balanceado primeiro. ATA não fica no fim —
+ * elencos de 22–26 antes cortavam os atacantes e ficavam só com pontas (PE/PD).
  */
 import { rollSquadAge, rollPotential, POT_CAPS } from './player-development.js';
 import { assignRosterNationalities } from './player-nationality.js';
 import { ensureCardVariantId } from './player-card-variant-id.js';
 import { SHOOTOUT_TUNING } from './match-tuning.js';
 
-export const GENERIC_SQUAD_ROLES = [
-  'GOL', 'GOL', 'GOL',
-  'ZAG', 'ZAG', 'ZAG', 'ZAG', 'ZAG',
-  'LAT', 'LAT', 'LAT', 'LAT',
-  'VOL', 'VOL', 'VOL', 'VOL',
-  'MC', 'MC', 'MC', 'MC',
-  'MEI', 'MEI', 'MEI',
-  'PE', 'PE',
-  'PD', 'PD',
-  'ATA', 'ATA', 'ATA',
-];
-
 /** Mínimo na geração inicial do elenco (sorteio 22–30). */
 export const ROSTER_PRO_MIN = 22;
 export const ROSTER_PRO_MAX = 30;
+
+/**
+ * Template de 30 posições. Os primeiros 22 já incluem ATA (≥2) e pontas (PE+PD);
+ * slots 23–30 só aprofundam o elenco (mesmas contagens finais de antes).
+ */
+export const GENERIC_SQUAD_ROLES = [
+  'GOL', 'GOL',
+  'ZAG', 'ZAG', 'ZAG', 'ZAG',
+  'LAT', 'LAT', 'LAT',
+  'VOL', 'VOL', 'VOL',
+  'MC', 'MC', 'MC',
+  'MEI', 'MEI',
+  'ATA', 'ATA', 'ATA',
+  'PE', 'PD',
+  // --- núcleo 22 ---
+  'GOL',
+  'ZAG',
+  'LAT',
+  'VOL',
+  'MC',
+  'MEI',
+  'PE',
+  'PD',
+];
+
+/** Mínimos no elenco gerado (mesmo no plantel de 22). */
+export const SQUAD_ROLE_MINIMUMS = Object.freeze({
+  GOL: 2,
+  ZAG: 4,
+  LAT: 3,
+  VOL: 3,
+  MC: 3,
+  MEI: 2,
+  ATA: 2,
+  PE: 1,
+  PD: 1,
+});
+
+/** Monta a lista de posições para o tamanho sorteado (22–30). */
+export function buildSquadRoles(squadSize = ROSTER_PRO_MAX) {
+  const size = Math.max(
+    ROSTER_PRO_MIN,
+    Math.min(ROSTER_PRO_MAX, Math.round(Number(squadSize) || ROSTER_PRO_MIN)),
+  );
+  return GENERIC_SQUAD_ROLES.slice(0, size);
+}
+
+/** Contagem por posição de um array de roles. */
+export function countSquadRoles(roles = []) {
+  return roles.reduce((acc, pos) => {
+    acc[pos] = (acc[pos] || 0) + 1;
+    return acc;
+  }, {});
+}
 
 /** Mínimo operacional durante a carreira (vendas, empréstimos, rescisões). */
 export const ROSTER_CAREER_MIN = 18;
@@ -831,7 +876,7 @@ export function generateSquad({
   const size = squadSize != null
     ? Math.max(ROSTER_PRO_MIN, Math.min(ROSTER_PRO_MAX, Math.round(Number(squadSize) || ROSTER_PRO_MIN)))
     : rollProfessionalSquadSize(random);
-  const roles = [...GENERIC_SQUAD_ROLES].slice(0, size);
+  const roles = buildSquadRoles(size);
   const starterFlags = pickStarterFlags(roles.length, random);
   const roster = roles.map((role, playerIndex) =>
     generatePlayer({

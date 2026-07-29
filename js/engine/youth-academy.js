@@ -182,7 +182,7 @@ const SCOUT_NAME_POOL = Object.freeze([
   'André Mendes',
   'Thiago Barbosa',
 ]);
-const YOUTH_ROLES = ['GOL', 'ZAG', 'ZAG', 'LAT', 'LAT', 'VOL', 'MC', 'MC', 'MEI', 'PE', 'PD', 'ATA', 'ATA'];
+const YOUTH_ROLES = ['GOL', 'ZAG', 'ZAG', 'LAT', 'LAT', 'VOL', 'MC', 'MC', 'MEI', 'PE', 'PD', 'ATA', 'ATA', 'ATA'];
 const STAR_THRESHOLDS = [0.2, 0.4, 0.55, 0.72, 0.88];
 
 export function isYouthAcademyUnlocked(club) {

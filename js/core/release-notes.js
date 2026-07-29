@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.65',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T17:05:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Elenco e mercado',
+        items: [
+          'Novos clubes passam a nascer com atacantes de área de verdade — não só pontas.',
+          'Elencos menores (22–26) não cortam mais os ATA; o mercado volta a ter centroavantes à venda.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.60',
     date: '2026-07-29',
     publishedAt: '2026-07-29T16:55:00-04:00',
