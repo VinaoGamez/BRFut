@@ -14,7 +14,7 @@ import {
   isSlotBundleKey,
   slotBundleKeys,
 } from './constants.js';
-import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves, mergeCareerSaves } from './save-sync.js';
+import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves, mergeCareerSaves, isSaveProgressAhead } from './save-sync.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
 import {
   applyLocalCheckpointTrim,
@@ -196,6 +196,7 @@ export async function ensureCloudReady() {
   }
   if (cloudActive && currentUser) {
     lastCloudGateReason = null;
+    queueNewerLocalSavesToCloud();
     return true;
   }
   try {
@@ -209,6 +210,14 @@ export async function ensureCloudReady() {
     lastCloudGateReason = null;
     syncCloudLocalTrimFlag();
     startPresenceHeartbeat();
+    // Reconectou: sobe o que o navegador tiver mais novo que a nuvem.
+    try {
+      const remote = await authedFetch('/api/saves');
+      setRemoteSavesCache(remote?.saves || {});
+    } catch {
+      /* usa cache anterior se houver */
+    }
+    queueNewerLocalSavesToCloud();
     return true;
   } catch (error) {
     // Nunca apaga o token aqui. Só pausa a nuvem.
@@ -555,7 +564,15 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
     const localScore = saveFreshness(localValue, key);
     const remoteScore = Math.max(saveFreshness(remoteValue, key), remoteEnvelopeAt || 0);
     if (isCloudStorageActive()) {
-      if (key === SAVE_KEYS.season) {
+      const localWon =
+        winner === localValue ||
+        isSaveProgressAhead(localValue, remoteValue, key) ||
+        (key === SAVE_KEYS.season &&
+          (maxStateLeagueRound(winner) > maxStateLeagueRound(remoteValue) ||
+            (Number(winner?.currentRound) || 0) > (Number(remoteValue?.currentRound) || 0)));
+      if (localWon && !isLocalStorageCheckpoint(winner)) {
+        queueCloudSave(key, winner === localValue ? localValue : winner);
+      } else if (key === SAVE_KEYS.season) {
         const mergedState = maxStateLeagueRound(winner);
         const remoteState = maxStateLeagueRound(remoteValue);
         const mergedBytes = JSON.stringify(winner).length;
@@ -568,6 +585,46 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
       }
     }
   });
+}
+
+/**
+ * Ao retomar a nuvem: se o local (ou bundle do slot) estiver à frente do remoto, sobe.
+ * Evita rollback quando o SALVAR na nuvem falhou e o jogador continuou no navegador.
+ */
+export function queueNewerLocalSavesToCloud() {
+  if (!isCloudStorageActive() || !getAuthToken()) return 0;
+  const remote = remoteSavesCache && typeof remoteSavesCache === 'object' ? remoteSavesCache : {};
+  const keys = new Set([
+    SAVE_KEYS.career,
+    SAVE_KEYS.season,
+    SAVE_KEYS.playerHistory,
+    CAREER_INDEX_KEY,
+  ]);
+  try {
+    const slotId = resolveActiveSlotId();
+    if (slotId) Object.values(slotBundleKeys(slotId)).forEach(key => keys.add(key));
+  } catch {
+    /* ignore */
+  }
+  let queued = 0;
+  keys.forEach(key => {
+    if (!isSyncableSaveKey(key) && key !== CAREER_INDEX_KEY && !isSlotBundleKey(key)) return;
+    const localValue = resolveLocalValueForCloudUpload(key) || readLocalSave(key);
+    if (!localValue || isLocalStorageCheckpoint(localValue)) return;
+    const remoteEntry = normalizeRemoteSaveEntry(remote[key]);
+    const remoteValue = remoteEntry?.value;
+    if (!remoteValue) {
+      queueCloudSave(key, localValue);
+      queued += 1;
+      return;
+    }
+    if (isSaveProgressAhead(localValue, remoteValue, key) || pickNewerSave(localValue, remoteValue, key, remoteEntry.updatedAt) === localValue) {
+      queueCloudSave(key, localValue);
+      queued += 1;
+    }
+  });
+  if (queued) scheduleCloudSync();
+  return queued;
 }
 
 /** Chrome limita corpo e quantidade de fetch keepalive — só usar ao fechar a aba. */
@@ -661,6 +718,7 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
       careerOk: false,
     };
   }
+  queueNewerLocalSavesToCloud();
   if (syncTimer) {
     window.clearTimeout(syncTimer);
     syncTimer = 0;
@@ -1067,7 +1125,10 @@ async function initStorageBackendImpl({ skipProbe = false, preferMigrate = false
   }
 
   syncCloudLocalTrimFlag();
-  if (cloudActive && getAuthToken()) startPresenceHeartbeat();
+  if (cloudActive && getAuthToken()) {
+    startPresenceHeartbeat();
+    queueNewerLocalSavesToCloud();
+  }
 
   return {
     mode: 'cloud',

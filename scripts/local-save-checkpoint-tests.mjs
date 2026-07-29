@@ -95,6 +95,13 @@ check('applyLocalCheckpointTrim no-op when cloud trim disabled', () => {
   assert(!applyLocalCheckpointTrim(SAVE_KEYS.season, season), 'trim disabled');
 });
 
+check('applyLocalCheckpointTrim keeps season/career even when trim enabled', () => {
+  setCloudLocalTrimEnabled(true);
+  const season = { seed: 1, userClubName: 'X', currentRound: 4, updatedAt: '2026-07-29T12:00:00.000Z' };
+  assert(!applyLocalCheckpointTrim(SAVE_KEYS.season, season), 'season stays full locally');
+  assert(!applyLocalCheckpointTrim(SAVE_KEYS.career, { clubName: 'X', seed: 1 }), 'career stays full locally');
+});
+
 check('mergeSeasonSaves prefers remote when local is checkpoint', () => {
   const local = buildSeasonLocalCheckpoint({
     seed: 1,
@@ -135,11 +142,38 @@ check('mergeCareerSaves prefers remote when local is checkpoint', () => {
   assert(merged.userRoster[0].name === 'R0', 'remote roster restored');
 });
 
-check('pickNewerSave prefers full remote over local checkpoint', () => {
-  const local = buildSeasonLocalCheckpoint({ seed: 1, currentRound: 9, updatedAt: '2026-07-30T00:00:00.000Z' });
-  const remote = { seed: 1, currentRound: 4, updatedAt: '2026-07-29T00:00:00.000Z' };
+check('pickNewerSave keeps checkpoint ahead of older full remote', () => {
+  const local = buildSeasonLocalCheckpoint({
+    seed: 1,
+    currentRound: 9,
+    careerCalendarDate: { day: 20, month: 6, year: 2026 },
+    updatedAt: '2026-07-30T00:00:00.000Z',
+  });
+  const remote = {
+    seed: 1,
+    currentRound: 4,
+    careerCalendarDate: { day: 1, month: 3, year: 2026 },
+    updatedAt: '2026-07-29T00:00:00.000Z',
+  };
   const winner = pickNewerSave(local, remote, SAVE_KEYS.season, 0);
-  assert(winner === remote, 'full remote beats newer checkpoint');
+  assert(winner === local, 'checkpoint com progresso à frente não sofre rollback');
+});
+
+check('pickNewerSave prefers full remote over older checkpoint', () => {
+  const local = buildSeasonLocalCheckpoint({
+    seed: 1,
+    currentRound: 2,
+    careerCalendarDate: { day: 1, month: 2, year: 2026 },
+    updatedAt: '2026-07-28T00:00:00.000Z',
+  });
+  const remote = {
+    seed: 1,
+    currentRound: 8,
+    careerCalendarDate: { day: 10, month: 5, year: 2026 },
+    updatedAt: '2026-07-29T00:00:00.000Z',
+  };
+  const winner = pickNewerSave(local, remote, SAVE_KEYS.season, 0);
+  assert(winner === remote, 'nuvem mais avançada hidrata o stub local');
 });
 
 console.log(`\nLocal save checkpoint tests: ${passed} passed, ${failed} failed`);

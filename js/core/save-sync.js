@@ -121,13 +121,41 @@ function pickNewerSeasonSave(localValue, remoteValue) {
 }
 
 /**
+ * Progresso jogável: true se `candidate` está à frente de `baseline`
+ * (rodada/calendário/peso — não só updatedAt da nuvem).
+ */
+export function isSaveProgressAhead(candidate, baseline, key = '') {
+  if (!candidate) return false;
+  if (!baseline) return true;
+  if (key === SAVE_KEYS.season) {
+    const winner = pickNewerSeasonSave(candidate, baseline);
+    if (winner === candidate) return true;
+    if (winner === baseline) return false;
+    return saveFreshness(candidate, key) > saveFreshness(baseline, key);
+  }
+  if (key === SAVE_KEYS.career) {
+    if (!isSlimCareerCheckpoint(candidate) && isSlimCareerCheckpoint(baseline)) return true;
+    if (isSlimCareerCheckpoint(candidate) && !isSlimCareerCheckpoint(baseline)) return false;
+    const cw = careerPayloadWeight(candidate);
+    const bw = careerPayloadWeight(baseline);
+    if (cw > bw + 4096) return true;
+    if (bw > cw + 4096) return false;
+  }
+  return saveFreshness(candidate, key) > saveFreshness(baseline, key);
+}
+
+/**
  * Combina temporada local + nuvem sem perder progresso estadual.
  * Local é fonte de verdade quando empate; nuvem só atualiza campos mais novos.
  */
 export function mergeSeasonSaves(localValue, remoteValue, remoteEnvelopeAt = 0) {
   if (!localValue) return remoteValue ?? null;
   if (!remoteValue) return localValue;
-  if (isLocalStorageCheckpoint(localValue) && remoteValue) return { ...remoteValue };
+  // Checkpoint local só cede à nuvem se o remoto não estiver atrás do progresso local.
+  if (isLocalStorageCheckpoint(localValue) && remoteValue) {
+    if (isSaveProgressAhead(localValue, remoteValue, SAVE_KEYS.season)) return localValue;
+    return { ...remoteValue };
+  }
   if (isLocalStorageCheckpoint(remoteValue) && localValue) return { ...localValue };
 
   const winner = pickNewerSave(localValue, remoteValue, SAVE_KEYS.season, remoteEnvelopeAt);
@@ -218,7 +246,12 @@ export function isSlimCareerCheckpoint(career) {
 export function mergeCareerSaves(localValue, remoteValue, remoteEnvelopeAt = 0) {
   if (!localValue) return remoteValue ?? null;
   if (!remoteValue) return localValue;
-  if (isLocalStorageCheckpoint(localValue) && remoteValue) return { ...remoteValue };
+  if (isLocalStorageCheckpoint(localValue) && remoteValue) {
+    // Stub de carreira: hidrata com pirâmide completa da nuvem (progresso está na season).
+    if (!isSlimCareerCheckpoint(remoteValue)) return { ...remoteValue };
+    if (isSaveProgressAhead(localValue, remoteValue, SAVE_KEYS.career)) return localValue;
+    return { ...remoteValue };
+  }
   if (isLocalStorageCheckpoint(remoteValue) && localValue) return { ...localValue };
 
   if (localValue.freshWorld) return localValue;
@@ -244,7 +277,12 @@ export function mergeCareerSaves(localValue, remoteValue, remoteEnvelopeAt = 0) 
 export function pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt = 0) {
   if (!localValue) return remoteValue ?? null;
   if (!remoteValue) return localValue;
-  if (isLocalStorageCheckpoint(localValue) && remoteValue) return remoteValue;
+  if (isLocalStorageCheckpoint(localValue) && remoteValue) {
+    // Stub local: season usa progresso (rodada/calendário); career hidrata se remoto for completo.
+    if (key === SAVE_KEYS.career && !isSlimCareerCheckpoint(remoteValue)) return remoteValue;
+    if (isSaveProgressAhead(localValue, remoteValue, key)) return localValue;
+    return remoteValue;
+  }
   if (isLocalStorageCheckpoint(remoteValue) && localValue) return localValue;
 
   if (key === SAVE_KEYS.season) {

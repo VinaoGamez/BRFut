@@ -145,23 +145,21 @@ export function writeLocalCheckpoint(key, checkpoint) {
 }
 
 /**
- * Após PUT bem-sucedido na VPS, substitui o save local completo por checkpoint.
- * @returns {boolean} true se checkpoint gravado
+ * Após PUT bem-sucedido na VPS.
+ * Só limpa liveMatch (regenerável). Career/season/histórico permanecem completos
+ * no navegador — a nuvem é espelho; stub local + GET antigo = rollback no F5.
+ * @returns {boolean} true se alterou o localStorage
  */
 export function applyLocalCheckpointTrim(key, fullValue) {
   if (!isCloudLocalTrimEnabled() || !CLOUD_OFFLOAD_KEYS.has(key)) return false;
-  if (key === SAVE_KEYS.liveMatch) {
-    try {
-      localStorage.removeItem(SAVE_KEYS.liveMatch);
-      invalidateStoragePressureCache();
-      return true;
-    } catch {
-      return false;
-    }
+  if (key !== SAVE_KEYS.liveMatch) return false;
+  try {
+    localStorage.removeItem(SAVE_KEYS.liveMatch);
+    invalidateStoragePressureCache();
+    return true;
+  } catch {
+    return false;
   }
-  const checkpoint = buildLocalCheckpointForKey(key, fullValue);
-  if (!checkpoint) return false;
-  return writeLocalCheckpoint(key, checkpoint);
 }
 
 /** Payload enviado à nuvem (referência para testes). */
