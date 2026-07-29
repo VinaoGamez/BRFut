@@ -1646,6 +1646,14 @@ const rosterChangeAlertHolder = { fn: null };
     const userOriginUf=savedNewGame.userUf||getRealClub(userClub)?.uf||'SP';
     if(validSavedSeason&&hasUsableStateLeagueSave(savedSeason.stateLeagues)){
       stateLeagueEngine.hydrate(savedSeason.stateLeagues,{userUf:userOriginUf,seasonYear:careerSeason,clubs});
+      stateLeagueEngine.ensureAllCompetitions({
+        clubs,
+        regionalBaseClubs:savedNewGame.regionalBaseClubs||[],
+        importClubs:officialBrazilWorld?.importClubs||[],
+        userClub,
+        membershipByUf:savedNewGame.stateLeagueMembership||{},
+        lotterySeed:savedNewGame.seed??null,
+      });
       void ensureAllImportClubs().then(()=>hydrateRealClubsFromImport(officialBrazilWorld?.importClubs)).catch(()=>{});
     }else{
       hydrateRealClubsFromImport(officialBrazilWorld?.importClubs);

@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.50',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T02:00:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Campeonatos estaduais',
+        items: [
+          'Hub de Estaduais libera visualização de todos os 27 estados — save parcial na nuvem não bloqueia mais os demais campeonatos.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.45',
     date: '2026-07-29',
     publishedAt: '2026-07-29T01:00:00-03:00',

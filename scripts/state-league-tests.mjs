@@ -497,5 +497,33 @@ check('rules for EST:SP render paulista format', () => {
   assert(copaSection?.items?.some(text => text.includes('vaga segura')), 'copa repasse documented');
 });
 
+check('ensureAllCompetitions backfills all hub states after partial hydrate', () => {
+  const ctx = {
+    clubs: {},
+    regionalBaseClubs: [],
+    importClubs,
+    seasonYear: 2026,
+    userUf: 'MT',
+    userClub: 'Cuiabá',
+    lotterySeed: 99,
+  };
+  const fullEngine = createStateLeagueEngine();
+  fullEngine.build(ctx);
+  const expectedAvailable = fullEngine.getHubStates('Cuiabá').filter(state => state.available).length;
+
+  const slim = fullEngine.serialize();
+  assert(Object.keys(slim.competitions).length === 1, 'serialize keeps user UF only');
+
+  const partial = createStateLeagueEngine();
+  partial.hydrate(slim, { userUf: 'MT', seasonYear: 2026 });
+  assert(partial.getHubStates('Cuiabá').filter(state => state.available).length === 1, 'hydrate alone is partial');
+
+  partial.ensureAllCompetitions(ctx);
+  assert(
+    partial.getHubStates('Cuiabá').filter(state => state.available).length === expectedAvailable,
+    'ensureAllCompetitions matches full build availability',
+  );
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

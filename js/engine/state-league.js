@@ -265,11 +265,40 @@ export function createStateLeagueEngine() {
     return true;
   };
 
+  /** Preenche UFs ausentes no save (ex.: checkpoint na nuvem só com UF do usuário). */
+  const ensureAllCompetitions = ({
+    clubs,
+    regionalBaseClubs = [],
+    importClubs = [],
+    userClub,
+    membershipByUf = {},
+    lotterySeed = null,
+  } = {}) => {
+    const missing = BRAZILIAN_UFS.filter(item => !(byUf[item.code]?.length));
+    if (!missing.length) return false;
+    const full = buildAllStateCompetitions({
+      clubs,
+      regionalBaseClubs,
+      importClubs,
+      seasonYear,
+      userClub,
+      userUf,
+      membershipByUf,
+      lotterySeed,
+    });
+    missing.forEach(item => {
+      if (full[item.code]?.length) byUf[item.code] = full[item.code];
+    });
+    Object.keys(byUf).forEach(rebuildLabels);
+    repairAllCompetitions();
+    return true;
+  };
+
   const serialize = () => ({
     seasonYear,
     userUf,
-    competitions: byUf,
-    historyByUf,
+    competitions: byUf[userUf]?.length ? { [userUf]: byUf[userUf] } : {},
+    historyByUf: historyByUf[userUf]?.length ? { [userUf]: historyByUf[userUf] } : {},
     results: exportSeasonResults(),
   });
 
@@ -612,6 +641,7 @@ export function createStateLeagueEngine() {
   return {
     build,
     hydrate,
+    ensureAllCompetitions,
     serialize,
     exportSeasonResults,
     get competitions() {
