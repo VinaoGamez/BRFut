@@ -351,7 +351,7 @@ if (SITE_MAINTENANCE.enabled) {
 
   window.addEventListener('pagehide', event => {
     if (event.persisted) return;
-    if (hasCareer() || hasLocalCareerSave()) {
+    if (hasCareer() || hasLocalCareerSave() || getAuthToken()) {
       markCareerReloadPending();
       markSkipSessionEndOnce();
       return;

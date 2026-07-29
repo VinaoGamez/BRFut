@@ -128,11 +128,13 @@ async function parseJsonResponse(response) {
 
 export function getAuthToken() {
   try {
-    const remembered = localStorage.getItem(AUTH_REMEMBER_KEY) === '1';
-    if (remembered) {
-      return localStorage.getItem(AUTH_TOKEN_KEY) || '';
-    }
-    return sessionStorage.getItem(AUTH_TOKEN_KEY) || '';
+    // Aceita token em localStorage (lembrar) ou sessionStorage (aba).
+    // Antes: se remember=0, ignorava localStorage mesmo com token válido residual.
+    return (
+      localStorage.getItem(AUTH_TOKEN_KEY) ||
+      sessionStorage.getItem(AUTH_TOKEN_KEY) ||
+      ''
+    );
   } catch {
     return '';
   }
@@ -189,10 +191,16 @@ export async function ensureCloudReady() {
     const me = await authedFetch('/api/auth/me');
     currentUser = me.user;
     cloudActive = true;
+    syncAuthBlockedUntil = 0;
     syncCloudLocalTrimFlag();
     startPresenceHeartbeat();
     return true;
-  } catch {
+  } catch (error) {
+    // Token inválido: limpa para o jogador poder logar de novo.
+    if (error?.status === 401) {
+      setAuthToken('');
+      currentUser = null;
+    }
     cloudActive = false;
     syncCloudLocalTrimFlag();
     return false;
@@ -227,6 +235,25 @@ async function authedFetch(path, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
   const response = await fetch(apiUrl(path), { ...options, headers, cache: 'no-store' });
+  const body = await parseJsonResponse(response);
+  if (!response.ok) {
+    const message = body?.error || `HTTP ${response.status}`;
+    const error = new Error(message);
+    error.code = body?.code || 'request_failed';
+    error.status = response.status;
+    throw error;
+  }
+  return body;
+}
+
+/** Login/register sem Bearer antigo — evita 401 de sessão stale derrubar o fluxo. */
+async function postAuthJson(path, payload) {
+  const response = await fetch(apiUrl(path), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  });
   const body = await parseJsonResponse(response);
   if (!response.ok) {
     const message = body?.error || `HTTP ${response.status}`;
@@ -728,43 +755,42 @@ export async function flushCloudDeletesAsync(keys = [SAVE_KEYS.career, SAVE_KEYS
   return { ok: results.every(entry => entry.ok), deleted: results.filter(entry => entry.ok).map(entry => entry.key) };
 }
 
-export async function loginWithGoogleIdToken(idToken, { remember = false } = {}) {
-  const body = await authedFetch('/api/auth/google', {
-    method: 'POST',
-    body: JSON.stringify({ idToken }),
-  });
-  setAuthToken(body.token, { remember });
+export async function loginWithGoogleIdToken(idToken, { remember = true } = {}) {
+  // Login Google sempre persiste a sessão — save na nuvem exige token após home→jogo.
+  const body = await postAuthJson('/api/auth/google', { idToken });
+  setAuthToken(body.token, { remember: remember !== false });
   currentUser = body.user;
   cloudActive = true;
   syncAuthBlockedUntil = 0;
+  backendAvailable = true;
   syncCloudLocalTrimFlag();
-  return initStorageBackend({ skipProbe: true, preferMigrate: true });
+  return initStorageBackend({ skipProbe: true, preferMigrate: true, force: true });
 }
 
 export async function loginAccount(username, password, { remember = false } = {}) {
-  const body = await authedFetch('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ username, password }),
-  });
+  const body = await postAuthJson('/api/auth/login', { username, password });
   setAuthToken(body.token, { remember });
   currentUser = body.user;
   cloudActive = true;
   syncAuthBlockedUntil = 0;
+  backendAvailable = true;
   syncCloudLocalTrimFlag();
-  return initStorageBackend({ skipProbe: true });
+  return initStorageBackend({ skipProbe: true, force: true });
 }
 
 export async function registerAccount(username, password, displayName, { remember = false } = {}) {
-  const body = await authedFetch('/api/auth/register', {
-    method: 'POST',
-    body: JSON.stringify({ username, password, displayName }),
+  const body = await postAuthJson('/api/auth/register', {
+    username,
+    password,
+    displayName,
   });
   setAuthToken(body.token, { remember });
   currentUser = body.user;
   cloudActive = true;
   syncAuthBlockedUntil = 0;
+  backendAvailable = true;
   syncCloudLocalTrimFlag();
-  return initStorageBackend({ skipProbe: true, preferMigrate: true });
+  return initStorageBackend({ skipProbe: true, preferMigrate: true, force: true });
 }
 
 export async function logoutAccount() {
@@ -785,35 +811,20 @@ export async function logoutAccount() {
   }
 }
 
-/** Encerra sessão no fechamento da aba (save já deve ter sido gravado antes). */
+/** Encerra presença/fila ao sair da página. NÃO apaga o token aqui.
+ *  pagehide também dispara em navegação interna (home→jogo / novo save) e
+ *  limpar sessionStorage no meio do caminho deixava a conta “logada” na UI
+ *  anterior e SALVO LOCAL no jogo. Sessão sem “lembrar” já morre com a aba;
+ *  logout explícito continua em logoutAccount(). */
 export function endBrowserSession() {
   flushCloudSync({ keepalive: true });
-  if (isAuthRememberEnabled()) {
-    return;
-  }
-  try {
-    const token = getAuthToken();
-    if (token && typeof fetch !== 'undefined') {
-      fetch(apiUrl('/api/auth/logout'), {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        keepalive: true,
-      }).catch(() => {});
-    }
-  } catch {
-    /* ignore */
-  }
-  setAuthToken('');
-  currentUser = null;
-  cloudActive = false;
-  remoteSavesCache = null;
-  syncCloudLocalTrimFlag();
   stopPresenceHeartbeat();
   syncQueue.clear();
   if (syncTimer) {
     window.clearTimeout(syncTimer);
     syncTimer = 0;
   }
+  // Mantém token + cloudActive para a próxima página da mesma origem.
 }
 
 async function migrateLocalToCloud({ overwrite = false } = {}) {

@@ -371,7 +371,10 @@ export function mountAccountPanel({
   const authRememberChoice = () => !!rememberEl?.checked;
 
   const syncRememberCheckbox = () => {
-    if (rememberEl) rememberEl.checked = isAuthRememberEnabled();
+    if (rememberEl) {
+      // Padrão: lembrar ligado (nuvem exige sessão após home→jogo).
+      rememberEl.checked = isAuthRememberEnabled() || !localStorage.getItem('brfut-auth-remember-seen');
+    }
   };
 
   const ensureGoogleButton = async () => {
@@ -401,8 +404,13 @@ export function mountAccountPanel({
           setError('');
           try {
             await loginWithGoogleIdToken(response.credential, {
-              remember: authRememberChoice(),
+              remember: true,
             });
+            try {
+              localStorage.setItem('brfut-auth-remember-seen', '1');
+            } catch {
+              /* ignore */
+            }
             renderLoggedIn(getCloudUser());
             await onLoginSuccess?.();
           } catch (error) {
@@ -518,6 +526,11 @@ export function mountAccountPanel({
     const username = usernameEl?.value?.trim() || '';
     const password = passwordEl?.value || '';
     const remember = authRememberChoice();
+    try {
+      localStorage.setItem('brfut-auth-remember-seen', '1');
+    } catch {
+      /* ignore */
+    }
     if (!username || !password) {
       setError('Informe usuário e senha.');
       return;

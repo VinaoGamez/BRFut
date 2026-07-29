@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.75',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T17:25:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Login Google e nuvem',
+        items: [
+          'Corrigido: ao ir da home para o jogo a sessão Google era apagada e o save ficava só local.',
+          'Login Google agora mantém a conta; Opções → SALVAR deve mostrar SALVO! quando logado.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.70',
     date: '2026-07-29',
     publishedAt: '2026-07-29T17:15:00-04:00',

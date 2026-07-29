@@ -497,7 +497,7 @@ export function createOptionsFeature(deps) {
       if (!localOk) return 'MEMÓRIA CHEIA';
       if (cloudOk && result?.careerOk && result?.seasonOk) return 'SALVO!';
       if (result?.cloudReason === 'cloud_inactive') {
-        return getAuthToken() ? 'LOCAL (SEM NUVEM)' : 'SALVO LOCAL';
+        return getAuthToken() ? 'LOCAL (SEM NUVEM)' : 'ENTRE NA CONTA';
       }
       if (result?.cloudReason === 'empty_batch') return 'LOCAL (VAZIO)';
       const err = result?.cloudErrors?.[0];
