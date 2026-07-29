@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.50',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T16:00:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Estatísticas do time',
+        items: [
+          'Corrigido hard refresh/nuvem que zerava artilheiro, assistências e média do time no dashboard.',
+          'Histórico de jogadores e placares voltam a ser preservados no save compacto.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.45',
     date: '2026-07-29',
     publishedAt: '2026-07-29T15:45:00-04:00',

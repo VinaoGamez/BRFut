@@ -171,6 +171,14 @@ export function mergeSeasonSaves(localValue, remoteValue, remoteEnvelopeAt = 0) 
   else if (localCupFixtures > 0) merged.cupCompetition = localCup;
   else if (remoteCup) merged.cupCompetition = remoteCup;
 
+  const localScorers = Array.isArray(localValue.scorers) ? localValue.scorers : [];
+  const remoteScorers = Array.isArray(remoteValue.scorers) ? remoteValue.scorers : [];
+  merged.scorers = remoteScorers.length > localScorers.length ? remoteScorers : localScorers.length ? localScorers : remoteScorers;
+  const localAssists = Array.isArray(localValue.assistants) ? localValue.assistants : [];
+  const remoteAssists = Array.isArray(remoteValue.assistants) ? remoteValue.assistants : [];
+  merged.assistants =
+    remoteAssists.length > localAssists.length ? remoteAssists : localAssists.length ? localAssists : remoteAssists;
+
   return merged;
 }
 

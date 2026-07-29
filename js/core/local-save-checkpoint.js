@@ -67,6 +67,13 @@ export function buildSeasonLocalCheckpoint(season) {
     nationalTeamOfferState: season.nationalTeamOfferState ?? null,
     nationalTeamOffersSentYear: season.nationalTeamOffersSentYear ?? null,
     userNationalTeamCode: season.userNationalTeamCode ?? null,
+    // Artilheiros/assistências cabem no checkpoint — sem isso o card zera após sync.
+    scorers: Array.isArray(season.scorers)
+      ? season.scorers.filter(row => (Number(row?.goals) || 0) > 0).slice(0, 60)
+      : [],
+    assistants: Array.isArray(season.assistants)
+      ? season.assistants.filter(row => (Number(row?.assists) || 0) > 0).slice(0, 60)
+      : [],
     updatedAt: season.updatedAt || new Date().toISOString(),
   });
 }
@@ -82,11 +89,36 @@ export function buildPlayerHistoryLocalCheckpoint(history) {
       updatedAt: new Date().toISOString(),
     });
   }
+  // Mantém logs/notas recentes — checkpoint vazio zerava média/artilheiro no dashboard.
+  const matchLogs = Array.isArray(history.matchLogs) ? history.matchLogs.slice(-48) : [];
+  const keepIds = new Set();
+  matchLogs.forEach(log => {
+    (log.homeSheet || []).forEach(row => {
+      if (row?.id) keepIds.add(String(row.id));
+    });
+    (log.awaySheet || []).forEach(row => {
+      if (row?.id) keepIds.add(String(row.id));
+    });
+  });
+  const players = {};
+  const source = history.players && typeof history.players === 'object' ? history.players : {};
+  Object.entries(source).forEach(([id, record]) => {
+    if (keepIds.has(String(id)) || keepIds.has(String(record?.id))) {
+      players[id] = record;
+    }
+  });
+  if (!Object.keys(players).length) {
+    Object.entries(source)
+      .slice(-80)
+      .forEach(([id, record]) => {
+        players[id] = record;
+      });
+  }
   return stampCheckpoint({
     version: history.version ?? 1,
     season: history.season ?? null,
-    players: {},
-    matchLogs: [],
+    players,
+    matchLogs,
     seasonArchives: [],
     updatedAt: history.updatedAt || new Date().toISOString(),
   });

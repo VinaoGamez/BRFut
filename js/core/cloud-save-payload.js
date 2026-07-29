@@ -142,6 +142,10 @@ export function slimSeasonForCloudUpload(season) {
   if (!season || typeof season !== 'object') return season;
 
   const cup = slimCupCompetitionForCloud(season.cupCompetition);
+  const scorers = Array.isArray(season.scorers) ? season.scorers.filter(row => (Number(row?.goals) || 0) > 0) : [];
+  const assistants = Array.isArray(season.assistants)
+    ? season.assistants.filter(row => (Number(row?.assists) || 0) > 0)
+    : [];
 
   let checkpoint = {
     seed: season.seed,
@@ -155,6 +159,8 @@ export function slimSeasonForCloudUpload(season) {
     worldCupCompetition: season.worldCupCompetition ?? null,
     nationalFixtures: season.nationalFixtures ?? null,
     cupCompetition: cup,
+    scorers,
+    assistants,
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues),
     standings: season.standings,
     userClubStatus: season.userClubStatus,
@@ -177,6 +183,8 @@ export function slimSeasonForCloudUpload(season) {
     updatedAt: season.updatedAt,
     stateLeagueProgressRound: season.stateLeagueProgressRound,
     cupCompetition: slimCupCompetitionForCloud(season.cupCompetition, { ultra: true }),
+    scorers: scorers.slice(0, 80),
+    assistants: assistants.slice(0, 80),
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues, { ultra: true }),
     standings: season.standings,
   };
@@ -190,6 +198,8 @@ export function slimSeasonForCloudUpload(season) {
     updatedAt: season.updatedAt,
     stateLeagueProgressRound: season.stateLeagueProgressRound,
     cupCompetition: slimCupCompetitionForCloud(season.cupCompetition, { ultra: true }),
+    scorers: scorers.slice(0, 40),
+    assistants: assistants.slice(0, 40),
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues, { ultra: true }),
   };
 }
@@ -197,25 +207,31 @@ export function slimSeasonForCloudUpload(season) {
 export function slimPlayerHistoryForCloudUpload(history) {
   if (!history || typeof history !== 'object') return history;
   if (payloadChars(history) <= CLOUD_PAYLOAD_TARGET) return history;
-  const players = history.players;
-  if (!players || typeof players !== 'object') {
-    return {
-      version: history.version,
-      updatedAt: history.updatedAt,
-      players: {},
-    };
-  }
+
+  const matchLogs = Array.isArray(history.matchLogs) ? history.matchLogs.slice(-120) : [];
+  const players = history.players && typeof history.players === 'object' ? history.players : {};
   const entries = Object.entries(players);
   const slimPlayers = {};
-  for (const [id, record] of entries.slice(-160)) {
+  for (const [id, record] of entries.slice(-200)) {
     slimPlayers[id] = record;
   }
-  const slimmed = { ...history, players: slimPlayers };
-  if (payloadChars(slimmed) <= CLOUD_PAYLOAD_TARGET) return slimmed;
-  return {
+  const slimmed = {
     version: history.version,
+    season: history.season ?? null,
     updatedAt: history.updatedAt,
     players: slimPlayers,
+    matchLogs,
+    seasonArchives: Array.isArray(history.seasonArchives) ? history.seasonArchives.slice(-2) : [],
+  };
+  if (payloadChars(slimmed) <= CLOUD_PAYLOAD_TARGET) return slimmed;
+
+  return {
+    version: history.version,
+    season: history.season ?? null,
+    updatedAt: history.updatedAt,
+    players: slimPlayers,
+    matchLogs: matchLogs.slice(-60),
+    seasonArchives: [],
   };
 }
 

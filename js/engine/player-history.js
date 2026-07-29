@@ -5,7 +5,7 @@
  * matchLogs = buffer só da temporada corrente (cap ≈ nº de jogos do calendário).
  * No finalizeSeason os logs são apagados; permanece players.*.seasons (médias).
  */
-import { SAVE_KEYS, SAVE_VERSION, MODULE_VERSIONS } from '../core/constants.js';
+import { SAVE_KEYS, SAVE_VERSION, MODULE_VERSIONS, CAREER_INDEX_KEY, ACTIVE_SLOT_SESSION_KEY, slotBundleKeys } from '../core/constants.js';
 import { isLocalStorageCheckpoint } from '../core/local-save-checkpoint.js';
 import { readJson, writeJson, getStoragePressure, prepareStorageForSave } from '../core/save.js';
 import { buildMatchPlayerSheets, playerKey } from './player-match-stats.js';
@@ -464,12 +464,42 @@ function slimLogPlayer(sheet) {
   };
 }
 
+function readActiveSlotIdForHistory() {
+  try {
+    const session = sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY);
+    if (session) return session;
+  } catch {
+    /* ignore */
+  }
+  return readJson(CAREER_INDEX_KEY, null)?.activeSlotId || null;
+}
+
+function playerHistoryHasStats(value) {
+  if (!value || typeof value !== 'object') return false;
+  if (Array.isArray(value.matchLogs) && value.matchLogs.length > 0) return true;
+  return !!(value.players && typeof value.players === 'object' && Object.keys(value.players).length > 0);
+}
+
 export function loadPlayerHistoryStore() {
-  const raw = readJson(SAVE_KEYS.playerHistory, null);
+  let raw = readJson(SAVE_KEYS.playerHistory, null);
+  const slotId = readActiveSlotIdForHistory();
+  const slotRaw = slotId ? readJson(slotBundleKeys(slotId).playerHistory, null) : null;
+
+  // Checkpoint ativo vazio / slim — preferir bundle do slot (save completo na nuvem).
+  if (slotRaw && playerHistoryHasStats(slotRaw) && !isLocalStorageCheckpoint(slotRaw)) {
+    if (!raw || isLocalStorageCheckpoint(raw) || !playerHistoryHasStats(raw)) {
+      raw = slotRaw;
+    }
+  } else if (!raw && slotRaw) {
+    raw = slotRaw;
+  }
+
   if (!raw || typeof raw !== 'object') return emptyStore();
-  if (isLocalStorageCheckpoint(raw)) {
+  // Checkpoint com dados úteis: usa o conteúdo (não zerar dashboard).
+  if (isLocalStorageCheckpoint(raw) && !playerHistoryHasStats(raw)) {
     return emptyStore(raw.season ?? null);
   }
+
   const season = raw.season ?? null;
   const store = {
     version: Number(raw.version) || SAVE_VERSION.playerHistory || 1,

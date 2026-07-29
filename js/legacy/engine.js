@@ -5010,9 +5010,32 @@ export async function bootEngine({
     syncLeaderboardFromPlayerHistory(clubName);
   };
   if(validSavedSeason||savedNewGame){
+    const stateExtraGames=[];
+    if(FEATURES.stateLeague&&stateLeagueEngine?.competitions){
+      const uf=String(savedNewGame?.userUf||getRealClub(userClub)?.uf||'SP').toUpperCase();
+      const divisions=stateLeagueEngine.competitions[uf]||[];
+      divisions.forEach(division=>{
+        (division.fixtures||[]).forEach((round,roundIndex)=>{
+          (round||[]).forEach(game=>{
+            if(!game||(game.home!==userClub&&game.away!==userClub))return;
+            if(!(game.completed||game.played||game.homeGoals!=null))return;
+            if(!Number.isFinite(Number(game.homeGoals)))return;
+            stateExtraGames.push({
+              ...game,
+              completed:true,
+              competition:division.label||`Estadual ${uf}`,
+              round:game.round??roundIndex+1,
+            });
+          });
+        });
+      });
+    }
     backfillClubHistoryFromSave(userClub,{
       roundHistory:seasonRoundHistory,
-      extraGames:(copaDoBrasilFixtures||[]).filter(game=>game?.completed&&Number.isFinite(Number(game.homeGoals))&&(game.home===userClub||game.away===userClub)),
+      extraGames:[
+        ...(copaDoBrasilFixtures||[]).filter(game=>game?.completed&&Number.isFinite(Number(game.homeGoals))&&(game.home===userClub||game.away===userClub)),
+        ...stateExtraGames,
+      ],
       competitionForRound:()=>`LEAGUE:${userDivision}`,
     });
     if(userNationalTeamName){

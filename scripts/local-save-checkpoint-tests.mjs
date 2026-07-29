@@ -52,20 +52,41 @@ check('buildCareerLocalCheckpoint keeps identity fields', () => {
   assert(!cp.divisionTeams?.D?.length, 'pyramid offloaded');
 });
 
-check('buildPlayerHistoryLocalCheckpoint strips heavy data', () => {
+check('buildPlayerHistoryLocalCheckpoint keeps recent match logs', () => {
   const history = {
     version: 1,
     season: 2026,
-    players: { a: { name: 'A' } },
-    matchLogs: [{ id: 1 }],
+    players: { a: { name: 'A', id: 'a' }, b: { name: 'B', id: 'b' } },
+    matchLogs: [
+      {
+        id: 1,
+        home: 'FC',
+        away: 'X',
+        homeSheet: [{ id: 'a', name: 'A' }],
+        awaySheet: [],
+      },
+    ],
     seasonArchives: [{ season: 2025 }],
     updatedAt: '2026-07-29T12:00:00.000Z',
   };
   const cp = buildPlayerHistoryLocalCheckpoint(history);
   assert(isLocalStorageCheckpoint(cp), 'checkpoint');
-  assert(Object.keys(cp.players).length === 0, 'players cleared');
-  assert(cp.matchLogs.length === 0, 'logs cleared');
+  assert(cp.matchLogs.length === 1, 'recent logs kept for dashboard stats');
+  assert(cp.players.a?.name === 'A', 'players from logs kept');
+  assert(!cp.seasonArchives?.length, 'archives offloaded');
   assert(cp.season === 2026, 'season kept');
+});
+
+check('buildSeasonLocalCheckpoint keeps scorers', () => {
+  const cp = buildSeasonLocalCheckpoint({
+    seed: 1,
+    userClubName: 'FC',
+    currentRound: 3,
+    scorers: [{ name: 'Gol', club: 'FC', goals: 5 }],
+    assistants: [{ name: 'Pass', club: 'FC', assists: 3 }],
+  });
+  assert(cp.scorers?.[0]?.goals === 5, 'scorers kept');
+  assert(cp.assistants?.[0]?.assists === 3, 'assistants kept');
 });
 
 check('applyLocalCheckpointTrim no-op when cloud trim disabled', () => {

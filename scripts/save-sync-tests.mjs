@@ -163,6 +163,17 @@ check('cloud slim keeps Copa do Brasil fixtures', () => {
   assert(cloud.cupCompetition.stages[0].fixtures.length === 1, 'cup fixtures kept');
 });
 
+check('cloud slim keeps scorers and assistants', () => {
+  const season = {
+    ...buildFullSeason(7),
+    scorers: [{ name: 'Artilheiro', club: 'Vinaz Athletic', goals: 4 }],
+    assistants: [{ name: 'Garçom', club: 'Vinaz Athletic', assists: 3 }],
+  };
+  const cloud = slimSeasonForCloudUpload(season);
+  assert(cloud.scorers?.[0]?.goals === 4, 'scorers kept');
+  assert(cloud.assistants?.[0]?.assists === 3, 'assistants kept');
+});
+
 check('mergeCareerSaves keeps full local over slim remote checkpoint', () => {
   const local = {
     seed: 999,
