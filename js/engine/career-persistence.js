@@ -211,10 +211,10 @@ export function createCareerPersistence({
       const hadCareer = hasLocalCareerSave() || !!getSavedNewGame?.();
       let seasonOk = false;
       if (hadCareer) {
-        persistSeason(true);
+        persistSeason(true, { flush: false });
         seasonOk = true;
       }
-      flushCloudSync({ urgent: true });
+      flushCloudSync({ keepalive: true });
     };
     window.addEventListener('beforeunload', () => {
       if (hasLocalCareerSave() || getSavedNewGame?.()) {
@@ -245,8 +245,8 @@ export function createCareerPersistence({
       } catch {
         /* ignore */
       }
-      if (getSavedNewGame?.()) persistSeason(true);
-      flushCloudSync({ urgent: true });
+      if (getSavedNewGame?.()) persistSeason(true, { flush: false });
+      flushCloudSync({ keepalive: true });
     });
   };
 

@@ -1,4 +1,7 @@
-import { generateNationalTeamOffers } from '../engine/national-team-offers.js';
+import {
+  generateNextNationalTeamOffer,
+  NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL,
+} from '../engine/national-team-offers.js';
 import { NATIONAL_TEAMS, nationalTeamFlagUrl, nationalTeamPower } from '../engine/national-teams.js';
 import { preloadCompetitionTrophy } from '../ui/competition-trophies.js';
 
@@ -22,7 +25,6 @@ const layoutStage = document.getElementById('ntolLayoutStage');
 const weekSelect = document.getElementById('ntolWeekSelect');
 const divisionSelect = document.getElementById('ntolDivisionSelect');
 const offersBody = document.getElementById('ntolOffersBody');
-const counterValue = document.getElementById('ntolCounterValue');
 const footnote = document.getElementById('ntolFootnote');
 const offersSub = document.getElementById('ntolOffersSub');
 const trophyImg = document.getElementById('ntolTrophy');
@@ -160,38 +162,43 @@ async function copyLayoutToClipboard() {
   }
 }
 
-function buildOffers() {
-  return generateNationalTeamOffers({
-    year: 2026,
-    userDivision: divisionSelect.value,
-    seed: 4242,
-    count: 3,
-  });
+function buildProposalBatches(weekCount) {
+  const batches = [];
+  for (let issueIndex = 0; issueIndex < weekCount; issueIndex += 1) {
+    const batch = generateNextNationalTeamOffer({
+      year: 2026,
+      userDivision: divisionSelect.value,
+      seed: 4242,
+      issueIndex,
+      existingOffers: batches,
+    });
+    if (batch) batches.push(batch);
+  }
+  return batches;
 }
 
 function renderOffers() {
-  const week = Number(weekSelect.value) || 3;
-  const visible = buildOffers().slice(0, week);
-  const remaining = Math.max(0, 3 - week);
+  const week = Number(weekSelect.value) || 1;
+  const batches = buildProposalBatches(week);
+  const teams = batches.length ? batches[batches.length - 1].teams : [];
+  const isLastProposalWindow = week >= 3;
 
-  counterValue.textContent = String(remaining);
   offersSub.textContent =
-    week < 3
-      ? `Nova proposta disponível · ${WEEK_LABELS[week]}`
-      : 'Três convites acumulados — escolha uma seleção para comandar.';
+    !isLastProposalWindow
+      ? `Nova proposta disponível · ${NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL} seleções para escolher`
+      : 'Última proposta — escolha uma seleção para comandar.';
 
-  footnote.textContent =
-    week < 3
-      ? `Próxima proposta chega em 7 dias. Você ainda verá ${3 - week} convite(s) nesta temporada de Copa.`
-      : 'Ao aceitar, as demais propostas são encerradas. Você comanda a seleção nos jogos oficiais da CMU em paralelo ao seu clube.';
+  footnote.textContent = isLastProposalWindow
+    ? 'Você não receberá mais convite(s) nesta temporada de Copa.'
+    : 'Próxima proposta chega em 7 dias. Você ainda receberá convite(s) nesta temporada de Copa.';
 
-  offersBody.innerHTML = visible
+  offersBody.innerHTML = teams
     .map(offer => {
       const meta = NATIONAL_TEAMS[offer.code];
       const flagUrl = meta ? nationalTeamFlagUrl(meta.iso) : '';
       const ovr = meta ? nationalTeamPower(meta.block) : 88;
       return `<tr>
-        <td><div class="ntol-flag crest crest--flag"><img src="${escapeHtml(flagUrl)}" alt=""></div></td>
+        <td><div class="ntol-flag"><img src="${escapeHtml(flagUrl)}" alt=""></div></td>
         <td>
           <span class="ntol-team-name">${escapeHtml(offer.name)}</span>
           <span class="ntol-team-rank">FIFA ${escapeHtml(offer.fifaRank)}º</span>

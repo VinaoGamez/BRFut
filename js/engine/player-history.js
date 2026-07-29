@@ -6,6 +6,7 @@
  * No finalizeSeason os logs são apagados; permanece players.*.seasons (médias).
  */
 import { SAVE_KEYS, SAVE_VERSION, MODULE_VERSIONS } from '../core/constants.js';
+import { isLocalStorageCheckpoint } from '../core/local-save-checkpoint.js';
 import { readJson, writeJson, getStoragePressure, prepareStorageForSave } from '../core/save.js';
 import { buildMatchPlayerSheets, playerKey } from './player-match-stats.js';
 
@@ -466,6 +467,9 @@ function slimLogPlayer(sheet) {
 export function loadPlayerHistoryStore() {
   const raw = readJson(SAVE_KEYS.playerHistory, null);
   if (!raw || typeof raw !== 'object') return emptyStore();
+  if (isLocalStorageCheckpoint(raw)) {
+    return emptyStore(raw.season ?? null);
+  }
   const season = raw.season ?? null;
   const store = {
     version: Number(raw.version) || SAVE_VERSION.playerHistory || 1,

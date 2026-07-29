@@ -121,28 +121,7 @@
 }
 
 .nto-counter {
-  position: absolute;
-  left: 690px;
-  top: 8px;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 8px 12px;
-  border: 1px solid #2f687c;
-  border-radius: 8px;
-  background: #0a1921;
-  color: var(--nto-muted);
-  font: 600 11px 'DM Sans', sans-serif;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.nto-counter strong {
-  font: 800 22px/1 'Barlow Condensed', sans-serif;
-  color: var(--nto-lime);
-  text-transform: none;
-  letter-spacing: 0;
+  display: none !important;
 }
 
 .nto-table-wrap {
@@ -150,10 +129,10 @@
   left: 248px;
   top: 78px;
   right: 0;
-  border: 1px solid #244f60;
+  border: 1px solid #7eb8cc;
   border-radius: 10px;
   overflow: hidden;
-  background: #08141a;
+  background: #c5e8f4;
 }
 
 .nto-footnote {
@@ -195,17 +174,17 @@
 .nto-table th,
 .nto-table td {
   padding: 12px 14px;
-  border-bottom: 1px solid #183845;
+  border-bottom: 1px solid #9cc9db;
   text-align: left;
   vertical-align: middle;
 }
 
 .nto-table th {
-  color: var(--nto-cyan);
+  color: #0d4a5e;
   font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: 0.6px;
   text-transform: uppercase;
-  background: #0a1a22;
+  background: #a8dcef;
 }
 
 .nto-table tbody tr:last-child td {
@@ -213,7 +192,7 @@
 }
 
 .nto-table tbody tr:hover {
-  background: #0c1e27;
+  background: #b6e0f0;
 }
 
 .nto-col-flag {
@@ -226,15 +205,18 @@
 }
 
 .nto-col-actions {
-  width: 190px;
+  width: 200px;
+  text-align: right;
 }
 
 .nto-flag {
   width: 54px;
-  height: 36px;
+  aspect-ratio: 3 / 2;
+  height: auto;
   border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 2px 8px #00000044;
+  box-shadow: 0 2px 8px #00000033;
+  flex-shrink: 0;
 }
 
 .nto-flag img {
@@ -248,12 +230,13 @@
   font: 700 16px 'Barlow Condensed', sans-serif;
   letter-spacing: 0.3px;
   text-transform: uppercase;
+  color: #0a2530;
 }
 
 .nto-team-rank {
   display: block;
   margin-top: 2px;
-  color: var(--nto-muted);
+  color: #3a5f6e;
   font-size: 11px;
 }
 
@@ -264,29 +247,34 @@
   min-height: 32px;
   padding: 0 8px;
   border-radius: 6px;
-  background: #112833;
+  background: #0d3342;
   border: 1px solid #2a6278;
   font: 800 18px 'Barlow Condensed', sans-serif;
   color: #e8fbff;
 }
 
 .nto-row-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: stretch;
   gap: 6px;
+  width: 100%;
 }
 
 .nto-action {
+  flex: 0 0 88px;
+  width: 88px;
   min-height: 34px;
-  padding: 0 12px;
+  padding: 0 8px;
   border-radius: 6px;
   border: 1px solid #315f70;
   background: #102630;
   color: #dce9e8;
-  font: 700 11px 'DM Sans', sans-serif;
-  letter-spacing: 0.4px;
+  font: 700 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .nto-action--accept {
@@ -295,13 +283,49 @@
   color: #f4ffe8;
 }
 
-.nto-action--view:hover,
-.nto-action:hover {
-  border-color: var(--nto-cyan);
-}
-
 .nto-action--accept:hover {
   border-color: #b8f06a;
+}
+
+/* buttons.css global usa !important — restaurar paleta do lab neste modal */
+#nationalTeamOfferModal .nto-action--accept {
+  border-color: #5ea823 !important;
+  background: linear-gradient(180deg, #3f7f18, #2f6112) !important;
+  color: #f4ffe8 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#nationalTeamOfferModal .nto-action--accept:hover {
+  border-color: #b8f06a !important;
+  background: linear-gradient(180deg, #4a941c, #377015) !important;
+  color: #f4ffe8 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#nationalTeamOfferModal .nto-action--view:hover {
+  border-color: var(--nto-cyan) !important;
+  background: #153744 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#nationalTeamOfferModal .nto-deny-all {
+  border: 1px solid #7a3030 !important;
+  background: linear-gradient(180deg, #4a1818, #321010) !important;
+  color: #ffd8d8 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#nationalTeamOfferModal .nto-deny-all:hover {
+  border-color: #c85a5a !important;
+  background: linear-gradient(180deg, #5a2020, #3a1414) !important;
+  color: #ffd8d8 !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 @media (max-width: 760px) {
@@ -353,11 +377,6 @@
     max-width: calc(100% - 24px);
   }
 
-  .nto-counter {
-    left: 12px;
-    top: 232px;
-  }
-
   .nto-table-wrap {
     left: 12px;
     right: 12px;
@@ -382,5 +401,11 @@
 
   .nto-row-actions {
     flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .nto-action {
+    flex: 0 0 auto;
+    width: 88px;
   }
 }

@@ -2,6 +2,7 @@
  * Slim progressivo do save de temporada quando a cota do localStorage aperta.
  */
 import { SAVE_KEYS } from '../core/constants.js';
+import { isCloudLocalTrimEnabled } from '../core/local-save-checkpoint.js';
 import { writeJsonResilient } from '../core/save.js';
 
 function slimScoresOnlyHistory(history = []) {
@@ -153,19 +154,32 @@ export function persistSeasonPayload(seasonPayload, context = {}) {
     /* ignore */
   }
 
-  const slimSteps = [
-    payload => slimSeasonPayloadLevel1(payload, context),
-    payload => slimSeasonPayloadLevel2(payload, context),
-    payload => {
-      try {
-        localStorage.removeItem(SAVE_KEYS.playerHistory);
-      } catch {
-        /* ignore */
-      }
-      return slimSeasonPayloadLevel3(payload, context);
-    },
-    payload => slimSeasonPayloadLevel4(payload, context),
-  ];
+  const slimSteps = isCloudLocalTrimEnabled()
+    ? [
+        payload => slimSeasonPayloadLevel2(payload, context),
+        payload => {
+          try {
+            localStorage.removeItem(SAVE_KEYS.playerHistory);
+          } catch {
+            /* ignore */
+          }
+          return slimSeasonPayloadLevel3(payload, context);
+        },
+        payload => slimSeasonPayloadLevel4(payload, context),
+      ]
+    : [
+        payload => slimSeasonPayloadLevel1(payload, context),
+        payload => slimSeasonPayloadLevel2(payload, context),
+        payload => {
+          try {
+            localStorage.removeItem(SAVE_KEYS.playerHistory);
+          } catch {
+            /* ignore */
+          }
+          return slimSeasonPayloadLevel3(payload, context);
+        },
+        payload => slimSeasonPayloadLevel4(payload, context),
+      ];
 
   return writeJsonResilient(SAVE_KEYS.season, seasonPayload, {
     preserveKeys: [SAVE_KEYS.season, SAVE_KEYS.career],

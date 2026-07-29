@@ -261,28 +261,7 @@ body {
 }
 
 .ntol-counter {
-  position: absolute;
-  left: 690px;
-  top: 8px;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 8px 12px;
-  border: 1px solid #2f687c;
-  border-radius: 8px;
-  background: #0a1921;
-  color: var(--ntol-muted);
-  font: 600 11px 'DM Sans', sans-serif;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.ntol-counter strong {
-  font: 800 22px/1 'Barlow Condensed', sans-serif;
-  color: var(--ntol-lime);
-  text-transform: none;
-  letter-spacing: 0;
+  display: none !important;
 }
 
 .ntol-table-wrap {
@@ -290,10 +269,10 @@ body {
   left: 248px;
   top: 78px;
   right: 0;
-  border: 1px solid #244f60;
+  border: 1px solid #7eb8cc;
   border-radius: 10px;
   overflow: hidden;
-  background: #08141a;
+  background: #c5e8f4;
 }
 
 .ntol-footnote {
@@ -374,17 +353,17 @@ body {
 .ntol-table th,
 .ntol-table td {
   padding: 12px 14px;
-  border-bottom: 1px solid #183845;
+  border-bottom: 1px solid #9cc9db;
   text-align: left;
   vertical-align: middle;
 }
 
 .ntol-table th {
-  color: var(--ntol-cyan);
+  color: #0d4a5e;
   font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: 0.6px;
   text-transform: uppercase;
-  background: #0a1a22;
+  background: #a8dcef;
 }
 
 .ntol-table tbody tr:last-child td {
@@ -392,7 +371,7 @@ body {
 }
 
 .ntol-table tbody tr:hover {
-  background: #0c1e27;
+  background: #b6e0f0;
 }
 
 .ntol-col-flag {
@@ -405,15 +384,18 @@ body {
 }
 
 .ntol-col-actions {
-  width: 190px;
+  width: 200px;
+  text-align: right;
 }
 
 .ntol-flag {
   width: 54px;
-  height: 36px;
+  aspect-ratio: 3 / 2;
+  height: auto;
   border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 2px 8px #00000044;
+  box-shadow: 0 2px 8px #00000033;
+  flex-shrink: 0;
 }
 
 .ntol-flag img {
@@ -427,12 +409,13 @@ body {
   font: 700 16px 'Barlow Condensed', sans-serif;
   letter-spacing: 0.3px;
   text-transform: uppercase;
+  color: #0a2530;
 }
 
 .ntol-team-rank {
   display: block;
   margin-top: 2px;
-  color: var(--ntol-muted);
+  color: #3a5f6e;
   font-size: 11px;
 }
 
@@ -450,22 +433,27 @@ body {
 }
 
 .ntol-row-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: stretch;
   gap: 6px;
+  width: 100%;
 }
 
 .ntol-action {
+  flex: 0 0 88px;
+  width: 88px;
   min-height: 34px;
-  padding: 0 12px;
+  padding: 0 8px;
   border-radius: 6px;
   border: 1px solid #315f70;
   background: #102630;
   color: #dce9e8;
-  font: 700 11px 'DM Sans', sans-serif;
-  letter-spacing: 0.4px;
+  font: 700 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .ntol-action--accept {
@@ -551,11 +539,6 @@ body {
     max-width: calc(100% - 24px);
   }
 
-  .ntol-counter {
-    left: 12px;
-    top: 232px;
-  }
-
   .ntol-table-wrap {
     left: 12px;
     right: 12px;
@@ -580,5 +563,11 @@ body {
 
   .ntol-row-actions {
     flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .ntol-action {
+    flex: 0 0 auto;
+    width: 88px;
   }
 }

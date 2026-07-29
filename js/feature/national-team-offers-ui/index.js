@@ -1,12 +1,14 @@
 import '../../../css/national-team-offers.css';
 import { NATIONAL_TEAMS, nationalTeamFlagUrl, nationalTeamPower } from '../../engine/national-teams.js';
 import { preloadCompetitionTrophy } from '../../ui/competition-trophies.js';
-import { getNationalTeamOffersRemaining } from '../../engine/national-team-offers.js';
+import {
+  NATIONAL_TEAM_OFFER_COUNT,
+  NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL,
+} from '../../engine/national-team-offers.js';
 
 const MODAL_HTML = `
 <div id="nationalTeamOfferModal" class="nto-modal hidden" role="dialog" aria-modal="true" aria-labelledby="ntOfferTitle">
   <div class="nto-modal-card">
-    <button id="ntOfferCloseBtn" class="nto-close" type="button" aria-label="Fechar">×</button>
     <div class="nto-layout-stage">
       <p class="nto-hero-kicker">COPA DO MUNDO</p>
       <div class="nto-trophy-wrap">
@@ -16,9 +18,6 @@ const MODAL_HTML = `
       <p class="nto-hero-meta">Fase de grupos + mata-mata · Paralelo ao seu clube</p>
       <h2 id="ntOfferTitle" class="nto-offers-title">Convites para Seleções</h2>
       <p class="nto-offers-sub" id="ntOfferOffersSub">Escolha uma seleção para comandar na CMU.</p>
-      <div class="nto-counter" id="ntOfferCounter" aria-live="polite">
-        Restam <strong id="ntOfferCounterValue">0</strong> propostas
-      </div>
       <div class="nto-table-wrap">
         <table class="nto-table" aria-label="Propostas de seleções">
           <thead>
@@ -69,14 +68,9 @@ export function createNationalTeamOffersUiFeature(deps) {
     if (handlersBound) return;
     handlersBound = true;
 
-    $('#ntOfferCloseBtn')?.addEventListener('click', () => close());
     $('#ntOfferDenyAll')?.addEventListener('click', () => {
       onDenyAll?.();
       close();
-    });
-
-    $('#nationalTeamOfferModal')?.addEventListener('click', event => {
-      if (event.target?.id === 'nationalTeamOfferModal') close();
     });
 
     $('#ntOfferOffersBody')?.addEventListener('click', event => {
@@ -96,25 +90,22 @@ export function createNationalTeamOffersUiFeature(deps) {
   };
 
   const render = ({ offers = [], issuedCount = 0 } = {}) => {
-    const remaining = getNationalTeamOffersRemaining(issuedCount);
-    const counterValue = $('#ntOfferCounterValue');
+    const isLastProposalWindow = issuedCount >= NATIONAL_TEAM_OFFER_COUNT;
     const offersSub = $('#ntOfferOffersSub');
     const footnote = $('#ntOfferFootnote');
     const offersBody = $('#ntOfferOffersBody');
     const year = getCareerSeason?.() || 2026;
 
-    if (counterValue) counterValue.textContent = String(remaining);
     if (offersSub) {
       offersSub.textContent =
-        issuedCount < 3
-          ? `Nova proposta disponível · ${offers.length} convite(s) acumulado(s)`
-          : 'Três convites acumulados — escolha uma seleção para comandar.';
+        !isLastProposalWindow
+          ? `Nova proposta disponível · ${NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL} seleções para escolher`
+          : 'Última proposta — escolha uma seleção para comandar.';
     }
     if (footnote) {
-      footnote.textContent =
-        issuedCount < 3
-          ? `Próxima proposta chega em 7 dias. Você ainda verá ${remaining} convite(s) nesta temporada de Copa.`
-          : 'Ao aceitar, as demais propostas são encerradas. Você comanda a seleção nos jogos oficiais da CMU em paralelo ao seu clube.';
+      footnote.textContent = isLastProposalWindow
+        ? 'Você não receberá mais convite(s) nesta temporada de Copa.'
+        : 'Próxima proposta chega em 7 dias. Você ainda receberá convite(s) nesta temporada de Copa.';
     }
     if ($('#ntOfferHeroDates')) {
       $('#ntOfferHeroDates').textContent = `11 JUN — 19 JUL · ${year}`;
@@ -127,7 +118,7 @@ export function createNationalTeamOffersUiFeature(deps) {
         const flagUrl = meta ? nationalTeamFlagUrl(meta.iso) : '';
         const ovr = meta ? nationalTeamPower(meta.block) : 88;
         return `<tr>
-          <td><div class="nto-flag crest crest--flag"><img src="${escapeHtml(flagUrl)}" alt=""></div></td>
+          <td><div class="nto-flag"><img src="${escapeHtml(flagUrl)}" alt=""></div></td>
           <td>
             <span class="nto-team-name">${escapeHtml(offer.name)}</span>
             <span class="nto-team-rank">FIFA ${escapeHtml(offer.fifaRank)}º</span>

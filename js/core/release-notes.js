@@ -9,6 +9,51 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.90',
+    date: '2026-07-29',
+    publishedAt: '2026-07-30T00:10:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Save na nuvem',
+        items: [
+          'Logado na conta, o jogo guarda o save completo na VPS e mantém só um resumo leve no navegador.',
+          'Isso reduz erros de cota do localStorage — ao recarregar, o progresso vem da nuvem.',
+        ],
+      },
+    ],
+  },
+  {
+    version: 'Alpha V.3.85',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T23:40:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Save na nuvem',
+        items: [
+          'Corrigido erro "Failed to fetch" ao salvar durante o jogo — sync usa keepalive só ao fechar a aba.',
+          'Testers no 5081 passam a usar a API local automaticamente, sem conflito de CORS.',
+        ],
+      },
+    ],
+  },
+  {
+    version: 'Alpha V.3.80',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T23:30:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Convites CMU',
+        items: [
+          'Cada proposta semanal traz 3 seleções para escolher.',
+          'Layout do popup: bandeiras retangulares, tabela em azul claro e botões alinhados.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.75',
     date: '2026-07-29',
     publishedAt: '2026-07-29T23:10:00-03:00',

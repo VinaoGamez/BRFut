@@ -146,9 +146,35 @@ export function slimSeasonForCloudUpload(season) {
   };
 }
 
+export function slimPlayerHistoryForCloudUpload(history) {
+  if (!history || typeof history !== 'object') return history;
+  if (payloadChars(history) <= CLOUD_PAYLOAD_TARGET) return history;
+  const players = history.players;
+  if (!players || typeof players !== 'object') {
+    return {
+      version: history.version,
+      updatedAt: history.updatedAt,
+      players: {},
+    };
+  }
+  const entries = Object.entries(players);
+  const slimPlayers = {};
+  for (const [id, record] of entries.slice(-160)) {
+    slimPlayers[id] = record;
+  }
+  const slimmed = { ...history, players: slimPlayers };
+  if (payloadChars(slimmed) <= CLOUD_PAYLOAD_TARGET) return slimmed;
+  return {
+    version: history.version,
+    updatedAt: history.updatedAt,
+    players: slimPlayers,
+  };
+}
+
 export function prepareCloudSavePayload(key, value) {
   if (key === SAVE_KEYS.career) return slimCareerForCloudUpload(value);
   if (key === SAVE_KEYS.season) return slimSeasonForCloudUpload(value);
+  if (key === SAVE_KEYS.playerHistory) return slimPlayerHistoryForCloudUpload(value);
   return value;
 }
 

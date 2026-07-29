@@ -1,5 +1,8 @@
 import { SAVE_KEYS } from './constants.js';
 import { parseSavedCalendarDate } from '../engine/career-calendar.js';
+import { isLocalStorageCheckpoint } from './local-save-checkpoint.js';
+
+export { isLocalStorageCheckpoint };
 
 /** Timestamp comparável para resolver conflito local vs nuvem. */
 export function saveFreshness(value, key = '') {
@@ -124,6 +127,8 @@ function pickNewerSeasonSave(localValue, remoteValue) {
 export function mergeSeasonSaves(localValue, remoteValue, remoteEnvelopeAt = 0) {
   if (!localValue) return remoteValue ?? null;
   if (!remoteValue) return localValue;
+  if (isLocalStorageCheckpoint(localValue) && remoteValue) return { ...remoteValue };
+  if (isLocalStorageCheckpoint(remoteValue) && localValue) return { ...localValue };
 
   const winner = pickNewerSave(localValue, remoteValue, SAVE_KEYS.season, remoteEnvelopeAt);
   const merged = { ...winner };
@@ -189,6 +194,8 @@ export function isSlimCareerCheckpoint(career) {
 export function mergeCareerSaves(localValue, remoteValue, remoteEnvelopeAt = 0) {
   if (!localValue) return remoteValue ?? null;
   if (!remoteValue) return localValue;
+  if (isLocalStorageCheckpoint(localValue) && remoteValue) return { ...remoteValue };
+  if (isLocalStorageCheckpoint(remoteValue) && localValue) return { ...localValue };
 
   if (localValue.freshWorld) return localValue;
 
@@ -213,6 +220,8 @@ export function mergeCareerSaves(localValue, remoteValue, remoteEnvelopeAt = 0) 
 export function pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt = 0) {
   if (!localValue) return remoteValue ?? null;
   if (!remoteValue) return localValue;
+  if (isLocalStorageCheckpoint(localValue) && remoteValue) return remoteValue;
+  if (isLocalStorageCheckpoint(remoteValue) && localValue) return localValue;
 
   if (key === SAVE_KEYS.season) {
     const seasonWinner = pickNewerSeasonSave(localValue, remoteValue);

@@ -5,6 +5,11 @@
 import { SAVE_KEYS, BRFUT_API_ORIGIN } from './constants.js';
 import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves, mergeCareerSaves } from './save-sync.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
+import {
+  applyLocalCheckpointTrim,
+  setCloudLocalTrimEnabled,
+} from './local-save-checkpoint.js';
+import { isLocalStorageCheckpoint } from './save-sync.js';
 import { consumeFreshCareerBoot } from './save.js';
 
 const AUTH_TOKEN_KEY = 'brfut-auth-token';
@@ -19,8 +24,28 @@ let currentUser = null;
 const syncQueue = new Map();
 let syncTimer = 0;
 let presenceTimer = 0;
+const syncWarned = new Set();
 
-const apiUrl = path => new URL(path, BRFUT_API_ORIGIN || window.location.origin).toString();
+/** Testers locais (5081) usam API embutida — evita CORS com api.brfut.com.br em build de produção. */
+function resolveApiOrigin() {
+  try {
+    const host = window.location.hostname;
+    if (host === '127.0.0.1' || host === 'localhost') {
+      return window.location.origin;
+    }
+  } catch {
+    /* ignore */
+  }
+  return BRFUT_API_ORIGIN || window.location.origin;
+}
+
+const apiUrl = path => new URL(path, resolveApiOrigin()).toString();
+
+function warnSyncOnce(id, message, ...args) {
+  if (syncWarned.has(id)) return;
+  syncWarned.add(id);
+  console.warn(message, ...args);
+}
 
 async function parseJsonResponse(response) {
   const text = await response.text();
@@ -75,11 +100,16 @@ export function isCloudStorageActive() {
   return cloudActive && !!getAuthToken();
 }
 
+function syncCloudLocalTrimFlag() {
+  setCloudLocalTrimEnabled(isCloudStorageActive());
+}
+
 /** Revalida token + sessão antes de upload manual (cloudActive pode ter caído). */
 export async function ensureCloudReady() {
   const token = getAuthToken();
   if (!token) {
     cloudActive = false;
+    syncCloudLocalTrimFlag();
     return false;
   }
   if (cloudActive && currentUser) return true;
@@ -89,10 +119,12 @@ export async function ensureCloudReady() {
     const me = await authedFetch('/api/auth/me');
     currentUser = me.user;
     cloudActive = true;
+    syncCloudLocalTrimFlag();
     startPresenceHeartbeat();
     return true;
   } catch {
     cloudActive = false;
+    syncCloudLocalTrimFlag();
     return false;
   }
 }
@@ -171,7 +203,18 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
 
     const localValue = readLocalSave(key);
     if (skipCareerSeasonHydrate && (key === SAVE_KEYS.career || key === SAVE_KEYS.season)) {
-      if (localValue && isCloudStorageActive()) queueCloudSave(key, localValue);
+      if (localValue && isCloudStorageActive() && !isLocalStorageCheckpoint(localValue)) {
+        queueCloudSave(key, localValue);
+      }
+      return;
+    }
+
+    if (isLocalStorageCheckpoint(localValue) && remoteValue != null) {
+      try {
+        localStorage.setItem(key, JSON.stringify(remoteValue));
+      } catch {
+        /* ignore quota during hydrate */
+      }
       return;
     }
 
@@ -219,7 +262,7 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
   });
 }
 
-/** Chrome limita corpo de fetch keepalive a ~64 KB — acima disso a requisição falha em silêncio. */
+/** Chrome limita corpo e quantidade de fetch keepalive — só usar ao fechar a aba. */
 const KEEPALIVE_BODY_LIMIT = 60_000;
 
 function flushSyncQueueKeepalive() {
@@ -227,10 +270,22 @@ function flushSyncQueueKeepalive() {
   const batch = new Map(syncQueue);
   syncQueue.clear();
   const token = getAuthToken();
+  let deferred = false;
+
   batch.forEach((value, key) => {
     const prepared = prepareCloudSavePayload(key, value);
     const body = JSON.stringify({ value: prepared });
-    const useKeepalive = body.length <= KEEPALIVE_BODY_LIMIT;
+    if (body.length > KEEPALIVE_BODY_LIMIT) {
+      syncQueue.set(key, value);
+      deferred = true;
+      warnSyncOnce(
+        `keepalive-skip-${key}`,
+        '[brfut] save grande demais para keepalive — usando sync completo',
+        key,
+        `${Math.round(body.length / 1024)}KB`,
+      );
+      return;
+    }
     fetch(apiUrl(`/api/saves/${encodeURIComponent(key)}`), {
       method: 'PUT',
       headers: {
@@ -238,29 +293,35 @@ function flushSyncQueueKeepalive() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body,
-      keepalive: useKeepalive,
+      keepalive: true,
       cache: 'no-store',
-    }).catch(error => {
-      console.warn('[brfut] falha ao sincronizar save (keepalive)', key, error);
-      syncQueue.set(key, value);
-    });
-    if (!useKeepalive) {
-      console.warn(
-        '[brfut] save grande demais para keepalive — sync completo na próxima sessão',
-        key,
-        `${Math.round(body.length / 1024)}KB`,
-      );
-    }
+    })
+      .then(response => {
+        if (!response.ok) {
+          syncQueue.set(key, value);
+          scheduleCloudSync();
+          return;
+        }
+        applyLocalCheckpointTrim(key, value);
+      })
+      .catch(error => {
+        warnSyncOnce(`keepalive-${key}`, '[brfut] falha ao sincronizar save (keepalive)', key, error);
+        syncQueue.set(key, value);
+        scheduleCloudSync();
+      });
   });
+
+  if (deferred) flushSyncQueue();
 }
 
-export function flushCloudSync({ urgent = false } = {}) {
+export function flushCloudSync({ urgent = false, keepalive = false } = {}) {
   if (!isCloudStorageActive()) return;
   if (syncTimer) {
     window.clearTimeout(syncTimer);
     syncTimer = 0;
   }
-  if (urgent) flushSyncQueueKeepalive();
+  if (keepalive) flushSyncQueueKeepalive();
+  else if (urgent) flushSyncQueue();
   else flushSyncQueue();
 }
 
@@ -329,6 +390,7 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
         method: 'PUT',
         body: JSON.stringify({ value: prepared }),
       });
+      applyLocalCheckpointTrim(key, value);
       results.push({ key, ok: true, bodyChars, slimmed: bodyChars < rawPayloadChars(value) });
     } catch (error) {
       console.warn('[brfut] falha ao sincronizar save', key, error);
@@ -385,11 +447,15 @@ function flushSyncQueue() {
     authedFetch(`/api/saves/${encodeURIComponent(key)}`, {
       method: 'PUT',
       body: JSON.stringify({ value: prepared }),
-    }).catch(error => {
-      console.warn('[brfut] falha ao sincronizar save', key, error);
-      syncQueue.set(key, value);
-      scheduleCloudSync();
-    });
+    })
+      .then(() => {
+        applyLocalCheckpointTrim(key, value);
+      })
+      .catch(error => {
+        warnSyncOnce(`sync-${key}`, '[brfut] falha ao sincronizar save', key, error);
+        syncQueue.set(key, value);
+        scheduleCloudSync();
+      });
   });
 }
 
@@ -439,6 +505,7 @@ export async function loginWithGoogleIdToken(idToken, { remember = false } = {})
   setAuthToken(body.token, { remember });
   currentUser = body.user;
   cloudActive = true;
+  syncCloudLocalTrimFlag();
   return initStorageBackend({ skipProbe: true, preferMigrate: true });
 }
 
@@ -450,6 +517,7 @@ export async function loginAccount(username, password, { remember = false } = {}
   setAuthToken(body.token, { remember });
   currentUser = body.user;
   cloudActive = true;
+  syncCloudLocalTrimFlag();
   return initStorageBackend({ skipProbe: true });
 }
 
@@ -461,6 +529,7 @@ export async function registerAccount(username, password, displayName, { remembe
   setAuthToken(body.token, { remember });
   currentUser = body.user;
   cloudActive = true;
+  syncCloudLocalTrimFlag();
   return initStorageBackend({ skipProbe: true, preferMigrate: true });
 }
 
@@ -473,6 +542,7 @@ export async function logoutAccount() {
   setAuthToken('');
   currentUser = null;
   cloudActive = false;
+  syncCloudLocalTrimFlag();
   stopPresenceHeartbeat();
   syncQueue.clear();
   if (syncTimer) {
@@ -483,7 +553,7 @@ export async function logoutAccount() {
 
 /** Encerra sessão no fechamento da aba (save já deve ter sido gravado antes). */
 export function endBrowserSession() {
-  flushCloudSync({ urgent: true });
+  flushCloudSync({ keepalive: true });
   try {
     const token = getAuthToken();
     if (token && typeof fetch !== 'undefined') {
@@ -499,6 +569,7 @@ export function endBrowserSession() {
   setAuthToken('');
   currentUser = null;
   cloudActive = false;
+  syncCloudLocalTrimFlag();
   stopPresenceHeartbeat();
   syncQueue.clear();
   if (syncTimer) {
@@ -524,6 +595,7 @@ export async function initStorageBackend({ skipProbe = false, preferMigrate = fa
   if (!skipProbe && !(await probeBackend())) {
     cloudActive = false;
     currentUser = null;
+    syncCloudLocalTrimFlag();
     return { mode: 'local' };
   }
 
@@ -531,6 +603,7 @@ export async function initStorageBackend({ skipProbe = false, preferMigrate = fa
   if (!token) {
     cloudActive = false;
     currentUser = null;
+    syncCloudLocalTrimFlag();
     return { mode: 'local', backend: true };
   }
 
@@ -542,6 +615,7 @@ export async function initStorageBackend({ skipProbe = false, preferMigrate = fa
     setAuthToken('');
     cloudActive = false;
     currentUser = null;
+    syncCloudLocalTrimFlag();
     return { mode: 'local', backend: true, authError: error?.message };
   }
 
@@ -561,6 +635,7 @@ export async function initStorageBackend({ skipProbe = false, preferMigrate = fa
     mergeRemoteSaves({}, { skipCareerSeasonHydrate: true });
   }
 
+  syncCloudLocalTrimFlag();
   if (cloudActive && getAuthToken()) startPresenceHeartbeat();
 
   return {

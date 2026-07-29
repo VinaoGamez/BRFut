@@ -326,6 +326,8 @@ import {
   shouldIssueNextNationalTeamOffer,
   shouldShowNationalTeamOfferPopup,
   generateNextNationalTeamOffer,
+  getCurrentNationalTeamProposalTeams,
+  repairNationalTeamOfferBatches,
   addDaysToCareerDate,
   NATIONAL_TEAM_OFFER_WEEK_DAYS,
   NATIONAL_TEAM_OFFER_COUNT,
@@ -3222,6 +3224,15 @@ const rosterChangeAlertHolder = { fn: null };
       nationalTeamOfferState?.year===careerSeason?nationalTeamOfferState:savedSeason?.nationalTeamOfferState,
       careerSeason,
     );
+    const repaired=repairNationalTeamOfferBatches(nationalTeamOfferState,{
+      year:careerSeason,
+      userDivision,
+      seed:savedNewGame?.seed||1,
+    });
+    if(repaired.changed){
+      nationalTeamOfferState=repaired.state;
+      syncNationalTeamOfferStateToSave();
+    }
   };
   issueNationalTeamOfferIfDue=()=>{
     if(userNationalTeamCode)return false;
@@ -3233,15 +3244,15 @@ const rosterChangeAlertHolder = { fn: null };
       userNationalTeamCode,
       legacyOffersSentYear:nationalTeamOffersSentYear,
     }))return false;
-    const nextOffer=generateNextNationalTeamOffer({
+    const nextBatch=generateNextNationalTeamOffer({
       year:careerSeason,
       userDivision,
       seed:savedNewGame?.seed||1,
       issueIndex:nationalTeamOfferState.issuedCount,
       existingOffers:nationalTeamOfferState.offers,
     });
-    if(!nextOffer)return false;
-    nationalTeamOfferState.offers=[...nationalTeamOfferState.offers,nextOffer];
+    if(!nextBatch?.teams?.length)return false;
+    nationalTeamOfferState.offers=[...nationalTeamOfferState.offers,nextBatch];
     nationalTeamOfferState.issuedCount+=1;
     nationalTeamOfferState.lastIssueDate=careerCalendarDate.toISOString();
     nationalTeamOfferState.snoozedUntil=null;
@@ -3261,7 +3272,7 @@ const rosterChangeAlertHolder = { fn: null };
       userNationalTeamCode,
     }))return false;
     nationalTeamOffersUi.open({
-      offers:nationalTeamOfferState.offers,
+      offers:getCurrentNationalTeamProposalTeams(nationalTeamOfferState.offers),
       issuedCount:nationalTeamOfferState.issuedCount,
     });
     return true;

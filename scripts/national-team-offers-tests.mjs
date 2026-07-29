@@ -6,9 +6,12 @@ import {
   shouldShowNationalTeamOfferPopup,
   generateNationalTeamOffers,
   generateNextNationalTeamOffer,
+  getCurrentNationalTeamProposalTeams,
+  repairNationalTeamOfferBatches,
   normalizeNationalTeamOfferState,
   nationalTeamOfferPool,
   NATIONAL_TEAM_OFFER_MONTH,
+  NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL,
   NATIONAL_TEAM_OFFER_WEEK_DAYS,
   WORLD_CUP_2026_YEAR,
 } from '../js/engine/national-team-offers.js';
@@ -102,8 +105,33 @@ const second = generateNextNationalTeamOffer({
   issueIndex: 1,
   existingOffers: [first],
 });
-assert.ok(first?.code && second?.code, 'propostas semanais geradas');
-assert.notEqual(first.code, second.code, 'propostas semanais são seleções diferentes');
+assert.equal(first?.teams?.length, NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL, 'cada proposta traz 3 seleções');
+assert.equal(second?.teams?.length, NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL, '2ª proposta também traz 3 seleções');
+const firstCodes = new Set(first.teams.map(team => team.code));
+const secondCodes = new Set(second.teams.map(team => team.code));
+assert.ok(firstCodes.size === NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL, 'proposta 1 — seleções distintas');
+assert.ok([...secondCodes].every(code => !firstCodes.has(code)), 'propostas semanais não repetem seleções');
+
+assert.equal(
+  getCurrentNationalTeamProposalTeams([first]).length,
+  NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL,
+  'popup exibe as 3 seleções da proposta atual',
+);
+
+const legacyFlat = {
+  year: 2026,
+  offers: [{ id: 'nt-BRA-1-1', code: 'BRA', name: 'Brasil', fifaRank: 6, contractLabel: 'Copa do Mundo 2026' }],
+  issuedCount: 1,
+  lastIssueDate: mar2026.toISOString(),
+  snoozedUntil: null,
+};
+const repaired = repairNationalTeamOfferBatches(legacyFlat, { year: 2026, userDivision: 'D', seed: 42 });
+assert.equal(repaired.changed, true, 'save legado é migrado para lote de 3');
+assert.equal(
+  getCurrentNationalTeamProposalTeams(repaired.state.offers).length,
+  NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL,
+  'save legado passa a exibir 3 seleções',
+);
 
 const popupState = normalizeNationalTeamOfferState(
   {

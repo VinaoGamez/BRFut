@@ -6,6 +6,9 @@ export const NATIONAL_TEAM_OFFER_MONTH = 2;
 
 export const NATIONAL_TEAM_OFFER_COUNT = 3;
 
+/** Seleções exibidas em cada proposta semanal. */
+export const NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL = 3;
+
 export const NATIONAL_TEAM_OFFER_WEEK_DAYS = 7;
 
 export const WORLD_CUP_2026_YEAR = 2026;
@@ -148,6 +151,68 @@ export function generateNationalTeamOffers({
   return picked;
 }
 
+export function collectNationalTeamOfferCodes(offers = []) {
+  const codes = [];
+  for (const offer of offers) {
+    if (Array.isArray(offer?.teams)) {
+      for (const team of offer.teams) {
+        if (team?.code) codes.push(team.code);
+      }
+      continue;
+    }
+    if (offer?.code) codes.push(offer.code);
+  }
+  return codes;
+}
+
+/** Times da proposta pendente (último lote emitido). */
+export function getCurrentNationalTeamProposalTeams(offers = []) {
+  if (!Array.isArray(offers) || !offers.length) return [];
+  const latest = offers[offers.length - 1];
+  if (Array.isArray(latest?.teams) && latest.teams.length) return latest.teams;
+  const flat = offers.filter(offer => offer?.code);
+  if (flat.length) return flat.slice(-NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL);
+  return [];
+}
+
+/** Converte saves legados (1 seleção/semana) em lotes completos de 3 seleções. */
+export function repairNationalTeamOfferBatches(state, { year, userDivision = 'D', seed = 1 } = {}) {
+  const normalized = normalizeNationalTeamOfferState(state, year);
+  if (!normalized.offers.length) return { state: normalized, changed: false };
+
+  const migrated = [];
+  let changed = false;
+
+  for (let issueIndex = 0; issueIndex < normalized.offers.length; issueIndex += 1) {
+    const entry = normalized.offers[issueIndex];
+    if (Array.isArray(entry?.teams) && entry.teams.length >= NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL) {
+      migrated.push({
+        ...entry,
+        teams: entry.teams.map(team => ({ ...team })),
+      });
+      continue;
+    }
+
+    const batch = generateNextNationalTeamOffer({
+      year,
+      userDivision,
+      seed,
+      issueIndex,
+      existingOffers: migrated,
+    });
+    if (batch?.teams?.length) {
+      migrated.push({ ...batch, id: entry?.id || batch.id });
+      changed = true;
+    }
+  }
+
+  if (!changed) return { state: normalized, changed: false };
+  return {
+    state: { ...normalized, offers: migrated },
+    changed: true,
+  };
+}
+
 export function generateNextNationalTeamOffer({
   year = WORLD_CUP_2026_YEAR,
   userDivision = 'D',
@@ -155,16 +220,19 @@ export function generateNextNationalTeamOffer({
   issueIndex = 0,
   existingOffers = [],
 } = {}) {
-  const excludeCodes = existingOffers.map(offer => offer.code);
-  return (
-    generateNationalTeamOffers({
-      year,
-      userDivision,
-      seed: (Number(seed) || 1) + issueIndex * 991,
-      count: 1,
-      excludeCodes,
-    })[0] || null
-  );
+  const excludeCodes = collectNationalTeamOfferCodes(existingOffers);
+  const teams = generateNationalTeamOffers({
+    year,
+    userDivision,
+    seed: (Number(seed) || 1) + issueIndex * 991,
+    count: NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL,
+    excludeCodes,
+  });
+  if (!teams.length) return null;
+  return {
+    id: `nt-batch-${seed}-${issueIndex}`,
+    teams,
+  };
 }
 
 export function addDaysToCareerDate(careerDate, days) {
