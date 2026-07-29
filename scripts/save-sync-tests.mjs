@@ -4,8 +4,11 @@ import {
   maxStateLeagueRound,
   hasUsableStateLeagueSave,
   pickRicherStateLeagues,
+  mergeCareerSaves,
+  isSlimCareerCheckpoint,
+  careerPayloadWeight,
 } from '../js/core/save-sync.js';
-import { slimSeasonForCloudUpload } from '../js/core/cloud-save-payload.js';
+import { slimCareerForCloudUpload, slimSeasonForCloudUpload } from '../js/core/cloud-save-payload.js';
 import { slimSeasonPayloadLevel4 } from '../js/engine/season-save-quota.js';
 import { SAVE_KEYS } from '../js/core/constants.js';
 
@@ -124,6 +127,55 @@ check('cloud slim keeps all fixture rounds for user UF', () => {
     cloud.stateLeagues.competitions.MT[0].fixtures.length === 7,
     `cloud should keep 7 rounds, got ${cloud.stateLeagues.competitions.MT[0].fixtures.length}`,
   );
+});
+
+check('mergeCareerSaves keeps full local over slim remote checkpoint', () => {
+  const local = {
+    seed: 999,
+    clubName: 'Vinaz Athletic',
+    division: 'D',
+    freshWorld: true,
+    updatedAt: '2026-07-29T12:00:00.000Z',
+    divisionTeams: { A: ['A1'], B: ['B1'], C: ['C1'], D: ['Vinaz Athletic'] },
+    userRoster: Array.from({ length: 18 }, (_, i) => ({ name: `P${i}` })),
+    worldRosters: { Rivals: [{ name: 'X' }] },
+  };
+  const remote = slimCareerForCloudUpload({
+    seed: 111,
+    clubName: 'Vinaz Athletic',
+    division: 'A',
+    updatedAt: '2026-07-29T20:00:00.000Z',
+  });
+  const merged = mergeCareerSaves(local, remote, Date.parse('2026-07-29T21:00:00.000Z'));
+  assert(merged === local, 'fresh local career must win over stale remote');
+  assert(merged.division === 'D', 'division preserved');
+});
+
+check('mergeCareerSaves prefers rich local when seeds differ', () => {
+  const local = {
+    seed: 222,
+    clubName: 'New FC',
+    division: 'D',
+    createdAt: '2026-07-29T22:00:00.000Z',
+    divisionTeams: { D: ['New FC'] },
+    userRoster: Array.from({ length: 18 }, (_, i) => ({ name: `P${i}` })),
+  };
+  const remote = {
+    seed: 111,
+    clubName: 'Old FC',
+    division: 'A',
+    updatedAt: '2026-07-29T20:00:00.000Z',
+    divisionTeams: { A: ['Old FC'] },
+    userRoster: Array.from({ length: 18 }, (_, i) => ({ name: `O${i}` })),
+  };
+  const merged = mergeCareerSaves(local, remote, 0);
+  assert(merged.seed === 222, 'new local seed must win');
+});
+
+check('isSlimCareerCheckpoint detects cloud checkpoint', () => {
+  const slim = slimCareerForCloudUpload({ seed: 1, clubName: 'X', division: 'A' });
+  assert(isSlimCareerCheckpoint(slim), 'upload checkpoint is slim');
+  assert(!isSlimCareerCheckpoint({ seed: 1, divisionTeams: { D: ['X'] }, userRoster: Array.from({ length: 18 }, () => ({})) }), 'pyramid save is not slim');
 });
 
 console.log(`\nSave sync tests: ${passed} passed, ${failed} failed`);

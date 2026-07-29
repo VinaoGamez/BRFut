@@ -307,6 +307,38 @@ export function isSeasonValidForCareer(career, season) {
   return !!(career && season?.seed === career.seed);
 }
 
+/** Remove temporada local incompatível com a carreira (seed divergente ou Novo Jogo). */
+export function purgeOrphanSeasonForCareer(career) {
+  const season = loadSeasonSave();
+  if (!season) return false;
+  if (!career || career.freshWorld || !isSeasonValidForCareer(career, season)) {
+    clearSeasonSave();
+    return true;
+  }
+  return false;
+}
+
+const FRESH_CAREER_BOOT_KEY = 'matchday-fresh-career-boot';
+
+/** Marca reload pós-Novo Jogo — impede nuvem de reidratar save antigo antes do DELETE. */
+export function markFreshCareerBoot() {
+  try {
+    sessionStorage.setItem(FRESH_CAREER_BOOT_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}
+
+export function consumeFreshCareerBoot() {
+  try {
+    if (!sessionStorage.getItem(FRESH_CAREER_BOOT_KEY)) return false;
+    sessionStorage.removeItem(FRESH_CAREER_BOOT_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function clearSeasonSave() {
   localStorage.removeItem(SAVE_KEYS.season);
   localStorage.removeItem(SAVE_KEYS.liveMatch);

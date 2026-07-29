@@ -3,8 +3,9 @@
  * Espelha saves do localStorage em Documentos/BR Fut quando o usuário está logado.
  */
 import { SAVE_KEYS, BRFUT_API_ORIGIN } from './constants.js';
-import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves } from './save-sync.js';
+import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves, mergeCareerSaves } from './save-sync.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
+import { consumeFreshCareerBoot } from './save.js';
 
 const AUTH_TOKEN_KEY = 'brfut-auth-token';
 const AUTH_REMEMBER_KEY = 'brfut-auth-remember';
@@ -161,7 +162,7 @@ function readLocalSave(key) {
   }
 }
 
-function mergeRemoteSaves(saves) {
+function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
   if (!saves || typeof saves !== 'object') return;
   Object.entries(saves).forEach(([key, rawEntry]) => {
     if (!SYNCABLE_KEYS.includes(key)) return;
@@ -169,7 +170,17 @@ function mergeRemoteSaves(saves) {
     if (remoteValue == null) return;
 
     const localValue = readLocalSave(key);
+    if (skipCareerSeasonHydrate && (key === SAVE_KEYS.career || key === SAVE_KEYS.season)) {
+      if (localValue && isCloudStorageActive()) queueCloudSave(key, localValue);
+      return;
+    }
+
     if (!localValue) {
+      if (key === SAVE_KEYS.season) {
+        const career = readLocalSave(SAVE_KEYS.career);
+        if (career?.freshWorld) return;
+        if (career && remoteValue?.seed != null && remoteValue.seed !== career.seed) return;
+      }
       try {
         localStorage.setItem(key, JSON.stringify(remoteValue));
       } catch {
@@ -181,7 +192,9 @@ function mergeRemoteSaves(saves) {
     const winner =
       key === SAVE_KEYS.season
         ? mergeSeasonSaves(localValue, remoteValue, remoteEnvelopeAt)
-        : pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt);
+        : key === SAVE_KEYS.career
+          ? mergeCareerSaves(localValue, remoteValue, remoteEnvelopeAt)
+          : pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt);
     try {
       localStorage.setItem(key, JSON.stringify(winner));
     } catch {
@@ -400,6 +413,24 @@ export function queueCloudDelete(key) {
   });
 }
 
+/** Aguarda DELETE na nuvem (Novo Jogo — evita merge do save antigo no reload). */
+export async function flushCloudDeletesAsync(keys = [SAVE_KEYS.career, SAVE_KEYS.season]) {
+  if (!isCloudStorageActive() || !getAuthToken()) return { ok: true, deleted: [] };
+  const results = await Promise.all(
+    keys.map(async key => {
+      if (!SYNCABLE_KEYS.includes(key)) return { key, ok: false };
+      try {
+        await authedFetch(`/api/saves/${encodeURIComponent(key)}`, { method: 'DELETE' });
+        return { key, ok: true };
+      } catch (error) {
+        console.warn('[brfut] falha ao apagar save na nuvem', key, error);
+        return { key, ok: false, error };
+      }
+    }),
+  );
+  return { ok: results.every(entry => entry.ok), deleted: results.filter(entry => entry.ok).map(entry => entry.key) };
+}
+
 export async function loginWithGoogleIdToken(idToken, { remember = false } = {}) {
   const body = await authedFetch('/api/auth/google', {
     method: 'POST',
@@ -518,13 +549,16 @@ export async function initStorageBackend({ skipProbe = false, preferMigrate = fa
   const remoteSaves = remote?.saves || {};
   const hasRemoteCareer = remoteHasCareer(remoteSaves);
   const hasLocalCareer = !!localStorage.getItem(SAVE_KEYS.career);
+  const freshCareerBoot = consumeFreshCareerBoot();
 
   if (!hasRemoteCareer && hasLocalCareer) {
     await migrateLocalToCloud();
     const refreshed = await authedFetch('/api/saves');
-    mergeRemoteSaves(refreshed?.saves || {});
+    mergeRemoteSaves(refreshed?.saves || {}, { skipCareerSeasonHydrate: freshCareerBoot });
   } else if (hasRemoteCareer) {
-    mergeRemoteSaves(remoteSaves);
+    mergeRemoteSaves(remoteSaves, { skipCareerSeasonHydrate: freshCareerBoot });
+  } else if (freshCareerBoot && hasLocalCareer) {
+    mergeRemoteSaves({}, { skipCareerSeasonHydrate: true });
   }
 
   if (cloudActive && getAuthToken()) startPresenceHeartbeat();

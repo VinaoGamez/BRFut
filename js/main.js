@@ -105,7 +105,7 @@ const beginAppSession = async () => {
 
     if (!token) {
       const reloadPending = consumeCareerReloadPending();
-      if (!reloadPending) clearSessionCareerData();
+      if (!reloadPending && !hasLocalCareerSave()) clearSessionCareerData();
       redirectToHomeLanding();
       return;
     }

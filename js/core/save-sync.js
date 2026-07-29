@@ -4,7 +4,7 @@ import { parseSavedCalendarDate } from '../engine/career-calendar.js';
 /** Timestamp comparável para resolver conflito local vs nuvem. */
 export function saveFreshness(value, key = '') {
   if (!value || typeof value !== 'object') return 0;
-  const ts = Date.parse(value.updatedAt || value.savedAt || '');
+  const ts = Date.parse(value.updatedAt || value.savedAt || value.createdAt || '');
   if (Number.isFinite(ts) && ts > 0) return ts;
   if (key === SAVE_KEYS.season) {
     const calTs = seasonCalendarTs(value);
@@ -159,6 +159,55 @@ export function mergeSeasonSaves(localValue, remoteValue, remoteEnvelopeAt = 0) 
   }
 
   return merged;
+}
+
+export function careerPayloadWeight(career) {
+  if (!career || typeof career !== 'object') return 0;
+  try {
+    return JSON.stringify(career).length;
+  } catch {
+    return 0;
+  }
+}
+
+/** Checkpoint de nuvem — identidade sem pirâmide/elencos completos. */
+export function isSlimCareerCheckpoint(career) {
+  if (!career || typeof career !== 'object') return true;
+  const hasPyramid =
+    career.divisionTeams &&
+    typeof career.divisionTeams === 'object' &&
+    Object.values(career.divisionTeams).some(list => Array.isArray(list) && list.length > 0);
+  const hasWorldRosters =
+    career.worldRosters &&
+    typeof career.worldRosters === 'object' &&
+    Object.keys(career.worldRosters).length > 0;
+  const hasRoster = Array.isArray(career.userRoster) && career.userRoster.length >= 18;
+  return !hasPyramid && !hasWorldRosters && !hasRoster;
+}
+
+/** Combina carreira local + nuvem — nunca substituir save completo por checkpoint slim. */
+export function mergeCareerSaves(localValue, remoteValue, remoteEnvelopeAt = 0) {
+  if (!localValue) return remoteValue ?? null;
+  if (!remoteValue) return localValue;
+
+  if (localValue.freshWorld) return localValue;
+
+  const localSlim = isSlimCareerCheckpoint(localValue);
+  const remoteSlim = isSlimCareerCheckpoint(remoteValue);
+  if (!localSlim && remoteSlim) return localValue;
+  if (localSlim && !remoteSlim) return remoteValue;
+
+  const localWeight = careerPayloadWeight(localValue);
+  const remoteWeight = careerPayloadWeight(remoteValue);
+  if (localWeight > remoteWeight + 4096) return localValue;
+  if (remoteWeight > localWeight + 4096) return remoteValue;
+
+  if (localValue.seed !== remoteValue.seed) {
+    if (!localSlim) return localValue;
+    return pickNewerSave(localValue, remoteValue, SAVE_KEYS.career, remoteEnvelopeAt);
+  }
+
+  return pickNewerSave(localValue, remoteValue, SAVE_KEYS.career, remoteEnvelopeAt);
 }
 
 export function pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt = 0) {

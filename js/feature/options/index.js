@@ -14,8 +14,12 @@ import {
   listAutosaveOptions,
   mergePreferencesIntoCareer,
 } from '../../core/save-preferences.js';
-import { endBrowserSession } from '../../core/storage-api.js';
-import { clearSessionCareerData, markSkipSessionEndOnce } from '../../core/save.js';
+import { endBrowserSession, flushCloudDeletesAsync, isCloudStorageActive, queueCloudSave } from '../../core/storage-api.js';
+import {
+  clearSessionCareerData,
+  markFreshCareerBoot,
+  markSkipSessionEndOnce,
+} from '../../core/save.js';
 
 const GAME_PACE_CONFIG = {
   ultra: { name: 'ULTRA', detail: '8 s por tempo · 16 s de jogo contínuo', ms: 250 },
@@ -321,7 +325,7 @@ export function createOptionsFeature(deps) {
     });
   }
 
-  onClick('#confirmNewGame', () => {
+  onClick('#confirmNewGame', async () => {
     const clubName = cleanCareerText($('#careerClubName').value, '');
     const managerName = cleanCareerText($('#careerManagerName').value, '');
     const stadiumName = cleanCareerText($('#careerStadiumName').value, '');
@@ -399,6 +403,7 @@ export function createOptionsFeature(deps) {
       clubStatus,
       season: defaultCareerSeason,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       freshWorld: true,
       crest,
       preferences: {
@@ -425,6 +430,11 @@ export function createOptionsFeature(deps) {
       error.textContent =
         'Não foi possível salvar a nova carreira (memória do navegador cheia). Limpe dados do site e tente novamente.';
       return;
+    }
+    markFreshCareerBoot();
+    if (isCloudStorageActive()) {
+      await flushCloudDeletesAsync([SAVE_KEYS.career, SAVE_KEYS.season]);
+      queueCloudSave(SAVE_KEYS.career, careerPayload);
     }
     $('#newGameModal').classList.add('hidden');
     $('#optionsModal').classList.add('hidden');

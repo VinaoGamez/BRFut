@@ -133,6 +133,7 @@ import { dedupeRosterNames } from '../engine/player-names.js';
 import { playerKey as historyPlayerKey, formatMatchRating, buildMatchPlayerSheets, playerKey } from '../engine/player-match-stats.js';
 import {
   loadCareerSave,
+  purgeOrphanSeasonForCareer,
   loadSeasonSave,
   isSeasonValidForCareer,
   hydrateMessages,
@@ -412,6 +413,7 @@ export async function bootEngine({
   try {
   const savedNewGame = loadCareerSave();
   if (savedNewGame && !Array.isArray(savedNewGame.retiredPool)) savedNewGame.retiredPool = [];
+  purgeOrphanSeasonForCareer(savedNewGame);
   if (savedNewGame) {
     applyCareerPreferences(savedNewGame);
     if (!savedNewGame.preferences) {
@@ -1758,8 +1760,8 @@ const rosterChangeAlertHolder = { fn: null };
   const restoredAvailability=validSavedSeason?savedSeason.availability||{}:{};
   const restoredClubMedical=validSavedSeason?savedSeason.clubMedical||{}:{};
   const restoredUserBudget=validSavedSeason&&Number.isFinite(Number(savedSeason.userBudget))?Number(savedSeason.userBudget):null;
-  let pendingSponsorChoice=!!(savedNewGame?.pendingSponsorChoice||savedSeason?.pendingSponsorChoice);
-  let pendingSponsorOffers=savedSeason?.pendingSponsorOffers&&typeof savedSeason.pendingSponsorOffers==='object'
+  let pendingSponsorChoice=!!(savedNewGame?.pendingSponsorChoice||(validSavedSeason&&savedSeason?.pendingSponsorChoice));
+  let pendingSponsorOffers=validSavedSeason&&savedSeason?.pendingSponsorOffers&&typeof savedSeason.pendingSponsorOffers==='object'
     ?{
       division:savedSeason.pendingSponsorOffers.division||userDivision,
       master:Array.isArray(savedSeason.pendingSponsorOffers.master)?savedSeason.pendingSponsorOffers.master.map(item=>({...item})):[],
@@ -1768,11 +1770,11 @@ const rosterChangeAlertHolder = { fn: null };
     }
     :null;
   const contractAlertKeys=new Set(
-    Array.isArray(savedSeason?.contractAlertKeys)?savedSeason.contractAlertKeys.filter(Boolean):[],
+    validSavedSeason&&Array.isArray(savedSeason?.contractAlertKeys)?savedSeason.contractAlertKeys.filter(Boolean):[],
   );
   if(clubs[userClub]){
     // Só aplica economia/status da temporada se for do mesmo clube (evita herdar métricas após troca de emprego).
-    let seasonStatusForClub=!savedSeason?.userClubName||savedSeason.userClubName===userClub;
+    let seasonStatusForClub=validSavedSeason&&(!savedSeason?.userClubName||savedSeason.userClubName===userClub);
     // Legado (sem userClubName): se carreira e temporada divergem em board+caixa, preferir carreira
     // — típico de troca de emprego gravada só no career save.
     if(seasonStatusForClub&&!savedSeason?.userClubName&&savedNewGame?.clubStatus&&savedSeason?.userClubStatus){
@@ -1798,14 +1800,14 @@ const rosterChangeAlertHolder = { fn: null };
       clubStatus.syncFinancesFromBudget(clubs[userClub],userDivision);
     }
     renderEnvironmentCard();
-    const savedStadium=savedSeason?.userStadium||savedNewGame?.userStadium;
+    const savedStadium=(validSavedSeason&&savedSeason?.userStadium)||savedNewGame?.userStadium;
     if(savedStadium&&typeof savedStadium==='object'){
       applySavedUserStadium(clubs[userClub],savedStadium);
     }else if(savedNewGame?.stadiumName){
       clubs[userClub].stadiumName=String(savedNewGame.stadiumName).trim();
     }
     ensureStadium(clubs[userClub],userDivision);
-    const savedSponsors=savedSeason?.userSponsors;
+    const savedSponsors=validSavedSeason?savedSeason?.userSponsors:null;
     if(savedSponsors)clubs[userClub].sponsors={
       ...savedSponsors,
       master:savedSponsors.master?{...savedSponsors.master}:null,
@@ -1834,7 +1836,7 @@ const rosterChangeAlertHolder = { fn: null };
         installments:userDivision==='D'?22:38,
       });
     }
-    const savedTvRights=savedSeason?.userTvRights;
+    const savedTvRights=validSavedSeason?savedSeason?.userTvRights:null;
     if(savedTvRights&&typeof savedTvRights==='object'){
       clubs[userClub].tvRights={...savedTvRights};
     }
@@ -1845,7 +1847,7 @@ const rosterChangeAlertHolder = { fn: null };
       savedTvRights,
       installments:tvHomeSlots(userDivision),
     });
-    const savedSeasonCashflow=savedSeason?.userSeasonCashflow;
+    const savedSeasonCashflow=validSavedSeason?savedSeason?.userSeasonCashflow:null;
     if(savedSeasonCashflow&&typeof savedSeasonCashflow==='object'){
       clubs[userClub].seasonCashflow={
         season:savedSeasonCashflow.season??careerSeason,

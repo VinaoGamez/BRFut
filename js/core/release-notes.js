@@ -9,6 +9,22 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.65',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T22:45:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Novo Jogo e save na nuvem',
+        items: [
+          'Correção ao iniciar Novo Jogo: a nuvem não reidrata mais temporada ou carreira antiga por cima da nova.',
+          'Temporada órfã (seed diferente) é descartada no boot — evita meta, orçamento e partidas de save anterior.',
+          'Placeholders demo (Atlético Fênix / Rodada 14) removidos do HTML inicial.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.60',
     date: '2026-07-29',
     publishedAt: '2026-07-29T22:35:00-03:00',
