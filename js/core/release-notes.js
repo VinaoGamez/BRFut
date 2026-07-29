@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.50',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T19:15:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Táticas da seleção',
+        items: [
+          'A formação da seleção agora pode ser alterada livremente na preparação e durante a partida.',
+          'A escolha do jogador fica separada da formação do clube e é mantida nos próximos jogos da Copa.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.45',
     date: '2026-07-29',
     publishedAt: '2026-07-29T18:55:00-04:00',

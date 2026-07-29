@@ -437,6 +437,9 @@ export async function bootEngine({
   const userDivision=careerProfile.division;
   let userNationalTeamCode=savedNewGame?.nationalTeamCode?String(savedNewGame.nationalTeamCode).trim().toUpperCase():null;
   let userNationalTeamName=userNationalTeamCode?nationalTeamByCode(userNationalTeamCode)?.name||null:null;
+  let userNationalTeamFormation=savedNewGame?.nationalTeamFormation
+    ?String(savedNewGame.nationalTeamFormation).trim()
+    :null;
   const DEFAULT_CAREER_SEASON=2026;
   const careerSeason=Number(savedNewGame?.season)||DEFAULT_CAREER_SEASON;
   let officialBrazilWorld=null;
@@ -2981,6 +2984,10 @@ export async function bootEngine({
     if(!savedNewGame)return;
     const normalized=code?String(code).trim().toUpperCase():null;
     if(normalized){
+      if(userNationalTeamCode&&userNationalTeamCode!==normalized){
+        delete savedNewGame.nationalTeamFormation;
+        userNationalTeamFormation=null;
+      }
       savedNewGame.nationalTeamCode=normalized;
       userNationalTeamCode=normalized;
       userNationalTeamName=nationalTeamByCode(normalized)?.name||null;
@@ -4309,7 +4316,9 @@ export async function bootEngine({
   const userSideClubForGame=game=>resolveUserSideClub(game,{userClub,userNationalTeamName,clubs,getNationalTeamClub});
   const resolveUserMatchFormation=game=>{
     if(isWorldCupUserFixture(game,userNationalTeamName)&&userNationalTeamCode){
-      return getNationalTeamFormation(userNationalTeamCode);
+      return userNationalTeamFormation&&formationRoles[userNationalTeamFormation]
+        ?userNationalTeamFormation
+        :getNationalTeamFormation(userNationalTeamCode);
     }
     return formation;
   };
@@ -4326,7 +4335,7 @@ export async function bootEngine({
     }
     worldCupMatchSquad=cloneNationalTeamRoster(ntClub.roster);
     activeUserSquad=worldCupMatchSquad;
-    const matchFormation=getNationalTeamFormation(userNationalTeamCode);
+    const matchFormation=resolveUserMatchFormation(game);
     formation=matchFormation;
     orderRosterForFormation(activeUserSquad,matchFormation);
     positionAssignments=[...(formationRoles[matchFormation]||formationRoles['4-3-3'])];
@@ -5550,7 +5559,10 @@ export async function bootEngine({
     getFormation:()=>formation,
     setFormation:next=>{
       formation=next;
-      if(!isWorldCupUserFixture(liveMatchGame||nextUserGame,userNationalTeamName))clubs[userClub].formation=next;
+      if(isWorldCupUserFixture(liveMatchGame||nextUserGame,userNationalTeamName)){
+        userNationalTeamFormation=next;
+        if(savedNewGame)savedNewGame.nationalTeamFormation=next;
+      }else clubs[userClub].formation=next;
     },
     getPositionAssignments:()=>positionAssignments,
     setPositionAssignments:next=>{positionAssignments=next;},

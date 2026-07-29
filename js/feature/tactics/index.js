@@ -382,7 +382,9 @@ export function createTacticsFeature(deps) {
       ? live.matchStarted && !live.matchFinished && !live.preMatchPreparation
       : live.matchStarted && !live.preMatchPreparation;
     setPositionAssignments([...(formationRoles[nextFormation] || formationRoles['4-3-3'])]);
-    clubs[userClub].formation = nextFormation;
+    // Seleções são clubes virtuais e não pertencem ao mapa de clubes nacionais.
+    // A formação já foi aplicada por setFormation; só espelha no clube quando existir.
+    if (clubs[userClub]) clubs[userClub].formation = nextFormation;
     if (isLive) {
       draw();
       if (withBoard) drawBoard();
