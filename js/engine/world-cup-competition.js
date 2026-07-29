@@ -213,6 +213,17 @@ export function getWorldCupAllFixtures(competition) {
   return [...competition.groupFixtures, ...competition.knockoutFixtures];
 }
 
+/**
+ * Resolve o campeão mesmo antes do próximo avanço de calendário promover
+ * o resultado da final para `competition.champion`.
+ */
+export function resolveWorldCupChampionCode(competition) {
+  if (competition?.champion) return competition.champion;
+  const finalGame = competition?.knockoutFixtures?.find(game => game?.id === 'F');
+  if (!finalGame || (!finalGame.completed && finalGame.homeGoals == null)) return null;
+  return finalGame.winnerCode || winnerFromGame(finalGame)?.code || null;
+}
+
 function applySimResult(game, result, competition, random) {
   game.homeGoals = result.homeGoals;
   game.awayGoals = result.awayGoals;

@@ -25,7 +25,12 @@ const archive = buildSeasonArchive({
   seed: 99,
   userClub: 'Vinaz Athletic Futebol',
   userDivision: 'D',
-  champions: { A: 'Internacional', CUP: 'Fluminense', D: 'Anápolis' },
+  champions: {
+    A: 'Internacional',
+    CUP: 'Fluminense',
+    D: 'Anápolis',
+    WORLD_CUP: 'Estados Unidos',
+  },
   nationalCompetitions: {
     A: {
       standings: [
@@ -57,6 +62,7 @@ assert(!isValidSeasonArchive(archive, { year: 2028 }), 'reject wrong year');
 
 const entry = seasonIndexEntryFromArchive(archive, { archiveKey: 'brfut-season-archive-2027', bytes: 100 });
 assert(entry.year === 2027 && entry.champions.A === 'Internacional', 'index entry');
+assert(entry.champions.WORLD_CUP === 'Estados Unidos', 'world cup champion in index');
 const index = upsertSeasonIndex([{ year: 2026 }], entry);
 assert(index.length === 2 && index[1].year === 2027, 'upsert index');
 

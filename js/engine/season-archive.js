@@ -160,7 +160,12 @@ export function seasonIndexEntryFromArchive(archive, { archiveKey = null, bytes 
     userClub: archive.userClub || null,
     userDivision: archive.userDivision || null,
     champions: archive.champions
-      ? { A: archive.champions.A || null, CUP: archive.champions.CUP || null, D: archive.champions.D || null }
+      ? {
+          A: archive.champions.A || null,
+          CUP: archive.champions.CUP || null,
+          D: archive.champions.D || null,
+          WORLD_CUP: archive.champions.WORLD_CUP || null,
+        }
       : null,
     archiveKey: archiveKey || null,
     bytes: Number(bytes) || 0,

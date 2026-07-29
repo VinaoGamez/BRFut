@@ -9,6 +9,7 @@ import {
   advanceWorldCupSpectatorThroughWindow,
   simulateNationalTeamMatch,
   resolveWorldCupKnockoutIfDrawn,
+  resolveWorldCupChampionCode,
   earliestPendingWorldCupUserFixture,
 } from '../js/engine/world-cup-competition.js';
 import { WORLD_CUP_GROUP_FIXTURE_COUNT } from '../js/engine/world-cup-calendar.js';
@@ -121,6 +122,24 @@ check('mata-mata empatado resolve com prorrogação/pênaltis', () => {
   assert(winnerFromGame(game) != null, 'deve ter vencedor após desempate');
   assert(game.extraTimePlayed === true);
   assert(game.shootoutWinner || game.homeGoals !== game.awayGoals);
+});
+
+check('campeão da final ao vivo aparece antes do próximo avanço', () => {
+  const competition = {
+    champion: null,
+    knockoutFixtures: [{
+      id: 'F',
+      home: 'Estados Unidos',
+      away: 'Irã',
+      homeCode: 'USA',
+      awayCode: 'IRN',
+      homeGoals: 0,
+      awayGoals: 0,
+      shootoutWinner: 'Estados Unidos',
+      completed: true,
+    }],
+  };
+  assert(resolveWorldCupChampionCode(competition) === 'USA');
 });
 
 check('CPU completa mata-mata sem empates órfãos', () => {

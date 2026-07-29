@@ -278,6 +278,7 @@ import {
   advanceWorldCupSpectatorThroughWindow,
   serializeWorldCupCompetition,
   simulateNationalTeamMatch,
+  resolveWorldCupChampionCode,
   worldCupCalendarSummary,
   earliestPendingWorldCupUserFixture,
   worldCupWindowEndDate,
@@ -7066,9 +7067,10 @@ export async function bootEngine({
         .sort((a,b)=>b[metric]-a[metric]||b.tieValue-a.tieValue||a.games-b.games);
     },
     getWorldCupChampion:()=>{
-      if(!worldCupCompetition?.champion)return null;
-      const meta=nationalTeamByCode(worldCupCompetition.champion);
-      return meta?.name||worldCupCompetition.champion;
+      const championCode=resolveWorldCupChampionCode(worldCupCompetition);
+      if(!championCode)return null;
+      const meta=nationalTeamByCode(championCode);
+      return meta?.name||championCode;
     },
     archiveSeasonBalance:payload=>playerHistory.archiveSeasonBalance(payload),
     commitSeasonArchive:meta=>commitSeasonArchiveFromLive({

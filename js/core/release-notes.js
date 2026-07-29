@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.60',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T19:40:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Campeões da temporada',
+        items: [
+          'A Copa do Mundo agora aparece entre os campeonatos dos anos em que for disputada.',
+          'O campeão de uma final decidida ao vivo ou nos pênaltis também é recuperado corretamente pelo histórico.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.55',
     date: '2026-07-29',
     publishedAt: '2026-07-29T19:25:00-04:00',
