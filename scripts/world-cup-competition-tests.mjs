@@ -8,9 +8,11 @@ import {
   advanceWorldCupThroughDate,
   advanceWorldCupSpectatorThroughWindow,
   simulateNationalTeamMatch,
+  resolveWorldCupKnockoutIfDrawn,
 } from '../js/engine/world-cup-competition.js';
 import { WORLD_CUP_GROUP_FIXTURE_COUNT } from '../js/engine/world-cup-calendar.js';
 import { isGroupStageComplete } from '../js/engine/world-cup-standings.js';
+import { winnerFromGame } from '../js/engine/world-cup-bracket.js';
 
 let passed = 0;
 let failed = 0;
@@ -92,6 +94,55 @@ check('julho sem final placeholder antes dos grupos', () => {
     g => g.phase === 'FINAL' && new Date(g.date).getDate() === 19,
   );
   assert(after.length <= 1);
+});
+
+check('mata-mata empatado resolve com prorrogação/pênaltis', () => {
+  const game = {
+    id: 'QF1',
+    home: 'Brasil',
+    away: 'Iraque',
+    homeCode: 'BRA',
+    awayCode: 'IRQ',
+    homeGoals: 0,
+    awayGoals: 0,
+    completed: true,
+    knockout: true,
+    stage: 'QF',
+    competition: 'COPA DO MUNDO',
+  };
+  const competition = { teamStrength: { BRA: { teamPower: 90 }, IRQ: { teamPower: 78 } } };
+  let n = 0;
+  const random = () => {
+    n += 1;
+    return (n * 0.19) % 1;
+  };
+  assert(resolveWorldCupKnockoutIfDrawn(game, competition, random) === true);
+  assert(winnerFromGame(game) != null, 'deve ter vencedor após desempate');
+  assert(game.extraTimePlayed === true);
+  assert(game.shootoutWinner || game.homeGoals !== game.awayGoals);
+});
+
+check('CPU completa mata-mata sem empates órfãos', () => {
+  const comp = createWorldCupCompetition({ year: 2026, random: () => 0.37 });
+  const end = new Date(2026, 6, 20, 12);
+  let n = 0;
+  advanceWorldCupThroughDate(comp, end, {
+    random: () => {
+      n += 1;
+      return (n * 0.41) % 1;
+    },
+    isUserTeam: () => false,
+    simulate: simulateNationalTeamMatch,
+  });
+  assert(comp.phase === 'complete' || comp.knockoutGenerated);
+  const orphanDraw = (comp.knockoutFixtures || []).find(
+    g =>
+      (g.completed || g.homeGoals != null) &&
+      Number(g.homeGoals) === Number(g.awayGoals) &&
+      !g.shootoutWinner &&
+      !g.winnerCode,
+  );
+  assert(!orphanDraw, 'nenhum mata-mata deve ficar empatado sem vencedor');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

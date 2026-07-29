@@ -17,6 +17,8 @@ import {
   recordKnockoutResult,
   winnerFromGame,
 } from './world-cup-bracket.js';
+import { applyShootoutToDecidingGame } from './knockout-shootout.js';
+import { simulateProbabilisticShootout } from './shootout-sim.js';
 
 const KNOCKOUT_STAGE_ORDER = Object.freeze(['R32', 'R16', 'QF', 'SF', '3P', 'F']);
 
@@ -58,6 +60,88 @@ export function simulateNationalTeamMatch(homeCode, awayCode, teamStrength, rand
   }
 
   return { homeGoals, awayGoals };
+}
+
+/** Prorrogação (~30') — menos gols que o tempo regulamentar. */
+export function simulateNationalTeamExtraTime(homeCode, awayCode, teamStrength, random = Math.random) {
+  const homeMeta = teamStrength?.[homeCode];
+  const awayMeta = teamStrength?.[awayCode];
+  const homePower = Number(homeMeta?.teamPower) || 85;
+  const awayPower = Number(awayMeta?.teamPower) || 85;
+  const diff = (homePower - awayPower) / 18;
+  const lamH = Math.max(0.12, 0.42 + diff * 0.18);
+  const lamA = Math.max(0.12, 0.42 - diff * 0.18);
+
+  const sampleGoals = lambda => {
+    let p = Math.exp(-lambda);
+    let sum = p;
+    const r = random();
+    for (let k = 1; k <= 4; k += 1) {
+      p = (p * lambda) / k;
+      sum += p;
+      if (r <= sum) return k;
+    }
+    return 4;
+  };
+
+  return { homeGoals: sampleGoals(lamH), awayGoals: sampleGoals(lamA) };
+}
+
+/**
+ * Empate em mata-mata da CMU: prorrogação e, se precisar, pênaltis.
+ * Também repara saves antigos que ficaram 0–0 sem vencedor.
+ * @returns {boolean} houve resolução
+ */
+export function resolveWorldCupKnockoutIfDrawn(game, competition, random = Math.random) {
+  if (!game?.knockout && !['R32', 'R16', 'QF', 'SF', '3P', 'F'].includes(game?.stage)) {
+    return false;
+  }
+  if (game.homeGoals == null && !game.completed) return false;
+  const hg = Number(game.homeGoals) || 0;
+  const ag = Number(game.awayGoals) || 0;
+  if (hg !== ag) return false;
+  if (game.shootoutWinner || game.winnerCode) return false;
+
+  const et = simulateNationalTeamExtraTime(
+    game.homeCode,
+    game.awayCode,
+    competition?.teamStrength,
+    random,
+  );
+  game.homeGoals = hg + et.homeGoals;
+  game.awayGoals = ag + et.awayGoals;
+  game.extraTimePlayed = true;
+  if (et.homeGoals || et.awayGoals) {
+    game.extraTimeScore = `${et.homeGoals}–${et.awayGoals}`;
+  }
+  game.completed = true;
+
+  if (game.homeGoals !== game.awayGoals) {
+    const winner = winnerFromGame(game);
+    if (winner) {
+      game.winnerCode = winner.code;
+      game.winner = winner.name;
+    }
+    return true;
+  }
+
+  const shootout = simulateProbabilisticShootout([game.home, game.away], { random });
+  let winnerName = shootout?.winner;
+  if (!winnerName) {
+    // Seed determinístico pode empatar todas as cobranças — não trava o chaveamento.
+    winnerName = random() < 0.5 + ((Number(competition?.teamStrength?.[game.homeCode]?.teamPower) || 85) -
+      (Number(competition?.teamStrength?.[game.awayCode]?.teamPower) || 85)) / 200
+      ? game.home
+      : game.away;
+  }
+  applyShootoutToDecidingGame(game, winnerName, shootout?.scores || { [game.home]: 0, [game.away]: 0 });
+  if (!game.shootoutPenalties && !game.penalties) {
+    game.shootoutPenalties = '0–0';
+    game.penalties = '0–0';
+  }
+  game.winnerCode = winnerName === game.home ? game.homeCode : game.awayCode;
+  game.winner = winnerName;
+  return true;
 }
 
 export function createWorldCupCompetition({
@@ -129,11 +213,12 @@ export function getWorldCupAllFixtures(competition) {
   return [...competition.groupFixtures, ...competition.knockoutFixtures];
 }
 
-function applySimResult(game, result) {
+function applySimResult(game, result, competition, random) {
   game.homeGoals = result.homeGoals;
   game.awayGoals = result.awayGoals;
   game.completed = true;
   if (game.knockout) {
+    resolveWorldCupKnockoutIfDrawn(game, competition, random);
     const winner = winnerFromGame(game);
     const loser = loserFromGame(game, winner);
     if (winner) {
@@ -302,11 +387,23 @@ export function advanceWorldCupThroughDate(competition, date, {
     const when = new Date(game.date).getTime();
     if (when > cutoff) continue;
     const result = simulate(game.homeCode, game.awayCode, competition.teamStrength, random);
-    applySimResult(game, result);
+    applySimResult(game, result, competition, random);
     changed = true;
   }
 
   if (tryGenerateKnockout(competition, random)) changed = true;
+
+  // Repara empates de mata-mata sem vencedor (saves antigos / bug pré-prorrogação).
+  for (const game of competition.knockoutFixtures) {
+    if (game.homeGoals == null && !game.completed) continue;
+    if (!resolveWorldCupKnockoutIfDrawn(game, competition, random)) continue;
+    const winner = winnerFromGame(game);
+    const loser = loserFromGame(game, winner);
+    if (winner && competition.knockoutContext) {
+      recordKnockoutResult(competition.knockoutContext, game.id, winner, loser);
+    }
+    changed = true;
+  }
 
   for (const game of competition.knockoutFixtures) {
     if (game.completed || game.homeGoals != null) continue;
@@ -314,7 +411,7 @@ export function advanceWorldCupThroughDate(competition, date, {
     const when = new Date(game.date).getTime();
     if (when > cutoff) continue;
     const result = simulate(game.homeCode, game.awayCode, competition.teamStrength, random);
-    const ko = applySimResult(game, result);
+    const ko = applySimResult(game, result, competition, random);
     if (ko?.winner) recordKnockoutResult(competition.knockoutContext, game.id, ko.winner, ko.loser);
     changed = true;
   }

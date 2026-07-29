@@ -89,7 +89,7 @@ export function createSerieDKnockoutAdvance(deps) {
       const stage = cupCompetition.stages.find(item => item.fixtures.includes(game));
       return stage ? deps.cupTieGames(stage, game.tieId) : [];
     }
-    if (deps.isStateKnockoutPhase(game)) return [game];
+    if (deps.isWorldCupKnockout?.(game) || deps.isStateKnockoutPhase(game)) return [game];
     if (deps.isKnockoutShootoutCompetition(game)) return getSerieDTieGames(game);
     return [];
   };

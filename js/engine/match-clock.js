@@ -109,7 +109,7 @@ export function formatLiveClockParts(minute, stoppageElapsed = 0, seconds = 0) {
     const base = Math.max(0, Math.floor(Number(minute) || 0)) <= 45 ? 45 : 90;
     return { main: String(base + extra), stoppage: `+${extra}`, seconds: ss };
   }
-  const mm = String(Math.min(90, Math.max(0, Math.floor(Number(minute) || 0)))).padStart(2, '0');
+  const mm = String(Math.min(120, Math.max(0, Math.floor(Number(minute) || 0)))).padStart(2, '0');
   return { main: mm, stoppage: null, seconds: ss };
 }
 

@@ -8,20 +8,32 @@
  */
 import { simulateProbabilisticShootout } from './shootout-sim.js';
 import { STATE_LEAGUE_COMPETITION } from './state-league-format.js';
+import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
 
 export const KNOCKOUT_COMPETITIONS = {
   COPA: 'COPA DO BRASIL',
   SERIE_D: 'SÉRIE D ELIMINATÓRIAS',
   RECOPA: 'RECOPA NACIONAL',
   ESTADUAL: STATE_LEAGUE_COMPETITION,
+  WORLD_CUP: WORLD_CUP_COMPETITION,
 };
 
 const STATE_KNOCKOUT_PHASES = new Set(['quarters', 'semis', 'final']);
+const WORLD_CUP_KNOCKOUT_STAGES = new Set(['R32', 'R16', 'QF', 'SF', '3P', 'F']);
 
 /** Mata-mata estadual — jogo único; empate vai aos pênaltis. */
 export const isStateKnockoutPhase = game =>
   String(game?.competition || '') === STATE_LEAGUE_COMPETITION &&
   STATE_KNOCKOUT_PHASES.has(game?.phase);
+
+/** Mata-mata da Copa do Mundo (não inclui fase de grupos). */
+export const isWorldCupKnockout = game =>
+  !!game &&
+  game.competition === WORLD_CUP_COMPETITION &&
+  (!!game.knockout || WORLD_CUP_KNOCKOUT_STAGES.has(game.stage));
+
+/** Copa do Mundo: empate → prorrogação (90–120) e só então pênaltis. */
+export const knockoutNeedsExtraTime = game => isWorldCupKnockout(game);
 
 /** Campeonatos que podem ir aos pênaltis quando o agregado/jogo único empata. */
 export const KNOCKOUT_SHOOTOUT_COMPETITIONS = new Set([
@@ -38,8 +50,8 @@ export const isKnockoutShootoutCompetition = game =>
   !!game &&
   (KNOCKOUT_SHOOTOUT_COMPETITIONS.has(game.competition) ||
     isStateKnockoutPhase(game) ||
+    isWorldCupKnockout(game) ||
     (!!game.tieId && game.knockoutRound != null));
-
 /** Mesma fixture do confronto (manda/visitante + leg/tie quando existirem). */
 export const sameKnockoutFixture = (a, b) =>
   !!a &&
@@ -81,6 +93,9 @@ export const knockoutCompetitionLabel = game => {
   if (game.competition === KNOCKOUT_COMPETITIONS.COPA) return `Copa do Brasil${game.phase ? ` · ${game.phase}` : ''}`;
   if (game.competition === KNOCKOUT_COMPETITIONS.RECOPA) return 'Recopa Nacional';
   if (game.competition === KNOCKOUT_COMPETITIONS.SERIE_D) return 'Brasileirão Série D · Eliminatórias';
+  if (isWorldCupKnockout(game)) {
+    return `Copa do Mundo${game.phase ? ` · ${game.phase}` : game.stage ? ` · ${game.stage}` : ''}`;
+  }
   if (isStateKnockoutPhase(game)) return 'Campeonato Estadual · Mata-mata';
   return game.competition || 'Eliminatórias';
 };

@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.55',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T16:45:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Copa do Mundo',
+        items: [
+          'Empates no mata-mata (oitavas em diante) vão à prorrogação e, se precisar, aos pênaltis — para você e para a IA.',
+          'Jogos que tinham ficado 0–0 sem vencedor são resolvidos ao avançar o calendário.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.50',
     date: '2026-07-29',
     publishedAt: '2026-07-29T16:00:00-04:00',

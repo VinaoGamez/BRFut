@@ -376,6 +376,7 @@ import {
   KNOCKOUT_COMPETITIONS,
   isKnockoutShootoutCompetition,
   isStateKnockoutPhase,
+  isWorldCupKnockout,
   knockoutCompetitionLabel,
   knockoutShootoutLabel,
   serieDKnockoutPhaseLabel,
@@ -5354,7 +5355,7 @@ export async function bootEngine({
     if(!['yellow','red','injury','penalty-miss','substitution'].includes(type))return;
     const stoppageMin=stoppageActive?Math.max(0,Number(stoppageElapsed)||0):0;
     liveVolumeIncidents.push({
-      minute:Math.min(90,Math.max(0,Number(minute)||0)),
+      minute:Math.min(120,Math.max(0,Number(minute)||0)),
       stoppage:stoppageMin||undefined,
       side:engineSide,
       type,
@@ -6200,6 +6201,7 @@ export async function bootEngine({
     cupTieGames,
     getCupCompetition:()=>cupCompetition,
     isStateKnockoutPhase,
+    isWorldCupKnockout,
     isKnockoutShootoutCompetition,
     KNOCKOUT_COMPETITIONS,
     sameKnockoutFixture,

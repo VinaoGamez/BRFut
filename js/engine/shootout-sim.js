@@ -85,7 +85,8 @@ export function simulateProbabilisticShootout(clubs, { random = Math.random, get
   const scores = goalsFromResults(results);
   const g0 = scores[c0] ?? 0;
   const g1 = scores[c1] ?? 0;
-  const winner = g0 === g1 ? null : g0 > g1 ? c0 : c1;
+  let winner = g0 === g1 ? null : g0 > g1 ? c0 : c1;
+  if (!winner) winner = random() < 0.5 ? c0 : c1;
   return {
     winner,
     scores,

@@ -2,7 +2,7 @@ import { MODULE_VERSIONS } from '../core/constants.js';
 import { getSponsors, sponsorLogoSlug } from './economy.js';
 import { sponsorLogoUrl } from '../assets/sponsor-logos.js';
 import { allowsExtendedSecondHalfStoppage, rollStoppageMinutes } from './match-clock.js';
-import { isKnockoutShootoutCompetition } from './knockout-shootout.js';
+import { isKnockoutShootoutCompetition, knockoutNeedsExtraTime } from './knockout-shootout.js';
 import { enginePenaltyChance } from './match-tuning.js';
 import {
   resolveShootoutTakerPool,
@@ -207,24 +207,113 @@ export function createLiveMatchOrchestration(deps) {
   const REGULATION_WHISTLE_LEAD_MS = 280;
   let halftimeEndPending = false;
   let fulltimeEndPending = false;
+  let extraTimeEndPending = false;
+
+  const getExtraTimePhase = () => getLiveMatchGame()?.extraTimePhase || null;
+
+  const setExtraTimePhase = phase => {
+    const game = getLiveMatchGame();
+    if (!game) return;
+    if (phase) game.extraTimePhase = phase;
+    else delete game.extraTimePhase;
+  };
+
+  const beginPenaltyShootoutFlow = ({ skipWhistle = false } = {}) => {
+    stopMatchClock();
+    log('Fim de jogo no tempo regulamentar.', '');
+    $('#matchStatus').textContent = 'Empate no agregado — disputa de pênaltis.';
+    updateLiveMatchClock();
+    const beginShootout = () => startPenaltyShootout();
+    if (!skipWhistle) {
+      const fulltimeCue = matchLiveAudio?.playFulltime?.();
+      if (fulltimeCue?.then) fulltimeCue.then(beginShootout);
+      else beginShootout();
+    } else {
+      beginShootout();
+    }
+  };
+
+  const startExtraTime = ({ skipWhistle = false } = {}) => {
+    fulltimeEndPending = false;
+    extraTimeEndPending = false;
+    const game = getLiveMatchGame();
+    if (game) {
+      game.extraTimePlayed = true;
+      game.extraTimePhase = 'et1';
+    }
+    setStoppageActive?.(null);
+    setStoppageElapsed?.(0);
+    setMinute(90);
+    if (!skipWhistle) matchLiveAudio?.playFulltime?.();
+    log('Empate — começa a prorrogação!', '');
+    $('#matchStatus').textContent = 'Prorrogação — 1º tempo (15 minutos).';
+    updateLiveMatchClock();
+    startMatchClock();
+  };
+
+  const finishExtraTime = ({ skipWhistle = false } = {}) => {
+    extraTimeEndPending = false;
+    setMinute(120);
+    setStoppageActive?.(null);
+    setStoppageElapsed?.(0);
+    setExtraTimePhase('done');
+    if (cupLiveMatchNeedsShootout()) {
+      stopMatchClock();
+      log('Empate após a prorrogação — disputa de pênaltis.', '');
+      $('#matchStatus').textContent = 'Empate na prorrogação — disputa de pênaltis.';
+      updateLiveMatchClock();
+      const beginShootout = () => startPenaltyShootout();
+      if (!skipWhistle) {
+        const cue = matchLiveAudio?.playFulltime?.();
+        if (cue?.then) cue.then(beginShootout);
+        else beginShootout();
+      } else {
+        beginShootout();
+      }
+      return;
+    }
+    setMatchFinished(true);
+    if (!skipWhistle) matchLiveAudio?.playFulltime?.();
+    matchLiveAudio?.stopStadiumAmbient?.();
+    log('Fim de jogo na prorrogação.');
+    $('#matchStatus').textContent = 'Partida encerrada.';
+    stopMatchClock();
+    updateLiveMatchClock();
+    simulateRoundResults();
+    renderFinalSummary();
+    showFinalActions();
+  };
+
+  const triggerExtraTimeEnd = () => {
+    if (extraTimeEndPending) return;
+    extraTimeEndPending = true;
+    matchLiveAudio?.playFulltime?.();
+    setTimeout(() => finishExtraTime({ skipWhistle: true }), REGULATION_WHISTLE_LEAD_MS);
+  };
 
   const finishRegulation = ({ skipWhistle = false } = {}) => {
     fulltimeEndPending = false;
     freezeStoppageDisplay('second');
     if (cupLiveMatchNeedsShootout()) {
-      stopMatchClock();
-      log('Fim de jogo no tempo regulamentar.', '');
-      // Pode ser empate no jogo OU só no agregado (ida+volta) — pênaltis obrigatórios
-      $('#matchStatus').textContent = 'Empate no agregado — disputa de pênaltis.';
-      updateLiveMatchClock();
-      const beginShootout = () => startPenaltyShootout();
-      if (!skipWhistle) {
-        const fulltimeCue = matchLiveAudio?.playFulltime?.();
-        if (fulltimeCue?.then) fulltimeCue.then(beginShootout);
-        else beginShootout();
-      } else {
-        beginShootout();
+      const liveGame = getLiveMatchGame();
+      const etPhase = getExtraTimePhase();
+      // Copa do Mundo: empate → prorrogação antes dos pênaltis
+      if (knockoutNeedsExtraTime(liveGame) && etPhase !== 'done' && etPhase !== 'et1' && etPhase !== 'et2') {
+        stopMatchClock();
+        log('Fim do tempo regulamentar — empate.', '');
+        $('#matchStatus').textContent = 'Empate — prorrogação em seguida.';
+        updateLiveMatchClock();
+        const beginEt = () => startExtraTime({ skipWhistle: true });
+        if (!skipWhistle) {
+          const fulltimeCue = matchLiveAudio?.playFulltime?.();
+          if (fulltimeCue?.then) fulltimeCue.then(beginEt);
+          else beginEt();
+        } else {
+          beginEt();
+        }
+        return;
       }
+      beginPenaltyShootoutFlow({ skipWhistle });
       return;
     }
     setMatchFinished(true);
@@ -1168,7 +1257,13 @@ export function createLiveMatchOrchestration(deps) {
     if (clubs.length < 2) return;
     setShootoutState({ clubs, firstKicker: 1, kickIndex: 0, results: { [clubs[0]]: [], [clubs[1]]: [] }, usedNames: { [clubs[0]]: [], [clubs[1]]: [] }, suddenDeath: false, competition: liveMatchGame?.competition });
     reconcileShootoutState();
-    log(`Empate no agregado. Disputa de pênaltis — ${knockoutCompetitionLabel(liveMatchGame)}!`, 'penalty');
+    const afterEt = !!liveMatchGame?.extraTimePlayed || getExtraTimePhase() === 'done';
+    log(
+      afterEt
+        ? `Empate na prorrogação. Disputa de pênaltis — ${knockoutCompetitionLabel(liveMatchGame)}!`
+        : `Empate no agregado. Disputa de pênaltis — ${knockoutCompetitionLabel(liveMatchGame)}!`,
+      'penalty',
+    );
     $('#matchStatus').textContent = 'Disputa de pênaltis — escolha os cobradores quando for sua vez.';
     $('#matchActions').classList.add('hidden');
     const panel = $('#shootoutPanel');
@@ -1308,89 +1403,112 @@ export function createLiveMatchOrchestration(deps) {
     const elapsed = Math.max(1, Math.floor(rnd(1, 3)));
     let minute = minute0;
     const stoppageActive = getStoppageActive?.() || null;
+    const etPhase = getExtraTimePhase();
 
-    // Estado inconsistente (intervalo aberto com acréscimo ainda marcado): normaliza.
-    if (stoppageActive === 'first' && getHalftimeShown()) {
-      setStoppageActive?.(null);
-    }
-
-    // Acréscimos: relógio fica em 45'/90', display 45+N / 90+N.
-    if (stoppageActive === 'first' && !getHalftimeShown()) {
-      const allowance = Math.max(1, Number(getStoppageFirst?.() || 1));
-      const cur = Number(getStoppageElapsed?.() || 0);
-      if (cur >= allowance) {
-        triggerHalftimeEnd();
-        return;
-      }
-      setStoppageElapsed?.(cur + 1);
-      setMinute(45);
-      resetLiveClockSeconds();
-      updateLiveMatchClock();
-      minute = 45;
-    } else if (stoppageActive === 'second') {
-      const allowance = Math.max(1, Number(getStoppageSecond?.() || 1));
-      const cur = Number(getStoppageElapsed?.() || 0);
-      if (cur >= allowance) {
-        triggerFulltimeEnd();
-        return;
-      }
-      setStoppageElapsed?.(cur + 1);
-      setMinute(90);
-      resetLiveClockSeconds();
-      updateLiveMatchClock();
-      minute = 90;
-    } else {
+    // Prorrogação CMU: 90→105 e 105→120 (sem acréscimos).
+    if (etPhase === 'et1' || etPhase === 'et2') {
       minute = minute0 + elapsed;
-      // Entra nos acréscimos do 1º tempo.
-      if (!getHalftimeShown() && minute0 < 45 && minute >= 45) {
-        setMinute(45);
-        const halfCtx = stoppageContext('first');
-        setStoppageHalfSnap?.({
-          fouls: halfCtx.fouls,
-          yellow: halfCtx.yellow,
-          red: halfCtx.red,
-          subs: halfCtx.subs,
-          goals: halfCtx.goals,
-        });
-        const allowance = rollStoppageMinutes(halfCtx);
-        setStoppageFirst?.(allowance);
-        setStoppageSecond?.(Number(getStoppageSecond?.() || 0));
-        setStoppageElapsed?.(1);
-        setStoppageActive?.('first');
+      if (etPhase === 'et1' && minute >= 105) {
+        setMinute(105);
+        setExtraTimePhase('et2');
         resetLiveClockSeconds();
         updateLiveMatchClock();
-        log(
-          `Árbitro indica ${allowance} minuto${allowance > 1 ? 's' : ''} de acréscimo no 1º tempo.`,
-          'stoppage',
-        );
-        $('#matchStatus').textContent = `Acréscimos: ${allowance}' no 1º tempo.`;
-        minute = 45;
-      } else if (getHalftimeShown() && minute0 < 90 && minute >= 90) {
-        setMinute(90);
-        const allowance = rollStoppageMinutes(stoppageContext('second'));
-        setStoppageSecond?.(allowance);
-        setStoppageElapsed?.(1);
-        setStoppageActive?.('second');
-        resetLiveClockSeconds();
-        updateLiveMatchClock();
-        log(
-          `Árbitro indica ${allowance} minuto${allowance > 1 ? 's' : ''} de acréscimo no 2º tempo.`,
-          'stoppage',
-        );
-        $('#matchStatus').textContent = `Acréscimos: ${allowance}' no 2º tempo.`;
-        minute = 90;
-      } else if (!getHalftimeShown() && minute >= 45) {
-        setMinute(45);
-        triggerHalftimeEnd();
-        return;
-      } else if (getHalftimeShown() && minute >= 90) {
-        setMinute(90);
-        triggerFulltimeEnd();
+        log('2º tempo da prorrogação.', '');
+        $('#matchStatus').textContent = 'Prorrogação — 2º tempo (15 minutos).';
+        minute = 105;
+      } else if (etPhase === 'et2' && minute >= 120) {
+        setMinute(120);
+        triggerExtraTimeEnd();
         return;
       } else {
         setMinute(minute);
         resetLiveClockSeconds();
         updateLiveMatchClock();
+      }
+    } else {
+      // Estado inconsistente (intervalo aberto com acréscimo ainda marcado): normaliza.
+      if (stoppageActive === 'first' && getHalftimeShown()) {
+        setStoppageActive?.(null);
+      }
+
+      // Acréscimos: relógio fica em 45'/90', display 45+N / 90+N.
+      if (stoppageActive === 'first' && !getHalftimeShown()) {
+        const allowance = Math.max(1, Number(getStoppageFirst?.() || 1));
+        const cur = Number(getStoppageElapsed?.() || 0);
+        if (cur >= allowance) {
+          triggerHalftimeEnd();
+          return;
+        }
+        setStoppageElapsed?.(cur + 1);
+        setMinute(45);
+        resetLiveClockSeconds();
+        updateLiveMatchClock();
+        minute = 45;
+      } else if (stoppageActive === 'second') {
+        const allowance = Math.max(1, Number(getStoppageSecond?.() || 1));
+        const cur = Number(getStoppageElapsed?.() || 0);
+        if (cur >= allowance) {
+          triggerFulltimeEnd();
+          return;
+        }
+        setStoppageElapsed?.(cur + 1);
+        setMinute(90);
+        resetLiveClockSeconds();
+        updateLiveMatchClock();
+        minute = 90;
+      } else {
+        minute = minute0 + elapsed;
+        // Entra nos acréscimos do 1º tempo.
+        if (!getHalftimeShown() && minute0 < 45 && minute >= 45) {
+          setMinute(45);
+          const halfCtx = stoppageContext('first');
+          setStoppageHalfSnap?.({
+            fouls: halfCtx.fouls,
+            yellow: halfCtx.yellow,
+            red: halfCtx.red,
+            subs: halfCtx.subs,
+            goals: halfCtx.goals,
+          });
+          const allowance = rollStoppageMinutes(halfCtx);
+          setStoppageFirst?.(allowance);
+          setStoppageSecond?.(Number(getStoppageSecond?.() || 0));
+          setStoppageElapsed?.(1);
+          setStoppageActive?.('first');
+          resetLiveClockSeconds();
+          updateLiveMatchClock();
+          log(
+            `Árbitro indica ${allowance} minuto${allowance > 1 ? 's' : ''} de acréscimo no 1º tempo.`,
+            'stoppage',
+          );
+          $('#matchStatus').textContent = `Acréscimos: ${allowance}' no 1º tempo.`;
+          minute = 45;
+        } else if (getHalftimeShown() && minute0 < 90 && minute >= 90) {
+          setMinute(90);
+          const allowance = rollStoppageMinutes(stoppageContext('second'));
+          setStoppageSecond?.(allowance);
+          setStoppageElapsed?.(1);
+          setStoppageActive?.('second');
+          resetLiveClockSeconds();
+          updateLiveMatchClock();
+          log(
+            `Árbitro indica ${allowance} minuto${allowance > 1 ? 's' : ''} de acréscimo no 2º tempo.`,
+            'stoppage',
+          );
+          $('#matchStatus').textContent = `Acréscimos: ${allowance}' no 2º tempo.`;
+          minute = 90;
+        } else if (!getHalftimeShown() && minute >= 45) {
+          setMinute(45);
+          triggerHalftimeEnd();
+          return;
+        } else if (getHalftimeShown() && minute >= 90) {
+          setMinute(90);
+          triggerFulltimeEnd();
+          return;
+        } else {
+          setMinute(minute);
+          resetLiveClockSeconds();
+          updateLiveMatchClock();
+        }
       }
     }
 

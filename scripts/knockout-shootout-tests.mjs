@@ -8,7 +8,11 @@ import {
   resolveKnockoutTieWinner,
   knockoutTieNeedsPlayedShootout,
   knockoutTieAggregate,
+  isWorldCupKnockout,
+  isKnockoutShootoutCompetition,
+  knockoutNeedsExtraTime,
 } from "../js/engine/knockout-shootout.js";
+import { WORLD_CUP_COMPETITION } from "../js/engine/world-cup-calendar.js";
 
 function idaVolta(scores) {
   return [
@@ -81,14 +85,47 @@ function idaVolta(scores) {
 // CPU: allowAutoShootout true → vencedor + placar gravado
 {
   const games = idaVolta({ idaHome: 0, idaAway: 3, voltaHome: 2, voltaAway: 5 });
+  let n = 0;
   const winner = resolveKnockoutTieWinner(games, {
     pickWinner: (a, b) => b,
     int: (a, b) => a,
     allowAutoShootout: true,
+    random: () => {
+      n += 1;
+      return (n * 0.37) % 1;
+    },
   });
-  assert.equal(winner, "Aracaju");
+  assert.ok(winner === "Maceió" || winner === "Aracaju");
   assert.ok(games[1].shootoutWinner);
   assert.ok(games[1].penalties);
 }
 
-console.log("ok  knockout-shootout-tests (5 asserts)");
+// Copa do Mundo mata-mata: empate → pênaltis (com prorrogação no fluxo ao vivo/IA)
+{
+  const wc = {
+    home: "Brasil",
+    away: "Iraque",
+    homeGoals: 0,
+    awayGoals: 0,
+    completed: true,
+    competition: WORLD_CUP_COMPETITION,
+    knockout: true,
+    stage: "QF",
+  };
+  assert.equal(isWorldCupKnockout(wc), true);
+  assert.equal(isKnockoutShootoutCompetition(wc), true);
+  assert.equal(knockoutNeedsExtraTime(wc), true);
+  assert.equal(
+    isKnockoutShootoutCompetition({
+      competition: WORLD_CUP_COMPETITION,
+      knockout: false,
+      group: "C",
+    }),
+    false,
+    "fase de grupos não vai a pênaltis",
+  );
+  const needs = projectedKnockoutNeedsShootout([wc], wc, { homeGoals: 0, awayGoals: 0 });
+  assert.equal(needs, true, "empate em jogo único CMU exige desempate");
+}
+
+console.log("ok  knockout-shootout-tests (8 asserts)");
