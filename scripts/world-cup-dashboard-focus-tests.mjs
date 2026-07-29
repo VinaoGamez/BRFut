@@ -1,5 +1,6 @@
 import {
   resolveDashboardStandingsFocus,
+  isWorldCupCommandWindow,
   isWorldCupUserScheduleEntry,
 } from '../js/engine/world-cup/dashboard-context.js';
 import { WORLD_CUP_COMPETITION } from '../js/engine/world-cup-calendar.js';
@@ -46,6 +47,30 @@ assert('next club when no game today', resolveDashboardStandingsFocus({
   userClub: club,
   careerCalendarDate: new Date('2026-04-01T12:00:00'),
 }) === 'club');
+
+assert('accepting selection before WC window keeps club focus', resolveDashboardStandingsFocus({
+  pendingUserSchedule: [wcEntry],
+  nextPendingEntry: wcEntry,
+  userNationalTeamName: nt,
+  userClub: club,
+  careerCalendarDate: new Date('2026-04-30T12:00:00'),
+}) === 'club');
+
+assert('inside WC window next selection match activates WC focus', resolveDashboardStandingsFocus({
+  pendingUserSchedule: [wcEntry],
+  nextPendingEntry: wcEntry,
+  userNationalTeamName: nt,
+  userClub: club,
+  careerCalendarDate: new Date('2026-06-11T12:00:00'),
+}) === 'worldcup');
+
+assert('WC command window includes official boundaries',
+  isWorldCupCommandWindow(new Date('2026-06-11T00:00:00')) &&
+  isWorldCupCommandWindow(new Date('2026-07-19T23:59:59')));
+
+assert('WC command window excludes dates before and after',
+  !isWorldCupCommandWindow(new Date('2026-06-10T23:59:59')) &&
+  !isWorldCupCommandWindow(new Date('2026-07-20T00:00:00')));
 
 assert('wc entry detect', isWorldCupUserScheduleEntry(wcEntry, nt));
 

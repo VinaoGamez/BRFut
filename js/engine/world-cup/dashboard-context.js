@@ -5,6 +5,7 @@
 import { WORLD_CUP_COMPETITION } from '../world-cup-calendar.js';
 import { nationalTeamByCode, resolveNationalTeam } from '../national-teams.js';
 import { computeGroupStandings } from '../world-cup-standings.js';
+import { WORLD_CUP_WINDOW } from '../season-calendar-mold.js';
 
 const KNOCKOUT_STAGE_SCORE = Object.freeze({
   R32: 62,
@@ -38,6 +39,23 @@ export function isWorldCupUserScheduleEntry(entry, userNationalTeamName) {
   );
 }
 
+/** A seleção só assume a interface durante o bloqueio oficial da Copa. */
+export function isWorldCupCommandWindow(careerCalendarDate) {
+  if (!careerCalendarDate) return false;
+  const date =
+    careerCalendarDate instanceof Date
+      ? new Date(careerCalendarDate.getTime())
+      : new Date(careerCalendarDate);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const year = date.getFullYear();
+  const [startMonth, startDay] = WORLD_CUP_WINDOW.start;
+  const [endMonth, endDay] = WORLD_CUP_WINDOW.end;
+  const start = new Date(year, startMonth, startDay, 0, 0, 0, 0);
+  const end = new Date(year, endMonth, endDay, 23, 59, 59, 999);
+  return date >= start && date <= end;
+}
+
 /**
  * Foco da mini-tabela / cards laterais: Copa ou clube.
  * Prioriza o tipo de jogo do dia; entre jogos, segue o próximo compromisso do usuário.
@@ -51,6 +69,7 @@ export function resolveDashboardStandingsFocus({
   sameCalendarDay = null,
 } = {}) {
   if (!pendingUserSchedule.length) return 'club';
+  if (!isWorldCupCommandWindow(careerCalendarDate)) return 'club';
 
   const isSameDay = (dateA, dateB) => {
     if (typeof sameCalendarDay === 'function') return sameCalendarDay(dateA, dateB);
