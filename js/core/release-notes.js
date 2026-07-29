@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.15',
+    date: '2026-07-29',
+    publishedAt: '2026-07-30T01:20:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Rodada',
+        items: [
+          'Corrigido loop em que a mesma rodada repetia após AVANÇAR no pós-jogo.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.10',
     date: '2026-07-29',
     publishedAt: '2026-07-30T01:10:00-03:00',

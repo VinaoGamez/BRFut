@@ -13,13 +13,19 @@ import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
 export function resolveRoundAlreadyRecorded(
   seasonRoundHistory,
   currentRound,
-  { userGame, userLeaguePlayed },
+  { userGame, userLeaguePlayed, isFixtureCompleted },
 ) {
   const historyEntry = (seasonRoundHistory || []).find(item => item.round === currentRound);
   if (!historyEntry) return false;
 
   const played = userLeaguePlayed?.() ?? 0;
   if (played < currentRound) {
+    const idx = seasonRoundHistory.findIndex(item => item.round === currentRound);
+    if (idx >= 0) seasonRoundHistory.splice(idx, 1);
+    return false;
+  }
+
+  if (userGame && typeof isFixtureCompleted === 'function' && !isFixtureCompleted(userGame)) {
     const idx = seasonRoundHistory.findIndex(item => item.round === currentRound);
     if (idx >= 0) seasonRoundHistory.splice(idx, 1);
     return false;
@@ -47,6 +53,7 @@ function resetLiveMatchSession(deps) {
   deps.setRoundResultMessagePushed(false);
   deps.setRoundPreviewResults({});
   deps.clearLiveMatchPersist();
+  deps.invalidateUserScheduleCache?.();
 }
 
 function advanceStateLeagueThroughDateCore(deps, date) {
@@ -164,6 +171,7 @@ export function createRoundAdvanceEngine(deps) {
         deps.persistPlayerHistory();
         deps.refreshWorldCupFixtures?.();
         deps.rebuildCalendarGames();
+        deps.invalidateUserScheduleCache?.();
         advancePostMatchDay();
         deps.persistAfterRoundAdvance();
         try {
@@ -215,19 +223,21 @@ export function createRoundAdvanceEngine(deps) {
       if (liveMatchGame && isKnockoutShootoutCompetition(liveMatchGame)) deps.commitLiveKnockoutResult();
       deps.pushUserMatchResultMessage(liveMatchGame, gateResult);
 
-      const currentRound = deps.getCurrentRound();
+      const roundAtStart = deps.getCurrentRound();
       const seasonRoundHistory = deps.getSeasonRoundHistory();
       const userClub = deps.getUserClub();
-      const alreadyRecorded = resolveRoundAlreadyRecorded(seasonRoundHistory, currentRound, {
-        userGame: deps.leagueUserGameForRound(currentRound),
+      const userGame = deps.leagueUserGameForRound(roundAtStart);
+      let alreadyRecorded = resolveRoundAlreadyRecorded(seasonRoundHistory, roundAtStart, {
+        userGame,
         userLeaguePlayed: deps.userLeaguePlayed,
+        isFixtureCompleted: deps.isFixtureCompleted,
       });
 
       if (!alreadyRecorded) {
         const nationalCompetitions = deps.getNationalCompetitions();
         const roundParticipants = new Set(
           Object.values(nationalCompetitions).flatMap(competition => {
-            const round = (Array.isArray(competition?.fixtures) ? competition.fixtures : [])[currentRound - 1] || [];
+            const round = (Array.isArray(competition?.fixtures) ? competition.fixtures : [])[roundAtStart - 1] || [];
             return (Array.isArray(round) ? round : [])
               .filter(game => game?.home && game?.away)
               .flatMap(game => [game.home, game.away]);
@@ -237,7 +247,7 @@ export function createRoundAdvanceEngine(deps) {
         deps.commitLiveAvailability();
         const completedGames = deps.simulateRoundResults(true);
         completedGames.forEach(deps.recordGameLeaders);
-        if (deps.getUserDivision() !== 'D' || currentRound <= 10) {
+        if (deps.getUserDivision() !== 'D' || roundAtStart <= 10) {
           completedGames.forEach(deps.applyRoundToTable);
         }
         try {
@@ -249,13 +259,13 @@ export function createRoundAdvanceEngine(deps) {
         deps.serveAvailability(restDays, roundParticipants);
         const fillRate = deps.resolveMatchAttendance(liveMatchGame)?.fillRate ?? liveMatchGame?.fillRate ?? null;
         deps.applyClubStatusAfterRound(completedGames, fillRate);
-        deps.applyUserWageBillForRound(currentRound);
+        deps.applyUserWageBillForRound(roundAtStart);
         deps.creditLeagueHomeTvForGames(completedGames, deps.getUserDivision());
         deps.simulateNationalRound();
         const liveStats = deps.getLiveSideStats();
         const liveGoals = deps.getLiveSideGoals();
         seasonRoundHistory.push({
-          round: currentRound,
+          round: roundAtStart,
           games: completedGames.map(game => compactMatchResult(game, { keepData: involvesClub(game, userClub) })),
           userStats: {
             home: { ...liveStats.home },
@@ -266,7 +276,7 @@ export function createRoundAdvanceEngine(deps) {
         if (seasonRoundHistory.length > MEMORY_LIMITS.seasonRoundHistory) {
           seasonRoundHistory.splice(0, seasonRoundHistory.length - MEMORY_LIMITS.seasonRoundHistory);
         }
-        deps.updateSeriesDKnockout(currentRound);
+        deps.updateSeriesDKnockout(roundAtStart);
         deps.orderAllClubFormations();
         deps.renderRoster();
         deps.drawBoard();
@@ -278,9 +288,9 @@ export function createRoundAdvanceEngine(deps) {
 
       const userDivision = deps.getUserDivision();
       const careerSeason = deps.getCareerSeason();
-      const completedSeason = currentRound === 38 || (userDivision === 'D' && currentRound === 22);
-      if (userDivision === 'D' && currentRound === 22) deps.finishRemainingNationalRounds(23);
-      if (!alreadyRecorded) deps.setCurrentRound(currentRound + 1);
+      const completedSeason = roundAtStart === 38 || (userDivision === 'D' && roundAtStart === 22);
+      if (userDivision === 'D' && roundAtStart === 22) deps.finishRemainingNationalRounds(23);
+      if (!alreadyRecorded || liveMatchGame) deps.setCurrentRound(roundAtStart + 1);
       deps.reconcileCurrentRound();
       if (!alreadyRecorded) deps.processAiMarketAfterRound();
 
@@ -375,6 +385,7 @@ export function createRoundAdvanceEngine(deps) {
     const alreadyRecorded = resolveRoundAlreadyRecorded(seasonRoundHistory, currentRound, {
       userGame: deps.leagueUserGameForRound(currentRound),
       userLeaguePlayed: deps.userLeaguePlayed,
+      isFixtureCompleted: deps.isFixtureCompleted,
     });
     if (!alreadyRecorded) {
       const userDivision = deps.getUserDivision();

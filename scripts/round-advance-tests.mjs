@@ -52,5 +52,17 @@ check('history with wrong fixture is discarded', () => {
   assert(!history.some(item => item.round === 5), 'mismatched history removed');
 });
 
+check('history discarded when user fixture still pending', () => {
+  const history = [{ round: 5, games: [{ home: 'A', away: 'B', round: 5, homeGoals: 2, awayGoals: 1 }] }];
+  const userGame = { home: 'A', away: 'B', round: 5 };
+  const ok = resolveRoundAlreadyRecorded(history, 5, {
+    userGame,
+    userLeaguePlayed: () => 5,
+    isFixtureCompleted: () => false,
+  });
+  assert(!ok, 'pending user fixture must re-commit round');
+  assert(!history.some(item => item.round === 5), 'stale history removed');
+});
+
 console.log(`\nround-advance-tests: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

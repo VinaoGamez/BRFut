@@ -2199,8 +2199,7 @@ const rosterChangeAlertHolder = { fn: null };
   const userGroupStageComplete=()=>userDivision!=='D'||userLeaguePlayed()>=SERIE_D_GROUP_ROUNDS;
   const reconcileCurrentRound=()=>{
     if(!savedNewGame)return;
-    const played=userLeaguePlayed(),groupLimit=userDivision==='D'?SERIE_D_GROUP_ROUNDS:38;
-    if(played>=groupLimit)return;
+    const played=userLeaguePlayed();
     const histMax=(seasonRoundHistory||[]).reduce((max,entry)=>Math.max(max,entry?.round||0),0);
     const floor=Math.max(played+1,histMax+1);
     if(currentRound<floor)currentRound=floor;
