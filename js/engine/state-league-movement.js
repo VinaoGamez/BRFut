@@ -4,6 +4,7 @@
  * Divisões de 10 clubes: 4 sobem (semifinalistas) e 4 descem (piores), exceto:
  * - Divisão 1: somente rebaixamento (4 descem; Paulista = 2 piores/grupo).
  * - Última divisão visível: 4 sobem; formação = 4 rebaixados da divisão acima + sorteio até 10.
+ * - UF com uma só divisão: 3 últimos saem e são trocados por clubes de fora (sorteio).
  */
 
 import { normClubName } from './brazilian-clubs-by-uf.js';
@@ -20,6 +21,8 @@ import {
 
 /** Clubes que sobem/descem entre divisões de 10 times. */
 export const TIER_MOVEMENT_COUNT = 4;
+/** UF com uma só divisão estadual: só os 3 últimos saem e são trocados. */
+export const SOLE_DIVISION_RELEGATE_COUNT = 3;
 export const DIV1_RELEGATE_PER_GROUP = 2;
 export const LAST_TIER_RELEGATED_IN = TIER_MOVEMENT_COUNT;
 export const LAST_TIER_LOTTERY_SLOTS = STATE_LEAGUE_MAX_PER_DIVISION - LAST_TIER_RELEGATED_IN;
@@ -128,9 +131,8 @@ export function computeMovementsForUf(divisions, uf) {
       relegatedFrom[tier] =
         tier === 1 ? collectDivision1Relegated(comp, code) : collectLeagueBottom(comp, TIER_MOVEMENT_COUNT);
     } else if (maxTier === 1 && tier === 1) {
-      // UF com uma só divisão: os últimos saem e dão lugar a clubes de fora (sorteio).
-      // Sem isso o buildNextSeasonRosters re-sorteava o elenco inteiro (campeão/Série B podiam sumir).
-      relegatedFrom[tier] = collectDivision1Relegated(comp, code);
+      // UF com uma só divisão: apenas os 3 últimos saem; o restante permanece.
+      relegatedFrom[tier] = collectLeagueBottom(comp, SOLE_DIVISION_RELEGATE_COUNT);
     }
 
     if (tier > 1) {

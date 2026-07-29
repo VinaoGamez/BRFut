@@ -134,7 +134,7 @@ check('última divisão visível forma com rebaixados da divisão acima', () => 
   movements.relegatedFrom[maxTier - 1].forEach(name => assert(last.includes(name), `${name} rebaixado na última`));
 });
 
-check('UF com uma divisão mantém campeão e não re-sorteia o elenco', () => {
+check('UF com uma divisão troca só os 3 últimos', () => {
   const participants = collectParticipantsForUf('MT', { importClubs: importDoc.clubs });
   const built = buildAllStateCompetitions({
     importClubs: importDoc.clubs,
@@ -149,13 +149,13 @@ check('UF com uma divisão mantém campeão e não re-sorteia o elenco', () => {
     row.played = 1;
   });
   const champion = sortStandingsRows([...table])[0].club;
-  const bottom = collectLeagueBottom(mt1, 4);
-  assert(bottom.length === 4, '4 saem da única divisão');
+  const bottom = collectLeagueBottom(mt1, 3);
+  assert(bottom.length === 3, '3 saem da única divisão');
   assert(!bottom.includes(champion), 'campeão não está entre os que saem');
 
   const movements = computeMovementsForUf(built.MT, 'MT');
   assert(movements.maxTier === 1, 'maxTier 1');
-  assert(movements.relegatedFrom[1]?.length === 4, 'rebaixamento da única div registrado');
+  assert(movements.relegatedFrom[1]?.length === 3, '3 rebaixados na única div');
 
   const { rosters } = buildNextSeasonRosters('MT', participants, built.MT, movements, {
     lotteryPick: (pool, slots) => pool.slice(0, slots),
@@ -163,6 +163,9 @@ check('UF com uma divisão mantém campeão e não re-sorteia o elenco', () => {
   assert(rosters[1]?.length === 10, 'div única com 10 clubes');
   assert(rosters[1].includes(champion), `campeão ${champion} permanece`);
   bottom.forEach(name => assert(!rosters[1].includes(name), `${name} saiu da única divisão`));
+  const keptFromPrev = mt1.teams.filter(name => !bottom.includes(name));
+  assert(keptFromPrev.length === 7, '7 permanecem');
+  keptFromPrev.forEach(name => assert(rosters[1].includes(name), `${name} permanece`));
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

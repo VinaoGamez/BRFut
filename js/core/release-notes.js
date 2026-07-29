@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.25',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T17:30:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Estadual',
+        items: [
+          'Estados com uma só divisão: na virada de temporada só os 3 últimos são trocados; o restante (incluindo o campeão) permanece.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.20',
     date: '2026-07-29',
     publishedAt: '2026-07-29T17:25:00-04:00',
