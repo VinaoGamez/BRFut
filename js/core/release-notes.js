@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.60',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T16:55:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Copa do Mundo',
+        items: [
+          'Se o calendário passou na frente da Copa, o chaveamento volta a avançar (várias fases de uma vez) e a IA completa os jogos atrasados.',
+          'Com jogo da sua seleção ainda pendente, o calendário rebobina até a data desse jogo ao abrir o save.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.55',
     date: '2026-07-29',
     publishedAt: '2026-07-29T16:45:00-04:00',

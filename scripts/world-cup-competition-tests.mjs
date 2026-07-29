@@ -9,6 +9,7 @@ import {
   advanceWorldCupSpectatorThroughWindow,
   simulateNationalTeamMatch,
   resolveWorldCupKnockoutIfDrawn,
+  earliestPendingWorldCupUserFixture,
 } from '../js/engine/world-cup-competition.js';
 import { WORLD_CUP_GROUP_FIXTURE_COUNT } from '../js/engine/world-cup-calendar.js';
 import { isGroupStageComplete } from '../js/engine/world-cup-standings.js';
@@ -143,6 +144,50 @@ check('CPU completa mata-mata sem empates órfãos', () => {
       !g.winnerCode,
   );
   assert(!orphanDraw, 'nenhum mata-mata deve ficar empatado sem vencedor');
+});
+
+check('calendário à frente completa a Copa numa chamada', () => {
+  const comp = createWorldCupCompetition({ year: 2026, random: () => 0.33 });
+  const pastWindow = new Date(2026, 7, 1, 12);
+  let n = 0;
+  advanceWorldCupThroughDate(comp, pastWindow, {
+    random: () => {
+      n += 1;
+      return (n * 0.29) % 1;
+    },
+    isUserTeam: () => false,
+  });
+  assert(comp.phase === 'complete', 'deve fechar a Copa quando a data já passou da janela');
+  assert(!!comp.champion, 'deve ter campeão');
+});
+
+check('earliestPendingWorldCupUserFixture pega o jogo mais antigo', () => {
+  const pending = earliestPendingWorldCupUserFixture(
+    {
+      groupFixtures: [],
+      knockoutFixtures: [
+        {
+          home: 'Brasil',
+          away: 'França',
+          homeCode: 'BRA',
+          awayCode: 'FRA',
+          date: new Date(2026, 6, 10),
+          completed: false,
+        },
+        {
+          home: 'Brasil',
+          away: 'Alemanha',
+          homeCode: 'BRA',
+          awayCode: 'GER',
+          date: new Date(2026, 6, 5),
+          completed: false,
+        },
+      ],
+    },
+    game => game.homeCode === 'BRA' || game.awayCode === 'BRA',
+  );
+  assert(pending);
+  assert(new Date(pending.date).getDate() === 5);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

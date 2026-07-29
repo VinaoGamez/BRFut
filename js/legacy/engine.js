@@ -277,6 +277,7 @@ import {
   serializeWorldCupCompetition,
   simulateNationalTeamMatch,
   worldCupCalendarSummary,
+  earliestPendingWorldCupUserFixture,
 } from '../engine/world-cup-competition.js';
 import { nationalTeamByCode, resolveNationalTeam } from '../engine/national-teams.js';
 import {
@@ -2946,7 +2947,25 @@ export async function bootEngine({
     return changed;
   };
   if(worldCupCompetition){
-    advanceWorldCupThroughDateLocal(careerCalendarDate);
+    // Catch-up primeiro: repara empates órfãos e gera próximas fases CPU.
+    const wcChanged=advanceWorldCupThroughDateLocal(careerCalendarDate);
+    if(wcChanged)calendarBootRepaired=true;
+    // Se sobrou jogo da seleção com data já passada, rebobina o calendário até ele.
+    if(userNationalTeamCode){
+      const pendingWc=earliestPendingWorldCupUserFixture(
+        worldCupCompetition,
+        game=>game.competition===WORLD_CUP_COMPETITION&&isUserFixture(game),
+      );
+      if(pendingWc?.date){
+        const pendingDate=new Date(pendingWc.date);
+        pendingDate.setHours(12,0,0,0);
+        if(careerCalendarDate.getTime()>pendingDate.getTime()){
+          advanceCareerCalendarTo(pendingDate);
+          calendarBootRepaired=true;
+          console.info('[brfut] calendário rebobinado para jogo pendente da Copa do Mundo', pendingWc.home, pendingWc.away, pendingDate.toISOString().slice(0,10));
+        }
+      }
+    }
   }
   const persistNationalTeamCode=code=>{
     if(!savedNewGame)return;

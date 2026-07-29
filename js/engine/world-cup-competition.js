@@ -368,6 +368,8 @@ export function advanceWorldCupSpectatorThroughWindow(competition, careerDate, y
 
 /**
  * Simula jogos da CMU até a data (CPU). Gera mata-mata quando grupos encerram.
+ * Quando o calendário já passou das datas, faz catch-up de várias fases na mesma chamada
+ * (simula → avança chaveamento → simula de novo) até estabilizar ou bloquear em jogo do usuário.
  * @returns {boolean} houve mudança
  */
 export function advanceWorldCupThroughDate(competition, date, {
@@ -393,36 +395,63 @@ export function advanceWorldCupThroughDate(competition, date, {
 
   if (tryGenerateKnockout(competition, random)) changed = true;
 
-  // Repara empates de mata-mata sem vencedor (saves antigos / bug pré-prorrogação).
-  for (const game of competition.knockoutFixtures) {
-    if (game.homeGoals == null && !game.completed) continue;
-    if (!resolveWorldCupKnockoutIfDrawn(game, competition, random)) continue;
-    const winner = winnerFromGame(game);
-    const loser = loserFromGame(game, winner);
-    if (winner && competition.knockoutContext) {
-      recordKnockoutResult(competition.knockoutContext, game.id, winner, loser);
+  // Catch-up: calendário à frente da Copa — várias fases numa passagem.
+  let guard = 0;
+  while (competition.phase !== 'complete' && guard < 24) {
+    guard += 1;
+    let passChanged = false;
+
+    for (const game of competition.knockoutFixtures) {
+      if (game.homeGoals == null && !game.completed) continue;
+      if (!resolveWorldCupKnockoutIfDrawn(game, competition, random)) continue;
+      const winner = winnerFromGame(game);
+      const loser = loserFromGame(game, winner);
+      if (winner && competition.knockoutContext) {
+        recordKnockoutResult(competition.knockoutContext, game.id, winner, loser);
+      }
+      passChanged = true;
     }
+
+    for (const game of competition.knockoutFixtures) {
+      if (game.completed || game.homeGoals != null) continue;
+      if (isUserTeam(game)) continue;
+      const when = new Date(game.date).getTime();
+      if (when > cutoff) continue;
+      const result = simulate(game.homeCode, game.awayCode, competition.teamStrength, random);
+      const ko = applySimResult(game, result, competition, random);
+      if (ko?.winner) recordKnockoutResult(competition.knockoutContext, game.id, ko.winner, ko.loser);
+      passChanged = true;
+    }
+
+    if (tryAdvanceKnockoutStage(competition)) passChanged = true;
+
+    if (!passChanged) break;
     changed = true;
   }
-
-  for (const game of competition.knockoutFixtures) {
-    if (game.completed || game.homeGoals != null) continue;
-    if (isUserTeam(game)) continue;
-    const when = new Date(game.date).getTime();
-    if (when > cutoff) continue;
-    const result = simulate(game.homeCode, game.awayCode, competition.teamStrength, random);
-    const ko = applySimResult(game, result, competition, random);
-    if (ko?.winner) recordKnockoutResult(competition.knockoutContext, game.id, ko.winner, ko.loser);
-    changed = true;
-  }
-
-  while (tryAdvanceKnockoutStage(competition)) changed = true;
 
   if (competition.phase !== 'groups' && !competition.groupStandings) {
     competition.groupStandings = computeAllGroupStandings(competition.groupFixtures, random);
   }
 
   return changed;
+}
+
+/**
+ * Próximo jogo do usuário na CMU ainda pendente (grupos ou mata-mata).
+ * Usado para rebobinar o calendário se a data da carreira passou do jogo.
+ */
+export function earliestPendingWorldCupUserFixture(competition, isUserTeam = () => false) {
+  if (!competition) return null;
+  const pending = getWorldCupAllFixtures(competition).filter(
+    game =>
+      isUserTeam(game) &&
+      !game.completed &&
+      game.homeGoals == null &&
+      game.date,
+  );
+  if (!pending.length) return null;
+  pending.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  return pending[0];
 }
 
 export function isWorldCupUserFixture(game, userNationalTeamName) {
