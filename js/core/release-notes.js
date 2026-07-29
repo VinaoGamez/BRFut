@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.20',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T17:25:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Estadual',
+        items: [
+          'Em estados com uma só divisão (ex.: MT), o campeão e quem não caiu permanecem na virada de temporada — o elenco deixa de ser re-sorteado por completo.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.15',
     date: '2026-07-29',
     publishedAt: '2026-07-29T17:20:00-04:00',

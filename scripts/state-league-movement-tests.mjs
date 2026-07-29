@@ -134,5 +134,36 @@ check('última divisão visível forma com rebaixados da divisão acima', () => 
   movements.relegatedFrom[maxTier - 1].forEach(name => assert(last.includes(name), `${name} rebaixado na última`));
 });
 
+check('UF com uma divisão mantém campeão e não re-sorteia o elenco', () => {
+  const participants = collectParticipantsForUf('MT', { importClubs: importDoc.clubs });
+  const built = buildAllStateCompetitions({
+    importClubs: importDoc.clubs,
+    seasonYear: 2026,
+    lotterySeed: 99,
+  });
+  assert(built.MT?.length === 1, 'MT tem uma só divisão estadual');
+  const mt1 = built.MT[0];
+  const table = mt1.standings[0];
+  table.forEach((row, index) => {
+    row.points = 100 - index;
+    row.played = 1;
+  });
+  const champion = sortStandingsRows([...table])[0].club;
+  const bottom = collectLeagueBottom(mt1, 4);
+  assert(bottom.length === 4, '4 saem da única divisão');
+  assert(!bottom.includes(champion), 'campeão não está entre os que saem');
+
+  const movements = computeMovementsForUf(built.MT, 'MT');
+  assert(movements.maxTier === 1, 'maxTier 1');
+  assert(movements.relegatedFrom[1]?.length === 4, 'rebaixamento da única div registrado');
+
+  const { rosters } = buildNextSeasonRosters('MT', participants, built.MT, movements, {
+    lotteryPick: (pool, slots) => pool.slice(0, slots),
+  });
+  assert(rosters[1]?.length === 10, 'div única com 10 clubes');
+  assert(rosters[1].includes(champion), `campeão ${champion} permanece`);
+  bottom.forEach(name => assert(!rosters[1].includes(name), `${name} saiu da única divisão`));
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

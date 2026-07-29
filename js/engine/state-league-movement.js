@@ -127,6 +127,10 @@ export function computeMovementsForUf(divisions, uf) {
     if (tier < maxTier) {
       relegatedFrom[tier] =
         tier === 1 ? collectDivision1Relegated(comp, code) : collectLeagueBottom(comp, TIER_MOVEMENT_COUNT);
+    } else if (maxTier === 1 && tier === 1) {
+      // UF com uma só divisão: os últimos saem e dão lugar a clubes de fora (sorteio).
+      // Sem isso o buildNextSeasonRosters re-sorteava o elenco inteiro (campeão/Série B podiam sumir).
+      relegatedFrom[tier] = collectDivision1Relegated(comp, code);
     }
 
     if (tier > 1) {
@@ -178,7 +182,8 @@ function tierCapacity(tier, ufCode) {
 
 /**
  * Monta elencos da próxima temporada aplicando acesso/rebaixamento.
- * Última divisão visível: 4 rebaixados da divisão acima + sorteio até 10.
+ * Última divisão visível: rebaixados da divisão acima + sorteio até 10.
+ * UF com uma só divisão: mantém quem não caiu; sorteio só preenche as vagas.
  */
 export function buildNextSeasonRosters(
   uf,
@@ -219,7 +224,33 @@ export function buildNextSeasonRosters(
     }
   });
 
-  if (tierList.includes(maxTier)) {
+  if (maxTier === 1 && tierList.includes(1)) {
+    // Campeonato estadual único: não re-sortear o grupo inteiro.
+    const outgoing = uniqueNames(m.relegatedFrom[1] || []);
+    const outgoingKeys = new Set(outgoing.map(normClubName));
+    const stayers = prev(1).filter(name => !outgoingKeys.has(normClubName(name)));
+    mark(stayers);
+    // Quem saiu não volta no mesmo ciclo — vagas vão para clubes de fora do grupo.
+    mark(outgoing);
+    const capacity = tierCapacity(1, code);
+    const lotteryPool = sorted.filter(name => !assigned.has(normClubName(name)));
+    const lotterySlots = Math.max(0, capacity - stayers.length);
+    let lotteryTeams = [];
+    if (lotterySlots > 0) {
+      if (lotteryPool.length <= lotterySlots) {
+        lotteryTeams = [...lotteryPool];
+      } else if (typeof lotteryPick === 'function') {
+        lotteryTeams = lotteryPick(lotteryPool, lotterySlots, { uf: code, userClub });
+      } else {
+        lotteryTeams = lotteryPool.slice(0, lotterySlots);
+      }
+    }
+    const roster = normalizeRoster([...stayers, ...lotteryTeams], capacity, lotteryPool);
+    if (roster.length === capacity) {
+      rosters[1] = roster;
+      mark(rosters[1]);
+    }
+  } else if (tierList.includes(maxTier)) {
     const relegatedIn = uniqueNames(m.relegatedFrom[maxTier - 1] || []);
     const lotteryPool = sorted.filter(c => !assigned.has(normClubName(c)));
     const lotterySlots = Math.max(0, block - relegatedIn.length);
