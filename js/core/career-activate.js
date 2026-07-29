@@ -36,7 +36,7 @@ export function runCareerBootMigration() {
  * @param {string} slotId
  * @param {{ skipProbe?: boolean, reason?: string }} [options]
  */
-export async function activateSlot(slotId, { skipProbe = false, reason = 'activate' } = {}) {
+export async function activateSlot(slotId, { skipProbe = false, reason = 'activate', allowSeedFromActive = true } = {}) {
   runCareerBootMigration();
   await ensureStorageHydrated({ skipProbe, reason: `${reason}-storage` });
 
@@ -50,16 +50,26 @@ export async function activateSlot(slotId, { skipProbe = false, reason = 'activa
     syncActiveSlotFromCache({ slotId: currentId });
   }
 
-  hydrateSlot(slotId);
+  hydrateSlot(slotId, { allowSeedFromActive });
   repairSlotFromLocalStorage(slotId);
   return { slotId, activeSlotId: getActiveSlotId() };
 }
 
 /** Boot completo antes de index.html (auth + slot opcional). */
-export async function prepareGameSession({ skipProbe = false, slotId = null } = {}) {
+export async function prepareGameSession({
+  skipProbe = false,
+  slotId = null,
+  allowSeedFromActive = true,
+} = {}) {
   runCareerBootMigration();
   const storage = await ensureStorageHydrated({ skipProbe, reason: 'game-session' });
-  if (slotId) await activateSlot(slotId, { skipProbe: true, reason: 'game-session-slot' });
+  if (slotId) {
+    await activateSlot(slotId, {
+      skipProbe: true,
+      reason: 'game-session-slot',
+      allowSeedFromActive,
+    });
+  }
   return storage;
 }
 

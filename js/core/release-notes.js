@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.40',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T15:30:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Save na nuvem',
+        items: [
+          'Corrigido save de nova carreira que ficava só no navegador — a nuvem agora recebe o save completo do slot antes de reduzir o local.',
+          'Ao criar carreira nova, o jogo não reidrata mais uma carreira antiga da nuvem no slot vazio.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.35',
     date: '2026-07-29',
     publishedAt: '2026-07-29T14:45:00-04:00',

@@ -11,6 +11,7 @@ import {
 } from './constants.js';
 import { readJson, writeJson, getStoragePressure } from './save.js';
 import { isCloudStorageActive, queueCloudSave } from './storage-api.js';
+import { isLocalStorageCheckpoint } from './local-save-checkpoint.js';
 
 const INDEX_VERSION = 1;
 
@@ -137,6 +138,12 @@ function copyStorageKey(src, dest, { scheduleSlotSync = false, clearDestIfMissin
     }
     return;
   }
+  // Checkpoint local não pode sobrescrever o bundle completo (fonte da nuvem).
+  if (isLocalStorageCheckpoint(value)) {
+    const existing = readJson(dest, null);
+    if (existing && !isLocalStorageCheckpoint(existing)) return;
+    return;
+  }
   writeJson(dest, value, { scheduleSlotSync });
 }
 
@@ -219,7 +226,7 @@ export function syncActiveSlotFromCache({ name, slotId: forcedSlotId } = {}) {
   return true;
 }
 
-export function hydrateSlot(slotId) {
+export function hydrateSlot(slotId, { allowSeedFromActive = true } = {}) {
   if (!slotId) return false;
   const currentId = getActiveSlotId();
   if (currentId && currentId !== slotId) {
@@ -230,8 +237,15 @@ export function hydrateSlot(slotId) {
   }
   setActiveSlotId(slotId);
   const bundle = slotBundleKeys(slotId);
-  if (!readJson(bundle.career, null)) {
-    copyActiveKeysToBundle(slotId, { force: true });
+  const hasBundleCareer = !!readJson(bundle.career, null);
+  // Slot novo/vazio: não copiar carreira ativa (pode ser save antigo da nuvem).
+  if (!hasBundleCareer && allowSeedFromActive) {
+    const activeCareer = readJson(SAVE_KEYS.career, null);
+    if (activeCareer && !isLocalStorageCheckpoint(activeCareer) && !activeCareer.freshWorld) {
+      copyActiveKeysToBundle(slotId, { force: true });
+    }
+  } else if (!hasBundleCareer) {
+    /* leave empty — nova carreira */
   }
   copyBundleToActiveKeys(slotId);
   return true;

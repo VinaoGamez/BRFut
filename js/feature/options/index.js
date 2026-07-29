@@ -1,4 +1,4 @@
-import { MODULE_VERSIONS, FEATURES, SITE_MAINTENANCE, SAVE_KEYS } from '../../core/constants.js';
+import { MODULE_VERSIONS, FEATURES, SITE_MAINTENANCE, SAVE_KEYS, CAREER_INDEX_KEY, CAREER_SLOT_LIMIT, slotBundleKeys } from '../../core/constants.js';
 import '../../../css/new-career-modal.css';
 import { initReleaseNotesViewer, renderOptionsUpdateSummary } from '../../ui/release-notes-viewer.js';
 import { createTesterHubFeature } from '../tester-hub/index.js';
@@ -14,7 +14,7 @@ import {
   listAutosaveOptions,
   mergePreferencesIntoCareer,
 } from '../../core/save-preferences.js';
-import { endBrowserSession, isCloudStorageActive, queueCloudSave, getAuthToken } from '../../core/storage-api.js';
+import { endBrowserSession, isCloudStorageActive, queueCloudSave, getAuthToken, flushCloudSyncAsync } from '../../core/storage-api.js';
 import { clearCareerData } from '../../core/save-clear.js';
 import {
   canCreateSlot,
@@ -22,7 +22,6 @@ import {
   getActiveSlotId,
   syncActiveSlotFromCache,
 } from '../../core/career-slot-manager.js';
-import { CAREER_SLOT_LIMIT } from '../../core/constants.js';
 import {
   clearSessionCareerData,
   markFreshCareerBoot,
@@ -454,7 +453,14 @@ export function createOptionsFeature(deps) {
     markFreshCareerBoot();
     syncActiveSlotFromCache();
     if (isCloudStorageActive()) {
-      queueCloudSave(SAVE_KEYS.career, careerPayload);
+      const slotId = getActiveSlotId();
+      const cloudKeys = [SAVE_KEYS.career, CAREER_INDEX_KEY];
+      if (slotId) cloudKeys.push(...Object.values(slotBundleKeys(slotId)));
+      try {
+        await flushCloudSyncAsync({ forceLocalKeys: cloudKeys });
+      } catch {
+        queueCloudSave(SAVE_KEYS.career, careerPayload);
+      }
     }
     $('#newGameModal').classList.add('hidden');
     $('#optionsModal').classList.add('hidden');

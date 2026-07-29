@@ -2,7 +2,18 @@
  * Cliente da API BR Fut (porta 5081 / api.brfut.com.br).
  * Espelha saves do localStorage em Documentos/BR Fut quando o usuário está logado.
  */
-import { SAVE_KEYS, LEGACY_SAVE_KEYS, ALL_SYNCABLE_SAVE_KEYS, BRFUT_API_ORIGIN, saveKeyVariants, CAREER_INDEX_KEY, isSyncableSaveKey, isSlotBundleKey, slotBundleKeys } from './constants.js';
+import {
+  SAVE_KEYS,
+  LEGACY_SAVE_KEYS,
+  ALL_SYNCABLE_SAVE_KEYS,
+  BRFUT_API_ORIGIN,
+  saveKeyVariants,
+  CAREER_INDEX_KEY,
+  ACTIVE_SLOT_SESSION_KEY,
+  isSyncableSaveKey,
+  isSlotBundleKey,
+  slotBundleKeys,
+} from './constants.js';
 import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves, mergeCareerSaves } from './save-sync.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
 import {
@@ -263,6 +274,59 @@ function readLocalSave(key) {
   return readJson(key, null);
 }
 
+function resolveActiveSlotId() {
+  try {
+    const session = sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY);
+    if (session) return session;
+  } catch {
+    /* ignore */
+  }
+  return readLocalSave(CAREER_INDEX_KEY)?.activeSlotId || null;
+}
+
+/**
+ * Espelha o save completo no bundle do slot ativo antes do trim local.
+ * Sem isso o checkpoint sobrescreve o slot e a nuvem perde o save jogável.
+ */
+function mirrorFullSaveToActiveSlot(key, fullValue) {
+  if (!fullValue || isLocalStorageCheckpoint(fullValue)) return null;
+  if (
+    key !== SAVE_KEYS.career &&
+    key !== SAVE_KEYS.season &&
+    key !== SAVE_KEYS.playerHistory &&
+    key !== SAVE_KEYS.liveMatch
+  ) {
+    return null;
+  }
+  const slotId = resolveActiveSlotId();
+  if (!slotId) return null;
+  const bundle = slotBundleKeys(slotId);
+  const dest =
+    key === SAVE_KEYS.career
+      ? bundle.career
+      : key === SAVE_KEYS.season
+        ? bundle.season
+        : key === SAVE_KEYS.playerHistory
+          ? bundle.playerHistory
+          : bundle.liveMatch;
+  try {
+    localStorage.setItem(dest, JSON.stringify(fullValue));
+    return { key: dest, value: fullValue };
+  } catch {
+    return null;
+  }
+}
+
+async function putCloudSaveValue(key, value) {
+  const prepared = prepareCloudSavePayload(key, value);
+  await authedFetch(`/api/saves/${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ value: prepared }),
+  });
+  rememberRemoteSave(key, prepared);
+  return prepared;
+}
+
 function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
   if (!saves || typeof saves !== 'object') return;
   const normalized = normalizeRemoteSaveKeys(saves);
@@ -277,6 +341,14 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
         localStorage.setItem(key, JSON.stringify(winner));
       } catch {
         /* ignore quota during hydrate */
+      }
+      if (
+        isCloudStorageActive() &&
+        localValue &&
+        winner === localValue &&
+        saveFreshness(localValue, key) > Math.max(saveFreshness(remoteValue, key), remoteEnvelopeAt || 0)
+      ) {
+        queueCloudSave(key, localValue);
       }
       return;
     }
@@ -400,8 +472,10 @@ function flushSyncQueueKeepalive() {
           scheduleCloudSync();
           return;
         }
-        applyLocalCheckpointTrim(key, value);
         rememberRemoteSave(key, prepareCloudSavePayload(key, value));
+        const mirror = mirrorFullSaveToActiveSlot(key, value);
+        if (mirror) queueCloudSave(mirror.key, mirror.value);
+        applyLocalCheckpointTrim(key, value);
       })
       .catch(error => {
         if (handleSyncAuthFailure(error)) return;
@@ -480,17 +554,38 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
   ];
 
   const results = [];
+  const mirroredSlotKeys = new Set();
   for (const key of orderedKeys) {
     const value = batch.get(key);
     if (value == null) continue;
-    const prepared = prepareCloudSavePayload(key, value);
     const bodyChars = estimateCloudBodyChars(key, value);
     try {
-      await authedFetch(`/api/saves/${encodeURIComponent(key)}`, {
-        method: 'PUT',
-        body: JSON.stringify({ value: prepared }),
-      });
-      rememberRemoteSave(key, prepared);
+      await putCloudSaveValue(key, value);
+      const mirror = mirrorFullSaveToActiveSlot(key, value);
+      if (mirror && !mirroredSlotKeys.has(mirror.key) && !batch.has(mirror.key)) {
+        mirroredSlotKeys.add(mirror.key);
+        try {
+          await putCloudSaveValue(mirror.key, mirror.value);
+          results.push({
+            key: mirror.key,
+            ok: true,
+            bodyChars: estimateCloudBodyChars(mirror.key, mirror.value),
+            slimmed: false,
+          });
+        } catch (mirrorError) {
+          syncQueue.set(mirror.key, mirror.value);
+          scheduleCloudSync();
+          results.push({
+            key: mirror.key,
+            ok: false,
+            bodyChars: estimateCloudBodyChars(mirror.key, mirror.value),
+            slimmed: false,
+            status: mirrorError?.status || 0,
+            code: mirrorError?.code || 'sync_failed',
+            message: mirrorError?.message || 'Falha ao espelhar slot',
+          });
+        }
+      }
       applyLocalCheckpointTrim(key, value);
       results.push({ key, ok: true, bodyChars, slimmed: bodyChars < rawPayloadChars(value) });
     } catch (error) {
@@ -563,13 +658,10 @@ function flushSyncQueue() {
   const batch = new Map(syncQueue);
   syncQueue.clear();
   batch.forEach((value, key) => {
-    const prepared = prepareCloudSavePayload(key, value);
-    authedFetch(`/api/saves/${encodeURIComponent(key)}`, {
-      method: 'PUT',
-      body: JSON.stringify({ value: prepared }),
-    })
+    putCloudSaveValue(key, value)
       .then(() => {
-        rememberRemoteSave(key, prepared);
+        const mirror = mirrorFullSaveToActiveSlot(key, value);
+        if (mirror) queueCloudSave(mirror.key, mirror.value);
         applyLocalCheckpointTrim(key, value);
       })
       .catch(error => {

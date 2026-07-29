@@ -12,7 +12,7 @@ import {
 } from '../../core/career-slot-manager.js';
 import { activateSlot } from '../../core/career-activate.js';
 import { clearCareerData } from '../../core/save-clear.js';
-import { markSkipSessionEndOnce } from '../../core/save.js';
+import { markSkipSessionEndOnce, markFreshCareerBoot } from '../../core/save.js';
 import { CAREER_SLOT_LIMIT } from '../../core/constants.js';
 
 function ensureModalRoot() {
@@ -114,6 +114,7 @@ export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } 
       return;
     }
     markSkipSessionEndOnce();
+    markFreshCareerBoot();
     await clearCareerData('session');
     const slotId = createNewSlot();
     if (!slotId) return;

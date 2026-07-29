@@ -176,9 +176,20 @@ export function slimPlayerHistoryForCloudUpload(history) {
 }
 
 export function prepareCloudSavePayload(key, value) {
-  if (key === SAVE_KEYS.career) return slimCareerForCloudUpload(value);
-  if (key === SAVE_KEYS.season) return slimSeasonForCloudUpload(value);
-  if (key === SAVE_KEYS.playerHistory) return slimPlayerHistoryForCloudUpload(value);
+  if (!value || typeof value !== 'object') return value;
+  // Prefere o save completo quando cabe; slim só como fallback de tamanho.
+  if (key === SAVE_KEYS.career) {
+    if (payloadChars(value) <= CLOUD_PAYLOAD_TARGET) return value;
+    return slimCareerForCloudUpload(value);
+  }
+  if (key === SAVE_KEYS.season) {
+    if (payloadChars(value) <= CLOUD_PAYLOAD_TARGET) return value;
+    return slimSeasonForCloudUpload(value);
+  }
+  if (key === SAVE_KEYS.playerHistory) {
+    if (payloadChars(value) <= CLOUD_PAYLOAD_TARGET) return value;
+    return slimPlayerHistoryForCloudUpload(value);
+  }
   return value;
 }
 

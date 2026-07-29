@@ -18,6 +18,7 @@ import {
   consumeCareerReloadPending,
   hasLocalCareerSave,
   markCareerReloadPending,
+  markFreshCareerBoot,
   markSkipSessionEndOnce,
   purgeAllCareerStorage,
   shouldPreserveAuthOnPageHide,
@@ -114,6 +115,7 @@ if (SITE_MAINTENANCE.enabled) {
       const params = new URLSearchParams(location.search);
       const slotParam = params.get('slot');
       const isNewCareerBoot = params.has('novo');
+      if (isNewCareerBoot) markFreshCareerBoot();
 
       const token = getAuthToken();
 
@@ -124,7 +126,11 @@ if (SITE_MAINTENANCE.enabled) {
           redirectToHomeLanding();
           return;
         }
-        await prepareGameSession({ skipProbe: true, slotId: slotParam || null });
+        await prepareGameSession({
+          skipProbe: true,
+          slotId: slotParam || null,
+          allowSeedFromActive: !isNewCareerBoot,
+        });
         if (!isNewCareerBoot) {
           const slotCheck = slotParam ? ensureSlotPlayable(slotParam) : { ok: hasLocalCareerSave() };
           if (!slotCheck.ok) {
@@ -139,7 +145,10 @@ if (SITE_MAINTENANCE.enabled) {
       }
 
       consumeCareerReloadPending();
-      await prepareGameSession({ slotId: slotParam || null });
+      await prepareGameSession({
+        slotId: slotParam || null,
+        allowSeedFromActive: !isNewCareerBoot,
+      });
       if (!isNewCareerBoot) {
         const slotCheck = slotParam ? ensureSlotPlayable(slotParam) : { ok: hasLocalCareerSave() };
         if (!slotCheck.ok) {
