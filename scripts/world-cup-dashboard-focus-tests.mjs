@@ -4,6 +4,7 @@ import {
   isWorldCupUserScheduleEntry,
 } from '../js/engine/world-cup/dashboard-context.js';
 import { WORLD_CUP_COMPETITION } from '../js/engine/world-cup-calendar.js';
+import { createUserScheduleEngine } from '../js/engine/user-schedule.js';
 
 const nt = 'Brasil';
 const club = 'Vinaz Athletic Futebol';
@@ -73,5 +74,63 @@ assert('WC command window excludes dates before and after',
   !isWorldCupCommandWindow(new Date('2026-07-20T00:00:00')));
 
 assert('wc entry detect', isWorldCupUserScheduleEntry(wcEntry, nt));
+
+const aprilClubGame = {
+  home: club,
+  away: 'Náuas',
+  competition: 'D',
+  round: 4,
+  date: new Date('2026-04-30T20:00:00'),
+};
+const juneWorldCupGame = {
+  home: nt,
+  away: 'Paraguai',
+  competition: WORLD_CUP_COMPETITION,
+  round: 1,
+  date: new Date('2026-06-12T22:00:00'),
+};
+const leagueRounds = Array.from({ length: 10 }, () => []);
+leagueRounds[3] = [aprilClubGame];
+let savedCareerDate = new Date('2026-04-30T12:00:00');
+const scheduleEngine = createUserScheduleEngine({
+  fixtureDetails: game => ({ date: new Date(game.date) }),
+  getUserClub: () => club,
+  getUserDivision: () => 'D',
+  getUserNationalTeamName: () => nt,
+  getChampionshipFixtures: () => leagueRounds,
+  getCopaDoBrasilFixtures: () => [],
+  getRecopaFixtures: () => [],
+  getWorldCupCompetition: () => ({ groupFixtures: [juneWorldCupGame], knockoutFixtures: [] }),
+  getWorldCupAllFixtures: competition => [
+    ...(competition.groupFixtures || []),
+    ...(competition.knockoutFixtures || []),
+  ],
+  getStateLeagueEngine: () => ({
+    getUserFixtures: () => [],
+    isGameComplete: () => false,
+  }),
+  getSavedNewGame: () => null,
+  getSeasonRoundHistory: () => [],
+  userLeaguePlayed: () => 3,
+  userGroupStageComplete: () => false,
+  getNationalCompetitionsD: () => ({ fixtures: leagueRounds }),
+  getCareerCalendarDate: () => savedCareerDate,
+  advanceCareerCalendarTo: date => {
+    savedCareerDate = new Date(date);
+  },
+  rescheduleAllCupFixtures: () => {},
+});
+
+assert(
+  'accepted selection does not jump over pending club fixture',
+  scheduleEngine.nextPendingUserEntry()?.game === aprilClubGame,
+);
+
+savedCareerDate = new Date('2026-05-01T12:00:00');
+assert(
+  'affected save rewinds to overdue club fixture',
+  scheduleEngine.ensureCalendarMatchConsistency() &&
+  savedCareerDate.toISOString().slice(0, 10) === '2026-04-30',
+);
 
 process.exit(failed ? 1 : 0);

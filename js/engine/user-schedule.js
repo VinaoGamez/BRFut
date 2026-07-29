@@ -194,12 +194,9 @@ export function createUserScheduleEngine({
       const wc = pending.find(entry => isWorldCupFixture(entry.game));
       if (wc) return wc;
     }
-    const next = pending[0];
-    if (next && !isWorldCupFixture(next.game)) {
-      const wc = pending.find(entry => isWorldCupFixture(entry.game));
-      if (wc) return wc;
-    }
-    return next || nextLeagueUserEntry();
+    // Fora da janela bloqueada, respeita a ordem cronológica. Aceitar uma
+    // seleção não pode saltar os jogos do clube até a estreia na Copa.
+    return pending[0] || nextLeagueUserEntry();
   };
 
   const isPendingFixtureOverdue = entry => {

@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.45',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T18:55:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Calendário / Copa do Mundo',
+        items: [
+          'A agenda volta a priorizar os jogos pendentes do clube antes da estreia da seleção.',
+          'Saves afetados retornam ao primeiro jogo atrasado do clube para permitir a continuação da temporada.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.40',
     date: '2026-07-29',
     publishedAt: '2026-07-29T18:40:00-04:00',
