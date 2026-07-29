@@ -5,7 +5,7 @@ import goalCrowdUrl from '../../../assets/sounds/match-live/goal-crowd.mp3?url';
 import penaltyMissCrowdUrl from '../../../assets/sounds/match-live/penalty-miss-crowd.mp3?url';
 import stadiumAmbientUrl from '../../../assets/sounds/match-live/stadium-ambient.mp3?url';
 
-const STORAGE_KEY = 'matchday-live-audio';
+const STORAGE_KEY = 'brfut-live-audio';
 const GOAL_PLAY_MS = 2400;
 const GOAL_FADE_MS = 650;
 const CROWD_PLAY_MS = 2000;

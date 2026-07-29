@@ -5,7 +5,7 @@ import {
 import { NATIONAL_TEAMS, nationalTeamFlagUrl, nationalTeamPower } from '../engine/national-teams.js';
 import { preloadCompetitionTrophy } from '../ui/competition-trophies.js';
 
-const LAYOUT_KEY = 'matchday-nt-offers-lab-layout-v3';
+const LAYOUT_KEY = 'brfut-nt-offers-lab-layout-v3';
 
 const WEEK_LABELS = {
   1: 'Março · semana da 1ª proposta',

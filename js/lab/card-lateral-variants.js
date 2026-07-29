@@ -22,8 +22,8 @@ export const LATERAL_CARD_VARIANTS = [
   { id: 'lat-10', label: '10 · Posse de bola', art: art10 },
 ];
 
-const STORAGE_KEY = 'matchday-card-lat-variant';
-const DELETED_STORAGE_KEY = 'matchday-card-lat-deleted';
+const STORAGE_KEY = 'brfut-card-lat-variant';
+const DELETED_STORAGE_KEY = 'brfut-card-lat-deleted';
 
 function readDeletedIds() {
   try {

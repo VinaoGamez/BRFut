@@ -1,6 +1,6 @@
 import './security/https-upgrade.js';
 import './security/tester-hardening.js';
-import { BUILD_VERSION, SAVE_KEYS, BRFUT_API_ORIGIN } from './core/constants.js';
+import { BUILD_VERSION, SAVE_KEYS, BRFUT_API_ORIGIN, SITE_MAINTENANCE } from './core/constants.js';
 import { SPONSOR_EXTERNAL_LINKS } from './core/sponsor-links.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
 import { createTesterHubFeature } from './feature/tester-hub/index.js';
@@ -14,7 +14,34 @@ import {
   hasLocalCareerSave,
   markCareerReloadPending,
   markSkipSessionEndOnce,
+  migrateLegacyStorageKeys,
+  purgeAllCareerStorage,
 } from './core/save.js';
+import {
+  migrateLegacySingleSaveToSlots,
+  setActiveSlotId,
+  hydrateSlot,
+} from './core/career-slot-manager.js';
+import { mountCareerSlotsUi, lastSaveHintText } from './feature/career-slots/index.js';
+import { hydrateSlotBundleFromCloud, initStorageBackend } from './core/storage-api.js';
+
+function renderMaintenanceOnly() {
+  document.body.classList.add('home-maintenance-mode');
+  document.title = 'BR Fut · Manutenção';
+  const shell = document.querySelector('.home-shell');
+  if (shell) {
+    shell.innerHTML = `<main class="home-maintenance-only"><p class="home-maintenance-text">${SITE_MAINTENANCE.message}</p></main>`;
+  }
+}
+
+if (SITE_MAINTENANCE.enabled) {
+  purgeAllCareerStorage();
+  endBrowserSession();
+  renderMaintenanceOnly();
+} else {
+  migrateLegacyStorageKeys();
+  migrateLegacySingleSaveToSlots();
+}
 
 const SPONSOR_LOGO_URLS = Object.fromEntries(
   Object.entries(
@@ -52,6 +79,8 @@ const SPONSOR_ORDER = [
 ];
 
 (() => {
+  if (SITE_MAINTENANCE.enabled) return;
+
   ensureAccountModals();
   showUpdateAlertIfNeeded(BUILD_VERSION);
   const $ = selector => document.querySelector(selector);
@@ -81,14 +110,56 @@ const SPONSOR_ORDER = [
 
   const hasCareer = () => {
     try {
-      return !!localStorage.getItem(SAVE_KEYS.career);
+      return !!localStorage.getItem(SAVE_KEYS.career) || careerSlots.hasAnySlot();
     } catch {
       return false;
     }
   };
 
+  const goToGame = ({ slotId, novo = false } = {}) => {
+    const url = new URL('index.html', location.href);
+    if (slotId) url.searchParams.set('slot', slotId);
+    if (novo) url.searchParams.set('novo', '1');
+    markSkipSessionEndOnce();
+    location.href = `${url.pathname}${url.search}`;
+  };
+
+  const careerSlots = mountCareerSlotsUi({
+    onSlotsChanged: () => syncCareerActions(),
+    onStartSlot: slotId => goToGame({ slotId }),
+    onNewCareer: slotId => goToGame({ slotId, novo: true }),
+  });
+
+  const syncCareerActions = ({ loggedIn = null, hasBackend = null } = {}) => {
+    const last = careerSlots.getLastPlayedSlot();
+    const hasSlot = careerSlots.hasAnySlot();
+    const requiresLogin = hasBackend === true;
+    const showCareer = hasSlot && (!requiresLogin || loggedIn === true);
+
+    continueBtn?.classList.toggle('hidden', !showCareer || !last);
+    loadCareerBtn?.classList.toggle('hidden', !showCareer && requiresLogin);
+    if (requiresLogin) {
+      loadCareerBtn?.classList.toggle('hidden', !loggedIn);
+    }
+
+    if (continueBtn && last) {
+      continueBtn.href = `index.html?slot=${encodeURIComponent(last.id)}`;
+    }
+    if (lastSaveHint) {
+      if (last && showCareer) {
+        lastSaveHint.textContent = lastSaveHintText(last);
+        lastSaveHint.classList.remove('hidden');
+      } else {
+        lastSaveHint.textContent = '';
+        lastSaveHint.classList.add('hidden');
+      }
+    }
+  };
+
   const continueBtn = $('#continueBtn');
   const newGameBtn = $('#newGameBtn');
+  const loadCareerBtn = $('#loadCareerBtn');
+  const lastSaveHint = $('#lastSaveHint');
   const loginBtn = $('#loginBtn');
   const careerHint = $('#careerHint');
   const storageHint = $('#homeStorageHint');
@@ -140,28 +211,20 @@ const SPONSOR_ORDER = [
     if (wantsLogin) {
       loginBtn?.classList.toggle('hidden', loggedIn);
       newGameBtn?.classList.toggle('hidden', !loggedIn);
+      loadCareerBtn?.classList.toggle('hidden', !loggedIn);
     } else {
       loginBtn?.classList.add('hidden');
       newGameBtn?.classList.remove('hidden');
+      loadCareerBtn?.classList.remove('hidden');
     }
     syncStorageHint({ loggedIn, hasBackend: wantsLogin && hasBackend });
+    syncCareerActions({ loggedIn, hasBackend: wantsLogin && hasBackend });
   };
 
   const account = mountAccountPanel({
     modal: document.getElementById('accountModal'),
     hasCareer,
     onAuthChange: syncHeroActions,
-    onContinueVisible: visible => continueBtn?.classList.toggle('hidden', !visible),
-    onCareerHint: text => {
-      if (!careerHint) return;
-      if (!text) {
-        careerHint.textContent = '';
-        careerHint.classList.add('hidden');
-        return;
-      }
-      careerHint.textContent = text;
-      careerHint.classList.remove('hidden');
-    },
   });
 
   account.refresh().then(state => {
@@ -170,12 +233,28 @@ const SPONSOR_ORDER = [
       hasBackend: !!state.backend || state.mode === 'cloud',
     });
     if (state.backend || state.mode === 'cloud') startPlayerStatsPolling();
+    careerSlots.renderList();
   });
 
   loginBtn?.addEventListener('click', () => account.openLogin());
 
-  newGameBtn?.addEventListener('click', () => markSkipSessionEndOnce());
-  continueBtn?.addEventListener('click', () => markSkipSessionEndOnce());
+  newGameBtn?.addEventListener('click', () => void careerSlots.startNewCareer());
+  loadCareerBtn?.addEventListener('click', () => careerSlots.openLoadModal());
+  continueBtn?.addEventListener('click', async event => {
+    event.preventDefault();
+    const last = careerSlots.getLastPlayedSlot();
+    if (!last) return;
+    markSkipSessionEndOnce();
+    try {
+      await initStorageBackend({ skipProbe: true });
+      await hydrateSlotBundleFromCloud(last.id);
+    } catch {
+      /* local */
+    }
+    setActiveSlotId(last.id);
+    hydrateSlot(last.id);
+    goToGame({ slotId: last.id });
+  });
 
   const initSponsorRail = () => {
     const track = $('#homeSponsorsTrack');

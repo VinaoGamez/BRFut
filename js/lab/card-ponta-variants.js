@@ -27,8 +27,8 @@ export const PONTA_CARD_VARIANTS = [
   { id: 'pon-10', label: '10 · Sprint amarelo', art: art10 },
 ];
 
-const STORAGE_KEY = 'matchday-card-ponta-variant';
-const DELETED_STORAGE_KEY = 'matchday-card-ponta-deleted';
+const STORAGE_KEY = 'brfut-card-ponta-variant';
+const DELETED_STORAGE_KEY = 'brfut-card-ponta-deleted';
 
 function readDeletedIds() {
   try {
@@ -71,7 +71,7 @@ export function loadPontaVariantId() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved && visiblePontaVariants().some(v => v.id === saved)) return saved;
-    for (const legacyKey of ['matchday-card-pd-variant', 'matchday-card-pe-variant']) {
+    for (const legacyKey of ['brfut-card-pd-variant', 'brfut-card-pe-variant']) {
       const legacy = localStorage.getItem(legacyKey);
       if (legacy && visiblePontaVariants().some(v => v.id === legacy)) return legacy;
     }

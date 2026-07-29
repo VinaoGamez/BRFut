@@ -1,7 +1,7 @@
 import { createSeasonSummaryFeature } from '../feature/season-summary/index.js';
 import { createLayoutEditor } from './layout-editor.js';
 
-const LAYOUT_KEY = 'matchday-season-summary-lab-layout-v1';
+const LAYOUT_KEY = 'brfut-season-summary-lab-layout-v1';
 
 const GOAL_SAMPLES = {
   missed: {

@@ -4,14 +4,16 @@ import { resolve } from 'node:path';
 const isGithubPages = process.env.GITHUB_PAGES === 'true';
 
 /** Mercado ativo em todos os builds (local + GitHub Pages). */
-const enableTransfers = process.env.MATCHDAY_DISABLE_TRANSFERS !== 'true';
+const enableTransfers = process.env.BRFUT_DISABLE_TRANSFERS !== 'true' && process.env.MATCHDAY_DISABLE_TRANSFERS !== 'true';
 /** Origem estadual / campeonato estadual — local e GitHub Pages (opt-out via env). */
-const enableStateLeague = process.env.MATCHDAY_DISABLE_STATE_LEAGUE !== 'true';
+const enableStateLeague = process.env.BRFUT_DISABLE_STATE_LEAGUE !== 'true' && process.env.MATCHDAY_DISABLE_STATE_LEAGUE !== 'true';
 
 export default defineConfig({
   root: '.',
   base: './',
   define: {
+    __BRFUT_ENABLE_TRANSFERS__: JSON.stringify(enableTransfers),
+    __BRFUT_ENABLE_STATE_LEAGUE__: JSON.stringify(enableStateLeague),
     __MATCHDAY_ENABLE_TRANSFERS__: JSON.stringify(enableTransfers),
     __MATCHDAY_ENABLE_STATE_LEAGUE__: JSON.stringify(enableStateLeague),
     __BRFUT_API_ORIGIN__: JSON.stringify(process.env.BRFUT_API_ORIGIN || ''),

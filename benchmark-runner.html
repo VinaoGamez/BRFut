@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <title>Matchday Engine Benchmark</title>
+  <title>BR Fut Engine Benchmark</title>
 </head>
 <body>
   <p id="status">Inicializando motor…</p>
@@ -12,7 +12,7 @@
     const SAMPLE = Number(new URLSearchParams(location.search).get('n')) || 5000;
     const MODE = new URLSearchParams(location.search).get('mode') || 'career';
     if (MODE === 'career') {
-      localStorage.setItem('matchday-new-game', JSON.stringify({
+      localStorage.setItem('brfut-career', JSON.stringify({
         seed: 42424242,
         clubName: 'Atlético Fênix',
         managerName: 'Ricardo Teste',
@@ -22,11 +22,11 @@
         version: 4,
         createdAt: new Date().toISOString()
       }));
-      localStorage.removeItem('matchday-season');
-      localStorage.removeItem('matchday-live-match');
+      localStorage.removeItem('brfut-season');
+      localStorage.removeItem('brfut-live-match');
     } else {
-      localStorage.removeItem('matchday-new-game');
-      localStorage.removeItem('matchday-season');
+      localStorage.removeItem('brfut-career');
+      localStorage.removeItem('brfut-season');
     }
     const status = document.getElementById('status');
     const output = document.getElementById('output');

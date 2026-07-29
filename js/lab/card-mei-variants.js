@@ -26,8 +26,8 @@ export const MEI_CARD_VARIANTS = [
   { id: 'mei-10', label: '10 · Chute branco', art: art10 },
 ];
 
-const STORAGE_KEY = 'matchday-card-mei-variant';
-const DELETED_STORAGE_KEY = 'matchday-card-mei-deleted';
+const STORAGE_KEY = 'brfut-card-mei-variant';
+const DELETED_STORAGE_KEY = 'brfut-card-mei-deleted';
 
 function readDeletedIds() {
   try {

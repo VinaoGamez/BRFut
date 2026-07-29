@@ -2161,7 +2161,7 @@ export const SPONSOR_PARTNER_WEIGHTS = Object.fromEntries(
 );
 
 /** Histórico recente de ofertas (localStorage) para forçar rotação entre partidas. */
-const SPONSOR_OFFER_HISTORY_KEY = 'matchday-sponsor-offer-history';
+const SPONSOR_OFFER_HISTORY_KEY = 'brfut-sponsor-offer-history';
 const SPONSOR_OFFER_HISTORY_LIMIT = 28;
 
 /** Slug do arquivo em assets/sponsors/icons/{slug}.png */

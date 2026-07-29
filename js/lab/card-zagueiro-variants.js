@@ -26,8 +26,8 @@ export const ZAGUEIRO_CARD_VARIANTS = [
   { id: 'zag-14', label: '14 · Condução roxa', art: art14 },
 ];
 
-const STORAGE_KEY = 'matchday-card-zag-variant';
-const DELETED_STORAGE_KEY = 'matchday-card-zag-deleted';
+const STORAGE_KEY = 'brfut-card-zag-variant';
+const DELETED_STORAGE_KEY = 'brfut-card-zag-deleted';
 
 function readDeletedIds() {
   try {

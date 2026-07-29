@@ -9,10 +9,25 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.20',
+    date: '2026-07-29',
+    publishedAt: '2026-07-30T01:55:00-03:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Manutenção',
+        items: [
+          'Servidor em manutenção — acesso ao jogo e login temporariamente fechados.',
+          'Saves locais e de nuvem resetados para validação do novo sistema de múltiplas carreiras.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.15',
     date: '2026-07-29',
     publishedAt: '2026-07-30T01:20:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Rodada',
@@ -26,7 +41,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.4.10',
     date: '2026-07-29',
     publishedAt: '2026-07-30T01:10:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Copa do Mundo',
@@ -49,7 +64,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.4.05',
     date: '2026-07-29',
     publishedAt: '2026-07-30T00:45:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Treinos',
@@ -64,7 +79,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.4.00',
     date: '2026-07-29',
     publishedAt: '2026-07-30T00:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Treinos',
@@ -78,7 +93,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.95',
     date: '2026-07-29',
     publishedAt: '2026-07-30T00:20:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Treinos',
@@ -93,7 +108,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.90',
     date: '2026-07-29',
     publishedAt: '2026-07-30T00:10:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Save na nuvem',
@@ -108,7 +123,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.85',
     date: '2026-07-29',
     publishedAt: '2026-07-29T23:40:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Save na nuvem',
@@ -123,7 +138,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.80',
     date: '2026-07-29',
     publishedAt: '2026-07-29T23:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Convites CMU',
@@ -138,7 +153,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.75',
     date: '2026-07-29',
     publishedAt: '2026-07-29T23:10:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Convites CMU',
@@ -152,7 +167,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.70',
     date: '2026-07-29',
     publishedAt: '2026-07-29T23:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correção crítica de boot',
@@ -167,7 +182,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.65',
     date: '2026-07-29',
     publishedAt: '2026-07-29T22:45:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Novo Jogo e save na nuvem',
@@ -183,7 +198,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.60',
     date: '2026-07-29',
     publishedAt: '2026-07-29T22:35:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Carregamento do save',
@@ -197,7 +212,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.55',
     date: '2026-07-29',
     publishedAt: '2026-07-29T03:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Convites para seleções (CMU)',
@@ -212,7 +227,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.50',
     date: '2026-07-29',
     publishedAt: '2026-07-29T02:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Campeonatos estaduais',
@@ -226,7 +241,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.45',
     date: '2026-07-29',
     publishedAt: '2026-07-29T01:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Save / nuvem',
@@ -241,7 +256,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.40',
     date: '2026-07-29',
     publishedAt: '2026-07-29T00:10:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Save / estadual',
@@ -256,7 +271,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.35',
     date: '2026-07-28',
     publishedAt: '2026-07-28T24:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Save na nuvem',
@@ -271,7 +286,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.30',
     date: '2026-07-28',
     publishedAt: '2026-07-28T23:45:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Save na nuvem',
@@ -286,7 +301,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.25',
     date: '2026-07-28',
     publishedAt: '2026-07-28T23:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Save / sessão',
@@ -301,7 +316,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.20',
     date: '2026-07-28',
     publishedAt: '2026-07-28T23:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Save / sessão',
@@ -316,7 +331,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.15',
     date: '2026-07-28',
     publishedAt: '2026-07-28T22:15:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Save / sessão',
@@ -331,7 +346,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.10',
     date: '2026-07-28',
     publishedAt: '2026-07-28T21:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Calendário',
@@ -345,7 +360,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.05',
     date: '2026-07-28',
     publishedAt: '2026-07-28T20:40:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Central',
@@ -359,7 +374,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.3.00',
     date: '2026-07-28',
     publishedAt: '2026-07-28T19:40:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Elenco',
@@ -373,7 +388,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.95',
     date: '2026-07-28',
     publishedAt: '2026-07-28T19:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Site',
@@ -387,7 +402,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.90',
     date: '2026-07-28',
     publishedAt: '2026-07-28T18:35:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correção',
@@ -401,7 +416,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.85',
     date: '2026-07-28',
     publishedAt: '2026-07-28T18:25:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correção',
@@ -415,7 +430,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.80',
     date: '2026-07-28',
     publishedAt: '2026-07-28T18:15:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Entrada no jogo',
@@ -431,7 +446,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.75',
     date: '2026-07-28',
     publishedAt: '2026-07-28T18:05:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correção',
@@ -446,7 +461,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.70',
     date: '2026-07-28',
     publishedAt: '2026-07-28T17:55:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correção',
@@ -460,7 +475,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.65',
     date: '2026-07-28',
     publishedAt: '2026-07-28T17:45:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Conta e sessão',
@@ -484,7 +499,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.60',
     date: '2026-07-28',
     publishedAt: '2026-07-28T17:15:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Calendário e save',
@@ -499,7 +514,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.55',
     date: '2026-07-28',
     publishedAt: '2026-07-28T17:05:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Progresso e interface',
@@ -515,7 +530,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.50',
     date: '2026-07-28',
     publishedAt: '2026-07-28T16:45:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Partida',
@@ -529,7 +544,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.45',
     date: '2026-07-28',
     publishedAt: '2026-07-28T16:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Elenco e partida',
@@ -544,7 +559,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.40',
     date: '2026-07-28',
     publishedAt: '2026-07-28T16:10:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Segurança',
@@ -559,7 +574,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.35',
     date: '2026-07-28',
     publishedAt: '2026-07-28T15:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Site',
@@ -573,12 +588,12 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.30',
     date: '2026-07-28',
     publishedAt: '2026-07-28T14:55:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Conta e nuvem',
         items: [
-          'Entrada com ENTRAR na welcome — cadastro, login e Google na conta BR Football.',
+          'Entrada com ENTRAR na welcome — cadastro, login e Google na conta BR Fut.',
           'Saves na nuvem quando logado (api.brfut.com.br); contagem de cadastros e jogadores ON.',
           'Opção Salvar login no dispositivo ou sessão só até fechar o navegador.',
         ],
@@ -596,7 +611,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.25',
     date: '2026-07-27',
     publishedAt: '2026-07-27T18:40:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Site e testers',
@@ -625,7 +640,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.20',
     date: '2026-07-26',
     publishedAt: '2026-07-26T15:35:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Treinamento com evolução',
@@ -651,7 +666,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.15',
     date: '2026-07-26',
     publishedAt: '2026-07-26T07:35:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Categoria de Base (beta)',
@@ -696,7 +711,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.10',
     date: '2026-07-26',
     publishedAt: '2026-07-26T01:45:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Elenco e contratos',
@@ -727,7 +742,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.05',
     date: '2026-07-23',
     publishedAt: '2026-07-23T19:20:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Copa do Mundo',
@@ -743,7 +758,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.2.00',
     date: '2026-07-23',
     publishedAt: '2026-07-23T15:10:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Disputa de pênaltis',
@@ -778,7 +793,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.95',
     date: '2026-07-23',
     publishedAt: '2026-07-23T13:12:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Calendário',
@@ -802,7 +817,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.90',
     date: '2026-07-23',
     publishedAt: '2026-07-23T03:15:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Cartas de jogador',
@@ -863,7 +878,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.85',
     date: '2026-07-22',
     publishedAt: '2026-07-22T14:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Calendário · temporada única',
@@ -879,7 +894,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.80',
     date: '2026-07-22',
     publishedAt: '2026-07-22T13:40:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Finanças · contratações',
@@ -907,7 +922,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.75',
     date: '2026-07-22',
     publishedAt: '2026-07-22T12:40:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Calendário · Série D',
@@ -929,7 +944,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.70',
     date: '2026-07-22',
     publishedAt: '2026-07-22T12:12:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correção urgente',
@@ -944,7 +959,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.65',
     date: '2026-07-22',
     publishedAt: '2026-07-22T12:05:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Calendário · datas fixas',
@@ -967,7 +982,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.60',
     date: '2026-07-22',
     publishedAt: '2026-07-22T01:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Calendário · mandos',
@@ -1002,7 +1017,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.55',
     date: '2026-07-21',
     publishedAt: '2026-07-21T21:25:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Estádio · capacidade',
@@ -1024,7 +1039,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.50',
     date: '2026-07-21',
     publishedAt: '2026-07-21T20:55:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Escritório · metas de temporada',
@@ -1055,7 +1070,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.49',
     date: '2026-07-21',
     publishedAt: '2026-07-21T19:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Estádio · visual por divisão',
@@ -1079,7 +1094,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.48',
     date: '2026-07-21',
     publishedAt: '2026-07-21T17:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Estádio',
@@ -1103,7 +1118,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.43',
     date: '2026-07-21',
     publishedAt: '2026-07-21T14:55:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Clima do clube',
@@ -1118,7 +1133,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.38',
     date: '2026-07-21',
     publishedAt: '2026-07-21T13:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Mercado',
@@ -1134,7 +1149,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.33',
     date: '2026-07-20',
     publishedAt: '2026-07-21T00:45:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Empréstimo e falência',
@@ -1155,7 +1170,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.32',
     date: '2026-07-20',
     publishedAt: '2026-07-21T00:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Adiantamento de TV',
@@ -1169,7 +1184,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.31',
     date: '2026-07-20',
     publishedAt: '2026-07-20T23:25:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Empréstimo e falência',
@@ -1184,7 +1199,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.26',
     date: '2026-07-20',
     publishedAt: '2026-07-20T20:50:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Economia',
@@ -1200,7 +1215,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.25',
     date: '2026-07-20',
     publishedAt: '2026-07-20T05:05:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Mercado',
@@ -1214,7 +1229,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.20',
     date: '2026-07-20',
     publishedAt: '2026-07-20T05:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Elenco',
@@ -1226,7 +1241,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.15',
     date: '2026-07-20',
     publishedAt: '2026-07-20T04:55:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Elenco',
@@ -1241,7 +1256,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.10',
     date: '2026-07-20',
     publishedAt: '2026-07-20T04:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Elenco / Prancheta',
@@ -1263,7 +1278,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.05',
     date: '2026-07-20',
     publishedAt: '2026-07-20T03:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Calendário / Save',
@@ -1279,7 +1294,7 @@ export const RELEASE_NOTES = [
     version: 'Alpha V.1.00',
     date: '2026-07-20',
     publishedAt: '2026-07-20T03:15:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Versão',
@@ -1299,7 +1314,7 @@ export const RELEASE_NOTES = [
         items: [
           'Corrigidos crashes da simulação idle e do balanço/próxima temporada (Série D).',
           'Calendário alinhado ao dia de carreira; pós-jogo com AVANÇAR e CLASSIFICAÇÃO sem consumir a rodada.',
-          'Tabelas no visual MatchDay; limpeza mais agressiva quando a cota do localStorage estoura.',
+          'Tabelas no visual BR Fut; limpeza mais agressiva quando a cota do localStorage estoura.',
         ],
       },
     ],
@@ -1308,7 +1323,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-35',
     date: '2026-07-20',
     publishedAt: '2026-07-20T03:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Temporada idle',
@@ -1322,7 +1337,7 @@ export const RELEASE_NOTES = [
         label: 'Pós-jogo e tabelas',
         items: [
           'AVANÇAR no pós-jogo; CLASSIFICAÇÃO não consome a rodada (dá para reabrir PÓS-JOGO).',
-          'Tabelas do campeonato no visual MatchDay (azul); zonas de acesso e linha do seu clube em verde.',
+          'Tabelas do campeonato no visual BR Fut (azul); zonas de acesso e linha do seu clube em verde.',
         ],
       },
       {
@@ -1337,7 +1352,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-34',
     date: '2026-07-20',
     publishedAt: '2026-07-20T01:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Mercado',
@@ -1354,7 +1369,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-33',
     date: '2026-07-20',
     publishedAt: '2026-07-20T01:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Motor de partida',
@@ -1370,7 +1385,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-32',
     date: '2026-07-20',
     publishedAt: '2026-07-20T00:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Central',
@@ -1393,7 +1408,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-31',
     date: '2026-07-20',
     publishedAt: '2026-07-20T00:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Elenco / Evolução',
@@ -1416,7 +1431,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-30',
     date: '2026-07-19',
     publishedAt: '2026-07-19T18:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Central',
@@ -1431,7 +1446,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-29',
     date: '2026-07-19',
     publishedAt: '2026-07-19T17:45:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Central',
@@ -1446,7 +1461,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-28',
     date: '2026-07-19',
     publishedAt: '2026-07-19T17:35:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Relatório / NOTAS',
@@ -1476,7 +1491,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-27',
     date: '2026-07-19',
     publishedAt: '2026-07-19T15:15:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Escritório',
@@ -1491,7 +1506,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-26',
     date: '2026-07-19',
     publishedAt: '2026-07-19T14:50:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Mata-mata',
@@ -1512,7 +1527,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-25',
     date: '2026-07-19',
     publishedAt: '2026-07-19T00:45:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'AO VIVO',
@@ -1545,7 +1560,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-24',
     date: '2026-07-18',
     publishedAt: '2026-07-19T00:15:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'AO VIVO',
@@ -1560,7 +1575,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-23',
     date: '2026-07-18',
     publishedAt: '2026-07-18T23:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Economia',
@@ -1580,7 +1595,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-22',
     date: '2026-07-18',
     publishedAt: '2026-07-18T22:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Motor de partida',
@@ -1595,7 +1610,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-21',
     date: '2026-07-18',
     publishedAt: '2026-07-18T21:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Integridade da partida',
@@ -1618,7 +1633,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-20',
     date: '2026-07-18',
     publishedAt: '2026-07-18T18:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'AO VIVO',
@@ -1642,7 +1657,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-19',
     date: '2026-07-17',
     publishedAt: '2026-07-17T21:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Testers',
@@ -1670,7 +1685,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-18',
     date: '2026-07-17',
     publishedAt: '2026-07-17T20:20:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Estabilidade',
@@ -1693,7 +1708,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-17',
     date: '2026-07-17',
     publishedAt: '2026-07-17T18:45:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1709,7 +1724,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-16',
     date: '2026-07-17',
     publishedAt: '2026-07-17T17:35:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correções',
@@ -1731,7 +1746,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-15',
     date: '2026-07-17',
     publishedAt: '2026-07-17T17:00:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1747,7 +1762,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-14',
     date: '2026-07-17',
     publishedAt: '2026-07-17T16:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correções',
@@ -1762,7 +1777,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-13',
     date: '2026-07-17',
     publishedAt: '2026-07-17T16:20:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correções',
@@ -1777,7 +1792,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-12',
     date: '2026-07-17',
     publishedAt: '2026-07-17T15:50:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1801,7 +1816,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-11',
     date: '2026-07-17',
     publishedAt: '2026-07-17T14:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Melhorias',
@@ -1817,7 +1832,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-10',
     date: '2026-07-17',
     publishedAt: '2026-07-17T13:10:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1849,7 +1864,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-9',
     date: '2026-07-16',
     publishedAt: '2026-07-16T23:15:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1877,7 +1892,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-8',
     date: '2026-07-16',
     publishedAt: '2026-07-16T22:41:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1898,7 +1913,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-7',
     date: '2026-07-16',
     publishedAt: '2026-07-16T22:30:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1919,7 +1934,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-6',
     date: '2026-07-16',
     publishedAt: '2026-07-16T22:18:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1934,7 +1949,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-5',
     date: '2026-07-16',
     publishedAt: '2026-07-16T21:55:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correções',
@@ -1949,7 +1964,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-4',
     date: '2026-07-16',
     publishedAt: '2026-07-16T21:40:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Novidades',
@@ -1970,7 +1985,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-3',
     date: '2026-07-16',
     publishedAt: '2026-07-16T21:20:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correções',
@@ -1992,7 +2007,7 @@ export const RELEASE_NOTES = [
     version: 'alpha-02-tester-2',
     date: '2026-07-16',
     publishedAt: '2026-07-16T20:50:00-03:00',
-    title: 'BR Football foi atualizado',
+    title: 'BR Fut foi atualizado',
     topics: [
       {
         label: 'Correções',

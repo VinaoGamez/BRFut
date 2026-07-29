@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <title>Matchday Validation</title>
+  <title>BR Fut Validation</title>
 </head>
 <body>
   <p id="status">Running…</p>
@@ -76,8 +76,8 @@
         createdAt: new Date().toISOString(),
         version: 4
       };
-      frameWin().localStorage.setItem('matchday-new-game', JSON.stringify(career));
-      frameWin().localStorage.removeItem('matchday-season');
+      frameWin().localStorage.setItem('brfut-career', JSON.stringify(career));
+      frameWin().localStorage.removeItem('brfut-season');
 
       await load('index.html');
       const boot2 = frameCheck(({ doc, $, $$ }) => {
@@ -161,8 +161,8 @@
       check('Calendário — regras treino', calView.trainingRules >= 1, 'count=' + calView.trainingRules);
 
       // 6) Fluxo ?novo=1
-      frameWin().localStorage.removeItem('matchday-new-game');
-      frameWin().localStorage.removeItem('matchday-season');
+      frameWin().localStorage.removeItem('brfut-career');
+      frameWin().localStorage.removeItem('brfut-season');
       await load('index.html?novo=1');
       const novoFlow = frameCheck(({ doc, $ }) => ({
         bootError: doc.documentElement.dataset.bootError || null,
@@ -185,7 +185,7 @@
       await wait(3500);
       const afterCreate = frameCheck(({ doc, $, $$ }) => ({
         bootError: doc.documentElement.dataset.bootError || null,
-        hasSave: !!frameWin().localStorage.getItem('matchday-new-game'),
+        hasSave: !!frameWin().localStorage.getItem('brfut-career'),
         modalHidden: $('#newGameModal')?.classList.contains('hidden'),
         clubName: $('.club strong')?.textContent?.trim(),
         squadRows: $$('#playerList > div').length,

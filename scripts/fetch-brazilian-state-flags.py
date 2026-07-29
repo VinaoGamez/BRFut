@@ -46,7 +46,7 @@ STATE_FILES: dict[str, str] = {
 
 
 def download(url: str) -> bytes | None:
-    req = urllib.request.Request(url, headers={'User-Agent': 'Matchday-Alpha/1.0 (state flags fetch)'})
+    req = urllib.request.Request(url, headers={'User-Agent': 'BRFut/1.0 (state flags fetch)'})
     ctx = ssl.create_default_context()
     try:
         with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:

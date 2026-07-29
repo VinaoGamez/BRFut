@@ -199,7 +199,7 @@ export function saveCardLabRole(roleKey) {
 
   try {
 
-    localStorage.setItem('matchday-card-lab-role', parseCardLabRole(roleKey));
+    localStorage.setItem('brfut-card-lab-role', parseCardLabRole(roleKey));
 
   } catch {
 
@@ -219,7 +219,7 @@ export function loadCardLabRole() {
 
     if (fromUrl) return parseCardLabRole(fromUrl);
 
-    const saved = localStorage.getItem('matchday-card-lab-role');
+    const saved = localStorage.getItem('brfut-card-lab-role');
 
     if (saved) return parseCardLabRole(saved);
 

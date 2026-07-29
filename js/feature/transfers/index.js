@@ -61,8 +61,8 @@ const renderMarketPlayerName = (playerNameCellFn, name, player, { clubName = '',
 };
 
 const COL_STORAGE = {
-  buy: 'matchday-transfers-col-widths-buy',
-  sell: 'matchday-transfers-col-widths-sell-v2',
+  buy: 'brfut-transfers-col-widths-buy',
+  sell: 'brfut-transfers-col-widths-sell-v2',
 };
 
 /** Larguras padrão (%) — compra: 11 colunas */
@@ -122,7 +122,7 @@ const saveColWidths = (key, widths) => {
 };
 
 /**
- * UI do mercado — busca estilo Brasfoot, visual Matchday.
+ * UI do mercado — busca estilo Brasfoot, visual BR Fut.
  */
 export function createTransfersFeature(deps) {
   const {

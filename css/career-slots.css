@@ -1,0 +1,162 @@
+.career-slots-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #050c17cc;
+  backdrop-filter: blur(4px);
+}
+
+.career-slots-modal.hidden {
+  display: none;
+}
+
+.career-slots-card {
+  width: min(520px, 100%);
+  max-height: min(80vh, 640px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #1e4a5c;
+  border-radius: 14px;
+  background: linear-gradient(165deg, #0a1624 0%, #061018 100%);
+  box-shadow: 0 24px 60px #00000080;
+  overflow: hidden;
+}
+
+.career-slots-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid #1e4a5c55;
+}
+
+.career-slots-header h2 {
+  margin: 0;
+  font: 700 1.25rem 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #edf8f5;
+}
+
+.career-slots-close {
+  border: 0;
+  background: transparent;
+  color: #9eb6b8;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.career-slots-list {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.career-slots-empty {
+  margin: 24px 8px;
+  color: #9eb6b8;
+  text-align: center;
+}
+
+.career-slots-item {
+  position: relative;
+  padding: 14px 14px 14px 16px;
+  border: 1px solid #1e4a5c;
+  border-radius: 10px;
+  background: #050c17aa;
+}
+
+.career-slots-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.career-slots-item-head strong {
+  font: 600 1rem 'DM Sans', sans-serif;
+  color: #edf8f5;
+}
+
+.career-slots-badge {
+  font: 600 0.65rem 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #050c17;
+  background: linear-gradient(90deg, #14d5f3, #bbeb27);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.career-slots-item-meta,
+.career-slots-item-date {
+  margin: 0 0 4px;
+  font-size: 0.82rem;
+  color: #9eb6b8;
+}
+
+.career-slots-play {
+  margin-top: 8px;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font: 700 0.85rem 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: #050c17;
+  background: linear-gradient(90deg, #14d5f3, #bbeb27);
+}
+
+.career-slots-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid #1e4a5c55;
+}
+
+.career-slots-footer small {
+  color: #9eb6b8;
+}
+
+.career-slots-new {
+  border: 1px solid #14d5f3;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font: 700 0.82rem 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: #14d5f3;
+  background: transparent;
+}
+
+.career-slots-new:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.home-actions .home-btn.continue-primary {
+  background: linear-gradient(90deg, #14d5f3, #bbeb27);
+  color: #050c17;
+  border-color: transparent;
+}
+
+.home-last-save {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: #9eb6b8;
+}
+
+.home-last-save.hidden {
+  display: none;
+}

@@ -94,7 +94,7 @@ export const DEFAULT_LAYOUTS = {
   mc: cloneLayout(DEFAULT_FOOT_BLOCK),
 };
 
-const STORAGE_PREFIX = 'matchday-card-layout-v20-';
+const STORAGE_PREFIX = 'brfut-card-layout-v20-';
 
 const BACK_HEADER_TEXT_KEYS = ['backLast', 'backRole', 'backClubTag', 'backClubName', 'backOvr'];
 

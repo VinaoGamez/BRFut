@@ -1,8 +1,8 @@
 /**
- * Cliente da API local BR Football (porta 5081).
+ * Cliente da API BR Fut (porta 5081 / api.brfut.com.br).
  * Espelha saves do localStorage em Documentos/BR Fut quando o usuário está logado.
  */
-import { SAVE_KEYS, BRFUT_API_ORIGIN } from './constants.js';
+import { SAVE_KEYS, LEGACY_SAVE_KEYS, ALL_SYNCABLE_SAVE_KEYS, BRFUT_API_ORIGIN, saveKeyVariants, CAREER_INDEX_KEY, isSyncableSaveKey, isSlotBundleKey } from './constants.js';
 import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves, mergeCareerSaves } from './save-sync.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
 import {
@@ -14,7 +14,7 @@ import { consumeFreshCareerBoot } from './save.js';
 
 const AUTH_TOKEN_KEY = 'brfut-auth-token';
 const AUTH_REMEMBER_KEY = 'brfut-auth-remember';
-const SYNCABLE_KEYS = Object.values(SAVE_KEYS);
+const SYNCABLE_KEYS = ALL_SYNCABLE_SAVE_KEYS;
 const SYNC_DEBOUNCE_MS = 400;
 const PRESENCE_INTERVAL_MS = 120_000;
 
@@ -194,12 +194,36 @@ function readLocalSave(key) {
   }
 }
 
+function normalizeRemoteSaveKeys(saves) {
+  if (!saves || typeof saves !== 'object') return saves;
+  const out = { ...saves };
+  Object.entries(LEGACY_SAVE_KEYS).forEach(([logical, legacyKey]) => {
+    const newKey = SAVE_KEYS[logical];
+    if (!newKey || legacyKey === newKey) return;
+    if (out[legacyKey] != null && out[newKey] == null) out[newKey] = out[legacyKey];
+  });
+  return out;
+}
+
 function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
   if (!saves || typeof saves !== 'object') return;
-  Object.entries(saves).forEach(([key, rawEntry]) => {
-    if (!SYNCABLE_KEYS.includes(key)) return;
+  const normalized = normalizeRemoteSaveKeys(saves);
+  Object.entries(normalized).forEach(([key, rawEntry]) => {
     const { value: remoteValue, updatedAt: remoteEnvelopeAt } = normalizeRemoteSaveEntry(rawEntry);
     if (remoteValue == null) return;
+
+    if (key === CAREER_INDEX_KEY || isSlotBundleKey(key)) {
+      const localValue = readLocalSave(key);
+      const winner = pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt);
+      try {
+        localStorage.setItem(key, JSON.stringify(winner));
+      } catch {
+        /* ignore quota during hydrate */
+      }
+      return;
+    }
+
+    if (!Object.values(SAVE_KEYS).includes(key)) return;
 
     const localValue = readLocalSave(key);
     if (skipCareerSeasonHydrate && (key === SAVE_KEYS.career || key === SAVE_KEYS.season)) {
@@ -358,7 +382,7 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
     (batch.size ? [...batch.keys()] : [SAVE_KEYS.season, SAVE_KEYS.career]);
 
   keysToSync.forEach(key => {
-    if (!SYNCABLE_KEYS.includes(key)) return;
+    if (!isSyncableSaveKey(key)) return;
     if (batch.has(key)) return;
     try {
       const raw = localStorage.getItem(key);
@@ -440,6 +464,22 @@ function localSavesSnapshot() {
       /* ignore corrupt entry */
     }
   });
+  try {
+    const indexRaw = localStorage.getItem(CAREER_INDEX_KEY);
+    if (indexRaw) out[CAREER_INDEX_KEY] = JSON.parse(indexRaw);
+  } catch {
+    /* ignore */
+  }
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key || !isSlotBundleKey(key)) continue;
+      const raw = localStorage.getItem(key);
+      if (raw != null) out[key] = JSON.parse(raw);
+    }
+  } catch {
+    /* ignore */
+  }
   return out;
 }
 
@@ -472,13 +512,13 @@ function scheduleCloudSync() {
 }
 
 export function queueCloudSave(key, value) {
-  if (!isCloudStorageActive() || !SYNCABLE_KEYS.includes(key)) return;
+  if (!isCloudStorageActive() || !isSyncableSaveKey(key)) return;
   syncQueue.set(key, value);
   scheduleCloudSync();
 }
 
 export function queueCloudDelete(key) {
-  if (!isCloudStorageActive() || !SYNCABLE_KEYS.includes(key)) return;
+  if (!isCloudStorageActive() || !isSyncableSaveKey(key)) return;
   syncQueue.delete(key);
   authedFetch(`/api/saves/${encodeURIComponent(key)}`, { method: 'DELETE' }).catch(error => {
     console.warn('[brfut] falha ao apagar save na nuvem local', key, error);
@@ -488,9 +528,10 @@ export function queueCloudDelete(key) {
 /** Aguarda DELETE na nuvem (Novo Jogo — evita merge do save antigo no reload). */
 export async function flushCloudDeletesAsync(keys = [SAVE_KEYS.career, SAVE_KEYS.season]) {
   if (!isCloudStorageActive() || !getAuthToken()) return { ok: true, deleted: [] };
+  const expanded = [...new Set(keys.flatMap(k => saveKeyVariants(k)))];
   const results = await Promise.all(
-    keys.map(async key => {
-      if (!SYNCABLE_KEYS.includes(key)) return { key, ok: false };
+    expanded.map(async key => {
+      if (!isSyncableSaveKey(key)) return { key, ok: false };
       try {
         await authedFetch(`/api/saves/${encodeURIComponent(key)}`, { method: 'DELETE' });
         return { key, ok: true };
@@ -738,4 +779,36 @@ export async function fetchAccountAvatarObjectUrl() {
   } catch {
     return '';
   }
+}
+
+/** Baixa uma chave de save da nuvem (slot bundle, índice, etc.). */
+export async function fetchRemoteSaveKey(key) {
+  if (!isCloudStorageActive()) return null;
+  try {
+    const body = await authedFetch(`/api/saves/${encodeURIComponent(key)}`);
+    if (body == null) return null;
+    if (typeof body === 'object' && body !== null && 'value' in body) return body.value;
+    return body;
+  } catch {
+    return null;
+  }
+}
+
+/** Garante bundle local de um slot (baixa da nuvem o que faltar). */
+export async function hydrateSlotBundleFromCloud(slotId) {
+  if (!slotId) return;
+  const { slotBundleKeys } = await import('./constants.js');
+  const bundle = slotBundleKeys(slotId);
+  await Promise.all(
+    Object.values(bundle).map(async key => {
+      if (readLocalSave(key)) return;
+      const remote = await fetchRemoteSaveKey(key);
+      if (remote == null) return;
+      try {
+        localStorage.setItem(key, JSON.stringify(remote));
+      } catch {
+        /* ignore quota */
+      }
+    }),
+  );
 }

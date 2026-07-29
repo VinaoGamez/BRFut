@@ -177,14 +177,14 @@ export function createRoundAdvanceEngine(deps) {
         try {
           deps.refreshSeasonPresentation();
         } catch (error) {
-          console.warn('[matchday] falha ao atualizar UI pós-jogo CMU', error);
+          console.warn('[brfut] falha ao atualizar UI pós-jogo CMU', error);
         }
         deps.renderTeamStatsCard?.();
         resetLiveMatchSession(deps);
         if (deps.evaluateManagerJobRisk()) return;
         if (navigateDashboard) deps.navigateToDashboard();
       } catch (error) {
-        console.warn('[matchday] falha ao avançar pós-jogo CMU', error);
+        console.warn('[brfut] falha ao avançar pós-jogo CMU', error);
         resetLiveMatchSession(deps);
       } finally {
         deps.setRoundCommitted(false);
@@ -253,7 +253,7 @@ export function createRoundAdvanceEngine(deps) {
         try {
           deps.persistPlayerHistory();
         } catch (error) {
-          console.warn('[matchday] histórico de jogadores não gravou', error);
+          console.warn('[brfut] histórico de jogadores não gravou', error);
         }
         deps.serveDisciplineSuspensionsForRound();
         deps.serveAvailability(restDays, roundParticipants);
@@ -310,7 +310,7 @@ export function createRoundAdvanceEngine(deps) {
       try {
         deps.refreshSeasonPresentation();
       } catch (error) {
-        console.warn('[matchday] falha ao atualizar UI pós-rodada', error);
+        console.warn('[brfut] falha ao atualizar UI pós-rodada', error);
       }
       resetLiveMatchSession(deps);
       const sackedNow = deps.evaluateManagerJobRisk();

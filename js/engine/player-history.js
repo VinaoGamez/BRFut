@@ -1,6 +1,6 @@
 /**
  * Histórico de jogadores (todos os clubes) — sobrevive a clearSeasonSave.
- * Chave: matchday-player-history
+ * Chave: brfut-player-history (legado matchday-player-history)
  *
  * matchLogs = buffer só da temporada corrente (cap ≈ nº de jogos do calendário).
  * No finalizeSeason os logs são apagados; permanece players.*.seasons (médias).
@@ -607,7 +607,7 @@ export function createPlayerHistoryEngine(deps = {}) {
     try {
       return savePlayerHistoryStore(store, { matchLogBudget: resolveBudget() });
     } catch (error) {
-      console.warn('[matchday] falha ao persistir histórico de jogadores', error);
+      console.warn('[brfut] falha ao persistir histórico de jogadores', error);
       return false;
     }
   };

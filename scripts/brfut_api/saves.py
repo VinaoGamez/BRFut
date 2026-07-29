@@ -9,8 +9,15 @@ from typing import Any
 
 from .auth import ApiError
 
-# Chaves espelhadas do localStorage do jogo (constants.js SAVE_KEYS).
+# Chaves espelhadas do localStorage do jogo (constants.js SAVE_KEYS + legado Matchday + slots).
 ALLOWED_SAVE_KEYS = frozenset({
+    'brfut-career',
+    'brfut-season',
+    'brfut-training-rules',
+    'brfut-live-match',
+    'brfut-last-seen-build',
+    'brfut-player-history',
+    'brfut-career-index',
     'matchday-new-game',
     'matchday-season',
     'matchday-training-rules',
@@ -19,6 +26,16 @@ ALLOWED_SAVE_KEYS = frozenset({
     'matchday-last-seen-build',
     'matchday-player-history',
 })
+
+SLOT_KEY_RE = re.compile(
+    r'^brfut-slot-[a-zA-Z0-9-]+-(career|season|player-history|live-match)$'
+)
+
+
+def _is_allowed_save_key(key: str) -> bool:
+    if key in ALLOWED_SAVE_KEYS:
+        return True
+    return bool(SLOT_KEY_RE.match(key))
 
 KEY_FILE_RE = re.compile(r'^[a-zA-Z0-9._-]+$')
 
@@ -29,7 +46,7 @@ def _user_dir(root: Path, username: str) -> Path:
 
 
 def _key_path(user_dir: Path, key: str) -> Path:
-    if key not in ALLOWED_SAVE_KEYS:
+    if not _is_allowed_save_key(key):
         raise ApiError(400, 'invalid_key', f'Chave de save não permitida: {key}')
     file_name = key.replace('/', '_') + '.json'
     return user_dir / file_name
@@ -49,7 +66,7 @@ def list_saves(root: Path, username: str) -> list[str]:
     keys: list[str] = []
     for file in user_dir.glob('*.json'):
         key = file.stem
-        if key in ALLOWED_SAVE_KEYS:
+        if _is_allowed_save_key(key):
             keys.append(key)
     return sorted(keys)
 
@@ -116,7 +133,7 @@ def migrate_saves(root: Path, username: str, saves: dict[str, Any], *, overwrite
     imported: list[str] = []
     skipped: list[str] = []
     for key, value in saves.items():
-        if key not in ALLOWED_SAVE_KEYS:
+        if not _is_allowed_save_key(key):
             skipped.append(key)
             continue
         path = _key_path(_user_dir(root, username), key)

@@ -15,7 +15,7 @@ const AUTOSAVE_LABELS = {
   manual: 'Não salvar automaticamente',
 };
 
-const AUTOSAVE_STORAGE_KEY = 'matchday-autosave-mode';
+const AUTOSAVE_STORAGE_KEY = 'brfut-autosave-mode';
 const DEFAULT_AUTOSAVE = AUTOSAVE_MODES.round;
 const DEFAULT_PACE = 'standard';
 

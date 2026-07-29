@@ -219,3 +219,7 @@ export function mountMatchdayCard(container, player, options = {}) {
   });
   return flipper;
 }
+
+/** Aliases BR Fut (nome público). */
+export const renderBrFutCard = renderMatchdayCard;
+export const mountBrFutCard = mountMatchdayCard;

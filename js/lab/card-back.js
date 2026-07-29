@@ -425,7 +425,7 @@ export function renderCardBack(player, meta, { showActions = true, actionMode = 
     <div class="mdc-back-zone" data-zone="backCareer">${renderCareerRow(career)}</div>
     ${showActions ? `<div class="mdc-back-zone" data-zone="actions">${renderCardActions({ enabled: actionsEnabled, mode: actionMode })}</div>` : ''}
     <div class="mdc-back-zone" data-zone="backBrand">
-      <footer class="md-card-back-brand">BR Football · Alpha</footer>
+      <footer class="md-card-back-brand">BR Fut · Alpha</footer>
     </div>
   </div>`;
 }

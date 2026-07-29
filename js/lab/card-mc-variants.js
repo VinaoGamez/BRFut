@@ -26,8 +26,8 @@ export const MC_CARD_VARIANTS = [
   { id: 'mc-10', label: '10 · Chute teal', art: art10 },
 ];
 
-const STORAGE_KEY = 'matchday-card-mc-variant';
-const DELETED_STORAGE_KEY = 'matchday-card-mc-deleted';
+const STORAGE_KEY = 'brfut-card-mc-variant';
+const DELETED_STORAGE_KEY = 'brfut-card-mc-deleted';
 
 function readDeletedIds() {
   try {

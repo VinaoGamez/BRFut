@@ -448,12 +448,13 @@ export function createSeasonSaveWriter({
     let ok = seasonSaveResult.ok;
     if (seasonSaveResult.slimmed && !saveQuotaState.warned) {
       saveQuotaState.warned = true;
-      console.warn('[matchday] save de temporada compactado por cota do navegador.');
+      console.warn('[brfut] save de temporada compactado por cota do navegador.');
     }
     if (!ok && !saveQuotaState.warned) {
       saveQuotaState.warned = true;
-      console.warn('[matchday] Não foi possível salvar a temporada (memória do navegador cheia).');
+      console.warn('[brfut] Não foi possível salvar a temporada (memória do navegador cheia).');
       try {
+        window.dispatchEvent(new CustomEvent('brfut:save-quota', { detail: { key: SAVE_KEYS.season } }));
         window.dispatchEvent(new CustomEvent('matchday:save-quota', { detail: { key: SAVE_KEYS.season } }));
       } catch { /* ignore */ }
     }
@@ -461,7 +462,7 @@ export function createSeasonSaveWriter({
       try {
         persistCareer({ ...savedNewGame });
       } catch (error) {
-        console.warn('[matchday] falha ao espelhar carreira após save de temporada', error);
+        console.warn('[brfut] falha ao espelhar carreira após save de temporada', error);
       }
     }
     return ok;

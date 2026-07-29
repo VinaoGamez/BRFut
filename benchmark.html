@@ -11,7 +11,7 @@
     const sample = params.get('n') || '5000';
     const mode = params.get('mode') || 'career';
     if (mode === 'career') {
-      localStorage.setItem('matchday-new-game', JSON.stringify({
+      localStorage.setItem('brfut-career', JSON.stringify({
         seed: 42424242,
         clubName: 'Atlético Fênix',
         managerName: 'Ricardo Teste',
@@ -21,11 +21,11 @@
         version: 4,
         createdAt: new Date().toISOString()
       }));
-      localStorage.removeItem('matchday-season');
-      localStorage.removeItem('matchday-live-match');
+      localStorage.removeItem('brfut-season');
+      localStorage.removeItem('brfut-live-match');
     } else {
-      localStorage.removeItem('matchday-new-game');
-      localStorage.removeItem('matchday-season');
+      localStorage.removeItem('brfut-career');
+      localStorage.removeItem('brfut-season');
     }
     location.replace(`index.html?engineTest&autoBenchmark=${sample}&pairing=${params.get('pairing')||'mixed'}`);
   </script>

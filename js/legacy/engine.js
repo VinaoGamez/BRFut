@@ -458,7 +458,7 @@ export async function bootEngine({
       await ensureImportClubsForUfs([userOriginUf]);
       hydrateRealClubsFromImport(officialBrazilWorld?.importClubs);
     }catch(err){
-      console.warn('[Matchday] Pirâmide oficial indisponível',err);
+      console.warn('[brfut] Pirâmide oficial indisponível',err);
     }
   }
   let seededState=(savedNewGame?.seed||0)>>>0;
@@ -1700,7 +1700,7 @@ const rosterChangeAlertHolder = { fn: null };
       }
       stampWorldPlayers(clubs,{seed:savedNewGame.seed||0,season:careerSeason});
     }catch(err){
-      console.warn('[Matchday] Elencos estaduais indisponíveis',err);
+      console.warn('[brfut] Elencos estaduais indisponíveis',err);
     }
   }
   Object.values(nationalCompetitions).forEach(competition=>{competition.standings=competition.teams.map(club=>({club,played:0,wins:0,draws:0,losses:0,goalDiff:0,points:0}));});
@@ -2434,7 +2434,7 @@ const rosterChangeAlertHolder = { fn: null };
         });
         nationalTeamClubsByName=byName;
       }catch(error){
-        console.warn('[matchday] elencos seleção (cache)',error);
+        console.warn('[brfut] elencos seleção (cache)',error);
       }
     })();
     return nationalTeamClubsReady;
@@ -3101,7 +3101,7 @@ const rosterChangeAlertHolder = { fn: null };
   };
   const pushMatchDayBrief=game=>{
     if(!game)return;
-    const opponent=opponentForGame(game),details=fixtureDetails(game),briefKey=`matchday-${game.home}-${game.away}-${calendarKey(details.date)}`;
+    const opponent=opponentForGame(game),details=fixtureDetails(game),briefKey=`brfut-${game.home}-${game.away}-${calendarKey(details.date)}`;
     if(matchBriefAlreadySent(briefKey))return;
     const leaders=clubSeasonLeaders(opponent),venue=game.home===userClub?'Casa':'Fora';
     const day=String(details.date.getDate()).padStart(2,'0');
@@ -3391,7 +3391,7 @@ const rosterChangeAlertHolder = { fn: null };
   const trainingOptions={before:['Preparação tática','Treino leve','Descanso'],after:['Recuperação','Descanso total','Análise do jogo'],free:['Treino equilibrado','Treino técnico','Descanso intermitente']};
   let trainingRules=normalizeTrainingRules({before:'Preparação tática',after:'Recuperação',free:'Treino equilibrado'});
   if(validSavedSeason&&savedSeason.trainingRules)trainingRules=normalizeTrainingRules({...trainingRules,...savedSeason.trainingRules});
-  else try{trainingRules=normalizeTrainingRules({...trainingRules,...JSON.parse(localStorage.getItem('matchday-training-rules')||'{}')});}catch{}
+  else try{trainingRules=normalizeTrainingRules({...trainingRules,...JSON.parse(localStorage.getItem('brfut-training-rules')||'{}')});}catch{}
   const fatigueEngine=createFatigueEngine({
     clamp,
     getClubs:()=>clubs,
@@ -4532,7 +4532,7 @@ const rosterChangeAlertHolder = { fn: null };
     }
     const ntClub=getNationalTeamClub(userNationalTeamName);
     if(!ntClub?.roster?.length){
-      console.warn('[matchday] elenco seleção indisponível',userNationalTeamName);
+      console.warn('[brfut] elenco seleção indisponível',userNationalTeamName);
       return false;
     }
     worldCupMatchSquad=cloneNationalTeamRoster(ntClub.roster);
@@ -4776,7 +4776,7 @@ const rosterChangeAlertHolder = { fn: null };
       scoutRoster?.classList.remove('scout-roster-disabled');
       $('#teamScoutModal').classList.remove('hidden');
     }catch(error){
-      console.warn('[matchday] elenco seleção',error);
+      console.warn('[brfut] elenco seleção',error);
     }
   };
   nationalTeamOffersUi=createNationalTeamOffersUiFeature({
@@ -4884,7 +4884,7 @@ const rosterChangeAlertHolder = { fn: null };
     const previewStandings=userDivision==='D'?standingsRowsForDisplay('D'):competition.standings;
     const groupRows=group.map(club=>previewStandings.find(row=>row.club===club)||emptySerieDStanding(club))
       .sort((a,b)=>b.points-a.points||b.wins-a.wins||b.goalDiff-a.goalDiff);
-    // Destaque (grupo do usuário): colunas completas no padrão MatchDay. Compacto: # / clube / J / PTS.
+    // Destaque (grupo do usuário): colunas completas no padrão BR Fut. Compacto: # / clube / J / PTS.
     const head=featured
       ?'<div class="d-group-head d-group-head-full"><span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span></div>'
       :'<div class="d-group-head"><span>#</span><span>CLUBE</span><span>J</span><span>PTS</span></div>';
@@ -5148,7 +5148,7 @@ const rosterChangeAlertHolder = { fn: null };
   
   const championshipSidebar=$('#championshipModal .championship-grid aside');
   championshipSidebar.className='championship-sidebar';
-  // Ordem MatchDay Série D: Grupo primeiro, Rodada depois (confrontos abaixo).
+  // Ordem BR Fut Série D: Grupo primeiro, Rodada depois (confrontos abaixo).
   championshipSidebar.innerHTML=`<section class="championship-upcoming"><div id="championshipGroupNav" class="round-browser-nav championship-group-nav hidden"></div><div class="round-browser-nav"><button id="championshipPreviousRound" class="round-navigation" type="button" aria-label="Rodada anterior">←</button><div><small id="championshipRoundStatus">RODADA PROGRAMADA</small><h3 id="championshipRoundTitle">Rodada ${currentRound}</h3></div><button id="championshipNextRound" class="round-navigation" type="button" aria-label="Próxima rodada">→</button></div><div id="futureMatches"></div></section><section id="championshipLeadersPanel" class="championship-leaders"><label>LÍDERES DO CAMPEONATO<em id="championshipLeaderScope">Série A</em></label><div class="championship-leader-tabs" role="tablist"><button class="active" type="button" data-championship-leader-tab="scorers">ARTILHEIROS</button><button type="button" data-championship-leader-tab="assists">ASSISTÊNCIAS</button></div><div class="championship-leader-head"><span>#</span><span>JOGADOR</span><span id="championshipLeaderValueName">GOLS</span></div><div id="championshipLeadersTable"></div></section>`;
   onClick('#championshipPreviousRound',()=>{championshipRoundView--;renderChampionshipRound();});
   onClick('#championshipNextRound',()=>{championshipRoundView++;renderChampionshipRound();});
@@ -7171,12 +7171,14 @@ const rosterChangeAlertHolder = { fn: null };
   let finishRemainingNationalRounds=()=>{};
   let simulateNonHumanSeasonRemainder=()=>{};
   if(new URLSearchParams(location.search).has('engineTest')||new URLSearchParams(location.search).has('cupAudit')){
-    window.__matchdayEngineBenchmark=(count=1000)=>{
+    window.__brfutEngineBenchmark=(count=1000)=>{
       const sample=Math.max(1,Math.min(10000,Number(count)||1000)),fixtures=futureMatches.length?futureMatches:Object.values(nationalCompetitions[userDivision]?.fixtures||{})[0]||[],totals={matches:sample,goals:0,shots:0,onTarget:0,draws:0,scoreless:0,overFour:0,homeWins:0,awayWins:0,maxGoals:0};
       for(let index=0;index<sample;index++){const fixture=fixtures[index%fixtures.length],result=simulateRoundMatch(fixture.home,fixture.away,fixture),goals=result.homeGoals+result.awayGoals;totals.goals+=goals;totals.shots+=result.data.homeShots+result.data.awayShots;totals.onTarget+=result.data.homeOnTarget+result.data.awayOnTarget;totals.draws+=result.homeGoals===result.awayGoals?1:0;totals.scoreless+=goals===0?1:0;totals.overFour+=goals>=5?1:0;totals.homeWins+=result.homeGoals>result.awayGoals?1:0;totals.awayWins+=result.awayGoals>result.homeGoals?1:0;totals.maxGoals=Math.max(totals.maxGoals,goals);}
       return {...totals,goalsPerMatch:Number((totals.goals/sample).toFixed(3)),shotsPerMatch:Number((totals.shots/sample).toFixed(3)),onTargetPerMatch:Number((totals.onTarget/sample).toFixed(3)),drawRate:Number((totals.draws/sample*100).toFixed(1)),scorelessRate:Number((totals.scoreless/sample*100).toFixed(1)),overFourRate:Number((totals.overFour/sample*100).toFixed(1)),homeWinRate:Number((totals.homeWins/sample*100).toFixed(1)),awayWinRate:Number((totals.awayWins/sample*100).toFixed(1))};
     };
-    window.__matchdayEngineExports={clubs,simulateRoundMatch,savedNewGame:!!savedNewGame,userDivision,createInjuryRecord,normalizeInjury,injuryCatalog,calculateEventInjuryChance,injuryMechanismFromEvent,workloadRisk,recoveryRisk,recordPlayerMatchWorkload,ensureWorkload,injuryInRestrictedPhase,matchPlayerStat,playerRehabMaxMinutes,beginRestrictedReturn,advanceRestrictedRehab,clearInjuryFully,clubMedicalQuality,medicalRecoveryModifier,medicalPreventionModifier,resolveInjuryTreatment,summarizeMatchInjuries,engineTuning,buildSimLineup,engineFoulRisk,engineBlowoutDamp};
+    window.__brfutEngineExports={clubs,simulateRoundMatch,savedNewGame:!!savedNewGame,userDivision,createInjuryRecord,normalizeInjury,injuryCatalog,calculateEventInjuryChance,injuryMechanismFromEvent,workloadRisk,recoveryRisk,recordPlayerMatchWorkload,ensureWorkload,injuryInRestrictedPhase,matchPlayerStat,playerRehabMaxMinutes,beginRestrictedReturn,advanceRestrictedRehab,clearInjuryFully,clubMedicalQuality,medicalRecoveryModifier,medicalPreventionModifier,resolveInjuryTreatment,summarizeMatchInjuries,engineTuning,buildSimLineup,engineFoulRisk,engineBlowoutDamp};
+    window.__matchdayEngineBenchmark=window.__brfutEngineBenchmark;
+    window.__matchdayEngineExports=window.__brfutEngineExports;
   }
   // A tabela da rodada respeita exatamente os confrontos definidos no calendário.
   const normalizeRoundGames=filterPlayableRoundGames;
@@ -7253,7 +7255,7 @@ const rosterChangeAlertHolder = { fn: null };
     renderUserMatchPresentation();
   });
   const saveQuotaState={warned:false};
-  window.addEventListener('matchday:save-quota',()=>{
+  window.addEventListener('brfut:save-quota',()=>{
     if(saveQuotaState.warned)return;
     saveQuotaState.warned=true;
     pushMessage({
@@ -9103,7 +9105,7 @@ const rosterChangeAlertHolder = { fn: null };
     goalsPerMatch.sort((a,b)=>a-b);shotsPerMatch.sort((a,b)=>a-b);xgPerMatch.sort((a,b)=>a-b);homePossession.sort((a,b)=>a-b);
     const n=totals.matches,report={
       sampleSize:n,elapsedMs:Math.round(performance.now()-started),mode:savedNewGame?'career':'demo',division:userDivision,pairing:pairingMode,
-      builtIn:typeof window.__matchdayEngineBenchmark==='function'?window.__matchdayEngineBenchmark(Math.min(n,1000)):null,
+      builtIn:typeof window.__brfutEngineBenchmark==='function'?window.__brfutEngineBenchmark(Math.min(n,1000)):null,
       rates:{
         goalsPerMatch:Number((totals.goals/n).toFixed(3)),homeGoalsPerMatch:Number((totals.homeGoals/n).toFixed(3)),awayGoalsPerMatch:Number((totals.awayGoals/n).toFixed(3)),
         drawRate:Number((totals.draws/n*100).toFixed(2)),homeWinRate:Number((totals.homeWins/n*100).toFixed(2)),awayWinRate:Number((totals.awayWins/n*100).toFixed(2)),
@@ -9228,7 +9230,8 @@ const rosterChangeAlertHolder = { fn: null };
       calendarDate:calendarKey(careerCalendarDate),currentRound,seasonIdle:isUserSeasonIdle(),seasonComplete:seasonComplete(),everInCup,anomalies
     };
   };
-  window.__matchdayRunCupCareerAudit=runCupCareerAudit;
+  window.__brfutRunCupCareerAudit=runCupCareerAudit;
+  window.__matchdayRunCupCareerAudit=window.__brfutRunCupCareerAudit;
   if(new URLSearchParams(location.search).has('cupAudit')&&savedNewGame){
     const audit=runCupCareerAudit();
     document.body.innerHTML=`<pre id="cup-audit-json">${JSON.stringify(audit,null,2)}</pre>`;
@@ -9254,7 +9257,7 @@ const rosterChangeAlertHolder = { fn: null };
   } catch(error) {
     markBootReady();
     document.documentElement.dataset.bootError=String(error?.stack||error);
-    console.error('BR Football failed to initialize',error);
+    console.error('BR Fut failed to initialize',error);
     throw error;
   }
 }

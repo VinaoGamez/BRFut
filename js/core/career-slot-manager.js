@@ -1,0 +1,262 @@
+/**
+ * Múltiplas carreiras por usuário — índice leve + bundles por slot.
+ * Cache ativo: SAVE_KEYS (brfut-career, …). Persistência: brfut-slot-{id}-*.
+ */
+import {
+  SAVE_KEYS,
+  CAREER_INDEX_KEY,
+  CAREER_SLOT_LIMIT,
+  ACTIVE_SLOT_SESSION_KEY,
+  slotBundleKeys,
+} from './constants.js';
+import { readJson, writeJson } from './save.js';
+import { isCloudStorageActive, queueCloudSave } from './storage-api.js';
+
+const INDEX_VERSION = 1;
+
+const emptyIndex = () => ({
+  version: INDEX_VERSION,
+  activeSlotId: null,
+  updatedAt: null,
+  slots: [],
+});
+
+export function readCareerIndex() {
+  const raw = readJson(CAREER_INDEX_KEY, null);
+  if (!raw || !Array.isArray(raw.slots)) return emptyIndex();
+  return { ...emptyIndex(), ...raw, slots: [...raw.slots] };
+}
+
+export function writeCareerIndex(index) {
+  const next = {
+    ...index,
+    version: INDEX_VERSION,
+    updatedAt: new Date().toISOString(),
+    slots: Array.isArray(index.slots) ? index.slots : [],
+  };
+  writeJson(CAREER_INDEX_KEY, next);
+  return next;
+}
+
+export function newSlotId() {
+  const rand = Math.random().toString(36).slice(2, 8);
+  return `${Date.now().toString(36)}-${rand}`;
+}
+
+export function defaultSlotName(career, season) {
+  const club = career?.clubName || career?.foundingClubName || 'Carreira';
+  const year = season?.year ?? career?.season ?? new Date().getFullYear();
+  return `${club} ${year}`;
+}
+
+export function getActiveSlotId() {
+  try {
+    const session = sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY);
+    if (session) return session;
+  } catch {
+    /* ignore */
+  }
+  return readCareerIndex().activeSlotId || null;
+}
+
+export function setActiveSlotId(slotId) {
+  const index = readCareerIndex();
+  index.activeSlotId = slotId || null;
+  writeCareerIndex(index);
+  try {
+    if (slotId) sessionStorage.setItem(ACTIVE_SLOT_SESSION_KEY, slotId);
+    else sessionStorage.removeItem(ACTIVE_SLOT_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getSlotById(slotId) {
+  return readCareerIndex().slots.find(entry => entry.id === slotId) || null;
+}
+
+export function getLastPlayedSlot() {
+  const index = readCareerIndex();
+  if (!index.slots.length) return null;
+  const active = index.activeSlotId
+    ? index.slots.find(entry => entry.id === index.activeSlotId)
+    : null;
+  if (active) return active;
+  return [...index.slots].sort(
+    (a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime(),
+  )[0];
+}
+
+export function canCreateSlot() {
+  return readCareerIndex().slots.length < CAREER_SLOT_LIMIT;
+}
+
+export function buildSlotManifest(slotId, { name, career, season } = {}) {
+  const c = career ?? readJson(SAVE_KEYS.career);
+  const s = season ?? readJson(SAVE_KEYS.season);
+  const existing = getSlotById(slotId);
+  return {
+    id: slotId,
+    name: name || existing?.name || defaultSlotName(c, s),
+    clubName: c?.clubName || c?.foundingClubName || existing?.clubName || '—',
+    division: c?.division || existing?.division || '—',
+    seasonYear: s?.year ?? c?.season ?? existing?.seasonYear ?? null,
+    managerName: c?.managerName || existing?.managerName || '',
+    currentRound: s?.currentRound ?? s?.round ?? existing?.currentRound ?? null,
+    createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function upsertSlotManifest(manifest) {
+  const index = readCareerIndex();
+  const idx = index.slots.findIndex(entry => entry.id === manifest.id);
+  const prev = idx >= 0 ? index.slots[idx] : null;
+  const entry = {
+    ...prev,
+    ...manifest,
+    createdAt: prev?.createdAt || manifest.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  if (idx >= 0) index.slots[idx] = entry;
+  else index.slots.push(entry);
+  index.activeSlotId = manifest.id;
+  writeCareerIndex(index);
+  return entry;
+}
+
+function copyStorageKey(src, dest) {
+  try {
+    const raw = localStorage.getItem(src);
+    if (raw) localStorage.setItem(dest, raw);
+    else localStorage.removeItem(dest);
+  } catch {
+    /* ignore quota */
+  }
+}
+
+export function copyActiveKeysToBundle(slotId) {
+  if (!slotId) return;
+  const bundle = slotBundleKeys(slotId);
+  copyStorageKey(SAVE_KEYS.career, bundle.career);
+  copyStorageKey(SAVE_KEYS.season, bundle.season);
+  copyStorageKey(SAVE_KEYS.playerHistory, bundle.playerHistory);
+  copyStorageKey(SAVE_KEYS.liveMatch, bundle.liveMatch);
+}
+
+export function copyBundleToActiveKeys(slotId) {
+  if (!slotId) return;
+  const bundle = slotBundleKeys(slotId);
+  copyStorageKey(bundle.career, SAVE_KEYS.career);
+  copyStorageKey(bundle.season, SAVE_KEYS.season);
+  copyStorageKey(bundle.playerHistory, SAVE_KEYS.playerHistory);
+  copyStorageKey(bundle.liveMatch, SAVE_KEYS.liveMatch);
+}
+
+function queueBundleCloudSync(slotId) {
+  if (!isCloudStorageActive() || !slotId) return;
+  const bundle = slotBundleKeys(slotId);
+  Object.values(bundle).forEach(key => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) queueCloudSave(key, JSON.parse(raw));
+    } catch {
+      /* ignore corrupt */
+    }
+  });
+}
+
+let slotSyncTimer = 0;
+
+/** Debounce — espelha cache ativo → bundle + índice. */
+export function scheduleActiveSlotSync({ name } = {}) {
+  if (!getActiveSlotId()) return;
+  if (slotSyncTimer) window.clearTimeout(slotSyncTimer);
+  slotSyncTimer = window.setTimeout(() => {
+    slotSyncTimer = 0;
+    syncActiveSlotFromCache({ name });
+  }, 400);
+}
+
+export function syncActiveSlotFromCache({ name } = {}) {
+  const slotId = getActiveSlotId();
+  if (!slotId) return false;
+  copyActiveKeysToBundle(slotId);
+  const manifest = buildSlotManifest(slotId, { name });
+  upsertSlotManifest(manifest);
+  queueBundleCloudSync(slotId);
+  return true;
+}
+
+export function hydrateSlot(slotId) {
+  if (!slotId) return false;
+  setActiveSlotId(slotId);
+  copyBundleToActiveKeys(slotId);
+  return true;
+}
+
+export function createNewSlot({ name } = {}) {
+  if (!canCreateSlot()) return null;
+  const slotId = newSlotId();
+  const manifest = {
+    id: slotId,
+    name: name || 'Nova carreira',
+    clubName: '—',
+    division: '—',
+    seasonYear: null,
+    managerName: '',
+    currentRound: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  const index = readCareerIndex();
+  index.slots.push(manifest);
+  index.activeSlotId = slotId;
+  writeCareerIndex(index);
+  setActiveSlotId(slotId);
+  return slotId;
+}
+
+/** Save único legado → primeiro slot (boot). */
+export function migrateLegacySingleSaveToSlots() {
+  const index = readCareerIndex();
+  if (index.slots.length > 0) return index;
+
+  const career = readJson(SAVE_KEYS.career);
+  if (!career) return index;
+
+  const season = readJson(SAVE_KEYS.season);
+  const slotId = newSlotId();
+  const manifest = buildSlotManifest(slotId, { career, season });
+  copyActiveKeysToBundle(slotId);
+
+  index.slots.push(manifest);
+  index.activeSlotId = slotId;
+  writeCareerIndex(index);
+  setActiveSlotId(slotId);
+  return index;
+}
+
+export function slotLimitLabel() {
+  const count = readCareerIndex().slots.length;
+  return `${count}/${CAREER_SLOT_LIMIT} saves`;
+}
+
+export function formatSlotDivision(division) {
+  if (!division || division === '—') return '—';
+  return `Série ${division}`;
+}
+
+export function formatSlotUpdatedAt(iso) {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  });
+}

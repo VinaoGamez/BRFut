@@ -542,7 +542,7 @@ function handleExport() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `matchday-custom-clubs-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `brfut-custom-clubs-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
   setStatus('JSON exportado.', 'ok');

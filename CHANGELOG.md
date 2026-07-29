@@ -1,4 +1,4 @@
-# Changelog — Matchday Football
+# Changelog — BR Fut
 
 ## alpha-02-tester-1 (Jul 2026)
 

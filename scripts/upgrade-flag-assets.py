@@ -18,7 +18,7 @@ CDN_MAP = {
 
 
 def fetch(url: str) -> bytes | None:
-    req = urllib.request.Request(url, headers={'User-Agent': 'Matchday-Alpha/1.0'})
+    req = urllib.request.Request(url, headers={'User-Agent': 'BRFut/1.0'})
     ctx = ssl.create_default_context()
     try:
         with urllib.request.urlopen(req, timeout=45, context=ctx) as resp:

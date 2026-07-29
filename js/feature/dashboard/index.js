@@ -1079,7 +1079,7 @@ export function createDashboardFeature(deps) {
         }
         if (typeof advanceTransferCalendar === 'function') advanceTransferCalendar();
       } catch (error) {
-        console.error('[matchday] falha ao avançar calendário', error);
+        console.error('[brfut] falha ao avançar calendário', error);
       }
     };
     if (!advanceHandlerBound) {

@@ -1,4 +1,4 @@
-/* Mercado — busca estilo Brasfoot, personalidade Matchday */
+/* Mercado — busca estilo Brasfoot, personalidade BR Fut */
 
 /* Página preenche o main: só a tabela rola (sem scroll duplo) */
 main > .view.active.transfers-view {
@@ -59,7 +59,7 @@ main > .view.active.transfers-view {
   height: 100%;
   display: block;
   object-fit: contain;
-  /* preto → lima Matchday */
+  /* preto → lima BR Fut */
   filter: invert(86%) sepia(42%) saturate(650%) hue-rotate(28deg) brightness(104%) contrast(98%);
 }
 

@@ -16,6 +16,13 @@ import {
 } from '../../core/save-preferences.js';
 import { endBrowserSession, flushCloudDeletesAsync, isCloudStorageActive, queueCloudSave } from '../../core/storage-api.js';
 import {
+  canCreateSlot,
+  createNewSlot,
+  getActiveSlotId,
+  syncActiveSlotFromCache,
+} from '../../core/career-slot-manager.js';
+import { CAREER_SLOT_LIMIT } from '../../core/constants.js';
+import {
   clearSessionCareerData,
   markFreshCareerBoot,
   markSkipSessionEndOnce,
@@ -162,7 +169,7 @@ export function createOptionsFeature(deps) {
     }
     document.body.insertAdjacentHTML(
       'beforeend',
-      '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.png" alt="BR Football" width="480" height="72"></div><div class="career-welcome-actions"><button id="welcomeLogin" type="button">ENTRAR</button><button id="welcomeNewGame" type="button" class="primary hidden">NOVO JOGO</button></div><p id="welcomeHint" class="career-welcome-hint hidden"></p></div></section>',
+      '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.png" alt="BR Fut" width="480" height="72"></div><div class="career-welcome-actions"><button id="welcomeLogin" type="button">ENTRAR</button><button id="welcomeNewGame" type="button" class="primary hidden">NOVO JOGO</button></div><p id="welcomeHint" class="career-welcome-hint hidden"></p></div></section>',
     );
   };
 
@@ -386,6 +393,15 @@ export function createOptionsFeature(deps) {
     };
     const crest = careerCrestEditor?.getCrest() || null;
     // Impede a sessão atual de regravar o save antigo antes do redirect.
+    const slotFromUrl = new URLSearchParams(location.search).get('slot');
+    let activeSlot = slotFromUrl || getActiveSlotId();
+    if (!activeSlot) {
+      if (!canCreateSlot()) {
+        error.textContent = `Limite de ${CAREER_SLOT_LIMIT} saves por conta.`;
+        return;
+      }
+      activeSlot = createNewSlot();
+    }
     prepareForNewCareer?.();
     markSkipPersistOnce?.();
     if (typeof clearCareerStorage === 'function') clearCareerStorage({ clearTraining: true });
@@ -432,6 +448,7 @@ export function createOptionsFeature(deps) {
       return;
     }
     markFreshCareerBoot();
+    syncActiveSlotFromCache();
     if (isCloudStorageActive()) {
       await flushCloudDeletesAsync([SAVE_KEYS.career, SAVE_KEYS.season]);
       queueCloudSave(SAVE_KEYS.career, careerPayload);

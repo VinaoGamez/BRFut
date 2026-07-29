@@ -1,5 +1,5 @@
 /**
- * Badge "treinador humano" — boneco MatchDay (lima #b6ff38) ao lado do clube do usuário.
+ * Badge "treinador humano" — boneco BR Fut (lima #b6ff38) ao lado do clube do usuário.
  */
 
 export const HUMAN_BADGE_SVG = `<svg class="human-badge-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="7.5" r="3.4"/><path d="M5.2 19.8c.7-4.4 3.5-6.6 6.8-6.6s6.1 2.2 6.8 6.6"/></svg>`;

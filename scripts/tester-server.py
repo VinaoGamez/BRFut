@@ -284,7 +284,7 @@ class TesterHandler(SimpleHTTPRequestHandler):
 
 def main() -> None:
     load_local_env()
-    parser = argparse.ArgumentParser(description='Matchday tester server (hardened)')
+    parser = argparse.ArgumentParser(description='BR Fut tester server (hardened)')
     parser.add_argument('--port', type=int, default=PORT_DEFAULT)
     parser.add_argument('--bind', default='127.0.0.1')
     parser.add_argument(
@@ -309,7 +309,7 @@ def main() -> None:
         mode = 'dist (bundle minificado)'
     else:
         mode = 'fallback (instale Node e rode npm run build para ocultar fontes)'
-    print(f'BR Football tester server em http://{args.bind}:{args.port}/')
+    print(f'BR Fut tester server em http://{args.bind}:{args.port}/')
     print(f'Modo: {mode}')
     print(f'API: http://{args.bind}:{args.port}/api/health')
     cors = allowed_origins()

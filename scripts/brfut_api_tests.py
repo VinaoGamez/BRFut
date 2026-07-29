@@ -47,10 +47,10 @@ class BrfutApiTests(unittest.TestCase):
         self.assertEqual(profile['username'], 'tester')
         resolve_session(self.root, token)
 
-        put_save(self.root, 'tester', 'matchday-new-game', {'clubName': 'Flamengo', 'division': 'A'})
-        data = get_save(self.root, 'tester', 'matchday-new-game')
+        put_save(self.root, 'tester', 'brfut-career', {'clubName': 'Flamengo', 'division': 'A'})
+        data = get_save(self.root, 'tester', 'brfut-career')
         self.assertEqual(data['clubName'], 'Flamengo')
-        self.assertEqual(get_all_saves(self.root, 'tester')['matchday-new-game']['value']['clubName'], 'Flamengo')
+        self.assertEqual(get_all_saves(self.root, 'tester')['brfut-career']['value']['clubName'], 'Flamengo')
 
     def test_http_health_and_auth_flow(self) -> None:
         status, body = self._route('GET', '/api/health')
@@ -67,7 +67,7 @@ class BrfutApiTests(unittest.TestCase):
 
         status, body = self._route(
             'PUT',
-            '/api/saves/matchday-new-game',
+            '/api/saves/brfut-career',
             {'value': {'clubName': 'Santos'}},
             token=token,
         )
@@ -75,7 +75,7 @@ class BrfutApiTests(unittest.TestCase):
 
         status, body = self._route('GET', '/api/saves', token=token)
         self.assertEqual(status, 200)
-        self.assertEqual(body['saves']['matchday-new-game']['value']['clubName'], 'Santos')
+        self.assertEqual(body['saves']['brfut-career']['value']['clubName'], 'Santos')
 
     def test_profile_update(self) -> None:
         register_user(self.root, 'profile1', 'secret1', 'Profile One')

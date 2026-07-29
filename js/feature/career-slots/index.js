@@ -1,0 +1,161 @@
+/**
+ * Modais — lista de carreiras e nova carreira (MVP fase 1).
+ */
+import {
+  canCreateSlot,
+  createNewSlot,
+  formatSlotDivision,
+  formatSlotUpdatedAt,
+  getLastPlayedSlot,
+  hydrateSlot,
+  migrateLegacySingleSaveToSlots,
+  readCareerIndex,
+  slotLimitLabel,
+} from '../../core/career-slot-manager.js';
+import { hydrateSlotBundleFromCloud, initStorageBackend } from '../../core/storage-api.js';
+import { clearSessionCareerData, markSkipSessionEndOnce } from '../../core/save.js';
+import { CAREER_SLOT_LIMIT } from '../../core/constants.js';
+
+function ensureModalRoot() {
+  let root = document.getElementById('careerSlotsModalRoot');
+  if (root) return root;
+  root = document.createElement('div');
+  root.id = 'careerSlotsModalRoot';
+  root.innerHTML = `
+    <div id="loadCareerModal" class="career-slots-modal hidden" role="dialog" aria-modal="true" aria-labelledby="loadCareerTitle">
+      <div class="career-slots-card">
+        <header class="career-slots-header">
+          <h2 id="loadCareerTitle">Suas carreiras</h2>
+          <button type="button" id="closeLoadCareer" class="career-slots-close" aria-label="Fechar">×</button>
+        </header>
+        <div id="loadCareerList" class="career-slots-list"></div>
+        <footer class="career-slots-footer">
+          <small id="loadCareerLimit"></small>
+          <button type="button" id="loadCareerNewBtn" class="career-slots-new">+ Nova carreira</button>
+        </footer>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(root);
+  return root;
+}
+
+function slotCardMarkup(slot, { isLast = false } = {}) {
+  const division = formatSlotDivision(slot.division);
+  const year = slot.seasonYear ? `Temp. ${slot.seasonYear}` : 'Sem temporada';
+  const round = slot.currentRound != null ? ` · Rod. ${slot.currentRound}` : '';
+  const badge = isLast ? '<span class="career-slots-badge">último</span>' : '';
+  return `
+    <article class="career-slots-item" data-slot-id="${slot.id}">
+      <div class="career-slots-item-head">
+        <strong>${slot.name || 'Carreira'}</strong>
+        ${badge}
+      </div>
+      <p class="career-slots-item-meta">${slot.clubName} · ${division} · ${year}${round}</p>
+      <p class="career-slots-item-date">Atualizado: ${formatSlotUpdatedAt(slot.updatedAt)}</p>
+      <button type="button" class="career-slots-play" data-play-slot="${slot.id}">JOGAR</button>
+    </article>
+  `;
+}
+
+/**
+ * @param {object} opts
+ * @param {() => void} [opts.onSlotsChanged]
+ * @param {(slotId: string) => void | Promise<void>} [opts.onStartSlot]
+ * @param {() => void | Promise<void>} [opts.onNewCareer]
+ */
+export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } = {}) {
+  ensureModalRoot();
+  const modal = document.getElementById('loadCareerModal');
+  const listEl = document.getElementById('loadCareerList');
+  const limitEl = document.getElementById('loadCareerLimit');
+  const newBtn = document.getElementById('loadCareerNewBtn');
+
+  const close = () => modal?.classList.add('hidden');
+
+  const renderList = () => {
+    migrateLegacySingleSaveToSlots();
+    const index = readCareerIndex();
+    const lastId = getLastPlayedSlot()?.id;
+    const sorted = [...index.slots].sort(
+      (a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime(),
+    );
+    if (!listEl) return;
+    if (!sorted.length) {
+      listEl.innerHTML = '<p class="career-slots-empty">Nenhuma carreira salva ainda.</p>';
+    } else {
+      listEl.innerHTML = sorted
+        .map(slot => slotCardMarkup(slot, { isLast: slot.id === lastId }))
+        .join('');
+    }
+    if (limitEl) limitEl.textContent = slotLimitLabel();
+    if (newBtn) newBtn.disabled = !canCreateSlot();
+    onSlotsChanged?.();
+  };
+
+  const openLoadModal = () => {
+    renderList();
+    modal?.classList.remove('hidden');
+  };
+
+  const startSlot = async slotId => {
+    if (!slotId) return;
+    markSkipSessionEndOnce();
+    try {
+      await initStorageBackend({ skipProbe: true });
+      await hydrateSlotBundleFromCloud(slotId);
+    } catch {
+      /* offline/local */
+    }
+    hydrateSlot(slotId);
+    close();
+    await onStartSlot?.(slotId);
+  };
+
+  const startNewCareer = async () => {
+    if (!canCreateSlot()) {
+      window.alert(`Limite de ${CAREER_SLOT_LIMIT} saves por conta. Excluir saves entra na fase 2.`);
+      return;
+    }
+    markSkipSessionEndOnce();
+    clearSessionCareerData();
+    const slotId = createNewSlot();
+    if (!slotId) return;
+    close();
+    await onNewCareer?.(slotId);
+  };
+
+  document.getElementById('closeLoadCareer')?.addEventListener('click', close);
+  modal?.addEventListener('click', event => {
+    if (event.target === modal) close();
+  });
+  newBtn?.addEventListener('click', () => void startNewCareer());
+  listEl?.addEventListener('click', event => {
+    const btn = event.target.closest('[data-play-slot]');
+    if (!btn) return;
+    void startSlot(btn.getAttribute('data-play-slot'));
+  });
+
+  return {
+    openLoadModal,
+    startNewCareer,
+    startSlot,
+    renderList,
+    getLastPlayedSlot: () => {
+      migrateLegacySingleSaveToSlots();
+      return getLastPlayedSlot();
+    },
+    hasAnySlot: () => {
+      migrateLegacySingleSaveToSlots();
+      return readCareerIndex().slots.length > 0;
+    },
+  };
+}
+
+export function lastSaveHintText(slot) {
+  if (!slot) return '';
+  const division = formatSlotDivision(slot.division);
+  const year = slot.seasonYear ? `${slot.seasonYear}` : '—';
+  const round = slot.currentRound != null ? ` · Rod. ${slot.currentRound}` : '';
+  return `Último save: "${slot.name}" · ${division} · ${year}${round}`;
+}

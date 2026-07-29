@@ -22,8 +22,8 @@ export const VOLANTE_CARD_VARIANTS = [
   { id: 'vol-10', label: '10 · Condução listrada', art: art10 },
 ];
 
-const STORAGE_KEY = 'matchday-card-vol-variant';
-const DELETED_STORAGE_KEY = 'matchday-card-vol-deleted';
+const STORAGE_KEY = 'brfut-card-vol-variant';
+const DELETED_STORAGE_KEY = 'brfut-card-vol-deleted';
 
 function readDeletedIds() {
   try {

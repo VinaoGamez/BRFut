@@ -30,8 +30,8 @@ export const ATACANTE_CARD_VARIANTS = [
   { id: 'ata-15', label: '15 · Chute vermelho', art: art15 },
 ];
 
-const STORAGE_KEY = 'matchday-card-ata-variant';
-const DELETED_STORAGE_KEY = 'matchday-card-ata-deleted';
+const STORAGE_KEY = 'brfut-card-ata-variant';
+const DELETED_STORAGE_KEY = 'brfut-card-ata-deleted';
 
 function readDeletedIds() {
   try {

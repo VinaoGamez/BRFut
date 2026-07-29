@@ -2,7 +2,7 @@
  * Persistência de carreira — bloqueio de race no Novo Jogo, debounce de temporada, sync de elencos.
  */
 
-import { SAVE_KEYS } from '../core/constants.js';
+import { SAVE_KEYS, CAREER_INDEX_KEY, slotBundleKeys } from '../core/constants.js';
 import {
   MEMORY_LIMITS,
   writeJsonResilient,
@@ -16,6 +16,10 @@ import {
   markCareerReloadPending,
 } from '../core/save.js';
 import { endBrowserSession, flushCloudSync, flushCloudSyncAsync } from '../core/storage-api.js';
+import {
+  getActiveSlotId,
+  syncActiveSlotFromCache,
+} from '../core/career-slot-manager.js';
 import { getAutosaveMode, mergePreferencesIntoCareer, AUTOSAVE_MODES } from '../core/save-preferences.js';
 import { trimWorldRostersForQuota } from './world-rosters.js';
 
@@ -151,9 +155,11 @@ export function createCareerPersistence({
     const seasonLocalOk = persistSeason(true, { flush: false });
     syncCareerRosters();
     const careerLocalOk = persistCareer({ ...getSavedNewGame() });
-    const cloud = await flushCloudSyncAsync({
-      forceLocalKeys: [SAVE_KEYS.career, SAVE_KEYS.season],
-    });
+    syncActiveSlotFromCache();
+    const slotId = getActiveSlotId();
+    const forceLocalKeys = [SAVE_KEYS.career, SAVE_KEYS.season, SAVE_KEYS.playerHistory, CAREER_INDEX_KEY];
+    if (slotId) forceLocalKeys.push(...Object.values(slotBundleKeys(slotId)));
+    const cloud = await flushCloudSyncAsync({ forceLocalKeys });
     const localOk = seasonLocalOk && careerLocalOk;
     return {
       ok: localOk,
@@ -198,8 +204,8 @@ export function createCareerPersistence({
     const flushOnExit = () => {
       let skipForNewGame = false;
       try {
-        if (sessionStorage.getItem('matchday-skip-persist-once')) {
-          sessionStorage.removeItem('matchday-skip-persist-once');
+        if (sessionStorage.getItem('brfut-skip-persist-once')) {
+          sessionStorage.removeItem('brfut-skip-persist-once');
           skipForNewGame = true;
         }
       } catch {

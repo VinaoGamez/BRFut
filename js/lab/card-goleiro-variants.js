@@ -39,9 +39,9 @@ export const GOLEIRO_CARD_VARIANTS = [
 
 
 
-const STORAGE_KEY = 'matchday-card-gol-variant';
+const STORAGE_KEY = 'brfut-card-gol-variant';
 
-const DELETED_STORAGE_KEY = 'matchday-card-gol-deleted';
+const DELETED_STORAGE_KEY = 'brfut-card-gol-deleted';
 
 
 

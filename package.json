@@ -1,8 +1,8 @@
 {
-  "name": "matchday-football-alpha",
+  "name": "brfut-alpha",
   "version": "0.2.0-alpha",
   "private": true,
-  "description": "BR Football — simulador de gestão (Alpha modular)",
+  "description": "BR Fut — simulador de gestão (Alpha modular)",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -18,7 +18,7 @@
     "test:season-goal-live": "node scripts/season-goal-live-tests.mjs",
     "test:player-history": "node scripts/player-history-tests.mjs",
     "test:own-goal-report": "node scripts/own-goal-report-tests.mjs",
-    "deploy:testers": "npm run build && npx wrangler pages deploy dist --project-name matchday-football-alpha --branch main"
+    "deploy:testers": "npm run build && npx wrangler pages deploy dist --project-name brfut-alpha --branch main"
   },
   "devDependencies": {
     "vite": "^6.3.5"

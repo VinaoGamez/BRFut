@@ -6,8 +6,8 @@
 import { readJson, writeJson } from '../core/save.js';
 import { foreignClubUf, isBrazilianClubCountry, normalizeClubCountry } from './club-countries.js';
 
-export const CUSTOM_CLUBS_KEY = 'matchday-custom-clubs';
-export const CREST_STYLE_VERSION_KEY = 'matchday-crest-style-version';
+export const CUSTOM_CLUBS_KEY = 'brfut-custom-clubs';
+export const CREST_STYLE_VERSION_KEY = 'brfut-crest-style-version';
 /** Incremente ao mudar a lógica de randomização em massa. */
 export const CREST_STYLE_VERSION = 1;
 

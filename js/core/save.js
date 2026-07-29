@@ -1,4 +1,4 @@
-import { SAVE_KEYS } from './constants.js';
+import { SAVE_KEYS, LEGACY_SAVE_KEYS, CAREER_INDEX_KEY, isSlotBundleKey } from './constants.js';
 import { normalizeWorldCupHistory } from '../engine/world-cup-history.js';
 import { stampSyncableSave } from './save-sync.js';
 import { isCloudStorageActive, queueCloudDelete, queueCloudSave } from './storage-api.js';
@@ -40,6 +40,43 @@ export function readJson(key, fallback = null) {
   } catch {
     return fallback;
   }
+}
+
+/** Copia chaves legadas Matchday → BR Fut (local + sessionStorage). */
+export function migrateLegacyStorageKeys() {
+  const migrateStore = storage => {
+    if (!storage) return;
+    Object.entries(LEGACY_SAVE_KEYS).forEach(([logical, legacyKey]) => {
+      const newKey = SAVE_KEYS[logical];
+      if (!newKey || legacyKey === newKey) return;
+      try {
+        const legacy = storage.getItem(legacyKey);
+        const current = storage.getItem(newKey);
+        if (legacy && !current) storage.setItem(newKey, legacy);
+      } catch {
+        /* ignore quota */
+      }
+    });
+  };
+  migrateStore(localStorage);
+  migrateStore(sessionStorage);
+  const sessionPairs = [
+    ['brfut-fresh-career-boot', 'matchday-fresh-career-boot'],
+    ['brfut-skip-persist-once', 'matchday-skip-persist-once'],
+    ['brfut-career-reload', 'matchday-career-reload'],
+    ['brfut-skip-session-end', 'matchday-skip-session-end'],
+    ['brfut-autosave-mode', 'matchday-autosave-mode'],
+  ];
+  sessionPairs.forEach(([nextKey, legacyKey]) => {
+    try {
+      for (const storage of [localStorage, sessionStorage]) {
+        const legacy = storage.getItem(legacyKey);
+        if (legacy && !storage.getItem(nextKey)) storage.setItem(nextKey, legacy);
+      }
+    } catch {
+      /* ignore */
+    }
+  });
 }
 
 const quotaWarnedKeys = new Set();
@@ -135,10 +172,13 @@ export function reclaimLocalStorageSpace({ aggressive = false, preserveKeys = []
       const key = localStorage.key(i);
       if (!key || preserve.has(key)) continue;
       if (
-        key.startsWith('matchday-card-lab')
+        key.startsWith('brfut-card-lab')
+        || key.startsWith('brfut-card-lab')
         || key.startsWith('card-lab-layout-')
-        || key.startsWith('matchday-team-lab')
-        || key === 'matchday-sponsor-offer-history'
+        || key.startsWith('brfut-team-lab')
+        || key.startsWith('brfut-team-lab')
+        || key === 'brfut-sponsor-offer-history'
+        || key === 'brfut-sponsor-offer-history'
         || key.startsWith('transfers-col-width-')
       ) {
         keysToDrop.push(key);
@@ -160,8 +200,9 @@ export function prepareStorageForSave(options = {}) {
 function warnQuotaOnce(key, error) {
   if (quotaWarnedKeys.has(key)) return;
   quotaWarnedKeys.add(key);
-  console.warn('[matchday] cota de localStorage esgotada', key, error);
+  console.warn('[brfut] cota de localStorage esgotada', key, error);
   try {
+    window.dispatchEvent(new CustomEvent('brfut:save-quota', { detail: { key } }));
     window.dispatchEvent(new CustomEvent('matchday:save-quota', { detail: { key } }));
   } catch {
     /* ignore */
@@ -178,7 +219,7 @@ export function writeJson(key, value) {
   try {
     raw = JSON.stringify(payload);
   } catch (error) {
-    console.warn('[matchday] falha ao serializar save', key, error);
+    console.warn('[brfut] falha ao serializar save', key, error);
     return false;
   }
 
@@ -191,6 +232,16 @@ export function writeJson(key, value) {
       } catch {
         /* ignore cloud queue */
       }
+    }
+    if (
+      key === SAVE_KEYS.career
+      || key === SAVE_KEYS.season
+      || key === SAVE_KEYS.playerHistory
+      || key === SAVE_KEYS.liveMatch
+    ) {
+      void import('./career-slot-manager.js')
+        .then(mod => mod.scheduleActiveSlotSync())
+        .catch(() => {});
     }
     return true;
   };
@@ -206,7 +257,7 @@ export function writeJson(key, value) {
       error?.code === 22 ||
       error?.code === 1014;
     if (!quota) {
-      console.warn('[matchday] falha ao gravar save', key, error);
+      console.warn('[brfut] falha ao gravar save', key, error);
       return false;
     }
 
@@ -320,7 +371,7 @@ export function purgeOrphanSeasonForCareer(career) {
   return false;
 }
 
-const FRESH_CAREER_BOOT_KEY = 'matchday-fresh-career-boot';
+const FRESH_CAREER_BOOT_KEY = 'brfut-fresh-career-boot';
 
 /** Marca reload pós-Novo Jogo — impede nuvem de reidratar save antigo antes do DELETE. */
 export function markFreshCareerBoot() {
@@ -348,11 +399,11 @@ export function clearSeasonSave() {
     queueCloudDelete(SAVE_KEYS.season);
     queueCloudDelete(SAVE_KEYS.liveMatch);
   }
-  // playerHistory (matchday-player-history) NÃO é limpo aqui — sobrevive entre temporadas.
+  // playerHistory (brfut-player-history) NÃO é limpo aqui — sobrevive entre temporadas.
 }
 
 /** Flag one-shot: impede persistSeason no beforeunload (Novo Jogo / troca de carreira). */
-const SKIP_PERSIST_ONCE_KEY = 'matchday-skip-persist-once';
+const SKIP_PERSIST_ONCE_KEY = 'brfut-skip-persist-once';
 
 export function markSkipPersistOnce() {
   try {
@@ -373,7 +424,7 @@ export function consumeSkipPersistOnce() {
 }
 
 /** Indica reload com carreira ativa — evita wipe local se token sumir no refresh. */
-const CAREER_RELOAD_KEY = 'matchday-career-reload';
+const CAREER_RELOAD_KEY = 'brfut-career-reload';
 
 export function hasLocalCareerSave() {
   try {
@@ -402,7 +453,7 @@ export function consumeCareerReloadPending() {
 }
 
 /** Flag one-shot: não encerra sessão/token no pagehide (reload interno, nova carreira, etc.). */
-const SKIP_SESSION_END_KEY = 'matchday-skip-session-end';
+const SKIP_SESSION_END_KEY = 'brfut-skip-session-end';
 
 export function markSkipSessionEndOnce() {
   try {
@@ -460,10 +511,66 @@ export function clearSessionCareerData() {
     localStorage.removeItem(SAVE_KEYS.liveMatch);
     localStorage.removeItem(SAVE_KEYS.training);
     localStorage.removeItem(SAVE_KEYS.pace);
+    localStorage.removeItem('brfut-autosave-mode');
     localStorage.removeItem('matchday-autosave-mode');
+    Object.values(LEGACY_SAVE_KEYS).forEach(key => localStorage.removeItem(key));
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * Apaga todos os saves de carreira no navegador (ativo, slots, legado, índice).
+ * Usado em manutenção / reset operacional.
+ */
+export function purgeAllCareerStorage() {
+  const keysToDrop = new Set([
+    ...Object.values(SAVE_KEYS),
+    ...Object.values(LEGACY_SAVE_KEYS),
+    CAREER_INDEX_KEY,
+    'brfut-autosave-mode',
+    'matchday-autosave-mode',
+    'brfut-fresh-career-boot',
+    'matchday-fresh-career-boot',
+    'brfut-skip-persist-once',
+    'matchday-skip-persist-once',
+    'brfut-career-reload',
+    'matchday-career-reload',
+    'brfut-skip-session-end',
+    'matchday-skip-session-end',
+    'brfut-active-slot-id',
+    'matchday-active-slot-id',
+  ]);
+
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (keysToDrop.has(key) || isSlotBundleKey(key) || /^matchday-slot-/.test(key)) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+
+  try {
+    for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
+      const key = sessionStorage.key(i);
+      if (!key) continue;
+      if (
+        keysToDrop.has(key)
+        || key.startsWith('brfut-')
+        || key.startsWith('matchday-')
+      ) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+
+  invalidateStoragePressureCache();
 }
 
 export function hydrateMessages(season, valid) {
