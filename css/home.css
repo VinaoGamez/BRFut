@@ -646,25 +646,51 @@ a.home-sponsor-slot:focus-visible {
   .home-shell { padding-bottom: 110px; }
 }
 
-.home-maintenance-mode {
-  min-height: 100vh;
-  background: var(--md-night);
+.home-maintenance-mode .home-kicker,
+.home-maintenance-mode .home-hero h1,
+.home-maintenance-mode .home-lead,
+.home-maintenance-mode .home-actions,
+.home-maintenance-mode .home-tester-links,
+.home-maintenance-mode .home-hint,
+.home-maintenance-mode .home-last-save,
+.home-maintenance-mode #accountLogged,
+.home-maintenance-mode #homeStorageHint,
+.home-maintenance-mode #homePlayerStats {
+  display: none !important;
 }
 
-.home-maintenance-only {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
+.home-maintenance-mode .home-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
 }
 
-.home-maintenance-text {
-  margin: 0;
-  font: 800 clamp(1.4rem, 4vw, 2.2rem) 'Barlow Condensed', sans-serif;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.home-maintenance-mode .home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: calc(100vh - 180px);
   text-align: center;
+}
+
+.home-maintenance-banner {
+  margin: 0;
+  font: 800 clamp(1.6rem, 5vw, 2.8rem) 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--md-text);
+  text-shadow: 0 2px 18px #0008;
+}
+
+.home-maintenance-mode .home-maintenance-banner {
+  display: block;
+}
+
+.home-maintenance-mode .home-maintenance-banner[hidden] {
+  display: block;
 }
 
 @media (max-width: 520px) {

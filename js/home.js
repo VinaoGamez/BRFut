@@ -25,22 +25,16 @@ import {
 import { mountCareerSlotsUi, lastSaveHintText } from './feature/career-slots/index.js';
 import { hydrateSlotBundleFromCloud, initStorageBackend } from './core/storage-api.js';
 
-function renderMaintenanceOnly() {
+function renderMaintenanceShell() {
   document.body.classList.add('home-maintenance-mode');
   document.title = 'BR Fut · Manutenção';
-  const shell = document.querySelector('.home-shell');
-  if (shell) {
-    shell.innerHTML = `<main class="home-maintenance-only"><p class="home-maintenance-text">${SITE_MAINTENANCE.message}</p></main>`;
+  applyHomeMeta();
+  const banner = document.getElementById('homeMaintenanceMsg');
+  if (banner) {
+    banner.textContent = SITE_MAINTENANCE.message;
+    banner.hidden = false;
   }
-}
-
-if (SITE_MAINTENANCE.enabled) {
-  purgeAllCareerStorage();
-  endBrowserSession();
-  renderMaintenanceOnly();
-} else {
-  migrateLegacyStorageKeys();
-  migrateLegacySingleSaveToSlots();
+  initSponsorRail();
 }
 
 const SPONSOR_LOGO_URLS = Object.fromEntries(
@@ -78,6 +72,112 @@ const SPONSOR_ORDER = [
   'fedexpressao',
 ];
 
+const formatUpdateTime = value => {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  });
+};
+
+function applyHomeMeta() {
+  const updateEl = document.getElementById('lastUpdate');
+  if (updateEl) {
+    const buildMeta = document.querySelector('meta[name="build-time"]');
+    const stamp = buildMeta?.content || new Date().toISOString();
+    updateEl.textContent = `Última atualização: ${formatUpdateTime(stamp)}`;
+  }
+  const buildEl = document.getElementById('homeBuildVersion');
+  if (buildEl) buildEl.textContent = BUILD_VERSION;
+}
+
+function initSponsorRail() {
+  const track = document.getElementById('homeSponsorsTrack');
+  const viewport = track?.parentElement;
+  if (!track || !viewport) return;
+
+  const logos = SPONSOR_ORDER.map(slug => ({
+    slug,
+    url: SPONSOR_LOGO_URLS[slug],
+    href: SPONSOR_EXTERNAL_LINKS[slug] || '',
+    label: slug.replace(/-/g, ' '),
+  })).filter(item => item.url);
+
+  if (!logos.length) return;
+
+  const slotMarkup = item => {
+    const img = `<img src="${item.url}" alt="${item.label}" width="72" height="72" decoding="async">`;
+    if (item.href) {
+      return `<a class="home-sponsor-slot" href="${item.href}" target="_blank" rel="noopener noreferrer" title="${item.label}" aria-label="Abrir site de ${item.label}">${img}</a>`;
+    }
+    return `<span class="home-sponsor-slot" title="${item.label}">${img}</span>`;
+  };
+
+  const sequence = [...logos, ...logos];
+  track.innerHTML = sequence.map(slotMarkup).join('');
+
+  const gap = 10;
+  const visible = 4;
+  let index = 0;
+  let slotSize = 0;
+  let timer = 0;
+
+  const measure = () => {
+    const width = viewport.clientWidth;
+    slotSize = (width - gap * (visible - 1)) / visible;
+    track.querySelectorAll('.home-sponsor-slot').forEach(slot => {
+      slot.style.flex = `0 0 ${slotSize}px`;
+      slot.style.width = `${slotSize}px`;
+      slot.style.height = `${slotSize}px`;
+    });
+    track.style.transform = `translate3d(-${index * (slotSize + gap)}px,0,0)`;
+  };
+
+  const step = () => {
+    index += 1;
+    track.classList.remove('is-resetting');
+    track.style.transform = `translate3d(-${index * (slotSize + gap)}px,0,0)`;
+    if (index >= logos.length) {
+      window.setTimeout(() => {
+        track.classList.add('is-resetting');
+        index = 0;
+        track.style.transform = 'translate3d(0,0,0)';
+      }, 560);
+    }
+  };
+
+  measure();
+  window.addEventListener('resize', measure);
+  timer = window.setInterval(step, 2800);
+
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+      if (document.hidden) {
+        window.clearInterval(timer);
+        timer = 0;
+      } else if (!timer) {
+        timer = window.setInterval(step, 2800);
+      }
+    },
+    { passive: true },
+  );
+}
+
+if (SITE_MAINTENANCE.enabled) {
+  purgeAllCareerStorage();
+  endBrowserSession();
+  renderMaintenanceShell();
+} else {
+  migrateLegacyStorageKeys();
+  migrateLegacySingleSaveToSlots();
+}
+
 (() => {
   if (SITE_MAINTENANCE.enabled) return;
 
@@ -85,28 +185,7 @@ const SPONSOR_ORDER = [
   showUpdateAlertIfNeeded(BUILD_VERSION);
   const $ = selector => document.querySelector(selector);
 
-  const formatUpdateTime = value => {
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) return '—';
-    return date.toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Sao_Paulo',
-    });
-  };
-
-  const updateEl = $('#lastUpdate');
-  if (updateEl) {
-    const buildMeta = document.querySelector('meta[name="build-time"]');
-    const stamp = buildMeta?.content || new Date().toISOString();
-    updateEl.textContent = `Última atualização: ${formatUpdateTime(stamp)}`;
-  }
-
-  const buildEl = $('#homeBuildVersion');
-  if (buildEl) buildEl.textContent = BUILD_VERSION;
+  applyHomeMeta();
 
   const hasCareer = () => {
     try {
@@ -255,81 +334,6 @@ const SPONSOR_ORDER = [
     hydrateSlot(last.id);
     goToGame({ slotId: last.id });
   });
-
-  const initSponsorRail = () => {
-    const track = $('#homeSponsorsTrack');
-    const viewport = track?.parentElement;
-    if (!track || !viewport) return;
-
-    const logos = SPONSOR_ORDER.map(slug => ({
-      slug,
-      url: SPONSOR_LOGO_URLS[slug],
-      href: SPONSOR_EXTERNAL_LINKS[slug] || '',
-      label: slug.replace(/-/g, ' '),
-    })).filter(item => item.url);
-
-    if (!logos.length) return;
-
-    const slotMarkup = item => {
-      const img = `<img src="${item.url}" alt="${item.label}" width="72" height="72" decoding="async">`;
-      if (item.href) {
-        return `<a class="home-sponsor-slot" href="${item.href}" target="_blank" rel="noopener noreferrer" title="${item.label}" aria-label="Abrir site de ${item.label}">${img}</a>`;
-      }
-      return `<span class="home-sponsor-slot" title="${item.label}">${img}</span>`;
-    };
-
-    // Duplica a lista para loop contínuo sem salto.
-    const sequence = [...logos, ...logos];
-    track.innerHTML = sequence.map(slotMarkup).join('');
-
-    const gap = 10;
-    const visible = 4;
-    let index = 0;
-    let slotSize = 0;
-    let timer = 0;
-
-    const measure = () => {
-      const width = viewport.clientWidth;
-      slotSize = (width - gap * (visible - 1)) / visible;
-      track.querySelectorAll('.home-sponsor-slot').forEach(slot => {
-        slot.style.flex = `0 0 ${slotSize}px`;
-        slot.style.width = `${slotSize}px`;
-        slot.style.height = `${slotSize}px`;
-      });
-      track.style.transform = `translate3d(-${index * (slotSize + gap)}px,0,0)`;
-    };
-
-    const step = () => {
-      index += 1;
-      track.classList.remove('is-resetting');
-      track.style.transform = `translate3d(-${index * (slotSize + gap)}px,0,0)`;
-
-      if (index >= logos.length) {
-        window.setTimeout(() => {
-          track.classList.add('is-resetting');
-          index = 0;
-          track.style.transform = 'translate3d(0,0,0)';
-        }, 560);
-      }
-    };
-
-    measure();
-    window.addEventListener('resize', measure);
-    timer = window.setInterval(step, 2800);
-
-    document.addEventListener(
-      'visibilitychange',
-      () => {
-        if (document.hidden) {
-          window.clearInterval(timer);
-          timer = 0;
-        } else if (!timer) {
-          timer = window.setInterval(step, 2800);
-        }
-      },
-      { passive: true },
-    );
-  };
 
   initSponsorRail();
 
