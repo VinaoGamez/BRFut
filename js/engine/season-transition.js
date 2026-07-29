@@ -383,6 +383,13 @@ export function createSeasonTransitionEngine(deps) {
       movements,
       leadersByDivision,
     });
+    deps.commitSeasonArchive?.({
+      careerSeason,
+      userClub,
+      userDivision,
+      champions,
+      movements,
+    });
     deps.persistSeason(true);
     deps.renderClubBudget();
     deps.openSeasonSummary({
@@ -495,9 +502,23 @@ export function createSeasonTransitionEngine(deps) {
       userClubInvestments: deps.serializeUserClubInvestments(clubs[userClub]),
       pendingSponsorChoice: true,
       retiredPool: savedNewGame.retiredPool || [],
+      seasonIndex: Array.isArray(savedNewGame.seasonIndex) ? [...savedNewGame.seasonIndex] : [],
       createdAt: new Date().toISOString(),
       version: 4,
     };
+
+    // Garante archive do ano que fecha antes de limpar a season viva.
+    deps.commitSeasonArchive?.({
+      careerSeason,
+      userClub,
+      userDivision: deps.getUserDivision(),
+      champions: savedNewGame.priorSeasonChampions
+        ? { A: savedNewGame.priorSeasonChampions.A, CUP: savedNewGame.priorSeasonChampions.CUP }
+        : null,
+    });
+    if (Array.isArray(savedNewGame.seasonIndex)) {
+      nextSave.seasonIndex = [...savedNewGame.seasonIndex];
+    }
 
     deps.writeCareerSave(nextSave);
     deps.finalizePlayerHistorySeason(careerSeason, { nextSeason: (savedNewGame.season || 2026) + 1 });

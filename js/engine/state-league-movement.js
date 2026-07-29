@@ -80,6 +80,40 @@ export function collectLeagueBottom(competition, count = TIER_MOVEMENT_COUNT) {
   return table.slice(-count).map(row => row.club);
 }
 
+/**
+ * Zonas visuais da tabela estadual (acesso / rebaixamento).
+ * @returns {{ promotionSlots: number, relegationSlots: number, promotionLabel: string, relegationLabel: string|null }}
+ */
+export function stateLeagueTableZoneMeta({
+  paulista = false,
+  tier = 1,
+  tierCount = 1,
+  rowCount = 10,
+} = {}) {
+  const promotionSlots = Math.min(4, Math.max(0, rowCount));
+  const promotionLabel = paulista
+    ? '4 primeiros · Quartas de final'
+    : '4 primeiros · Semifinal';
+
+  let relegationSlots = 0;
+  let relegationLabel = null;
+  const maxTier = Math.max(1, Number(tierCount) || 1);
+  const currentTier = Math.max(1, Number(tier) || 1);
+
+  if (paulista) {
+    relegationSlots = Math.min(DIV1_RELEGATE_PER_GROUP, Math.max(0, rowCount - promotionSlots));
+    relegationLabel = `${relegationSlots} últimos · Rebaixamento`;
+  } else if (maxTier === 1) {
+    relegationSlots = Math.min(SOLE_DIVISION_RELEGATE_COUNT, Math.max(0, rowCount - promotionSlots));
+    relegationLabel = `${relegationSlots} últimos · Rebaixamento`;
+  } else if (currentTier < maxTier) {
+    relegationSlots = Math.min(TIER_MOVEMENT_COUNT, Math.max(0, rowCount - promotionSlots));
+    relegationLabel = `${relegationSlots} últimos · Rebaixamento`;
+  }
+
+  return { promotionSlots, relegationSlots, promotionLabel, relegationLabel };
+}
+
 /** 4 semifinalistas / melhores classificados (acesso à divisão acima). */
 export function collectSemifinalistsForPromotion(competition) {
   if (!competition) return [];

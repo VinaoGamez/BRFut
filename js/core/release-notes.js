@@ -9,6 +9,27 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.35',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T17:50:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Estadual',
+        items: [
+          'Tabela estadual marca em vermelho a zona dos últimos (rebaixamento / troca) — em UF de uma divisão, os 3 últimos.',
+        ],
+      },
+      {
+        label: 'Histórico de temporadas',
+        items: [
+          'Ao encerrar o ano, o jogo grava um arquivo da temporada (tabelas, copa, placares) separado da temporada viva.',
+          'Em Campeonatos, o seletor de temporada permite abrir anos anteriores em modo leitura (quando o arquivo existir).',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.30',
     date: '2026-07-29',
     publishedAt: '2026-07-29T17:45:00-04:00',

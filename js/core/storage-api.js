@@ -12,6 +12,7 @@ import {
   ACTIVE_SLOT_SESSION_KEY,
   isSyncableSaveKey,
   isSlotBundleKey,
+  isSeasonArchiveKey,
   slotBundleKeys,
 } from './constants.js';
 import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves, mergeCareerSaves, isSaveProgressAhead } from './save-sync.js';
@@ -491,7 +492,7 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
     const { value: remoteValue, updatedAt: remoteEnvelopeAt } = normalizeRemoteSaveEntry(rawEntry);
     if (remoteValue == null) return;
 
-    if (key === CAREER_INDEX_KEY || isSlotBundleKey(key)) {
+    if (key === CAREER_INDEX_KEY || isSlotBundleKey(key) || isSeasonArchiveKey(key)) {
       const localValue = readLocalSave(key);
       const winner = pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt);
       try {
@@ -606,9 +607,17 @@ export function queueNewerLocalSavesToCloud() {
   } catch {
     /* ignore */
   }
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && isSeasonArchiveKey(key)) keys.add(key);
+    }
+  } catch {
+    /* ignore */
+  }
   let queued = 0;
   keys.forEach(key => {
-    if (!isSyncableSaveKey(key) && key !== CAREER_INDEX_KEY && !isSlotBundleKey(key)) return;
+    if (!isSyncableSaveKey(key) && key !== CAREER_INDEX_KEY && !isSlotBundleKey(key) && !isSeasonArchiveKey(key)) return;
     const localValue = resolveLocalValueForCloudUpload(key) || readLocalSave(key);
     if (!localValue || isLocalStorageCheckpoint(localValue)) return;
     const remoteEntry = normalizeRemoteSaveEntry(remote[key]);
@@ -853,7 +862,7 @@ function localSavesSnapshot() {
   try {
     for (let i = 0; i < localStorage.length; i += 1) {
       const key = localStorage.key(i);
-      if (!key || !isSlotBundleKey(key)) continue;
+      if (!key || (!isSlotBundleKey(key) && !isSeasonArchiveKey(key))) continue;
       const raw = localStorage.getItem(key);
       if (raw != null) out[key] = JSON.parse(raw);
     }

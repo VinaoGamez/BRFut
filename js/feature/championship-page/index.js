@@ -3,6 +3,10 @@ import { formatKnockoutFixtureScore } from '../../engine/knockout-shootout.js';
 import { filterPlayableRoundGames } from '../../engine/round-game-filter.js';
 import { serieDPhaseIndexForRound } from '../../engine/serie-d-format.js';
 import { isPaulistaFormat, parseStateCompetitionKey, stateCompetitionKey, ufLabel } from '../../engine/state-league-format.js';
+import {
+  stateLeagueTableZoneMeta,
+} from '../../engine/state-league-movement.js';
+import { loadSeasonArchive, listSeasonArchiveYears } from '../../core/season-archive-storage.js';
 import { computeGroupStandings } from '../../engine/world-cup-standings.js';
 import { KNOCKOUT_SCHEDULE } from '../../engine/world-cup-calendar.js';
 import { getWorldCupAllFixtures } from '../../engine/world-cup-competition.js';
@@ -97,8 +101,16 @@ export function createChampionshipPageFeature(deps) {
   let pageWorldCupRound = 1;
   let pagePickerOpen = false;
   let pageStateTierPickerOpen = false;
+  let pageViewSeason = null; // null = temporada viva
   let bracketCompetition = 'CUP';
   let openChampionshipLastGames = () => {};
+
+  const resolvedViewSeason = () => Number(pageViewSeason) || getCareerSeason();
+  const isArchiveView = () => Number(resolvedViewSeason()) !== Number(getCareerSeason());
+  const getViewArchive = () => {
+    if (!isArchiveView()) return null;
+    return loadSeasonArchive(resolvedViewSeason(), { seed: getSavedNewGame()?.seed });
+  };
 
   const PAGE_COMPETITION_OPTIONS = buildPageCompetitionOptions({ FEATURES, savedNewGame: getSavedNewGame() });
   const getPageCompetitionOptions = () => {
@@ -756,6 +768,25 @@ export function createChampionshipPageFeature(deps) {
     return wrapChampionshipPageTies(list);
   };
 
+  const syncChampionshipSeasonSelect = () => {
+    const select = $('#championshipPageSeasonSelect');
+    if (!select) return;
+    const careerSeason = getCareerSeason();
+    if (pageViewSeason == null) pageViewSeason = careerSeason;
+    const years = new Set([
+      careerSeason,
+      ...listSeasonArchiveYears({ seasonIndex: getSavedNewGame()?.seasonIndex }),
+    ]);
+    const sorted = [...years].sort((a, b) => b - a);
+    const current = resolvedViewSeason();
+    select.innerHTML = sorted.map(year => {
+      const live = Number(year) === Number(careerSeason);
+      const label = live ? `${year} · atual` : `${year} · arquivo`;
+      return `<option value="${year}" ${Number(year) === Number(current) ? 'selected' : ''}>${label}</option>`;
+    }).join('');
+    select.classList.toggle('is-archive', isArchiveView());
+  };
+
   const renderChampionshipPage = () => {
     const userClub = getUserClub();
     const userNationalTeamName = getUserNationalTeamName();
@@ -766,6 +797,11 @@ export function createChampionshipPageFeature(deps) {
     const cupPhaseDefinitions = getCupPhaseDefinitions();
     const serieDGroups = getSerieDGroups();
     const currentRound = getCurrentRound();
+
+    syncChampionshipSeasonSelect();
+    if (isArchiveView() && !['A', 'B', 'C', 'D', 'CUP'].includes(pageCompetition)) {
+      pageCompetition = 'A';
+    }
 
     const tableCard = $('.championship-page-table');
     const sub = $('#championshipPageSub');
@@ -840,6 +876,10 @@ export function createChampionshipPageFeature(deps) {
     let titleText = `BRASILEIRÃO SÉRIE ${pageCompetition}`;
     let canPrev = false, canNext = false;
     let stateInLeaguePhase = false;
+
+    if (isArchiveView()) {
+      subText = `ARQUIVO · TEMPORADA ${resolvedViewSeason()}`;
+    }
 
     if (isStateHub) {
       subText = 'CAMPEONATOS ESTADUAIS';
@@ -936,7 +976,7 @@ export function createChampionshipPageFeature(deps) {
     if (prevBtn) prevBtn.disabled = !canPrev;
     if (nextBtn) nextBtn.disabled = !canNext;
     const lastGamesBtn = $('#championshipPageLastGamesBtn');
-    if (lastGamesBtn) lastGamesBtn.classList.toggle('hidden', pageCompetition === 'CUP' || pageCompetition === 'RECOPA' || pageCompetition === 'CMU' || isStateHub);
+    if (lastGamesBtn) lastGamesBtn.classList.toggle('hidden', pageCompetition === 'CUP' || pageCompetition === 'RECOPA' || pageCompetition === 'CMU' || isStateHub || isArchiveView());
 
     if (isStateHub) {
       tableCard?.classList.remove('is-knockout');
@@ -953,14 +993,28 @@ export function createChampionshipPageFeature(deps) {
       const groupIndex = paulista ? Math.max(0, Math.min(1, pageStateGroup || 0)) : 0;
       if (head) head.innerHTML = '<span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
       const rows = stateGroupRowsForDisplay(pageCompetition, groupIndex);
+      const parsed = parseStateCompetitionKey(pageCompetition);
+      const tiers = parsed ? stateLeagueEngine.getTiersForUf(parsed.uf) : [];
+      const zoneMeta = stateLeagueTableZoneMeta({
+        paulista,
+        tier: division?.tier || parsed?.tier || 1,
+        tierCount: tiers.length || 1,
+        rowCount: rows.length,
+      });
       const rowsHtml = rows.map((row, index) => {
         const pos = index + 1;
-        const advance = index < 4 ? 'promotion' : '';
-        return `<div class="league-row ${advance} ${row.club === userClub ? 'highlight' : ''}" data-club="${row.club}" role="button" tabindex="0"><span>${pos}</span><span class="club-link">${row.club}</span><span>${row.played}</span><span>${row.wins}</span><span>${row.draws}</span><span>${row.losses}</span><span>${row.goalDiff >= 0 ? '+' : ''}${row.goalDiff}</span><span>${row.points}</span></div>`;
+        let zone = '';
+        if (index < zoneMeta.promotionSlots) zone = 'promotion';
+        else if (zoneMeta.relegationSlots > 0 && index >= rows.length - zoneMeta.relegationSlots) zone = 'relegation';
+        return `<div class="league-row ${zone} ${row.club === userClub ? 'highlight' : ''}" data-club="${row.club}" role="button" tabindex="0"><span>${pos}</span><span class="club-link">${row.club}</span><span>${row.played}</span><span>${row.wins}</span><span>${row.draws}</span><span>${row.losses}</span><span>${row.goalDiff >= 0 ? '+' : ''}${row.goalDiff}</span><span>${row.points}</span></div>`;
       }).join('') || '<div class="championship-page-empty">Sem classificação disponível.</div>';
-      const zoneLegend = paulista
-        ? '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>4 primeiros · Quartas de final</span></div>'
-        : '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>4 primeiros · Semifinal</span></div>';
+      const legendParts = [
+        `<span><i class="promotion" aria-hidden="true"></i>${zoneMeta.promotionLabel}</span>`,
+      ];
+      if (zoneMeta.relegationLabel) {
+        legendParts.push(`<span><i class="relegation" aria-hidden="true"></i>${zoneMeta.relegationLabel}</span>`);
+      }
+      const zoneLegend = `<div class="championship-page-zone-legend">${legendParts.join('')}</div>`;
       let gamesHtml = '';
       if (!pageStateFixturesOpen) {
         gamesHtml = renderChampionshipPageFixturesOpenBtn();
@@ -1008,6 +1062,50 @@ export function createChampionshipPageFeature(deps) {
         }).join('') || '<div class="championship-page-empty">Sem classificação disponível.</div>';
         const zoneLegend = '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>2 primeiros · Avançam no grupo</span></div>';
         body.innerHTML = rowsHtml + zoneLegend;
+      }
+    } else if (isArchiveView() && ['A', 'B', 'C', 'D', 'CUP'].includes(pageCompetition)) {
+      tableCard?.classList.toggle('is-knockout', pageCompetition === 'CUP');
+      const archive = getViewArchive();
+      const year = resolvedViewSeason();
+      if (!archive) {
+        if (head) head.innerHTML = '';
+        body.innerHTML = `<div class="championship-page-empty">Arquivo da temporada ${year} ainda não está disponível neste dispositivo. Ele é gravado ao encerrar a temporada (com servidor, sincroniza depois).</div>`;
+      } else if (pageCompetition === 'CUP') {
+        if (head) head.innerHTML = '';
+        const cup = archive.cupCompetition;
+        const champ = cup?.champion || archive.champions?.CUP || '—';
+        const stages = (cup?.stages || []).map(stage => {
+          const fixtures = (stage.fixtures || []).map(game => {
+            const score = game.homeGoals != null ? `${game.homeGoals}–${game.awayGoals}` : '×';
+            const date = game.date ? String(game.date).slice(0, 10) : '';
+            return `<div class="championship-page-archive-fixture"><strong>${game.home}</strong> ${score} <strong>${game.away}</strong>${date ? `<small>${date}</small>` : ''}</div>`;
+          }).join('') || '<div class="championship-page-empty">Sem jogos nesta fase.</div>';
+          return `<section class="championship-page-archive-stage"><header><strong>${stage.name || `Fase ${stage.index}`}</strong><small>${stage.completed ? 'Concluída' : ''}</small></header>${fixtures}</section>`;
+        }).join('');
+        body.innerHTML = `<div class="championship-page-archive-banner">Temporada ${year} · arquivo · Campeão: <strong>${champ}</strong></div>${stages || '<div class="championship-page-empty">Sem dados da Copa neste arquivo.</div>'}`;
+      } else {
+        if (head) head.innerHTML = '<span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
+        const rows = [...(archive.standings?.[pageCompetition] || [])]
+          .sort((a, b) => b.points - a.points || b.wins - a.wins || b.goalDiff - a.goalDiff);
+        const champ = archive.champions?.[pageCompetition];
+        const rowsHtml = rows.map((row, index) => {
+          const pos = index + 1;
+          const zone = pageCompetition === 'D'
+            ? (index < 4 ? 'promotion' : '')
+            : leagueClassificationZone(pageCompetition, index, rows.length);
+          return `<div class="league-row ${zone} ${row.club === userClub ? 'highlight' : ''}" data-club="${row.club}" role="button" tabindex="0"><span>${pos}</span><span class="club-link">${row.club}</span><span>${row.played}</span><span>${row.wins}</span><span>${row.draws}</span><span>${row.losses}</span><span>${row.goalDiff >= 0 ? '+' : ''}${row.goalDiff}</span><span>${row.points}</span></div>`;
+        }).join('') || '<div class="championship-page-empty">Sem classificação neste arquivo.</div>';
+        const banner = `<div class="championship-page-archive-banner">Temporada ${year} · arquivo${champ ? ` · Campeão: <strong>${champ}</strong>` : ''} · somente leitura</div>`;
+        const zoneLegend = pageCompetition === 'A'
+          ? '<div class="championship-page-zone-legend"><span><i class="relegation" aria-hidden="true"></i>Z4 · Rebaixamento</span></div>'
+          : pageCompetition === 'B'
+            ? '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>G4 · Acesso</span><span><i class="relegation" aria-hidden="true"></i>Z4 · Rebaixamento</span></div>'
+            : pageCompetition === 'C'
+              ? `<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>G4 · Acesso</span><span><i class="relegation" aria-hidden="true"></i>Z${serieCRelegationZone} · Rebaixamento</span></div>`
+              : pageCompetition === 'D'
+                ? '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>4 primeiros · Avançam do grupo</span></div>'
+                : '';
+        body.innerHTML = banner + rowsHtml + zoneLegend;
       }
     } else {
       if (head) head.innerHTML = '<span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
@@ -1225,6 +1323,18 @@ export function createChampionshipPageFeature(deps) {
       event.stopPropagation();
       setChampionshipPagePickerOpen(!pagePickerOpen);
     });
+    const seasonSelect = $('#championshipPageSeasonSelect');
+    if (seasonSelect && !seasonSelect.dataset.bound) {
+      seasonSelect.dataset.bound = '1';
+      seasonSelect.addEventListener('change', () => {
+        const year = Number(seasonSelect.value);
+        pageViewSeason = Number.isFinite(year) ? year : getCareerSeason();
+        if (isArchiveView() && !['A', 'B', 'C', 'D', 'CUP'].includes(pageCompetition)) {
+          pageCompetition = 'A';
+        }
+        renderChampionshipPage();
+      });
+    }
     onClick('#championshipPageStateTierBtn', event => {
       event.stopPropagation();
       setChampionshipPageStateTierPickerOpen(!pageStateTierPickerOpen);

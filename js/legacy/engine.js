@@ -143,6 +143,7 @@ import { hasUsableStateLeagueSave } from '../core/save-sync.js';
 import { applyCareerPreferences, mergePreferencesIntoCareer } from '../core/save-preferences.js';
 import { createMatchRatingsEngine, DEFAULT_USER_TACTICS, blankMatchStats } from '../engine/match-ratings.js';
 import { createSeasonTransitionEngine } from '../engine/season-transition.js';
+import { commitSeasonArchiveFromLive } from '../core/season-archive-storage.js';
 import { createSeasonSaveWriter } from '../engine/season-save-writer.js';
 import { serializeUserStadium, applySavedUserStadium } from '../engine/stadium-sectors.js';
 import { createInjuryEngine } from '../engine/injury.js';
@@ -7058,6 +7059,17 @@ export async function bootEngine({
       return meta?.name||worldCupCompetition.champion;
     },
     archiveSeasonBalance:payload=>playerHistory.archiveSeasonBalance(payload),
+    commitSeasonArchive:meta=>commitSeasonArchiveFromLive({
+      getCareerSeason:()=>careerSeason,
+      getSavedNewGame:()=>savedNewGame,
+      getUserClub:()=>userClub,
+      getUserDivision:()=>userDivision,
+      getNationalCompetitions:()=>nationalCompetitions,
+      getCompetitionRoundHistory:()=>competitionRoundHistory,
+      getCupCompetition:()=>cupCompetition,
+      getAllScorers:()=>allScorers,
+      getAllAssistants:()=>allAssistants,
+    }, meta),
     persistSeason,
     renderClubBudget,
     openSeasonSummary:payload=>{

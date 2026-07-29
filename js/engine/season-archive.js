@@ -1,0 +1,179 @@
+/**
+ * Snapshot imutável de temporada fechada (visualização + validação).
+ * Separado do brfut-season vivo — nunca se funde no boot do ano corrente.
+ */
+
+const ARCHIVE_VERSION = 1;
+const MAX_LEADERS = 10;
+const MAX_ROUND_GAMES = 12;
+
+function slimStandingRow(row) {
+  if (!row?.club) return null;
+  return {
+    club: row.club,
+    played: Number(row.played) || 0,
+    wins: Number(row.wins) || 0,
+    draws: Number(row.draws) || 0,
+    losses: Number(row.losses) || 0,
+    goalDiff: Number(row.goalDiff) || 0,
+    points: Number(row.points) || 0,
+  };
+}
+
+function slimStandings(rows) {
+  return (Array.isArray(rows) ? rows : []).map(slimStandingRow).filter(Boolean);
+}
+
+function slimGame(game) {
+  if (!game?.home || !game?.away) return null;
+  return {
+    home: game.home,
+    away: game.away,
+    homeGoals: game.homeGoals ?? game.hg ?? null,
+    awayGoals: game.awayGoals ?? game.ag ?? null,
+    round: game.round ?? null,
+    date: game.date || null,
+    competition: game.competition || null,
+    completed: !!(game.completed || game.homeGoals != null || game.hg != null),
+  };
+}
+
+function slimRoundHistory(historyByDivision) {
+  const out = {};
+  Object.entries(historyByDivision || {}).forEach(([division, rounds]) => {
+    if (!Array.isArray(rounds)) return;
+    out[division] = rounds.map(entry => ({
+      round: Number(entry?.round) || 0,
+      games: (Array.isArray(entry?.games) ? entry.games : [])
+        .map(slimGame)
+        .filter(Boolean)
+        .slice(0, MAX_ROUND_GAMES),
+    }));
+  });
+  return out;
+}
+
+function slimCup(cup) {
+  if (!cup || typeof cup !== 'object') return null;
+  return {
+    champion: cup.champion || null,
+    currentPhase: cup.currentPhase ?? null,
+    stages: (Array.isArray(cup.stages) ? cup.stages : []).map(stage => ({
+      index: stage.index,
+      name: stage.name,
+      completed: !!stage.completed,
+      winners: Array.isArray(stage.winners) ? [...stage.winners] : [],
+      fixtures: (Array.isArray(stage.fixtures) ? stage.fixtures : [])
+        .map(slimGame)
+        .filter(Boolean),
+    })),
+  };
+}
+
+function slimLeaders(list, statKey) {
+  return (Array.isArray(list) ? list : [])
+    .slice(0, MAX_LEADERS)
+    .map(row => ({
+      club: row.club,
+      name: row.name,
+      [statKey]: Number(row[statKey]) || 0,
+    }));
+}
+
+/** Checksum simples para detectar blob corrompido / trocado. */
+export function seasonArchiveChecksum(archive) {
+  try {
+    const raw = JSON.stringify({
+      v: archive?.version,
+      y: archive?.careerSeason,
+      s: archive?.seed,
+      c: archive?.champions,
+      a: archive?.standings?.A?.[0],
+    });
+    let hash = 2166136261;
+    for (let i = 0; i < raw.length; i += 1) {
+      hash ^= raw.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Monta arquivo compacto a partir do estado vivo no fechamento da temporada.
+ */
+export function buildSeasonArchive(input = {}) {
+  const careerSeason = Number(input.careerSeason);
+  if (!Number.isFinite(careerSeason) || careerSeason < 2000) return null;
+
+  const national = input.nationalCompetitions || {};
+  const standings = {};
+  ['A', 'B', 'C', 'D'].forEach(division => {
+    standings[division] = slimStandings(national[division]?.standings);
+  });
+
+  const archive = {
+    version: ARCHIVE_VERSION,
+    careerSeason,
+    seed: input.seed ?? null,
+    userClub: input.userClub || null,
+    userDivision: input.userDivision || null,
+    closedAt: input.closedAt || new Date().toISOString(),
+    champions: input.champions ? { ...input.champions } : null,
+    standings,
+    competitionRoundHistory: slimRoundHistory(input.competitionRoundHistory),
+    cupCompetition: slimCup(input.cupCompetition),
+    scorers: slimLeaders(input.scorers, 'goals'),
+    assistants: slimLeaders(input.assistants, 'assists'),
+    movements: Array.isArray(input.movements)
+      ? input.movements.map(row => ({
+          title: row.title,
+          type: row.type,
+          clubs: [...(row.clubs || [])].slice(0, 8),
+        }))
+      : [],
+  };
+  archive.checksum = seasonArchiveChecksum(archive);
+  return archive;
+}
+
+export function isValidSeasonArchive(archive, { seed = null, year = null } = {}) {
+  if (!archive || typeof archive !== 'object') return false;
+  const y = Number(archive.careerSeason);
+  if (!Number.isFinite(y) || y < 2000) return false;
+  if (year != null && Number(year) !== y) return false;
+  if (seed != null && archive.seed != null && Number(archive.seed) !== Number(seed)) return false;
+  const hasTable =
+    (Array.isArray(archive.standings?.A) && archive.standings.A.length > 0)
+    || (Array.isArray(archive.standings?.D) && archive.standings.D.length > 0)
+    || (archive.champions && (archive.champions.A || archive.champions.CUP));
+  return !!hasTable;
+}
+
+/** Entrada leve para career.seasonIndex */
+export function seasonIndexEntryFromArchive(archive, { archiveKey = null, bytes = 0 } = {}) {
+  if (!archive) return null;
+  return {
+    year: Number(archive.careerSeason),
+    userClub: archive.userClub || null,
+    userDivision: archive.userDivision || null,
+    champions: archive.champions
+      ? { A: archive.champions.A || null, CUP: archive.champions.CUP || null, D: archive.champions.D || null }
+      : null,
+    archiveKey: archiveKey || null,
+    bytes: Number(bytes) || 0,
+    checksum: archive.checksum || null,
+    closedAt: archive.closedAt || null,
+  };
+}
+
+export function upsertSeasonIndex(index, entry, { maxEntries = 20 } = {}) {
+  const list = Array.isArray(index) ? [...index] : [];
+  if (!entry?.year) return list;
+  const next = list.filter(item => Number(item.year) !== Number(entry.year));
+  next.push(entry);
+  next.sort((a, b) => Number(a.year) - Number(b.year));
+  return next.slice(-maxEntries);
+}

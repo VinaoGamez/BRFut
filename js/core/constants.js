@@ -2,7 +2,7 @@
  * Build pública para testers.
  * Nomenclatura: Alpha V.X.YY — sobe +0.05 a cada publicação (1.00 → 1.05 → …).
  */
-export const BUILD_VERSION = 'Alpha V.5.30';
+export const BUILD_VERSION = 'Alpha V.5.35';
 
 /** Nome público do jogo (UI, títulos, alertas de update). */
 export const GAME_BRAND_NAME = 'BR Fut';
@@ -42,10 +42,24 @@ export function isSlotBundleKey(key) {
   return /^brfut-slot-[a-zA-Z0-9-]+-(career|season|player-history|live-match)$/.test(String(key || ''));
 }
 
+/** Arquivo imutável de temporada fechada (por ano). */
+export function isSeasonArchiveKey(key) {
+  return /^brfut-(?:slot-[a-zA-Z0-9-]+-)?season-archive-\d{4}$/.test(String(key || ''));
+}
+
+export function seasonArchiveKey(year, slotId = null) {
+  const y = Number(year);
+  if (!Number.isFinite(y)) return null;
+  const slot = String(slotId || '').trim();
+  if (slot) return `brfut-slot-${slot}-season-archive-${y}`;
+  return `brfut-season-archive-${y}`;
+}
+
 export function isSyncableSaveKey(key) {
   if (ALL_SYNCABLE_SAVE_KEYS.includes(key)) return true;
   if (key === CAREER_INDEX_KEY) return true;
-  return isSlotBundleKey(key);
+  if (isSlotBundleKey(key)) return true;
+  return isSeasonArchiveKey(key);
 }
 
 /** Chaves legadas (Matchday) — migração automática no boot. */

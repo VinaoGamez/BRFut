@@ -1183,6 +1183,76 @@
   box-shadow: inset 2px 0 0 #ff6370;
 }
 
+.championship-page-season-select {
+  display: inline-flex;
+  align-items: center;
+}
+
+.championship-page-season-select select {
+  appearance: none;
+  background: #0f1f26;
+  color: #d7ece8;
+  border: 1px solid #2a4a55;
+  border-radius: 6px;
+  padding: 8px 28px 8px 12px;
+  font: 700 11px 'DM Sans', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, #8ba7aa 50%), linear-gradient(135deg, #8ba7aa 50%, transparent 50%);
+  background-position: calc(100% - 14px) 55%, calc(100% - 9px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.championship-page-season-select select.is-archive {
+  border-color: #5a7a88;
+  color: #9fd0ff;
+}
+
+.championship-page-archive-banner {
+  padding: 10px 18px;
+  background: #102832;
+  border-bottom: 1px solid #234650;
+  color: #9bb4b8;
+  font: 600 11px 'DM Sans', sans-serif;
+}
+
+.championship-page-archive-banner strong {
+  color: #e8f7f3;
+}
+
+.championship-page-archive-stage {
+  padding: 12px 18px 4px;
+  border-bottom: 1px solid #1c333c;
+}
+
+.championship-page-archive-stage header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: #d7ece8;
+  font: 700 12px 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.championship-page-archive-fixture {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  padding: 6px 0;
+  color: #c5dbd7;
+  font: 600 12px 'DM Sans', sans-serif;
+}
+
+.championship-page-archive-fixture small {
+  color: #7f9a9e;
+  font-weight: 500;
+}
+
 /* Estadual — classificação + rodada no mesmo card */
 .championship-page-league-body {
   display: grid;
