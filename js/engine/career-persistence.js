@@ -199,6 +199,8 @@ export function createCareerPersistence({
           cloudSynced: cloud.synced,
           cloudFailed: cloud.failed || [],
           cloudErrors: cloud.errors || [],
+          seasonOk: cloud.seasonOk,
+          careerOk: cloud.careerOk,
           careerCal: season?.careerCalendarDate || null,
           cloudActive: isCloudStorageActive(),
         }),
@@ -221,6 +223,8 @@ export function createCareerPersistence({
       cloudMode: cloud.mode,
       cloudReason: cloud.reason,
       cloudErrors: cloud.errors || [],
+      seasonOk: cloud.seasonOk,
+      careerOk: cloud.careerOk,
     };
   };
 

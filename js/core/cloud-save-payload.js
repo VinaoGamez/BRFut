@@ -1,7 +1,7 @@
 /** Reduz payloads antes do PUT na nuvem (limite nginx ~2 MB). */
 import { SAVE_KEYS } from './constants.js';
 
-const CLOUD_PAYLOAD_TARGET = 900_000;
+const CLOUD_PAYLOAD_TARGET = 400_000;
 
 function payloadChars(value) {
   try {
@@ -11,56 +11,130 @@ function payloadChars(value) {
   }
 }
 
+function slimStateLeaguesForCloud(stateLeagues, { ultra = false } = {}) {
+  if (!stateLeagues || typeof stateLeagues !== 'object') return stateLeagues;
+  const uf = String(stateLeagues.userUf || 'SP').toUpperCase();
+  const divisions = stateLeagues.competitions?.[uf];
+  if (!Array.isArray(divisions)) {
+    return {
+      seasonYear: stateLeagues.seasonYear,
+      userUf: uf,
+      competitions: {},
+      historyByUf: {},
+      results: {},
+    };
+  }
+
+  const slimDivisions = divisions.map(division => {
+    const fixtures = (division.fixtures || [])
+      .map(round =>
+        (round || [])
+          .filter(game => game?.played || game?.completed || game?.homeGoals != null)
+          .map(game => ({
+            home: game.home,
+            away: game.away,
+            homeGoals: game.homeGoals,
+            awayGoals: game.awayGoals,
+            played: true,
+            round: game.round,
+            date: game.date,
+          })),
+      )
+      .filter(round => round.length);
+    if (ultra) {
+      return {
+        uf,
+        tier: division.tier,
+        currentRound: division.currentRound,
+        fixtures: fixtures.slice(-4),
+        champion: division.champion || null,
+      };
+    }
+    return {
+      uf,
+      tier: division.tier,
+      currentRound: division.currentRound,
+      fixtures,
+      champion: division.champion || null,
+      runnerUp: division.runnerUp || null,
+    };
+  });
+
+  return {
+    seasonYear: stateLeagues.seasonYear,
+    userUf: uf,
+    competitions: { [uf]: slimDivisions },
+    historyByUf: {},
+    results: stateLeagues.results?.[uf] ? { [uf]: stateLeagues.results[uf] } : {},
+  };
+}
+
 export function slimCareerForCloudUpload(career) {
   if (!career || typeof career !== 'object') return career;
-  let next = { ...career };
-  if (payloadChars(next) <= CLOUD_PAYLOAD_TARGET) return next;
+  const checkpoint = {
+    seed: career.seed,
+    clubName: career.clubName,
+    managerName: career.managerName,
+    division: career.division,
+    season: career.season,
+    userUf: career.userUf,
+    nationalTeamCode: career.nationalTeamCode,
+    preferences: career.preferences,
+    userRoster: Array.isArray(career.userRoster) ? career.userRoster.slice(0, 32) : [],
+    updatedAt: career.updatedAt,
+  };
+  if (payloadChars(checkpoint) <= CLOUD_PAYLOAD_TARGET) return checkpoint;
 
-  next = { ...next, worldRosters: {} };
-  if (payloadChars(next) <= CLOUD_PAYLOAD_TARGET) return next;
-
-  if (Array.isArray(next.userRoster) && next.userRoster.length > 28) {
-    next = { ...next, userRoster: next.userRoster.slice(0, 28) };
-  }
-  return next;
+  return {
+    seed: checkpoint.seed,
+    clubName: checkpoint.clubName,
+    managerName: checkpoint.managerName,
+    division: checkpoint.division,
+    season: checkpoint.season,
+    userUf: checkpoint.userUf,
+    preferences: checkpoint.preferences,
+    updatedAt: checkpoint.updatedAt,
+  };
 }
 
 export function slimSeasonForCloudUpload(season) {
   if (!season || typeof season !== 'object') return season;
-  let next = { ...season };
-  if (payloadChars(next) <= CLOUD_PAYLOAD_TARGET) return next;
 
-  next = {
-    ...next,
-    careerMessages: (next.careerMessages || []).slice(0, 40),
-    seasonTransferDeals: [],
-    userSeasonCrowds: [],
-    pendingTransferOffers: Array.isArray(next.pendingTransferOffers)
-      ? next.pendingTransferOffers.slice(0, 12)
+  let checkpoint = {
+    seed: season.seed,
+    userClubName: season.userClubName,
+    currentRound: season.currentRound,
+    careerCalendarDate: season.careerCalendarDate,
+    updatedAt: season.updatedAt,
+    stateLeagues: slimStateLeaguesForCloud(season.stateLeagues),
+    standings: season.standings,
+    userClubStatus: season.userClubStatus,
+    userBudget: season.userBudget,
+    competitionRoundHistory: season.competitionRoundHistory,
+    seasonRoundHistory: Array.isArray(season.seasonRoundHistory)
+      ? season.seasonRoundHistory.slice(-6)
       : [],
   };
-  if (payloadChars(next) <= CLOUD_PAYLOAD_TARGET) return next;
+  if (payloadChars(checkpoint) <= CLOUD_PAYLOAD_TARGET) return checkpoint;
 
-  next = {
-    ...next,
-    competitionRoundHistory: {},
-    seasonRoundHistory: Array.isArray(next.seasonRoundHistory)
-      ? next.seasonRoundHistory.slice(-8)
-      : [],
-    nationalFixtures: { A: [], B: [], C: [], D: [] },
-    playerDevelopment: next.playerDevelopment
-      ? { season: next.playerDevelopment.season, entries: (next.playerDevelopment.entries || []).slice(-40) }
-      : null,
+  checkpoint = {
+    seed: season.seed,
+    userClubName: season.userClubName,
+    currentRound: season.currentRound,
+    careerCalendarDate: season.careerCalendarDate,
+    updatedAt: season.updatedAt,
+    stateLeagues: slimStateLeaguesForCloud(season.stateLeagues, { ultra: true }),
+    standings: season.standings,
   };
-  if (payloadChars(next) <= CLOUD_PAYLOAD_TARGET) return next;
+  if (payloadChars(checkpoint) <= CLOUD_PAYLOAD_TARGET) return checkpoint;
 
   return {
-    ...next,
-    stateLeagues: next.stateLeagues
-      ? { ...next.stateLeagues, historyByUf: {}, results: {} }
-      : null,
-    managerRanking: null,
-    userBudgetLedger: Array.isArray(next.userBudgetLedger) ? next.userBudgetLedger.slice(-30) : [],
+    seed: season.seed,
+    userClubName: season.userClubName,
+    currentRound: season.currentRound,
+    careerCalendarDate: season.careerCalendarDate,
+    updatedAt: season.updatedAt,
+    stateLeagues: slimStateLeaguesForCloud(season.stateLeagues, { ultra: true }),
   };
 }
 

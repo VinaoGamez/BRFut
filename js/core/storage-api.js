@@ -75,6 +75,28 @@ export function isCloudStorageActive() {
   return cloudActive && !!getAuthToken();
 }
 
+/** Revalida token + sessão antes de upload manual (cloudActive pode ter caído). */
+export async function ensureCloudReady() {
+  const token = getAuthToken();
+  if (!token) {
+    cloudActive = false;
+    return false;
+  }
+  if (cloudActive && currentUser) return true;
+  try {
+    backendAvailable = null;
+    if (!(await probeBackend())) return false;
+    const me = await authedFetch('/api/auth/me');
+    currentUser = me.user;
+    cloudActive = true;
+    startPresenceHeartbeat();
+    return true;
+  } catch {
+    cloudActive = false;
+    return false;
+  }
+}
+
 export function getCloudUser() {
   return currentUser;
 }
@@ -250,13 +272,16 @@ export function flushCloudSync({ urgent = false } = {}) {
 
 /** Aguarda upload na nuvem (sem keepalive — suporta saves grandes). Usado no save manual. */
 export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
-  if (!isCloudStorageActive()) {
+  const ready = await ensureCloudReady();
+  if (!ready) {
     return {
       ok: false,
       synced: 0,
       mode: BRFUT_API_ORIGIN ? 'cloud' : 'local',
       reason: 'cloud_inactive',
       errors: [],
+      seasonOk: false,
+      careerOk: false,
     };
   }
   if (syncTimer) {
@@ -269,7 +294,7 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
 
   const keysToSync =
     forceLocalKeys ||
-    (batch.size ? [...batch.keys()] : [SAVE_KEYS.career, SAVE_KEYS.season]);
+    (batch.size ? [...batch.keys()] : [SAVE_KEYS.season, SAVE_KEYS.career]);
 
   keysToSync.forEach(key => {
     if (!SYNCABLE_KEYS.includes(key)) return;
@@ -283,54 +308,75 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
   });
 
   if (!batch.size) {
-    return { ok: false, synced: 0, mode: 'cloud', reason: 'empty_batch', errors: [] };
+    return {
+      ok: false,
+      synced: 0,
+      mode: 'cloud',
+      reason: 'empty_batch',
+      errors: [],
+      seasonOk: false,
+      careerOk: false,
+    };
   }
 
-  const results = await Promise.all(
-    [...batch.entries()].map(async ([key, value]) => {
-      const prepared = prepareCloudSavePayload(key, value);
-      const bodyChars = estimateCloudBodyChars(key, value);
-      try {
-        await authedFetch(`/api/saves/${encodeURIComponent(key)}`, {
-          method: 'PUT',
-          body: JSON.stringify({ value: prepared }),
-        });
-        return { key, ok: true, bodyChars, slimmed: bodyChars < rawPayloadChars(value) };
-      } catch (error) {
-        console.warn('[brfut] falha ao sincronizar save', key, error);
-        syncQueue.set(key, value);
-        scheduleCloudSync();
-        return {
-          key,
-          ok: false,
-          bodyChars,
-          slimmed: prepared !== value,
-          status: error?.status || 0,
-          code: error?.code || 'sync_failed',
-          message: error?.message || 'Falha ao sincronizar',
-        };
-      }
-    }),
-  );
+  const orderedKeys = [
+    ...keysToSync.filter(key => batch.has(key)),
+    ...[...batch.keys()].filter(key => !keysToSync.includes(key)),
+  ];
+
+  const results = [];
+  for (const key of orderedKeys) {
+    const value = batch.get(key);
+    if (value == null) continue;
+    const prepared = prepareCloudSavePayload(key, value);
+    const bodyChars = estimateCloudBodyChars(key, value);
+    try {
+      await authedFetch(`/api/saves/${encodeURIComponent(key)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ value: prepared }),
+      });
+      results.push({ key, ok: true, bodyChars, slimmed: bodyChars < rawPayloadChars(value) });
+    } catch (error) {
+      console.warn('[brfut] falha ao sincronizar save', key, error);
+      syncQueue.set(key, value);
+      scheduleCloudSync();
+      results.push({
+        key,
+        ok: false,
+        bodyChars,
+        slimmed: bodyChars < rawPayloadChars(value),
+        status: error?.status || 0,
+        code: error?.code || 'sync_failed',
+        message: error?.message || 'Falha ao sincronizar',
+      });
+    }
+  }
 
   const failed = results.filter(entry => !entry.ok);
+  const seasonOk = results.some(entry => entry.key === SAVE_KEYS.season && entry.ok);
+  const careerOk = results.some(entry => entry.key === SAVE_KEYS.career && entry.ok);
   appendDebugTrail('cloud:flush', {
     synced: results.length - failed.length,
+    seasonOk,
+    careerOk,
     failed: failed.map(entry => ({
       key: entry.key,
       status: entry.status,
       code: entry.code,
       bodyChars: entry.bodyChars,
+      message: entry.message,
     })),
   });
 
   return {
-    ok: failed.length === 0,
+    ok: seasonOk,
     synced: results.length - failed.length,
     failed: failed.map(entry => entry.key),
     errors: failed,
     mode: 'cloud',
     reason: failed.length ? failed[0]?.code || 'sync_failed' : null,
+    seasonOk,
+    careerOk,
   };
 }
 

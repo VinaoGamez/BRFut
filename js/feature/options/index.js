@@ -459,11 +459,13 @@ export function createOptionsFeature(deps) {
     const cloudHint = (() => {
       if (cloudOk) return 'SALVO!';
       if (!ok) return 'SEM SAVE';
-      const err = result?.cloudErrors?.[0];
       if (result?.cloudReason === 'cloud_inactive') return 'SEM LOGIN';
+      const err = result?.cloudErrors?.[0];
       if (err?.status === 401) return 'SESSÃO';
       if (err?.status === 413) return 'MUITO GRANDE';
-      return 'SÓ LOCAL';
+      if (err?.status === 429) return 'LIMITE API';
+      if (result?.seasonOk === false && err?.bodyChars) return `ERRO ${err.status || '?'}`;
+      return 'NUVEM FALHOU';
     })();
     if (btn) {
       const prev = 'SALVAR';

@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.35',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T24:00:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Save na nuvem',
+        items: [
+          'SALVAR revalida login na API e envia checkpoint compacto (temporada primeiro) — corrige "SÓ LOCAL" / "NUVEM FALHOU".',
+          'Botão mostra código do erro (SESSÃO, MUITO GRANDE, ERRO 4xx) quando a nuvem não confirma.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.30',
     date: '2026-07-28',
     publishedAt: '2026-07-28T23:45:00-03:00',
