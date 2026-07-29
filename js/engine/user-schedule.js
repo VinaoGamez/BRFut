@@ -74,7 +74,13 @@ export function createUserScheduleEngine({
     if (isStateLeagueGame(game)) return stateLeagueEngine.isGameComplete(game, userClub);
     if (isRecopaNationalGame(game)) return !!game.completed;
     if (game.competition === WORLD_CUP_COMPETITION) return !!game.completed || game.homeGoals != null;
-    if (game.competition === 'COPA DO BRASIL' || isKnockoutShootoutCompetition(game)) return !!game.completed;
+    if (game.competition === 'COPA DO BRASIL' || isKnockoutShootoutCompetition(game)) {
+      if (game.completed) return true;
+      if (Number.isFinite(Number(game.homeGoals)) && Number.isFinite(Number(game.awayGoals))) return true;
+      // Idle/sim pode ter gravado o placar no histórico sem marcar completed.
+      const roundRecord = getSeasonRoundHistory().find(item => item.round === game.round);
+      return !!findRecordedGame(game, roundRecord?.games || []);
+    }
     if (leagueFixtureRecorded(game)) return true;
     if (Number.isFinite(Number(game.homeGoals)) && Number.isFinite(Number(game.awayGoals))) return true;
     const played = userLeaguePlayed();

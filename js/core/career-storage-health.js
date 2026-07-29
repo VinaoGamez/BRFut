@@ -8,7 +8,7 @@ import {
   isSlotBundleKey,
 } from './constants.js';
 import { readJson } from './save.js';
-import { readCareerIndex, getSlotById, copyActiveKeysToBundle, copyBundleToActiveKeys } from './career-slot-manager.js';
+import { readCareerIndex, getSlotById, copyActiveKeysToBundle, copyBundleToActiveKeys, preferActiveOverStaleBundle } from './career-slot-manager.js';
 
 function readRaw(key) {
   try {
@@ -77,6 +77,7 @@ export function repairSlotFromLocalStorage(slotId, { forceBundleCopy = true } = 
 
   const bundle = slotBundleKeys(slotId);
   if (readJson(bundle.career, null)) {
+    preferActiveOverStaleBundle(slotId);
     copyBundleToActiveKeys(slotId);
     return true;
   }

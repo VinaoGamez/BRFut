@@ -221,8 +221,9 @@ export function createCareerPersistence({
       const hadCareer = hasLocalCareerSave() || !!getSavedNewGame?.();
       let seasonOk = false;
       if (hadCareer) {
-        syncActiveSlotFromCache();
+        // Grava ativo primeiro; só depois espelha no bundle (evita bundle velho no F5).
         persistSeason(true, { flush: false });
+        syncActiveSlotFromCache();
         seasonOk = true;
       }
       flushCloudSync({ keepalive: true });
@@ -257,8 +258,8 @@ export function createCareerPersistence({
         /* ignore */
       }
       if (getSavedNewGame?.()) {
-        syncActiveSlotFromCache();
         persistSeason(true, { flush: false });
+        syncActiveSlotFromCache();
       }
       flushCloudSync({ keepalive: true });
     });

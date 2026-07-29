@@ -2540,7 +2540,10 @@ export async function bootEngine({
   };
   /** Nacional encerrado e sem partidas do usuário (inclui Copa) — UI de temporada fechada. */
   const seasonFullyComplete=()=>seasonComplete()&&!hasPendingUserFixtures();
-  const isUserSeasonIdle=()=>!!savedNewGame&&!pendingUserSchedule().length&&!seasonComplete();
+  const hasIncompleteUserFixtures = () =>
+    userSchedule().some(entry => !isFixtureCompleted(entry.game));
+  /** Idle só quando não há mais jogos do usuário — não usa o filtro CMU (senão simula a eliminatória). */
+  const isUserSeasonIdle = () => !!savedNewGame && !hasIncompleteUserFixtures() && !seasonComplete();
   let calendarBootRepaired=false;
   if(validSavedSeason){
     const played=userLeaguePlayed();

@@ -599,6 +599,15 @@ export function createSeasonTransitionEngine(deps) {
           deps.openCareerCrisisModal();
           return;
         }
+        // Série D (e outros): mata-mata pode nascer no meio do idle — volta o controle ao jogador.
+        if (!deps.isUserSeasonIdle()) {
+          deps.closeIdleSimOverlay();
+          nonHumanSimRunning = false;
+          deps.persistSeason(true);
+          deps.refreshSeasonPresentation();
+          deps.navigateDashboard();
+          return;
+        }
         if (idleResult?.finished || deps.getCurrentRound() > maxRound) {
           idleSeasonWasSimulated = true;
           deps.finalizeNationalRankingSeason();

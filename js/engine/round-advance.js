@@ -535,7 +535,19 @@ export function createRoundAdvanceEngine(deps) {
       const recoveryMod = deps.trainingRecoveryMultiplier('after');
       const completedGames = roundFixtures
         .filter(game => game?.home && game?.away && deps.getClubs()[game.home] && deps.getClubs()[game.away])
-        .map(game => deps.simulateRoundMatch(game.home, game.away, game));
+        .map(game => {
+          const result = deps.simulateRoundMatch(game.home, game.away, game);
+          // Marca o fixture: senão o placar fica só no histórico e o jogo continua “jogável”.
+          if (game && typeof game === 'object') {
+            game.homeGoals = result.homeGoals;
+            game.awayGoals = result.awayGoals;
+            game.completed = true;
+            if (result.penalties) game.penalties = result.penalties;
+            if (result.shootoutWinner) game.shootoutWinner = result.shootoutWinner;
+            if (result.shootoutPenalties) game.shootoutPenalties = result.shootoutPenalties;
+          }
+          return result;
+        });
       completedGames.forEach(deps.recordGameLeaders);
       deps.persistPlayerHistory();
       if (userDivision !== 'D' || currentRound <= 10) completedGames.forEach(deps.applyRoundToTable);
@@ -555,9 +567,11 @@ export function createRoundAdvanceEngine(deps) {
       deps.recoverPlayers(Math.max(1, Math.round(restDays * recoveryMod)));
       deps.orderAllClubFormations();
       deps.advanceCareerCalendarTo(deps.fixtureDate(currentRound));
+      deps.invalidateUserScheduleCache?.();
       if (deps.evaluateManagerJobRisk()) return { sacked: true };
     } else {
       deps.updateSeriesDKnockout(currentRound);
+      deps.invalidateUserScheduleCache?.();
     }
     const userDivision = deps.getUserDivision();
     const completedSeasonNow = currentRound === 38 || (userDivision === 'D' && currentRound === 22);

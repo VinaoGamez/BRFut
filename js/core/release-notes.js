@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.10',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T17:15:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Série D e save',
+        items: [
+          'Corrigido: ao fechar a fase de grupos, o jogo não simula mais a eliminatória “por trás” deixando jogos já com placar ainda jogáveis.',
+          'Hard refresh após falha de nuvem deixa de puxar um save antigo por cima do progresso local mais recente.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.05',
     date: '2026-07-29',
     publishedAt: '2026-07-29T17:00:00-04:00',

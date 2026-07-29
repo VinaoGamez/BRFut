@@ -12,6 +12,7 @@ import {
 import { readJson, writeJson, getStoragePressure } from './save.js';
 import { isCloudStorageActive, queueCloudSave } from './storage-api.js';
 import { isLocalStorageCheckpoint } from './local-save-checkpoint.js';
+import { pickNewerSave } from './save-sync.js';
 
 const INDEX_VERSION = 1;
 
@@ -166,6 +167,24 @@ export function copyBundleToActiveKeys(slotId) {
   copyStorageKey(bundle.liveMatch, SAVE_KEYS.liveMatch, copyOpts);
 }
 
+/** Se o ativo está mais fresco que o bundle, espelha ativo→bundle antes de hidratar. */
+export function preferActiveOverStaleBundle(slotId) {
+  const bundle = slotBundleKeys(slotId);
+  const activeSeason = readJson(SAVE_KEYS.season, null);
+  const bundleSeason = readJson(bundle.season, null);
+  if (!activeSeason || isLocalStorageCheckpoint(activeSeason)) return false;
+  if (!bundleSeason || isLocalStorageCheckpoint(bundleSeason)) {
+    copyActiveKeysToBundle(slotId, { force: true });
+    return true;
+  }
+  const winner = pickNewerSave(activeSeason, bundleSeason, SAVE_KEYS.season);
+  if (winner === activeSeason) {
+    copyActiveKeysToBundle(slotId, { force: true });
+    return true;
+  }
+  return false;
+}
+
 function queueBundleCloudSync(slotId) {
   if (!isCloudStorageActive() || !slotId) return;
   const bundle = slotBundleKeys(slotId);
@@ -247,6 +266,7 @@ export function hydrateSlot(slotId, { allowSeedFromActive = true } = {}) {
   } else if (!hasBundleCareer) {
     /* leave empty — nova carreira */
   }
+  preferActiveOverStaleBundle(slotId);
   copyBundleToActiveKeys(slotId);
   return true;
 }
