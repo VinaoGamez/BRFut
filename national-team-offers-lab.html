@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>Matchday · Lab · Convites Seleção</title>
+  <link rel="icon" type="image/png" href="./brand/mark-favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/national-team-crest.css">
+  <link rel="stylesheet" href="css/national-team-offers-lab.css">
+</head>
+<body>
+  <div class="ntol-shell">
+    <header class="ntol-header">
+      <div>
+        <p class="ntol-kicker">LAB · LAYOUT APROVADO · INTEGRADO NO JOGO (V.3.55)</p>
+        <h1>Convites para Seleções — Copa do Mundo</h1>
+        <p class="ntol-lead">Modelo do popup na data da proposta (março + 1/semana). Valide layout, textos e fluxo antes de integrar.</p>
+      </div>
+      <div class="ntol-actions">
+        <button id="ntolOpenBtn" class="ntol-btn ntol-btn--primary" type="button">Abrir popup</button>
+        <button id="ntolEditToggle" class="ntol-btn ntol-btn--edit" type="button" aria-pressed="false">Editar layout</button>
+        <button id="ntolResetLayout" class="ntol-btn" type="button" hidden>Reset layout</button>
+        <button id="ntolCopyLayout" class="ntol-btn" type="button" hidden>Copiar posições</button>
+        <a class="ntol-btn" href="home.html">← Hub</a>
+      </div>
+    </header>
+
+    <section class="ntol-controls card">
+      <label class="ntol-field">
+        <span>Simular semana da proposta</span>
+        <select id="ntolWeekSelect">
+          <option value="1">1ª proposta · Março (semana 1)</option>
+          <option value="2">2ª proposta · +1 semana</option>
+          <option value="3" selected>3ª proposta · +2 semanas (3 seleções na tela)</option>
+        </select>
+      </label>
+      <label class="ntol-field">
+        <span>Divisão do clube (pool)</span>
+        <select id="ntolDivisionSelect">
+          <option value="A">Série A</option>
+          <option value="B">Série B</option>
+          <option value="C">Série C</option>
+          <option value="D" selected>Série D</option>
+        </select>
+      </label>
+      <p class="ntol-note">Cada proposta traz <strong>1 seleção nova</strong>. Na 3ª semana a tabela mostra as 3 opções acumuladas (como no wireframe).</p>
+      <p class="ntol-note ntol-note--edit" id="ntolEditHint" hidden>Modo edição: arraste títulos, troféu, datas, contador e rodapé. A <strong>tabela de seleções</strong> fica fixa.</p>
+    </section>
+  </div>
+
+  <div id="ntOfferModal" class="ntol-modal hidden" role="dialog" aria-modal="true" aria-labelledby="ntOfferTitle">
+    <div class="ntol-modal-card">
+      <button id="ntolCloseBtn" class="ntol-close" type="button" aria-label="Fechar">×</button>
+
+      <div id="ntolLayoutStage" class="ntol-layout-stage">
+        <p class="ntol-editable ntol-hero-kicker" data-ntol-id="hero-kicker">COPA DO MUNDO</p>
+        <div class="ntol-editable ntol-trophy-wrap" data-ntol-id="trophy">
+          <img id="ntolTrophy" class="ntol-trophy" src="" alt="" width="120" height="120">
+        </div>
+        <p class="ntol-editable ntol-hero-dates" id="ntolHeroDates" data-ntol-id="hero-dates">11 JUN — 19 JUL · 2026</p>
+        <p class="ntol-editable ntol-hero-meta" data-ntol-id="hero-meta">Fase de grupos + mata-mata · Paralelo ao seu clube</p>
+
+        <h2 id="ntOfferTitle" class="ntol-editable ntol-offers-title" data-ntol-id="offers-title">Convites para Seleções</h2>
+        <p class="ntol-editable ntol-offers-sub" id="ntolOffersSub" data-ntol-id="offers-sub">Escolha uma seleção para comandar na CMU.</p>
+        <div class="ntol-editable ntol-counter" id="ntolCounter" data-ntol-id="counter" aria-live="polite">
+          Restam <strong id="ntolCounterValue">0</strong> propostas
+        </div>
+
+        <div class="ntol-table-wrap ntol-table-locked" aria-hidden="false">
+          <table class="ntol-table" aria-label="Propostas de seleções">
+            <thead>
+              <tr>
+                <th scope="col" class="ntol-col-flag"></th>
+                <th scope="col">Seleção</th>
+                <th scope="col" class="ntol-col-ovr">OVR</th>
+                <th scope="col" class="ntol-col-actions">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="ntolOffersBody"></tbody>
+          </table>
+        </div>
+
+        <p class="ntol-editable ntol-footnote" id="ntolFootnote" data-ntol-id="footnote"></p>
+        <button id="ntolDenyAll" class="ntol-editable ntol-deny-all" type="button" data-ntol-id="deny-all">Negar todos</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/lab/national-team-offers-lab.js"></script>
+</body>
+</html>

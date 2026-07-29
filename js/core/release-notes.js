@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.55',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T03:00:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Convites para seleções (CMU)',
+        items: [
+          'Propostas deixam a caixa de mensagens e viram popup na data — 1ª em março, depois +1 por semana, até 3 seleções diferentes.',
+          'Tela com troféu, contador de propostas restantes, Aceitar, Ver Time e Negar todos.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.50',
     date: '2026-07-29',
     publishedAt: '2026-07-29T02:00:00-03:00',

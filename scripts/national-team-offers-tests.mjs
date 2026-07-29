@@ -2,32 +2,63 @@ import assert from 'node:assert/strict';
 import { NATIONAL_TEAMS } from '../js/engine/national-teams.js';
 import {
   shouldSendNationalTeamOffers,
+  shouldIssueNextNationalTeamOffer,
+  shouldShowNationalTeamOfferPopup,
   generateNationalTeamOffers,
+  generateNextNationalTeamOffer,
+  normalizeNationalTeamOfferState,
   nationalTeamOfferPool,
   NATIONAL_TEAM_OFFER_MONTH,
+  NATIONAL_TEAM_OFFER_WEEK_DAYS,
   WORLD_CUP_2026_YEAR,
 } from '../js/engine/national-team-offers.js';
 
-const may2026 = new Date(2026, NATIONAL_TEAM_OFFER_MONTH, 1, 12);
-const apr2026 = new Date(2026, NATIONAL_TEAM_OFFER_MONTH - 1, 30, 12);
-const jun2026 = new Date(2026, 5, 13, 12);
+const mar2026 = new Date(2026, NATIONAL_TEAM_OFFER_MONTH, 3, 12);
+const feb2026 = new Date(2026, NATIONAL_TEAM_OFFER_MONTH - 1, 28, 12);
+const marWeek2 = new Date(2026, NATIONAL_TEAM_OFFER_MONTH, 10, 12);
 
 assert.equal(
-  shouldSendNationalTeamOffers({ year: 2026, careerDate: apr2026, offersSentYear: null }),
+  shouldIssueNextNationalTeamOffer({ year: 2026, careerDate: feb2026, offerState: null }),
   false,
-  'abril não dispara convites',
+  'fevereiro não dispara convites',
 );
 
 assert.equal(
-  shouldSendNationalTeamOffers({ year: 2026, careerDate: may2026, offersSentYear: null }),
+  shouldIssueNextNationalTeamOffer({ year: 2026, careerDate: mar2026, offerState: null }),
   true,
-  'maio dispara convites em ano de CMU',
+  'março dispara 1ª proposta em ano de CMU',
 );
 
 assert.equal(
-  shouldSendNationalTeamOffers({ year: 2026, careerDate: jun2026, userNationalTeamCode: 'BRA' }),
+  shouldIssueNextNationalTeamOffer({
+    year: 2026,
+    careerDate: marWeek2,
+    offerState: normalizeNationalTeamOfferState(
+      { year: 2026, offers: [{}], issuedCount: 1, lastIssueDate: mar2026.toISOString() },
+      2026,
+    ),
+  }),
+  true,
+  'após 7 dias libera 2ª proposta',
+);
+
+assert.equal(
+  shouldIssueNextNationalTeamOffer({
+    year: 2026,
+    careerDate: new Date(2026, NATIONAL_TEAM_OFFER_MONTH, 5, 12),
+    offerState: normalizeNationalTeamOfferState(
+      { year: 2026, offers: [{}], issuedCount: 1, lastIssueDate: mar2026.toISOString() },
+      2026,
+    ),
+  }),
   false,
-  'com seleção já escolhida não reenvia',
+  'antes de 7 dias não libera nova proposta',
+);
+
+assert.equal(
+  shouldSendNationalTeamOffers({ year: 2026, careerDate: mar2026, offersSentYear: 2026, offerState: null }),
+  false,
+  'save legado com offersSentYear bloqueia reemissão',
 );
 
 const block1Codes = new Set(
@@ -57,26 +88,39 @@ assert.ok(
   'Série D — convites vêm do pool completo',
 );
 
-const serieAOffers = generateNationalTeamOffers({
+const first = generateNextNationalTeamOffer({
   year: 2026,
-  userDivision: 'A',
-  seed: 99,
-  count: 3,
+  userDivision: 'D',
+  seed: 42,
+  issueIndex: 0,
+  existingOffers: [],
 });
-assert.ok(
-  serieAOffers.every(offer => block1Codes.has(offer.code)),
-  'Série A só recebe convites do bloco 1',
+const second = generateNextNationalTeamOffer({
+  year: 2026,
+  userDivision: 'D',
+  seed: 42,
+  issueIndex: 1,
+  existingOffers: [first],
+});
+assert.ok(first?.code && second?.code, 'propostas semanais geradas');
+assert.notEqual(first.code, second.code, 'propostas semanais são seleções diferentes');
+
+const popupState = normalizeNationalTeamOfferState(
+  {
+    year: 2026,
+    offers: [first],
+    issuedCount: 1,
+    lastIssueDate: mar2026.toISOString(),
+    snoozedUntil: new Date(2026, NATIONAL_TEAM_OFFER_MONTH, 8, 12).toISOString(),
+  },
+  2026,
+);
+assert.equal(
+  shouldShowNationalTeamOfferPopup({ year: 2026, careerDate: mar2026, offerState: popupState }),
+  false,
+  'negar todos adia popup até snoozedUntil',
 );
 
-const serieBOffers = generateNationalTeamOffers({
-  year: 2026,
-  userDivision: 'B',
-  seed: 77,
-  count: 3,
-});
-assert.ok(
-  serieBOffers.every(offer => block2Codes.has(offer.code)),
-  'Série B só recebe convites do bloco 2',
-);
+assert.equal(NATIONAL_TEAM_OFFER_WEEK_DAYS, 7, 'intervalo semanal de 7 dias');
 
 console.log('national-team-offers-tests: ok');

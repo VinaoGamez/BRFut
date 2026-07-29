@@ -320,10 +320,16 @@ import {
   resolveDashboardStandingsFocus,
 } from '../engine/world-cup/dashboard-context.js';
 import {
-  shouldSendNationalTeamOffers,
-  generateNationalTeamOffers,
   formatNationalTeamOfferLetter,
+  normalizeNationalTeamOfferState,
+  shouldIssueNextNationalTeamOffer,
+  shouldShowNationalTeamOfferPopup,
+  generateNextNationalTeamOffer,
+  addDaysToCareerDate,
+  NATIONAL_TEAM_OFFER_WEEK_DAYS,
+  NATIONAL_TEAM_OFFER_COUNT,
 } from '../engine/national-team-offers.js';
+import { createNationalTeamOffersUiFeature } from '../feature/national-team-offers-ui/index.js';
 import { createStateLeagueEngine } from '../engine/state-league.js';
 import { isPaulistaFormat, isStateLeagueGame, parseStateCompetitionKey, scheduleStateLeagueDates, sortStandingsRows, stateCompetitionKey, STATE_LEAGUE_CALENDAR_SLOTS, STATE_LEAGUE_COMPETITION, stateLeagueBadgeName, stateLeagueClubGroupIndex, stateLeaguePhaseLabel, ufLabel, collectParticipantsForUf } from '../engine/state-league-format.js';
 import { extractGuaranteedTier4ByUf, createLotteryPicker } from '../engine/state-league-divisions.js';
@@ -2200,6 +2206,8 @@ const rosterChangeAlertHolder = { fn: null };
   let respondToNationalTeamOffer=()=>{};
   let openNationalTeamScout=()=>{};
   let maybeSendNationalTeamOffers=()=>false;
+  let issueNationalTeamOfferIfDue=()=>false;
+  let maybeShowNationalTeamOfferPopup=()=>false;
   const openMedicalActionFlow=()=>{
     messages.openMedicalActionMessage?.();
     processPostMatchMedicalQueue?.();
@@ -2347,6 +2355,11 @@ const rosterChangeAlertHolder = { fn: null };
   });
   careerCalendarDate = careerCalendar.date;
   let nationalTeamOffersSentYear=validSavedSeason&&savedSeason.nationalTeamOffersSentYear!=null?Number(savedSeason.nationalTeamOffersSentYear):null;
+  let nationalTeamOfferState=normalizeNationalTeamOfferState(
+    validSavedSeason?savedSeason.nationalTeamOfferState:null,
+    careerSeason,
+  );
+  let nationalTeamOffersUi=null;
   const beginCalendarBatch=()=>careerCalendar.beginCalendarBatch();
   const endCalendarBatch=()=>careerCalendar.endCalendarBatch();
   const isCalendarBatch=()=>careerCalendar.isCalendarBatch();
@@ -3196,39 +3209,90 @@ const rosterChangeAlertHolder = { fn: null };
     }
     persistCareer({...savedNewGame});
   };
-  maybeSendNationalTeamOffers=()=>{
-    if(!shouldSendNationalTeamOffers({
+  const syncNationalTeamOfferStateToSave=()=>{
+    if(!savedSeason)return;
+    savedSeason.nationalTeamOfferState={...nationalTeamOfferState,year:careerSeason};
+  };
+  const refreshNationalTeamOfferState=()=>{
+    nationalTeamOfferState=normalizeNationalTeamOfferState(
+      nationalTeamOfferState?.year===careerSeason?nationalTeamOfferState:savedSeason?.nationalTeamOfferState,
+      careerSeason,
+    );
+  };
+  issueNationalTeamOfferIfDue=()=>{
+    if(userNationalTeamCode)return false;
+    refreshNationalTeamOfferState();
+    if(!shouldIssueNextNationalTeamOffer({
       year:careerSeason,
       careerDate:careerCalendarDate,
+      offerState:nationalTeamOfferState,
       userNationalTeamCode,
-      offersSentYear:nationalTeamOffersSentYear,
+      legacyOffersSentYear:nationalTeamOffersSentYear,
     }))return false;
-    const offers=generateNationalTeamOffers({
+    const nextOffer=generateNextNationalTeamOffer({
       year:careerSeason,
       userDivision,
-      seed:(savedNewGame?.seed||1)+currentRound*17,
-      count:3,
+      seed:savedNewGame?.seed||1,
+      issueIndex:nationalTeamOfferState.issuedCount,
+      existingOffers:nationalTeamOfferState.offers,
     });
-    if(!offers.length)return false;
+    if(!nextOffer)return false;
+    nationalTeamOfferState.offers=[...nationalTeamOfferState.offers,nextOffer];
+    nationalTeamOfferState.issuedCount+=1;
+    nationalTeamOfferState.lastIssueDate=careerCalendarDate.toISOString();
+    nationalTeamOfferState.snoozedUntil=null;
+    nationalTeamOfferState.year=careerSeason;
     nationalTeamOffersSentYear=careerSeason;
-    offers.forEach(offer=>{
-      pushMessage({
-        category:'competition',
-        type:'national-team-offer',
-        title:`Convite — ${offer.name}`,
-        body:formatNationalTeamOfferLetter(offer,careerSeason),
-        meta:{
-          requiresAction:true,
-          offerId:offer.id,
-          offerKind:'national-team',
-          nationalTeamCode:offer.code,
-          nationalTeamName:offer.name,
-          competition:'Copa do Mundo 2026',
-        },
-      });
-    });
+    syncNationalTeamOfferStateToSave();
     persistSeason(true);
     return true;
+  };
+  maybeShowNationalTeamOfferPopup=()=>{
+    if(!nationalTeamOffersUi||nationalTeamOffersUi.isOpen())return false;
+    refreshNationalTeamOfferState();
+    if(!shouldShowNationalTeamOfferPopup({
+      year:careerSeason,
+      careerDate:careerCalendarDate,
+      offerState:nationalTeamOfferState,
+      userNationalTeamCode,
+    }))return false;
+    nationalTeamOffersUi.open({
+      offers:nationalTeamOfferState.offers,
+      issuedCount:nationalTeamOfferState.issuedCount,
+    });
+    return true;
+  };
+  acceptNationalTeamOfferFromPopup=code=>{
+    const normalized=code?String(code).trim().toUpperCase():'';
+    if(!normalized)return;
+    persistNationalTeamCode(normalized);
+    preloadNationalTeamClubs();
+    nationalTeamOfferState={
+      year:careerSeason,
+      offers:[],
+      issuedCount:NATIONAL_TEAM_OFFER_COUNT,
+      lastIssueDate:nationalTeamOfferState.lastIssueDate,
+      snoozedUntil:null,
+    };
+    syncNationalTeamOfferStateToSave();
+    invalidateUserScheduleCache();
+    rebuildCalendarGames();
+    refreshSeasonPresentation();
+    persistSeason(true);
+  };
+  denyAllNationalTeamOffers=()=>{
+    refreshNationalTeamOfferState();
+    nationalTeamOfferState.snoozedUntil=addDaysToCareerDate(
+      careerCalendarDate,
+      NATIONAL_TEAM_OFFER_WEEK_DAYS,
+    );
+    syncNationalTeamOfferStateToSave();
+    persistSeason(true);
+  };
+  maybeSendNationalTeamOffers=()=>{
+    const issued=issueNationalTeamOfferIfDue();
+    const shown=maybeShowNationalTeamOfferPopup();
+    return issued||shown;
   };
   respondToNationalTeamOffer=({offerId,accept}={})=>{
     const message=messages.findMessage?.({offerId});
@@ -3305,7 +3369,7 @@ const rosterChangeAlertHolder = { fn: null };
     }
     persistSeason(true);
   };
-  if(validSavedSeason)maybeSendNationalTeamOffers();
+  if(validSavedSeason)issueNationalTeamOfferIfDue();
   const initialCalendarDate=validSavedSeason?careerCalendarDate:seasonStartDate();
   const trainingOptions={before:['Preparação tática','Treino leve','Descanso'],after:['Recuperação','Descanso total','Análise do jogo'],free:['Treino equilibrado','Treino técnico','Descanso intermitente']};
   let trainingRules=normalizeTrainingRules({before:'Preparação tática',after:'Recuperação',free:'Treino equilibrado'});
@@ -4691,6 +4755,15 @@ const rosterChangeAlertHolder = { fn: null };
       console.warn('[matchday] elenco seleção',error);
     }
   };
+  nationalTeamOffersUi=createNationalTeamOffersUiFeature({
+    $,
+    getCareerSeason:()=>careerSeason,
+    onAccept:({code})=>acceptNationalTeamOfferFromPopup(code),
+    onViewTeam:code=>openNationalTeamScout(code),
+    onDenyAll:()=>denyAllNationalTeamOffers(),
+  });
+  nationalTeamOffersUi.init();
+  queueMicrotask(()=>maybeShowNationalTeamOfferPopup());
   const openClubFromTable=target=>{
     const clubTarget=target.closest?.('[data-club],[data-national-team]');
     if(!clubTarget)return false;
@@ -7206,6 +7279,7 @@ const rosterChangeAlertHolder = { fn: null };
     getSeasonRoundHistory:()=>seasonRoundHistory,
     getNationalRankingFinalizedSeasons:()=>nationalRankingFinalizedSeasons,
     getNationalTeamOffersSentYear:()=>nationalTeamOffersSentYear,
+    getNationalTeamOfferState:()=>nationalTeamOfferState,
     getPlayerDevelopment:()=>playerDevelopment,
     getPendingSponsorChoice:()=>pendingSponsorChoice,
     getPendingSponsorOffers:()=>pendingSponsorOffers,

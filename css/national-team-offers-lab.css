@@ -1,0 +1,584 @@
+:root {
+  --ntol-night: #050c17;
+  --ntol-panel: #0b1a22;
+  --ntol-line: #1e4a5c;
+  --ntol-cyan: #63d9ff;
+  --ntol-lime: #bbeb27;
+  --ntol-text: #edf8f5;
+  --ntol-muted: #9eb6b8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ntol-text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #0f3340 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #1a3a12 0%, transparent 45%),
+    var(--ntol-night);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.ntol-shell {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+}
+
+.ntol-kicker {
+  margin: 0 0 6px;
+  color: var(--ntol-cyan);
+  font: 700 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.8px;
+}
+
+.ntol-header h1 {
+  margin: 0 0 8px;
+  font: 800 34px/1 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.ntol-lead {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--ntol-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ntol-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+.ntol-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ntol-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--ntol-line);
+  border-radius: 8px;
+  background: #0f2430;
+  color: var(--ntol-text);
+  font: 600 13px 'DM Sans', sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ntol-btn--primary {
+  border-color: #3f8ea8;
+  background: linear-gradient(180deg, #1a5368, #123947);
+  color: #e8fbff;
+}
+
+.ntol-btn--edit[aria-pressed='true'] {
+  border-color: #8eb020;
+  background: linear-gradient(180deg, #3f5f12, #2d460d);
+  color: #f4ffe8;
+}
+
+.ntol-note--edit {
+  color: #c8e86a;
+}
+
+.card {
+  border: 1px solid var(--ntol-line);
+  border-radius: 10px;
+  background: linear-gradient(145deg, #0d2029, #0a171e);
+  padding: 16px 18px;
+}
+
+.ntol-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.ntol-field {
+  display: grid;
+  gap: 6px;
+}
+
+.ntol-field span {
+  color: var(--ntol-cyan);
+  font: 700 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.ntol-field select {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #2a6278;
+  border-radius: 8px;
+  background: #0a1921;
+  color: var(--ntol-text);
+  font: 500 14px 'DM Sans', sans-serif;
+}
+
+.ntol-note {
+  margin: 0;
+  color: var(--ntol-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Modal */
+.ntol-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #02080ccc;
+}
+
+.ntol-modal-card {
+  position: relative;
+  width: min(920px, calc(100vw - 24px));
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  padding: 22px 22px 18px;
+  border: 1px solid #2d6578;
+  border-radius: 12px;
+  background: linear-gradient(155deg, #0d2029 0%, #09151c 100%);
+  box-shadow: 0 24px 70px #000c;
+}
+
+.ntol-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ntol-muted);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ntol-close:hover {
+  color: var(--ntol-cyan);
+}
+
+/* Layout stage — default positions (grid-like) */
+.ntol-layout-stage {
+  position: relative;
+  min-height: 400px;
+}
+
+.ntol-editable {
+  margin: 0;
+}
+
+.ntol-hero-kicker {
+  position: absolute;
+  left: 14px;
+  top: 36px;
+  width: 200px;
+  font: 800 28px/1 'Barlow Condensed', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.ntol-trophy-wrap {
+  position: absolute;
+  left: 54px;
+  top: 82px;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 8px 18px #0008);
+}
+
+.ntol-trophy {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ntol-hero-dates {
+  position: absolute;
+  left: 10px;
+  top: 272px;
+  width: 200px;
+  font: 700 15px 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.6px;
+  color: #d7f6ff;
+  text-align: center;
+}
+
+.ntol-hero-meta {
+  position: absolute;
+  left: 3px;
+  top: 302px;
+  width: 216px;
+  color: var(--ntol-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.ntol-offers-title {
+  position: absolute;
+  left: 248px;
+  top: 8px;
+  margin: 0;
+  font: 800 24px/1.05 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.ntol-offers-sub {
+  position: absolute;
+  left: 248px;
+  top: 40px;
+  max-width: 420px;
+  color: var(--ntol-muted);
+  font-size: 13px;
+}
+
+.ntol-counter {
+  position: absolute;
+  left: 690px;
+  top: 8px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #2f687c;
+  border-radius: 8px;
+  background: #0a1921;
+  color: var(--ntol-muted);
+  font: 600 11px 'DM Sans', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ntol-counter strong {
+  font: 800 22px/1 'Barlow Condensed', sans-serif;
+  color: var(--ntol-lime);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ntol-table-wrap {
+  position: absolute;
+  left: 248px;
+  top: 78px;
+  right: 0;
+  border: 1px solid #244f60;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #08141a;
+}
+
+.ntol-footnote {
+  position: absolute;
+  left: 261px;
+  top: 323px;
+  max-width: 460px;
+  color: var(--ntol-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ntol-deny-all {
+  position: absolute;
+  left: 744px;
+  top: 321px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid #7a3030;
+  background: linear-gradient(180deg, #4a1818, #321010);
+  color: #ffd8d8;
+  font: 700 11px 'DM Sans', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ntol-deny-all:hover {
+  border-color: #c85a5a;
+}
+
+.ntol-layout-stage--edit .ntol-editable {
+  cursor: grab;
+  outline: 1px dashed #3f8ea8;
+  outline-offset: 3px;
+  z-index: 2;
+  user-select: none;
+}
+
+.ntol-layout-stage--edit .ntol-editable:hover {
+  outline-color: var(--ntol-lime);
+}
+
+.ntol-layout-stage--edit .ntol-editable.is-dragging {
+  cursor: grabbing;
+  outline-color: #fff;
+  z-index: 5;
+}
+
+.ntol-layout-stage--edit .ntol-table-locked {
+  outline: 2px solid #244f60;
+  outline-offset: 2px;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.ntol-layout-stage--edit .ntol-table-locked::after {
+  content: 'Tabela fixa';
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #0a1921cc;
+  color: var(--ntol-muted);
+  font: 600 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.ntol-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ntol-table th,
+.ntol-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #183845;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.ntol-table th {
+  color: var(--ntol-cyan);
+  font: 700 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  background: #0a1a22;
+}
+
+.ntol-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ntol-table tbody tr:hover {
+  background: #0c1e27;
+}
+
+.ntol-col-flag {
+  width: 72px;
+}
+
+.ntol-col-ovr {
+  width: 72px;
+  text-align: center;
+}
+
+.ntol-col-actions {
+  width: 190px;
+}
+
+.ntol-flag {
+  width: 54px;
+  height: 36px;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px #00000044;
+}
+
+.ntol-flag img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ntol-team-name {
+  font: 700 16px 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.ntol-team-rank {
+  display: block;
+  margin-top: 2px;
+  color: var(--ntol-muted);
+  font-size: 11px;
+}
+
+.ntol-ovr {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: #112833;
+  border: 1px solid #2a6278;
+  font: 800 18px 'Barlow Condensed', sans-serif;
+  color: #e8fbff;
+}
+
+.ntol-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ntol-action {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid #315f70;
+  background: #102630;
+  color: #dce9e8;
+  font: 700 11px 'DM Sans', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ntol-action--accept {
+  border-color: #5ea823;
+  background: linear-gradient(180deg, #3f7f18, #2f6112);
+  color: #f4ffe8;
+}
+
+.ntol-action--view:hover,
+.ntol-action:hover {
+  border-color: var(--ntol-cyan);
+}
+
+.ntol-action--accept:hover {
+  border-color: #b8f06a;
+}
+
+.ntol-footnote {
+  margin: 0;
+}
+
+.ntol-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #3a7890;
+  background: #0d2430;
+  color: #e8fbff;
+  font-size: 13px;
+  box-shadow: 0 10px 30px #000a;
+  z-index: 120;
+}
+
+@media (max-width: 760px) {
+  .ntol-modal-card {
+    padding: 16px 14px;
+  }
+
+  .ntol-layout-stage {
+    min-height: 680px;
+  }
+
+  .ntol-hero-kicker {
+    left: 8px;
+    top: 4px;
+    width: 160px;
+    font-size: 22px;
+  }
+
+  .ntol-trophy-wrap {
+    left: 34px;
+    top: 36px;
+    width: 72px;
+    height: 72px;
+  }
+
+  .ntol-hero-dates {
+    left: 8px;
+    top: 118px;
+    width: 160px;
+    font-size: 13px;
+  }
+
+  .ntol-hero-meta {
+    left: 4px;
+    top: 140px;
+    width: 168px;
+    font-size: 11px;
+  }
+
+  .ntol-offers-title {
+    left: 12px;
+    top: 178px;
+    font-size: 20px;
+  }
+
+  .ntol-offers-sub {
+    left: 12px;
+    top: 206px;
+    max-width: calc(100% - 24px);
+  }
+
+  .ntol-counter {
+    left: 12px;
+    top: 232px;
+  }
+
+  .ntol-table-wrap {
+    left: 12px;
+    right: 12px;
+    top: 270px;
+  }
+
+  .ntol-footnote {
+    left: 12px;
+    top: 560px;
+    max-width: calc(100% - 24px);
+  }
+
+  .ntol-deny-all {
+    left: auto;
+    right: 12px;
+    top: 620px;
+  }
+
+  .ntol-col-actions {
+    width: auto;
+  }
+
+  .ntol-row-actions {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,386 @@
+:root {
+  --nto-cyan: #63d9ff;
+  --nto-lime: #bbeb27;
+  --nto-muted: #9eb6b8;
+}
+
+.nto-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #02080ccc;
+}
+
+.nto-modal-card {
+  position: relative;
+  width: min(920px, calc(100vw - 24px));
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  padding: 22px 22px 18px;
+  border: 1px solid #2d6578;
+  border-radius: 12px;
+  background: linear-gradient(155deg, #0d2029 0%, #09151c 100%);
+  box-shadow: 0 24px 70px #000c;
+}
+
+.nto-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--nto-muted);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.nto-close:hover {
+  color: var(--nto-cyan);
+}
+
+.nto-layout-stage {
+  position: relative;
+  min-height: 400px;
+}
+
+.nto-hero-kicker {
+  position: absolute;
+  left: 14px;
+  top: 36px;
+  width: 200px;
+  margin: 0;
+  font: 800 28px/1 'Barlow Condensed', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.nto-trophy-wrap {
+  position: absolute;
+  left: 54px;
+  top: 82px;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 8px 18px #0008);
+}
+
+.nto-trophy {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.nto-hero-dates {
+  position: absolute;
+  left: 10px;
+  top: 272px;
+  width: 200px;
+  margin: 0;
+  font: 700 15px 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.6px;
+  color: #d7f6ff;
+  text-align: center;
+}
+
+.nto-hero-meta {
+  position: absolute;
+  left: 3px;
+  top: 302px;
+  width: 216px;
+  margin: 0;
+  color: var(--nto-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.nto-offers-title {
+  position: absolute;
+  left: 248px;
+  top: 8px;
+  margin: 0;
+  font: 800 24px/1.05 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.nto-offers-sub {
+  position: absolute;
+  left: 248px;
+  top: 40px;
+  max-width: 420px;
+  margin: 0;
+  color: var(--nto-muted);
+  font-size: 13px;
+}
+
+.nto-counter {
+  position: absolute;
+  left: 690px;
+  top: 8px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #2f687c;
+  border-radius: 8px;
+  background: #0a1921;
+  color: var(--nto-muted);
+  font: 600 11px 'DM Sans', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.nto-counter strong {
+  font: 800 22px/1 'Barlow Condensed', sans-serif;
+  color: var(--nto-lime);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.nto-table-wrap {
+  position: absolute;
+  left: 248px;
+  top: 78px;
+  right: 0;
+  border: 1px solid #244f60;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #08141a;
+}
+
+.nto-footnote {
+  position: absolute;
+  left: 261px;
+  top: 323px;
+  max-width: 460px;
+  margin: 0;
+  color: var(--nto-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.nto-deny-all {
+  position: absolute;
+  left: 744px;
+  top: 321px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid #7a3030;
+  background: linear-gradient(180deg, #4a1818, #321010);
+  color: #ffd8d8;
+  font: 700 11px 'DM Sans', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.nto-deny-all:hover {
+  border-color: #c85a5a;
+}
+
+.nto-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.nto-table th,
+.nto-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #183845;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.nto-table th {
+  color: var(--nto-cyan);
+  font: 700 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  background: #0a1a22;
+}
+
+.nto-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.nto-table tbody tr:hover {
+  background: #0c1e27;
+}
+
+.nto-col-flag {
+  width: 72px;
+}
+
+.nto-col-ovr {
+  width: 72px;
+  text-align: center;
+}
+
+.nto-col-actions {
+  width: 190px;
+}
+
+.nto-flag {
+  width: 54px;
+  height: 36px;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px #00000044;
+}
+
+.nto-flag img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nto-team-name {
+  font: 700 16px 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.nto-team-rank {
+  display: block;
+  margin-top: 2px;
+  color: var(--nto-muted);
+  font-size: 11px;
+}
+
+.nto-ovr {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: #112833;
+  border: 1px solid #2a6278;
+  font: 800 18px 'Barlow Condensed', sans-serif;
+  color: #e8fbff;
+}
+
+.nto-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nto-action {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid #315f70;
+  background: #102630;
+  color: #dce9e8;
+  font: 700 11px 'DM Sans', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.nto-action--accept {
+  border-color: #5ea823;
+  background: linear-gradient(180deg, #3f7f18, #2f6112);
+  color: #f4ffe8;
+}
+
+.nto-action--view:hover,
+.nto-action:hover {
+  border-color: var(--nto-cyan);
+}
+
+.nto-action--accept:hover {
+  border-color: #b8f06a;
+}
+
+@media (max-width: 760px) {
+  .nto-modal-card {
+    padding: 16px 14px;
+  }
+
+  .nto-layout-stage {
+    min-height: 680px;
+  }
+
+  .nto-hero-kicker {
+    left: 8px;
+    top: 4px;
+    width: 160px;
+    font-size: 22px;
+  }
+
+  .nto-trophy-wrap {
+    left: 34px;
+    top: 36px;
+    width: 72px;
+    height: 72px;
+  }
+
+  .nto-hero-dates {
+    left: 8px;
+    top: 118px;
+    width: 160px;
+    font-size: 13px;
+  }
+
+  .nto-hero-meta {
+    left: 4px;
+    top: 140px;
+    width: 168px;
+    font-size: 11px;
+  }
+
+  .nto-offers-title {
+    left: 12px;
+    top: 178px;
+    font-size: 20px;
+  }
+
+  .nto-offers-sub {
+    left: 12px;
+    top: 206px;
+    max-width: calc(100% - 24px);
+  }
+
+  .nto-counter {
+    left: 12px;
+    top: 232px;
+  }
+
+  .nto-table-wrap {
+    left: 12px;
+    right: 12px;
+    top: 270px;
+  }
+
+  .nto-footnote {
+    left: 12px;
+    top: 560px;
+    max-width: calc(100% - 24px);
+  }
+
+  .nto-deny-all {
+    left: auto;
+    right: 12px;
+    top: 620px;
+  }
+
+  .nto-col-actions {
+    width: auto;
+  }
+
+  .nto-row-actions {
+    flex-direction: column;
+  }
+}

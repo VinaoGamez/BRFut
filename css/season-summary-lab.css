@@ -1,0 +1,206 @@
+:root {
+  --ssl-night: #050c17;
+  --ssl-line: #1e4a5c;
+  --ssl-cyan: #63d9ff;
+  --ssl-text: #edf8f5;
+  --ssl-muted: #9eb6b8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ssl-text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #0f3340 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #3a2a0f 0%, transparent 45%),
+    var(--ssl-night);
+}
+
+.ssl-shell {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+}
+
+.ssl-kicker {
+  margin: 0 0 6px;
+  color: var(--ssl-cyan);
+  font: 700 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.8px;
+}
+
+.ssl-header h1 {
+  margin: 0 0 8px;
+  font: 800 34px/1 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.ssl-lead {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--ssl-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ssl-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+.ssl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ssl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--ssl-line);
+  border-radius: 8px;
+  background: #0f2430;
+  color: var(--ssl-text);
+  font: 600 13px 'DM Sans', sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ssl-btn--primary {
+  border-color: #3f8ea8;
+  background: linear-gradient(180deg, #1a5368, #123947);
+  color: #e8fbff;
+}
+
+.ssl-btn--edit[aria-pressed='true'] {
+  border-color: #8eb020;
+  background: linear-gradient(180deg, #3f5f12, #2d460d);
+  color: #f4ffe8;
+}
+
+.ssl-btn:hover {
+  border-color: var(--ssl-cyan);
+}
+
+.card {
+  border: 1px solid var(--ssl-line);
+  border-radius: 10px;
+  background: linear-gradient(145deg, #0d2029, #0a171e);
+  padding: 16px 18px;
+}
+
+.ssl-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.ssl-field {
+  display: grid;
+  gap: 6px;
+}
+
+.ssl-field span {
+  color: var(--ssl-cyan);
+  font: 700 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.ssl-field select {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #2a6278;
+  border-radius: 8px;
+  background: #0a1921;
+  color: var(--ssl-text);
+  font: 500 14px 'DM Sans', sans-serif;
+}
+
+.ssl-note {
+  margin: 0;
+  color: var(--ssl-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ssl-note--edit {
+  color: #c8e86a;
+}
+
+.ssl-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #3a7890;
+  background: #0d2430;
+  color: #e8fbff;
+  font-size: 13px;
+  box-shadow: 0 10px 30px #000a;
+  z-index: 500;
+}
+
+#seasonTransitionModal {
+  z-index: 200;
+}
+
+.season-summary-modal.ssl-layout-stage--edit {
+  overflow: visible;
+}
+
+.season-summary-modal.ssl-layout-stage--edit [data-lab-editable] {
+  cursor: grab;
+  outline: 1px dashed #3f8ea8;
+  outline-offset: 3px;
+  z-index: 2;
+  user-select: none;
+}
+
+.season-summary-modal.ssl-layout-stage--edit [data-lab-editable]:hover {
+  outline-color: #bbeb27;
+}
+
+.season-summary-modal.ssl-layout-stage--edit [data-lab-editable].is-dragging {
+  cursor: grabbing;
+  outline-color: #fff;
+  z-index: 5;
+}
+
+.season-summary-modal.ssl-layout-stage--edit [data-lab-locked] {
+  pointer-events: none;
+  opacity: 0.96;
+}
+
+.season-summary-modal.ssl-layout-stage--edit [data-lab-locked] {
+  position: relative;
+}
+
+.season-summary-modal.ssl-layout-stage--edit [data-lab-locked]::after {
+  content: 'Conteúdo fixo';
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #0a1921cc;
+  color: var(--ssl-muted);
+  font: 600 10px 'DM Sans', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  pointer-events: none;
+}

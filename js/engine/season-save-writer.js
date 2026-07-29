@@ -159,6 +159,7 @@ export function createSeasonSaveWriter({
     const worldCupCompetition = getWorldCupCompetition();
     const nationalRankingFinalizedSeasons = getNationalRankingFinalizedSeasons();
     const nationalTeamOffersSentYear = getNationalTeamOffersSentYear();
+    const nationalTeamOfferState = getNationalTeamOfferState?.() ?? null;
 
     pruneClubMemory(clubs, nationalRankingEntries);
     const standings = Object.fromEntries(
@@ -371,6 +372,7 @@ export function createSeasonSaveWriter({
       priorSeasonChampions: savedNewGame?.priorSeasonChampions || null,
       worldCupCompetition: serializeWorldCupCompetition(worldCupCompetition),
       nationalTeamOffersSentYear: nationalTeamOffersSentYear ?? null,
+      nationalTeamOfferState: nationalTeamOfferState ?? null,
       nationalRanking: {
         formulaVersion: NATIONAL_RANKING_FORMULA_VERSION,
         entries: rankingEntries,

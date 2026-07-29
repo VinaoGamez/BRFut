@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>Matchday · Lab · Fim de Temporada</title>
+  <link rel="icon" type="image/png" href="./brand/mark-favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/club-crest.css">
+  <link rel="stylesheet" href="css/season-summary.css">
+  <link rel="stylesheet" href="css/season-summary-lab.css">
+</head>
+<body>
+  <div class="ssl-shell">
+    <header class="ssl-header">
+      <div>
+        <p class="ssl-kicker">LAB · PRÉ-APROVAÇÃO · NÃO ESTÁ NO JOGO AINDA</p>
+        <h1>Fim de temporada — Balanço</h1>
+        <p class="ssl-lead">Organize o painel de transição de temporada. Valide layout antes de integrar.</p>
+      </div>
+      <div class="ssl-actions">
+        <button id="sslOpenBtn" class="ssl-btn ssl-btn--primary" type="button">Abrir painel</button>
+        <button id="sslEditToggle" class="ssl-btn ssl-btn--edit" type="button" aria-pressed="false">Editar layout</button>
+        <button id="sslResetLayout" class="ssl-btn" type="button" hidden>Reset layout</button>
+        <button id="sslCopyLayout" class="ssl-btn" type="button" hidden>Copiar posições</button>
+        <a class="ssl-btn" href="home.html">← Hub</a>
+      </div>
+    </header>
+
+    <section class="ssl-controls card">
+      <label class="ssl-field">
+        <span>Status da meta (preview)</span>
+        <select id="sslGoalStatus">
+          <option value="missed">Abaixo da meta</option>
+          <option value="near">Quase</option>
+          <option value="met" selected>Cumpriu</option>
+          <option value="exceeded">Superou</option>
+        </select>
+      </label>
+      <p class="ssl-note">Arraste blocos inteiros (título, meta, campeões, líderes…). O <strong>conteúdo interno</strong> de campeões e tabelas fica fixo — só reposiciona o bloco.</p>
+      <p class="ssl-note ssl-note--edit" id="sslEditHint" hidden>Modo edição ativo: arraste os blocos destacados. Use Copiar posições para enviar o JSON.</p>
+    </section>
+  </div>
+
+  <script type="module" src="js/lab/season-summary-lab.js"></script>
+</body>
+</html>

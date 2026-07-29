@@ -63,6 +63,8 @@ export default defineConfig({
               cardLab: resolve(__dirname, 'card-lab.html'),
               cardPreview: resolve(__dirname, 'card-preview.html'),
               teamLab: resolve(__dirname, 'team-lab.html'),
+              nationalTeamOffersLab: resolve(__dirname, 'national-team-offers-lab.html'),
+              seasonSummaryLab: resolve(__dirname, 'season-summary-lab.html'),
             }),
       },
     },
