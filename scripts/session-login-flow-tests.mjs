@@ -69,7 +69,15 @@ checkSync('navegação interna preserva sessão (skip session end)', () => {
   assert(save.includes('consumeSkipSessionEndOnce'), 'helper consume skip session');
   assert(dom.includes('markSkipSessionEndOnce'), 'redirectGame marca skip');
   assert(persist.includes('consumeSkipSessionEndOnce'), 'persistência respeita skip');
+  assert(
+    persist.includes('hadCareerOnHide') && persist.includes('markSkipSessionEndOnce'),
+    'pagehide marca skip mesmo sem beforeunload',
+  );
   assert(home.includes('markSkipSessionEndOnce'), 'home marca skip ao ir para o jogo');
+  assert(
+    home.includes('Hard refresh nem sempre dispara beforeunload'),
+    'home pagehide marca skip com save local',
+  );
 });
 
 checkSync('home e index encerram sessão ao fechar aba', () => {

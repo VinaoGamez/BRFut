@@ -13,7 +13,7 @@ import {
   pruneInjuryHistory,
   clearSessionCareerData,
 } from '../core/save.js';
-import { endBrowserSession, flushCloudSync } from '../core/storage-api.js';
+import { endBrowserSession, flushCloudSync, flushCloudSyncAsync, isCloudStorageActive } from '../core/storage-api.js';
 import { getAutosaveMode, mergePreferencesIntoCareer, AUTOSAVE_MODES } from '../core/save-preferences.js';
 import { trimWorldRostersForQuota } from './world-rosters.js';
 
@@ -112,7 +112,7 @@ export function createCareerPersistence({
     }
   };
 
-  const persistSeason = (immediate = false) => {
+  const persistSeason = (immediate = false, { flush = true } = {}) => {
     if (!getSavedNewGame?.()) return;
     if (immediate === true) {
       if (persistSeasonTimer) {
@@ -120,7 +120,7 @@ export function createCareerPersistence({
         persistSeasonTimer = null;
       }
       writeSeasonSave();
-      flushCloudSync({ urgent: true });
+      if (flush) flushCloudSync({ urgent: true });
       return;
     }
     if (persistSeasonTimer) clearTimeout(persistSeasonTimer);
@@ -174,13 +174,39 @@ export function createCareerPersistence({
     persistSeason(true);
   };
 
-  /** Save manual acionado pelo jogador (Opções → SALVAR). */
-  const manualSaveAll = () => {
-    if (!getSavedNewGame?.()) return false;
-    persistSeason(true);
+  /** Save manual acionado pelo jogador (Opções → SALVAR). Aguarda confirmação da nuvem quando logado. */
+  const manualSaveAll = async () => {
+    if (!getSavedNewGame?.()) return { ok: false, cloud: false };
+    persistSeason(true, { flush: false });
     syncCareerRosters();
-    flushCloudSync({ urgent: true });
-    return true;
+    const cloud = await flushCloudSyncAsync();
+    // #region agent log
+    try {
+      const seasonRaw = localStorage.getItem(SAVE_KEYS.season);
+      const season = seasonRaw ? JSON.parse(seasonRaw) : null;
+      sessionStorage.setItem(
+        'matchday-debug-manual-save',
+        JSON.stringify({
+          ts: Date.now(),
+          cloudOk: cloud.ok,
+          cloudMode: cloud.mode,
+          cloudSynced: cloud.synced,
+          cloudFailed: cloud.failed || [],
+          careerCal: season?.careerCalendarDate || null,
+          cloudActive: isCloudStorageActive(),
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+    __dbgSave('career-persistence.js:manualSaveAll', 'manual save finished', {
+      cloudOk: cloud.ok,
+      cloudMode: cloud.mode,
+      cloudSynced: cloud.synced,
+      cloudFailed: cloud.failed || [],
+    }, 'F');
+    // #endregion
+    return { ok: true, cloud: cloud.ok, cloudMode: cloud.mode };
   };
 
   const syncCareerRosters = () => {
@@ -249,6 +275,9 @@ export function createCareerPersistence({
     // pagehide é mais confiável que beforeunload em F5 / hard refresh (desktop e mobile).
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
+      // Hard refresh (Ctrl+Shift+R) nem sempre dispara beforeunload — marcar skip aqui também.
+      const hadCareerOnHide = !!getSavedNewGame?.();
+      if (hadCareerOnHide) markSkipSessionEndOnce();
       flushOnExit();
       const skipSession = consumeSkipSessionEndOnce();
       // #region agent log

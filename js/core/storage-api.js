@@ -192,25 +192,37 @@ function mergeRemoteSaves(saves) {
   });
 }
 
+/** Chrome limita corpo de fetch keepalive a ~64 KB — acima disso a requisição falha em silêncio. */
+const KEEPALIVE_BODY_LIMIT = 60_000;
+
 function flushSyncQueueKeepalive() {
   if (!isCloudStorageActive() || !syncQueue.size) return;
   const batch = new Map(syncQueue);
   syncQueue.clear();
   const token = getAuthToken();
   batch.forEach((value, key) => {
+    const body = JSON.stringify({ value });
+    const useKeepalive = body.length <= KEEPALIVE_BODY_LIMIT;
     fetch(apiUrl(`/api/saves/${encodeURIComponent(key)}`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ value }),
-      keepalive: true,
+      body,
+      keepalive: useKeepalive,
       cache: 'no-store',
     }).catch(error => {
       console.warn('[brfut] falha ao sincronizar save (keepalive)', key, error);
       syncQueue.set(key, value);
     });
+    if (!useKeepalive) {
+      console.warn(
+        '[brfut] save grande demais para keepalive — sync completo na próxima sessão',
+        key,
+        `${Math.round(body.length / 1024)}KB`,
+      );
+    }
   });
 }
 
@@ -222,6 +234,41 @@ export function flushCloudSync({ urgent = false } = {}) {
   }
   if (urgent) flushSyncQueueKeepalive();
   else flushSyncQueue();
+}
+
+/** Aguarda upload na nuvem (sem keepalive — suporta saves grandes). Usado no save manual. */
+export async function flushCloudSyncAsync() {
+  if (!isCloudStorageActive()) return { ok: true, synced: 0, mode: 'local' };
+  if (syncTimer) {
+    window.clearTimeout(syncTimer);
+    syncTimer = 0;
+  }
+  if (!syncQueue.size) return { ok: true, synced: 0, mode: 'cloud' };
+  const batch = new Map(syncQueue);
+  syncQueue.clear();
+  const results = await Promise.all(
+    [...batch.entries()].map(async ([key, value]) => {
+      try {
+        await authedFetch(`/api/saves/${encodeURIComponent(key)}`, {
+          method: 'PUT',
+          body: JSON.stringify({ value }),
+        });
+        return { key, ok: true };
+      } catch (error) {
+        console.warn('[brfut] falha ao sincronizar save', key, error);
+        syncQueue.set(key, value);
+        scheduleCloudSync();
+        return { key, ok: false };
+      }
+    }),
+  );
+  const failed = results.filter(entry => !entry.ok);
+  return {
+    ok: failed.length === 0,
+    synced: results.length - failed.length,
+    failed: failed.map(entry => entry.key),
+    mode: 'cloud',
+  };
 }
 
 function localSavesSnapshot() {

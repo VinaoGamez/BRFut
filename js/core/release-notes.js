@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.20',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T23:00:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Save / sessão',
+        items: [
+          'Hard refresh (Ctrl+Shift+R) mantém login e progresso — corrige rollback para Rodada 1 após recarregar a página.',
+          'Opções → SALVAR aguarda a nuvem confirmar antes de mostrar "SALVO!" — saves grandes não falham mais em silêncio.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.15',
     date: '2026-07-28',
     publishedAt: '2026-07-28T22:15:00-03:00',

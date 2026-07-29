@@ -449,11 +449,16 @@ export function createOptionsFeature(deps) {
 
   onClick('#manualSaveBtn', async () => {
     const btn = $('#manualSaveBtn');
-    const ok = await onManualSave?.();
     if (btn) {
-      const prev = btn.textContent;
-      btn.textContent = ok === false ? 'SEM SAVE' : 'SALVO!';
       btn.disabled = true;
+      btn.textContent = 'SALVANDO…';
+    }
+    const result = await onManualSave?.();
+    const ok = result === true || (result && typeof result === 'object' && result.ok !== false);
+    const cloudOk = result === true || result?.cloud !== false;
+    if (btn) {
+      const prev = 'SALVAR';
+      btn.textContent = !ok ? 'SEM SAVE' : cloudOk ? 'SALVO!' : 'SÓ LOCAL';
       window.setTimeout(() => {
         btn.textContent = prev;
         btn.disabled = false;

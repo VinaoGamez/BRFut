@@ -258,6 +258,8 @@ const SPONSOR_ORDER = [
 
   window.addEventListener('pagehide', event => {
     if (event.persisted) return;
+    // Hard refresh nem sempre dispara beforeunload — preservar sessão se há save local.
+    if (hasCareer()) markSkipSessionEndOnce();
     if (consumeSkipSessionEndOnce()) return;
     endBrowserSession();
     clearSessionCareerData();

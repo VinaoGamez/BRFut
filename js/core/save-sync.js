@@ -7,6 +7,8 @@ export function saveFreshness(value, key = '') {
   const ts = Date.parse(value.updatedAt || value.savedAt || '');
   if (Number.isFinite(ts) && ts > 0) return ts;
   if (key === SAVE_KEYS.season) {
+    const calTs = seasonCalendarTs(value);
+    if (calTs > 0) return calTs;
     const round = Number(value.currentRound);
     if (Number.isFinite(round) && round > 0) return round * 86_400_000;
   }
@@ -19,15 +21,15 @@ function seasonCalendarTs(value) {
 }
 
 function pickNewerSeasonSave(localValue, remoteValue) {
-  const localRound = Number(localValue.currentRound) || 0;
-  const remoteRound = Number(remoteValue.currentRound) || 0;
-  if (localRound !== remoteRound) {
-    return localRound > remoteRound ? localValue : remoteValue;
-  }
   const localCal = seasonCalendarTs(localValue);
   const remoteCal = seasonCalendarTs(remoteValue);
   if (localCal !== remoteCal) {
     return localCal > remoteCal ? localValue : remoteValue;
+  }
+  const localRound = Number(localValue.currentRound) || 0;
+  const remoteRound = Number(remoteValue.currentRound) || 0;
+  if (localRound !== remoteRound) {
+    return localRound > remoteRound ? localValue : remoteValue;
   }
   return null;
 }
