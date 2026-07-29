@@ -559,7 +559,8 @@ export function mountAccountPanel({
     clearSessionCareerData();
     renderLoggedOut(true);
     refreshCareerUi();
-    location.reload();
+    // Evita One Tap / estado residual: reload limpo após limpar token.
+    location.replace(location.pathname + location.search);
   });
 
   openProfileBtn?.addEventListener('click', () => {

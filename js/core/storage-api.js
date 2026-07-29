@@ -802,12 +802,22 @@ export async function logoutAccount() {
   setAuthToken('');
   currentUser = null;
   cloudActive = false;
+  remoteSavesCache = null;
+  backendAvailable = null;
+  storageInitPromise = null;
+  syncAuthBlockedUntil = 0;
   syncCloudLocalTrimFlag();
   stopPresenceHeartbeat();
   syncQueue.clear();
   if (syncTimer) {
     window.clearTimeout(syncTimer);
     syncTimer = 0;
+  }
+  // Cancela One Tap residual do Google, se existir.
+  try {
+    window.google?.accounts?.id?.disableAutoSelect?.();
+  } catch {
+    /* ignore */
   }
 }
 

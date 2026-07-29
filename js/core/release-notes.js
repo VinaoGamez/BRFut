@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.80',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T20:15:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Sair da conta',
+        items: [
+          'Corrigido: Opções → Sair só atualizava a página e mantinha a conta logada.',
+          'Agora o Sair desconecta de verdade e volta à home sem sessão.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.75',
     date: '2026-07-29',
     publishedAt: '2026-07-29T17:25:00-04:00',

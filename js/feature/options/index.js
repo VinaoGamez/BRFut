@@ -14,7 +14,7 @@ import {
   listAutosaveOptions,
   mergePreferencesIntoCareer,
 } from '../../core/save-preferences.js';
-import { endBrowserSession, isCloudStorageActive, queueCloudSave, getAuthToken, flushCloudSyncAsync } from '../../core/storage-api.js';
+import { isCloudStorageActive, queueCloudSave, getAuthToken, flushCloudSyncAsync, logoutAccount } from '../../core/storage-api.js';
 import { clearCareerData } from '../../core/save-clear.js';
 import {
   canCreateSlot,
@@ -520,10 +520,16 @@ export function createOptionsFeature(deps) {
 
   onClick('#optionsLogout', async () => {
     $('#optionsModal')?.classList.add('hidden');
-    await onManualSave?.();
-    endBrowserSession();
+    try {
+      await onManualSave?.();
+    } catch {
+      /* ignore */
+    }
+    await logoutAccount();
     clearSessionCareerData();
-    location.reload();
+    // Volta à home deslogado (reload no jogo revalidava o token antigo).
+    const home = new URL('home.html', location.href);
+    location.replace(`${home.pathname}${home.search}`);
   });
 
   return {
