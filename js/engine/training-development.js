@@ -5,7 +5,7 @@
 import { MODULE_VERSIONS } from '../core/constants.js';
 import { formatOvrMarkHtml } from './player-development.js';
 import { syncOverallFromAttributes } from './player-generation.js';
-import { isYouthAcademyUnlocked } from './youth-academy.js';
+import { clubHasYouthTrainingTargets } from './youth-academy.js';
 
 export const TRAINING_MODULE_VERSION = MODULE_VERSIONS.trainingDevelopment || 1;
 
@@ -480,11 +480,10 @@ export function developmentFocusOptionsForRoster(roster = [], club = null) {
 
 export function developmentFocusOptionsForClub(club = {}) {
   const roster = Array.isArray(club.roster) ? club.roster : [];
-  const hasYouth = Array.isArray(club.youthRoster) && club.youthRoster.length > 0;
-  const youthUnlocked = isYouthAcademyUnlocked(club);
+  const youthUnlocked = clubHasYouthTrainingTargets(club);
   return DEVELOPMENT_FOCUS_IDS.filter(id => {
     if (id === 'goalkeeper') return rosterHasGoalkeeper(roster);
-    if (id === 'youth') return youthUnlocked && hasYouth;
+    if (id === 'youth') return youthUnlocked;
     return true;
   }).map(id => ({
     id,

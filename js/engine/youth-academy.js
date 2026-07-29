@@ -158,6 +158,38 @@ export function isYouthAcademyUnlocked(club) {
   return getStructureLevel(club) >= YOUTH_STRUCTURE_UNLOCK;
 }
 
+/** Elenco U-20 contratado + talentos em relatórios de olheiro (ainda não contratados). */
+export function clubHasYouthTrainingTargets(club) {
+  if (!club || typeof club !== 'object') return false;
+  ensureYouthState(club);
+  if (!isYouthAcademyUnlocked(club)) return false;
+  const signed = (club.youthRoster || []).length;
+  const scouting = (club.scoutReports || []).filter(r => r?.player).length;
+  return signed + scouting > 0;
+}
+
+/** Jogadores da base que recebem treino foco Juvenis (mutável in-place). */
+export function collectYouthTrainingPlayers(club) {
+  if (!club || typeof club !== 'object') return [];
+  ensureYouthState(club);
+  const players = [];
+  (club.youthRoster || []).forEach((player, index) => {
+    if (!player || typeof player !== 'object') return;
+    ensurePlayerId(player, { club: 'youth', index });
+    if (!Number.isFinite(Number(player.fatigue))) player.fatigue = 100;
+    players.push(player);
+  });
+  (club.scoutReports || []).forEach((report, index) => {
+    if (!report?.player || typeof report.player !== 'object') return;
+    const hydrated = hydrateYouthPlayer(report.player, { index: `scout-${index}` });
+    if (!hydrated) return;
+    report.player = hydrated;
+    if (!Number.isFinite(Number(hydrated.fatigue))) hydrated.fatigue = 100;
+    players.push(hydrated);
+  });
+  return players;
+}
+
 export function ensureYouthState(club) {
   if (!club || typeof club !== 'object') return club;
   if (!Array.isArray(club.youthRoster)) club.youthRoster = [];

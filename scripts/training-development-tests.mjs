@@ -11,6 +11,7 @@ import {
   trainingAttrGainTotal,
   developmentFocusOptionsForClub,
 } from '../js/engine/training-development.js';
+import { clubHasYouthTrainingTargets, collectYouthTrainingPlayers } from '../js/engine/youth-academy.js';
 import { syncOverallFromAttributes } from '../js/engine/player-generation.js';
 import { emptyDevelopmentState } from '../js/engine/player-development.js';
 
@@ -145,6 +146,15 @@ const clubLocked = { roster: [], youthRoster: [youthPlayer], stadiumStructure: 2
 ok(!developmentFocusOptionsForClub(clubLocked).some(item => item.id === 'youth'), 'youth hidden when base locked');
 const clubOpen = { roster: [], youthRoster: [{ ...youthPlayer }], stadiumStructure: 3 };
 ok(developmentFocusOptionsForClub(clubOpen).some(item => item.id === 'youth'), 'youth shown when base open');
+const clubScoutsOnly = {
+  roster: [],
+  youthRoster: [],
+  scoutReports: [{ id: 'r1', player: { ...youthPlayer, name: 'Prospecto' } }],
+  stadiumStructure: 3,
+};
+ok(clubHasYouthTrainingTargets(clubScoutsOnly), 'scout reports count as youth training targets');
+ok(developmentFocusOptionsForClub(clubScoutsOnly).some(item => item.id === 'youth'), 'youth shown with scout reports');
+ok(collectYouthTrainingPlayers(clubScoutsOnly).length === 1, 'collect scout report player');
 const youthDay = applyDevelopmentTrainingDay({
   roster: clubOpen.youthRoster,
   focus: 'youth',

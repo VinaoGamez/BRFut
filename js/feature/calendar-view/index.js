@@ -619,9 +619,28 @@ export function createCalendarViewFeature(deps) {
     wrap.innerHTML = `<div class="training-shortcut-mode ${isDev ? 'is-dev' : 'is-load'}"><small>MODO ATIVO</small><strong>${modeLabel}</strong></div><p class="training-shortcut-note">Pré: ${trainingRules.before || '—'} · Pós: ${trainingRules.after || '—'}</p>`;
   };
 
-  const renderTrainingRules = () => {
+  const resolveTrainingRulesView = () => {
     let trainingRules = getTrainingRules();
+    const focusOptions = typeof getDevelopmentFocusOptions === 'function' ? getDevelopmentFocusOptions() : [];
+    const allowedFocus = new Set(focusOptions.map(item => item.id));
+    if (
+      trainingRules.developmentFocus &&
+      !allowedFocus.has(trainingRules.developmentFocus) &&
+      typeof setDevelopmentFocus === 'function'
+    ) {
+      const fallback = allowedFocus.has('individual')
+        ? 'individual'
+        : focusOptions[0]?.id || 'individual';
+      setDevelopmentFocus(fallback);
+      trainingRules = getTrainingRules();
+    }
+    return { trainingRules, allowedFocus };
+  };
+
+  const renderTrainingRules = () => {
+    const { trainingRules, allowedFocus } = resolveTrainingRulesView();
     const freeSummary = freeDaySummary(trainingRules);
+    const activeFocus = trainingRules.developmentFocus;
     $$('#trainingRules [data-training-current]').forEach(el => {
       const slot = el.dataset.trainingCurrent;
       el.textContent = slot === 'free' ? freeSummary : trainingRules[slot] || '—';
@@ -661,19 +680,12 @@ export function createCalendarViewFeature(deps) {
           ? 'Desenvolvimento gasta energia por dia. Reservas evoluem mais; titulares exaustos perdem eficiência.'
           : 'Dias livres em gestão de carga recuperam o elenco entre partidas.';
     }
-    const focusOptions = typeof getDevelopmentFocusOptions === 'function' ? getDevelopmentFocusOptions() : [];
-    const allowedFocus = new Set(focusOptions.map(item => item.id));
-    if (!allowedFocus.has(trainingRules.developmentFocus) && typeof setDevelopmentFocus === 'function') {
-      setDevelopmentFocus('individual');
-      trainingRules = getTrainingRules();
-    }
-    $$('[data-dev-focus]').forEach(button => {
+    $$('#trainingDevOptions [data-dev-focus]').forEach(button => {
       const focusId = button.dataset.devFocus;
       const allowed = allowedFocus.has(focusId);
       button.hidden = !allowed;
-      const selected = trainingRules.developmentFocus === focusId;
-      button.classList.toggle('active', selected);
-      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      button.classList.toggle('active', allowed && activeFocus === focusId);
+      button.setAttribute('aria-pressed', allowed && activeFocus === focusId ? 'true' : 'false');
     });
     renderTrainingWeeklyReport();
     renderTrainingShortcut(trainingRules);
@@ -1073,7 +1085,8 @@ export function createCalendarViewFeature(deps) {
         setDevelopmentFocus(focus);
         writeJson(SAVE_KEYS.training, getTrainingRules());
         if (getHasCareer()) persistSeason();
-        renderCalendar();
+        renderTrainingRules();
+        renderTrainingShortcut(getTrainingRules());
         return;
       }
       const button = event.target.closest('[data-training-option]');

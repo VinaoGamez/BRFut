@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.05',
+    date: '2026-07-29',
+    publishedAt: '2026-07-30T00:45:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Treinos',
+        items: [
+          'Corrigido destaque visual ao escolher foco Juvenis nos dias livres.',
+          'Treino Juvenis passa a valer para elenco U-20 contratado e talentos em relatórios de olheiro.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.00',
     date: '2026-07-29',
     publishedAt: '2026-07-30T00:30:00-03:00',

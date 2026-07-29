@@ -121,6 +121,7 @@ import {
   summarizeSquadTrainingXp,
   XP_PER_ATTR_POINT,
 } from '../engine/training-development.js';
+import { collectYouthTrainingPlayers } from '../engine/youth-academy.js';
 import {
   generatePlayer as generatePlayerCore,
   GENERIC_SQUAD_ROLES,
@@ -5364,11 +5365,11 @@ const rosterChangeAlertHolder = { fn: null };
     if(type==='free'&&trainingRules.freeMode===TRAINING_FREE_MODES.development){
       const club=clubs[userClub];
       const isYouthFocus=trainingRules.developmentFocus==='youth';
-      const roster=isYouthFocus?(club?.youthRoster||[]):(club?.roster||[]);
+      const roster=isYouthFocus?collectYouthTrainingPlayers(club):(club?.roster||[]);
       if(!roster?.length){recoverOtherClubs(1,1);return;}
       const result=applyDevelopmentTrainingDay({
         roster,
-        focus:trainingRules.developmentFocus,
+        focus:isYouthFocus?'youth':trainingRules.developmentFocus,
         state:playerDevelopment,
         getPlayerId:player=>resolvePlayerId(player)||playerKey(player)||historyPlayerKey(player),
         getSeasonMinutes:player=>isYouthFocus?0:(Number(getDevelopmentSeasonBucket(player)?.minutes)||0),
@@ -5379,6 +5380,8 @@ const rosterChangeAlertHolder = { fn: null };
       if(result.changed&&!isYouthFocus){
         syncClubPowers(clubs);
         if(clubs[userClub]?.roster)squad.splice(0,squad.length,...clubs[userClub].roster);
+      }else if(result.changed&&isYouthFocus){
+        try{persistSeason();}catch{/* boot */}
       }
       try{renderRoster();}catch{/* boot */}
       recoverOtherClubs(1,1);
