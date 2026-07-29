@@ -2501,8 +2501,18 @@ export async function bootEngine({
       random:gameRandom,
     });
   };
-  if(!cupCompetition.stages.length&&cupFirstRanked.length===28)createCupStage(1,cupFirstRanked);
-  else rescheduleAllCupFixtures();
+  const cupFixtureTotal=(cupCompetition.stages||[]).reduce(
+    (sum,stage)=>sum+(Array.isArray(stage?.fixtures)?stage.fixtures.length:0),
+    0,
+  );
+  let cupBootstrappedFresh=false;
+  if((!cupCompetition.stages.length||!cupFixtureTotal)&&cupFirstRanked.length===28){
+    cupCompetition.stages=[];
+    cupCompetition.currentPhase=1;
+    cupCompetition.champion=null;
+    createCupStage(1,cupFirstRanked);
+    cupBootstrappedFresh=true;
+  }else rescheduleAllCupFixtures();
   restConflictCount=calculateRestConflicts();
   if(restConflictCount)console.warn(`Calendário gerado com ${restConflictCount} conflito(s) de descanso.`);
   const seasonMaxRound=()=>userDivision==='D'?22:38;
@@ -6088,6 +6098,14 @@ export async function bootEngine({
   onClick('#calendarAdvanceWeek',()=>advanceCalendarWeek());
   if(!new URLSearchParams(location.search).has('cupAudit')&&reconcileSerieACupEntry()){
     console.warn(`Copa do Brasil: ${userClub} reintegrado à 5ª fase (save inconsistente corrigido).`);
+    rebuildCalendarGames();
+    $('#calendar .title span').textContent=`Agenda nacional de janeiro a dezembro · ${championshipFixtures.flat().length} jogos do Brasileiro · ${copaDoBrasilFixtures.length} jogos confirmados da Copa do Brasil · ${calendarIntervalLabel(restConflictCount)}.`;
+    refreshSeasonPresentation();
+    bootPersistPending=true;
+  }
+  if(cupBootstrappedFresh){
+    advanceCupThroughDate(careerCalendarDate);
+    console.warn('Copa do Brasil: 1ª fase sorteada de novo (calendário ausente após reload/nuvem).');
     rebuildCalendarGames();
     $('#calendar .title span').textContent=`Agenda nacional de janeiro a dezembro · ${championshipFixtures.flat().length} jogos do Brasileiro · ${copaDoBrasilFixtures.length} jogos confirmados da Copa do Brasil · ${calendarIntervalLabel(restConflictCount)}.`;
     refreshSeasonPresentation();

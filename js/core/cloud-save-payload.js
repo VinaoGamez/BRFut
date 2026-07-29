@@ -99,8 +99,49 @@ export function slimCareerForCloudUpload(career) {
   };
 }
 
+function slimCupFixtureForCloud(game) {
+  if (!game || typeof game !== 'object') return game;
+  return {
+    home: game.home,
+    away: game.away,
+    homeGoals: game.homeGoals ?? null,
+    awayGoals: game.awayGoals ?? null,
+    completed: !!game.completed,
+    competition: game.competition || 'COPA DO BRASIL',
+    phase: game.phase,
+    phaseIndex: game.phaseIndex,
+    leg: game.leg,
+    date: game.date,
+    time: game.time,
+    gameNumber: game.gameNumber,
+    tieId: game.tieId,
+    winner: game.winner || null,
+  };
+}
+
+/** Mantém o calendário da Copa no upload — sem isso hard refresh perde o sorteio. */
+export function slimCupCompetitionForCloud(cup, { ultra = false } = {}) {
+  if (!cup || typeof cup !== 'object') return cup;
+  const stages = Array.isArray(cup.stages) ? cup.stages : [];
+  return {
+    currentPhase: cup.currentPhase || 1,
+    champion: cup.champion || null,
+    stages: stages.map(stage => ({
+      index: stage.index,
+      name: stage.name,
+      twoLegged: !!stage.twoLegged,
+      completed: !!stage.completed,
+      entrants: ultra ? undefined : Array.isArray(stage.entrants) ? stage.entrants : [],
+      winners: Array.isArray(stage.winners) ? stage.winners : [],
+      fixtures: (stage.fixtures || []).map(slimCupFixtureForCloud),
+    })),
+  };
+}
+
 export function slimSeasonForCloudUpload(season) {
   if (!season || typeof season !== 'object') return season;
+
+  const cup = slimCupCompetitionForCloud(season.cupCompetition);
 
   let checkpoint = {
     seed: season.seed,
@@ -113,6 +154,7 @@ export function slimSeasonForCloudUpload(season) {
     nationalTeamOfferState: season.nationalTeamOfferState ?? null,
     worldCupCompetition: season.worldCupCompetition ?? null,
     nationalFixtures: season.nationalFixtures ?? null,
+    cupCompetition: cup,
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues),
     standings: season.standings,
     userClubStatus: season.userClubStatus,
@@ -134,6 +176,7 @@ export function slimSeasonForCloudUpload(season) {
     careerCalendarDate: season.careerCalendarDate,
     updatedAt: season.updatedAt,
     stateLeagueProgressRound: season.stateLeagueProgressRound,
+    cupCompetition: slimCupCompetitionForCloud(season.cupCompetition, { ultra: true }),
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues, { ultra: true }),
     standings: season.standings,
   };
@@ -146,6 +189,7 @@ export function slimSeasonForCloudUpload(season) {
     careerCalendarDate: season.careerCalendarDate,
     updatedAt: season.updatedAt,
     stateLeagueProgressRound: season.stateLeagueProgressRound,
+    cupCompetition: slimCupCompetitionForCloud(season.cupCompetition, { ultra: true }),
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues, { ultra: true }),
   };
 }

@@ -1,6 +1,6 @@
 import { SAVE_KEYS, LEGACY_SAVE_KEYS, CAREER_INDEX_KEY, ACTIVE_SLOT_SESSION_KEY, isSlotBundleKey, slotBundleKeys } from './constants.js';
 import { normalizeWorldCupHistory } from '../engine/world-cup-history.js';
-import { stampSyncableSave } from './save-sync.js';
+import { stampSyncableSave, isLocalStorageCheckpoint } from './save-sync.js';
 import { isCloudStorageActive, queueCloudDelete, queueCloudSave } from './storage-api.js';
 import { migrateLegacyStorageKeysInPlace } from './save-key-normalizer.js';
 
@@ -357,11 +357,23 @@ function readActiveSlotIdForLoad() {
   return index?.activeSlotId || null;
 }
 
+function seasonHasCupFixtures(season) {
+  return (season?.cupCompetition?.stages || []).some(
+    stage => Array.isArray(stage?.fixtures) && stage.fixtures.length > 0,
+  );
+}
+
 export function loadCareerSave() {
   let raw = readJson(SAVE_KEYS.career, null);
-  if (!raw) {
-    const slotId = readActiveSlotIdForLoad();
-    if (slotId) raw = readJson(slotBundleKeys(slotId).career, null);
+  const slotId = readActiveSlotIdForLoad();
+  if (slotId) {
+    const slotCareer = readJson(slotBundleKeys(slotId).career, null);
+    // Checkpoint ativo sem pirâmide — preferir o bundle completo do slot.
+    if (slotCareer && (!raw || isLocalStorageCheckpoint(raw))) {
+      raw = slotCareer;
+    } else if (!raw) {
+      raw = slotCareer;
+    }
   }
   if (!raw) return null;
   return {
@@ -373,9 +385,21 @@ export function loadCareerSave() {
 
 export function loadSeasonSave() {
   let raw = readJson(SAVE_KEYS.season, null);
-  if (!raw) {
-    const slotId = readActiveSlotIdForLoad();
-    if (slotId) raw = readJson(slotBundleKeys(slotId).season, null);
+  const slotId = readActiveSlotIdForLoad();
+  if (slotId) {
+    const slotSeason = readJson(slotBundleKeys(slotId).season, null);
+    if (slotSeason && !isLocalStorageCheckpoint(slotSeason)) {
+      // Ativo checkpoint/slim sem Copa → slot completo (evita perder sorteio no hard refresh).
+      if (
+        !raw ||
+        isLocalStorageCheckpoint(raw) ||
+        (!seasonHasCupFixtures(raw) && seasonHasCupFixtures(slotSeason))
+      ) {
+        raw = slotSeason;
+      }
+    } else if (!raw) {
+      raw = slotSeason;
+    }
   }
   return raw;
 }

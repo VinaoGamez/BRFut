@@ -130,6 +130,39 @@ check('cloud slim keeps all fixture rounds for user UF', () => {
   );
 });
 
+check('cloud slim keeps Copa do Brasil fixtures', () => {
+  const season = {
+    ...buildFullSeason(7),
+    cupCompetition: {
+      currentPhase: 1,
+      champion: null,
+      stages: [
+        {
+          index: 1,
+          name: '1ª FASE',
+          completed: false,
+          entrants: ['A', 'B'],
+          winners: [],
+          fixtures: [
+            {
+              home: 'A',
+              away: 'B',
+              competition: 'COPA DO BRASIL',
+              phase: '1ª FASE',
+              date: '2026-01-20',
+              completed: false,
+              tieId: 'F1-G1',
+            },
+          ],
+        },
+      ],
+    },
+  };
+  const cloud = slimSeasonForCloudUpload(season);
+  assert(cloud.cupCompetition?.stages?.length === 1, 'cup stages kept');
+  assert(cloud.cupCompetition.stages[0].fixtures.length === 1, 'cup fixtures kept');
+});
+
 check('mergeCareerSaves keeps full local over slim remote checkpoint', () => {
   const local = {
     seed: 999,

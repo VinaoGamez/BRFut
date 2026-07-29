@@ -163,7 +163,23 @@ export function mergeSeasonSaves(localValue, remoteValue, remoteEnvelopeAt = 0) 
       : remoteValue.careerMessages;
   }
 
+  const localCup = localValue.cupCompetition;
+  const remoteCup = remoteValue.cupCompetition;
+  const localCupFixtures = cupFixtureCount(localCup);
+  const remoteCupFixtures = cupFixtureCount(remoteCup);
+  if (remoteCupFixtures > localCupFixtures) merged.cupCompetition = remoteCup;
+  else if (localCupFixtures > 0) merged.cupCompetition = localCup;
+  else if (remoteCup) merged.cupCompetition = remoteCup;
+
   return merged;
+}
+
+function cupFixtureCount(cup) {
+  if (!cup || typeof cup !== 'object') return 0;
+  return (cup.stages || []).reduce(
+    (sum, stage) => sum + (Array.isArray(stage?.fixtures) ? stage.fixtures.length : 0),
+    0,
+  );
 }
 
 export function careerPayloadWeight(career) {

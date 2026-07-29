@@ -92,6 +92,7 @@ export function slimSeasonPayloadLevel3(payload, context = {}) {
   }
   // Mantém calendário nacional no local — apagar fixtures quebra retomada da rodada.
   next.dFixtures = Array.isArray(next.dFixtures) ? next.dFixtures.slice(-4) : [];
+  // Copa: NÃO remover jogos pendentes — hard refresh + cota apagava o sorteio inteiro.
   if (next.cupCompetition) {
     next.cupCompetition = {
       currentPhase: next.cupCompetition.currentPhase,
@@ -99,16 +100,26 @@ export function slimSeasonPayloadLevel3(payload, context = {}) {
       stages: (next.cupCompetition.stages || []).map(stage => ({
         index: stage.index,
         name: stage.name,
-        completed: stage.completed,
-        fixtures: (stage.fixtures || [])
-          .filter(game => game.completed)
-          .map(game => ({
-            home: game.home,
-            away: game.away,
-            homeGoals: game.homeGoals,
-            awayGoals: game.awayGoals,
-            completed: true,
-          })),
+        twoLegged: !!stage.twoLegged,
+        completed: !!stage.completed,
+        entrants: Array.isArray(stage.entrants) ? stage.entrants : [],
+        winners: Array.isArray(stage.winners) ? stage.winners : [],
+        fixtures: (stage.fixtures || []).map(game => ({
+          home: game.home,
+          away: game.away,
+          homeGoals: game.homeGoals ?? null,
+          awayGoals: game.awayGoals ?? null,
+          completed: !!game.completed,
+          competition: game.competition || 'COPA DO BRASIL',
+          phase: game.phase,
+          phaseIndex: game.phaseIndex,
+          leg: game.leg,
+          date: game.date,
+          time: game.time,
+          gameNumber: game.gameNumber,
+          tieId: game.tieId,
+          winner: game.winner || null,
+        })),
       })),
     };
   }

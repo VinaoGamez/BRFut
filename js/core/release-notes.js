@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.45',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T15:45:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Copa do Brasil',
+        items: [
+          'Corrigido hard refresh que apagava o sorteio da Copa do Brasil no save da nuvem.',
+          'Se o calendário da Copa sumir, o jogo refaz a 1ª fase e alinha as datas automaticamente.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.40',
     date: '2026-07-29',
     publishedAt: '2026-07-29T15:30:00-04:00',
