@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.00',
+    date: '2026-07-29',
+    publishedAt: '2026-07-30T00:30:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Treinos',
+        items: [
+          'Corrigido erro ao abrir a rotina de treinos (tela de calendário travava).',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.95',
     date: '2026-07-29',
     publishedAt: '2026-07-30T00:20:00-03:00',

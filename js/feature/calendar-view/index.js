@@ -620,7 +620,7 @@ export function createCalendarViewFeature(deps) {
   };
 
   const renderTrainingRules = () => {
-    const trainingRules = getTrainingRules();
+    let trainingRules = getTrainingRules();
     const freeSummary = freeDaySummary(trainingRules);
     $$('#trainingRules [data-training-current]').forEach(el => {
       const slot = el.dataset.trainingCurrent;
