@@ -2210,6 +2210,8 @@ const rosterChangeAlertHolder = { fn: null };
   let maybeSendNationalTeamOffers=()=>false;
   let issueNationalTeamOfferIfDue=()=>false;
   let maybeShowNationalTeamOfferPopup=()=>false;
+  let acceptNationalTeamOfferFromPopup=()=>{};
+  let denyAllNationalTeamOffers=()=>{};
   const openMedicalActionFlow=()=>{
     messages.openMedicalActionMessage?.();
     processPostMatchMedicalQueue?.();

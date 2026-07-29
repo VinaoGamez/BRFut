@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.70',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T23:00:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Correção crítica de boot',
+        items: [
+          'Corrigido erro que impedia o jogo de iniciar (convites para seleção CMU).',
+          'Redirect HTTP→HTTPS sem script inline — compatível com CSP do site.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.65',
     date: '2026-07-29',
     publishedAt: '2026-07-29T22:45:00-03:00',
