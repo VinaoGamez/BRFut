@@ -481,31 +481,28 @@ export function mountAccountPanel({
   const refresh = async () => {
     setError('');
     const health = await fetchBackendHealth();
-    if (!health) {
-      if (BRFUT_API_ORIGIN) {
-        renderLoggedOut(true);
-        refreshCareerUi();
-        return { mode: 'local', backend: false };
-      }
-      renderHidden();
-      return { mode: 'local' };
-    }
+    const token = getAuthToken();
 
-    if (!getAuthToken()) {
+    if (!token) {
+      if (!health && !BRFUT_API_ORIGIN) {
+        renderHidden();
+        return { mode: 'local' };
+      }
       renderLoggedOut(true);
       refreshCareerUi();
-      return { mode: 'local', backend: true };
+      return { mode: 'local', backend: !!health };
     }
 
-    const state = await ensureStorageHydrated();
-    if (state.mode === 'cloud' && isCloudStorageActive()) {
-      renderLoggedIn(getCloudUser());
-      refreshCareerUi();
-      return state;
-    }
-
-    renderLoggedOut(true);
+    // Com token, a UI permanece logada mesmo se a API estiver fora (nuvem pausada).
+    const state = await ensureStorageHydrated().catch(() => ({ mode: 'local', tokenPreserved: true }));
+    const user = getCloudUser() || state?.user || { displayName: 'Conta', username: 'online' };
+    renderLoggedIn(user);
     refreshCareerUi();
+    onAuthChange?.({
+      loggedIn: true,
+      hasBackend: !!health || state?.backend !== false,
+      cloudActive: isCloudStorageActive(),
+    });
     return state;
   };
 

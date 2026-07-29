@@ -33,7 +33,7 @@ import { renderTableFootIcon } from '../lab/card-back.js';
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
 import { SAVE_KEYS, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
-import { isCloudStorageActive, probeBackend } from '../core/storage-api.js';
+import { getAuthToken, isCloudStorageActive, probeBackend } from '../core/storage-api.js';
 import { collectWorldRosters, applyWorldRosters, stampWorldPlayers } from '../engine/world-rosters.js';
 import {
   computeRenewalWageAsk,
@@ -713,7 +713,11 @@ export async function bootEngine({
   registerWelcomeAuthSync?.(optionsUi.syncWelcomeAuth);
   registerCareerCreator?.(optionsUi.openCareerCreator);
   void probeBackend().then(ok => {
-    optionsUi.syncWelcomeAuth?.({ loggedIn: isCloudStorageActive(), hasBackend: ok });
+    // Conta permanece "logada" com token mesmo se a nuvem estiver pausada.
+    optionsUi.syncWelcomeAuth?.({
+      loggedIn: !!getAuthToken() || isCloudStorageActive(),
+      hasBackend: ok,
+    });
   });
   
   const clubInitials=userClub.split(/\s+/).map(part=>part[0]).join('').slice(0,2).toUpperCase();

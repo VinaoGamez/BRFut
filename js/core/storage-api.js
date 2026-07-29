@@ -40,6 +40,8 @@ let remoteSavesCache = null;
 const syncQueue = new Map();
 let syncTimer = 0;
 let syncAuthBlockedUntil = 0;
+/** Último motivo de falha ao reativar nuvem (manual save / ensureCloudReady). */
+let lastCloudGateReason = null;
 let presenceTimer = 0;
 const syncWarned = new Set();
 
@@ -79,13 +81,10 @@ function warnSyncOnce(id, message, ...args) {
   console.warn(message, ...args);
 }
 
-function deactivateCloudSync({ reason = 'auth_failed' } = {}) {
-  setAuthToken('');
+function pauseCloudSync({ reason = 'cloud_paused' } = {}) {
+  // NÃO apaga o token — logout só via logoutAccount() / fechar aba (sessionStorage).
   cloudActive = false;
-  currentUser = null;
-  remoteSavesCache = null;
   syncCloudLocalTrimFlag();
-  syncQueue.clear();
   syncAuthBlockedUntil = Date.now() + SYNC_AUTH_BACKOFF_MS;
   if (syncTimer) {
     window.clearTimeout(syncTimer);
@@ -95,14 +94,23 @@ function deactivateCloudSync({ reason = 'auth_failed' } = {}) {
   return reason;
 }
 
+/** @deprecated use pauseCloudSync — mantido nome interno antigo */
+function deactivateCloudSync(opts) {
+  return pauseCloudSync(opts);
+}
+
 function isSyncAuthBlocked() {
   return syncAuthBlockedUntil > Date.now();
 }
 
 function handleSyncAuthFailure(error) {
   if (error?.status !== 401) return false;
-  deactivateCloudSync();
-  warnSyncOnce('sync-auth', '[brfut] sessão expirada — sync na nuvem pausado. Entre novamente em Conta.', error);
+  pauseCloudSync({ reason: 'auth_failed' });
+  warnSyncOnce(
+    'sync-auth',
+    '[brfut] nuvem pausada (sessão rejeitada) — token mantido; use Sair só se quiser desconectar',
+    error,
+  );
   return true;
 }
 
@@ -182,29 +190,36 @@ export async function ensureCloudReady() {
   const token = getAuthToken();
   if (!token) {
     cloudActive = false;
+    lastCloudGateReason = 'cloud_inactive';
     syncCloudLocalTrimFlag();
     return false;
   }
-  if (cloudActive && currentUser) return true;
+  if (cloudActive && currentUser) {
+    lastCloudGateReason = null;
+    return true;
+  }
   try {
-    backendAvailable = null;
-    backendProbeAt = 0;
-    if (!(await probeBackend({ force: true }))) return false;
-    const me = await authedFetch('/api/auth/me', { retry: true });
+    // /me direto — health pode falhar por rate limit sem a sessão estar inválida.
+    syncAuthBlockedUntil = 0;
+    const me = await authedFetch('/api/auth/me');
     currentUser = me.user;
     cloudActive = true;
-    syncAuthBlockedUntil = 0;
+    backendAvailable = true;
+    backendProbeAt = Date.now();
+    lastCloudGateReason = null;
     syncCloudLocalTrimFlag();
     startPresenceHeartbeat();
     return true;
   } catch (error) {
-    // Token inválido: limpa para o jogador poder logar de novo.
-    if (error?.status === 401) {
-      setAuthToken('');
-      currentUser = null;
-    }
+    // Nunca apaga o token aqui. Só pausa a nuvem.
     cloudActive = false;
     syncCloudLocalTrimFlag();
+    if (error?.status === 401) {
+      lastCloudGateReason = 'auth_rejected';
+      syncAuthBlockedUntil = Date.now() + SYNC_AUTH_BACKOFF_MS;
+    } else {
+      lastCloudGateReason = 'cloud_unreachable';
+    }
     return false;
   }
 }
@@ -639,8 +654,8 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
     return {
       ok: false,
       synced: 0,
-      mode: BRFUT_API_ORIGIN ? 'cloud' : 'local',
-      reason: 'cloud_inactive',
+      mode: BRFUT_API_ORIGIN || resolveApiOrigin() !== window.location.origin ? 'cloud' : 'local',
+      reason: lastCloudGateReason || (getAuthToken() ? 'cloud_unreachable' : 'cloud_inactive'),
       errors: [],
       seasonOk: false,
       careerOk: false,
@@ -683,9 +698,12 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
     };
   }
 
+  // Career + season primeiro — SALVO! depende deles; slots grandes podem falhar sem matar o save.
+  const priority = [SAVE_KEYS.career, SAVE_KEYS.season, SAVE_KEYS.playerHistory, CAREER_INDEX_KEY];
   const orderedKeys = [
-    ...keysToSync.filter(key => batch.has(key)),
-    ...[...batch.keys()].filter(key => !keysToSync.includes(key)),
+    ...priority.filter(key => batch.has(key)),
+    ...keysToSync.filter(key => batch.has(key) && !priority.includes(key)),
+    ...[...batch.keys()].filter(key => !priority.includes(key) && !keysToSync.includes(key)),
   ];
 
   const results = [];
@@ -973,14 +991,20 @@ export async function initStorageBackend({ skipProbe = false, preferMigrate = fa
 }
 
 async function initStorageBackendImpl({ skipProbe = false, preferMigrate = false } = {}) {
+  const token = getAuthToken();
+
   if (!skipProbe && !(await probeBackend())) {
+    // API fora do ar — mantém login local; nuvem fica pausada.
     cloudActive = false;
-    currentUser = null;
     syncCloudLocalTrimFlag();
-    return { mode: 'local' };
+    return {
+      mode: 'local',
+      backend: false,
+      tokenPreserved: !!token,
+      user: currentUser,
+    };
   }
 
-  const token = getAuthToken();
   if (!token) {
     cloudActive = false;
     currentUser = null;
@@ -992,41 +1016,54 @@ async function initStorageBackendImpl({ skipProbe = false, preferMigrate = false
     const me = await authedFetch('/api/auth/me');
     currentUser = me.user;
     cloudActive = true;
+    syncAuthBlockedUntil = 0;
   } catch (error) {
-    setAuthToken('');
+    // Falha de rede/429/401: NÃO desloga. Token permanece até Sair explícito.
     cloudActive = false;
-    currentUser = null;
     syncCloudLocalTrimFlag();
-    return { mode: 'local', backend: true, authError: error?.message };
+    if (error?.status === 401) {
+      syncAuthBlockedUntil = Date.now() + SYNC_AUTH_BACKOFF_MS;
+    }
+    return {
+      mode: 'local',
+      backend: true,
+      authError: error?.message,
+      tokenPreserved: true,
+      user: currentUser,
+    };
   }
 
-  const remote = await authedFetch('/api/saves');
-  const remoteSaves = remote?.saves || {};
-  setRemoteSavesCache(remoteSaves);
-  const hasRemoteCareer = remoteHasCareer(remoteSaves);
-  const hasLocalCareer = localHasAnyCareerPayload();
-  const freshCareerBoot = consumeFreshCareerBoot();
-
   try {
-    if (!hasRemoteCareer && hasLocalCareer && preferMigrate !== false) {
-      await migrateLocalToCloud();
-      const refreshed = await authedFetch('/api/saves');
-      setRemoteSavesCache(refreshed?.saves || {});
-      mergeRemoteSaves(refreshed?.saves || {}, { skipCareerSeasonHydrate: freshCareerBoot });
-    } else {
-      mergeRemoteSaves(remoteSaves, { skipCareerSeasonHydrate: freshCareerBoot });
+    const remote = await authedFetch('/api/saves');
+    const remoteSaves = remote?.saves || {};
+    setRemoteSavesCache(remoteSaves);
+    const hasRemoteCareer = remoteHasCareer(remoteSaves);
+    const hasLocalCareer = localHasAnyCareerPayload();
+    const freshCareerBoot = consumeFreshCareerBoot();
+
+    try {
+      if (!hasRemoteCareer && hasLocalCareer && preferMigrate !== false) {
+        await migrateLocalToCloud();
+        const refreshed = await authedFetch('/api/saves');
+        setRemoteSavesCache(refreshed?.saves || {});
+        mergeRemoteSaves(refreshed?.saves || {}, { skipCareerSeasonHydrate: freshCareerBoot });
+      } else {
+        mergeRemoteSaves(remoteSaves, { skipCareerSeasonHydrate: freshCareerBoot });
+      }
+    } catch (error) {
+      warnSyncOnce(
+        'hydrate-merge-failed',
+        '[brfut] falha ao sincronizar saves com a nuvem — usando cópia local',
+        error?.message || error,
+      );
+      try {
+        mergeRemoteSaves(remoteSaves, { skipCareerSeasonHydrate: freshCareerBoot });
+      } catch {
+        /* ignore */
+      }
     }
   } catch (error) {
-    warnSyncOnce(
-      'hydrate-merge-failed',
-      '[brfut] falha ao sincronizar saves com a nuvem — usando cópia local',
-      error?.message || error,
-    );
-    try {
-      mergeRemoteSaves(remoteSaves, { skipCareerSeasonHydrate: freshCareerBoot });
-    } catch {
-      /* ignore */
-    }
+    warnSyncOnce('hydrate-saves-failed', '[brfut] não foi possível baixar saves remotos', error?.message || error);
   }
 
   syncCloudLocalTrimFlag();

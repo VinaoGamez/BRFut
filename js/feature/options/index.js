@@ -499,6 +499,8 @@ export function createOptionsFeature(deps) {
       if (result?.cloudReason === 'cloud_inactive') {
         return getAuthToken() ? 'LOCAL (SEM NUVEM)' : 'ENTRE NA CONTA';
       }
+      if (result?.cloudReason === 'auth_rejected') return 'LOCAL (SESSÃO)';
+      if (result?.cloudReason === 'cloud_unreachable') return 'LOCAL (REDE)';
       if (result?.cloudReason === 'empty_batch') return 'LOCAL (VAZIO)';
       const err = result?.cloudErrors?.[0];
       if (err?.status === 401) return 'LOCAL (SESSÃO)';

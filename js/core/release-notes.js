@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.00',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T17:00:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Conta e save',
+        items: [
+          'A conta deixa de desconectar sozinha por falha de rede ou API — só sai em Opções → Sair ou ao fechar a janela.',
+          'SALVAR na nuvem foi reforçado: carreira/temporada sobem primeiro; LOCAL (REDE) não apaga mais o login.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.95',
     date: '2026-07-29',
     publishedAt: '2026-07-29T20:55:00-04:00',

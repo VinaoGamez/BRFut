@@ -314,9 +314,11 @@ if (SITE_MAINTENANCE.enabled) {
   });
 
   account.refresh().then(state => {
+    // Token = logado na UI; nuvem pode estar pausada (rede) sem desconectar a conta.
+    const loggedIn = !!getAuthToken() || state.mode === 'cloud' || !!state.tokenPreserved;
     syncHeroActions({
-      loggedIn: state.mode === 'cloud',
-      hasBackend: !!state.backend || state.mode === 'cloud',
+      loggedIn,
+      hasBackend: !!state.backend || state.mode === 'cloud' || !!BRFUT_API_ORIGIN,
     });
     startPlayerStatsPolling();
     careerSlots.renderList();
