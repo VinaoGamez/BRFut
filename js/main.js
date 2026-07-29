@@ -14,7 +14,14 @@ import {
   initStorageBackend,
   probeBackend,
 } from './core/storage-api.js';
-import { clearSessionCareerData, markSkipSessionEndOnce } from './core/save.js';
+import { appendDebugTrail } from './core/debug-trail.js';
+import {
+  clearSessionCareerData,
+  consumeCareerReloadPending,
+  hasLocalCareerSave,
+  markCareerReloadPending,
+  markSkipSessionEndOnce,
+} from './core/save.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 
@@ -113,11 +120,14 @@ const beginAppSession = async () => {
     // #endregion
 
     if (!token) {
-      clearSessionCareerData();
+      const reloadPending = consumeCareerReloadPending();
+      appendDebugTrail('boot:no-token', { reloadPending, localCareer: localCareer });
+      if (!reloadPending) clearSessionCareerData();
       redirectToHomeLanding();
       return;
     }
 
+    consumeCareerReloadPending();
     await initStorageBackend();
     await account.refresh();
     startBootOnce();
@@ -130,7 +140,15 @@ const beginAppSession = async () => {
 void beginAppSession();
 
 window.addEventListener('pagehide', event => {
-  if (event.persisted || bootStarted) return;
+  if (event.persisted) return;
+  const hasCareer = hasLocalCareerSave();
+  if (hasCareer) {
+    markCareerReloadPending();
+    markSkipSessionEndOnce();
+    appendDebugTrail('pagehide:preserve', { source: 'main', bootStarted });
+    return;
+  }
+  if (bootStarted) return;
   endBrowserSession();
   clearSessionCareerData();
 });

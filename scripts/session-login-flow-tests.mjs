@@ -70,8 +70,8 @@ checkSync('navegação interna preserva sessão (skip session end)', () => {
   assert(dom.includes('markSkipSessionEndOnce'), 'redirectGame marca skip');
   assert(persist.includes('consumeSkipSessionEndOnce'), 'persistência respeita skip');
   assert(
-    persist.includes('hadCareerOnHide') && persist.includes('markSkipSessionEndOnce'),
-    'pagehide marca skip mesmo sem beforeunload',
+    persist.includes('hasLocalCareerSave') && persist.includes('markCareerReloadPending'),
+    'pagehide usa localStorage e marca reload pendente',
   );
   assert(home.includes('markSkipSessionEndOnce'), 'home marca skip ao ir para o jogo');
   assert(

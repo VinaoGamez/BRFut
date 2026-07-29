@@ -8,7 +8,14 @@ import { fetchPlayerStats, probeBackend } from './core/storage-api.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 import { endBrowserSession } from './core/storage-api.js';
-import { clearSessionCareerData, markSkipSessionEndOnce, consumeSkipSessionEndOnce } from './core/save.js';
+import { appendDebugTrail } from './core/debug-trail.js';
+import {
+  clearSessionCareerData,
+  consumeSkipSessionEndOnce,
+  hasLocalCareerSave,
+  markCareerReloadPending,
+  markSkipSessionEndOnce,
+} from './core/save.js';
 
 const SPONSOR_LOGO_URLS = Object.fromEntries(
   Object.entries(
@@ -258,8 +265,12 @@ const SPONSOR_ORDER = [
 
   window.addEventListener('pagehide', event => {
     if (event.persisted) return;
-    // Hard refresh nem sempre dispara beforeunload — preservar sessão se há save local.
-    if (hasCareer()) markSkipSessionEndOnce();
+    if (hasCareer() || hasLocalCareerSave()) {
+      markCareerReloadPending();
+      markSkipSessionEndOnce();
+      appendDebugTrail('pagehide:preserve', { source: 'home' });
+      return;
+    }
     if (consumeSkipSessionEndOnce()) return;
     endBrowserSession();
     clearSessionCareerData();

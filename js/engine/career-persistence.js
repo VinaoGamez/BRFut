@@ -3,6 +3,7 @@
  */
 
 import { SAVE_KEYS } from '../core/constants.js';
+import { appendDebugTrail } from '../core/debug-trail.js';
 import {
   MEMORY_LIMITS,
   writeJsonResilient,
@@ -12,6 +13,8 @@ import {
   markSkipSessionEndOnce,
   pruneInjuryHistory,
   clearSessionCareerData,
+  hasLocalCareerSave,
+  markCareerReloadPending,
 } from '../core/save.js';
 import { endBrowserSession, flushCloudSync, flushCloudSyncAsync, isCloudStorageActive } from '../core/storage-api.js';
 import { getAutosaveMode, mergePreferencesIntoCareer, AUTOSAVE_MODES } from '../core/save-preferences.js';
@@ -251,7 +254,7 @@ export function createCareerPersistence({
       } catch {
         /* ignore */
       }
-      const hadCareer = !!getSavedNewGame?.();
+      const hadCareer = hasLocalCareerSave() || !!getSavedNewGame?.();
       let seasonOk = false;
       if (hadCareer) {
         persistSeason(true);
@@ -269,22 +272,29 @@ export function createCareerPersistence({
       // #endregion
     };
     window.addEventListener('beforeunload', () => {
-      if (getSavedNewGame?.()) markSkipSessionEndOnce();
+      if (hasLocalCareerSave() || getSavedNewGame?.()) {
+        markCareerReloadPending();
+        markSkipSessionEndOnce();
+      }
     });
     window.addEventListener('beforeunload', flushOnExit);
     // pagehide é mais confiável que beforeunload em F5 / hard refresh (desktop e mobile).
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
-      // Hard refresh (Ctrl+Shift+R) nem sempre dispara beforeunload — marcar skip aqui também.
-      const hadCareerOnHide = !!getSavedNewGame?.();
-      if (hadCareerOnHide) markSkipSessionEndOnce();
+      const hasCareer = hasLocalCareerSave() || !!getSavedNewGame?.();
+      if (hasCareer) {
+        markCareerReloadPending();
+        markSkipSessionEndOnce();
+      }
       flushOnExit();
-      const skipSession = consumeSkipSessionEndOnce();
+      const skipSession = hasCareer || consumeSkipSessionEndOnce();
       // #region agent log
       __dbgSave('career-persistence.js:pagehide', 'session end decision', {
         skipSession,
+        hasCareer,
         willEndSession: !skipSession,
       }, 'A');
+      appendDebugTrail('pagehide:career-persistence', { skipSession, hasCareer });
       // #endregion
       if (skipSession) return;
       endBrowserSession();

@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.25',
+    date: '2026-07-28',
+    publishedAt: '2026-07-28T23:30:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Save / sessão',
+        items: [
+          'Hard refresh não apaga mais a carreira nem desloga quando há save ativo — corrige rollback para save antigo na nuvem.',
+          'Se precisar relogar após recarregar, o progresso local é preservado e comparado com a nuvem antes de carregar.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.20',
     date: '2026-07-28',
     publishedAt: '2026-07-28T23:00:00-03:00',

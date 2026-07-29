@@ -338,6 +338,35 @@ export function consumeSkipPersistOnce() {
   }
 }
 
+/** Indica reload com carreira ativa — evita wipe local se token sumir no refresh. */
+const CAREER_RELOAD_KEY = 'matchday-career-reload';
+
+export function hasLocalCareerSave() {
+  try {
+    return !!localStorage.getItem(SAVE_KEYS.career);
+  } catch {
+    return false;
+  }
+}
+
+export function markCareerReloadPending() {
+  try {
+    sessionStorage.setItem(CAREER_RELOAD_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}
+
+export function consumeCareerReloadPending() {
+  try {
+    if (!sessionStorage.getItem(CAREER_RELOAD_KEY)) return false;
+    sessionStorage.removeItem(CAREER_RELOAD_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Flag one-shot: não encerra sessão/token no pagehide (reload interno, nova carreira, etc.). */
 const SKIP_SESSION_END_KEY = 'matchday-skip-session-end';
 

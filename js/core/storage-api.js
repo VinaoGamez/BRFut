@@ -4,6 +4,7 @@
  */
 import { SAVE_KEYS, BRFUT_API_ORIGIN } from './constants.js';
 import { pickNewerSave, saveFreshness } from './save-sync.js';
+import { appendDebugTrail } from './debug-trail.js';
 
 const AUTH_TOKEN_KEY = 'brfut-auth-token';
 const AUTH_REMEMBER_KEY = 'brfut-auth-remember';
@@ -156,6 +157,15 @@ function mergeRemoteSaves(saves) {
     }
 
     const winner = pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt);
+    if (key === SAVE_KEYS.season) {
+      appendDebugTrail('merge:season', {
+        localRound: localValue?.currentRound,
+        remoteRound: remoteValue?.currentRound,
+        localCal: localValue?.careerCalendarDate,
+        remoteCal: remoteValue?.careerCalendarDate,
+        winnerIsRemote: winner === remoteValue,
+      });
+    }
     // #region agent log
     if (key === SAVE_KEYS.season && typeof fetch !== 'undefined') {
       fetch('http://127.0.0.1:7743/ingest/6125dd39-2579-4c29-a7c1-51d14474875e', {
