@@ -8,12 +8,12 @@ import {
   writeJsonResilient,
   markSkipPersistOnce,
   consumeSkipPersistOnce,
-  consumeSkipSessionEndOnce,
   markSkipSessionEndOnce,
   pruneInjuryHistory,
   clearSessionCareerData,
   hasLocalCareerSave,
   markCareerReloadPending,
+  shouldPreserveAuthOnPageHide,
 } from '../core/save.js';
 import { endBrowserSession, flushCloudSync, flushCloudSyncAsync } from '../core/storage-api.js';
 import {
@@ -86,7 +86,6 @@ export function createCareerPersistence({
     const result = writeJsonResilient(SAVE_KEYS.career, payload, {
       preserveKeys: [SAVE_KEYS.career, SAVE_KEYS.season],
       slimSteps,
-      proactiveSlim: false,
     });
     return result.ok;
   };
@@ -220,6 +219,7 @@ export function createCareerPersistence({
       const hadCareer = hasLocalCareerSave() || !!getSavedNewGame?.();
       let seasonOk = false;
       if (hadCareer) {
+        syncActiveSlotFromCache();
         persistSeason(true, { flush: false });
         seasonOk = true;
       }
@@ -241,7 +241,7 @@ export function createCareerPersistence({
         markSkipSessionEndOnce();
       }
       flushOnExit();
-      const skipSession = hasCareer || consumeSkipSessionEndOnce();
+      const skipSession = hasCareer || shouldPreserveAuthOnPageHide();
       if (skipSession) return;
       endBrowserSession();
       clearSessionCareerData();
@@ -254,7 +254,10 @@ export function createCareerPersistence({
       } catch {
         /* ignore */
       }
-      if (getSavedNewGame?.()) persistSeason(true, { flush: false });
+      if (getSavedNewGame?.()) {
+        syncActiveSlotFromCache();
+        persistSeason(true, { flush: false });
+      }
       flushCloudSync({ keepalive: true });
     });
   };

@@ -1,18 +1,6 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
+import { sponsorLogoUrl } from '../../assets/sponsor-logos.js';
 import { reshuffleSponsorOffers, sponsorLogoSlug } from '../../engine/economy.js';
-
-const SPONSOR_LOGO_URLS = Object.fromEntries(
-  Object.entries(
-    import.meta.glob('../../../assets/sponsors/icons/*.png', {
-      eager: true,
-      query: '?url',
-      import: 'default',
-    }),
-  ).map(([path, url]) => {
-    const file = path.split('/').pop()?.replace(/\.png$/i, '') || '';
-    return [file, url];
-  }),
-);
 
 const MAX_REROLLS = 3;
 
@@ -74,7 +62,7 @@ export function createSponsorPickerFeature(deps) {
 
   const logoHtml = name => {
     const slug = sponsorLogoSlug(name);
-    const url = slug ? SPONSOR_LOGO_URLS[slug] : null;
+    const url = sponsorLogoUrl(slug);
     if (url) return `<img src="${url}" alt="" width="56" height="56" loading="lazy">`;
     return `<span class="sponsor-picker-fallback">${String(name || '?')
       .split(' ')

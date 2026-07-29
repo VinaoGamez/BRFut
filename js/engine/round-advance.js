@@ -1,7 +1,13 @@
-import { FEATURES } from '../core/constants.js';
+import { FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { clamp } from '../ui/dom.js';
 import { compactMatchResult, involvesClub, MEMORY_LIMITS } from '../core/save.js';
-import { findRecordedGame } from './competition-calendar.js';
+import {
+  findLeagueFixtureByPair,
+  findRecordedGame,
+  findRecordedGameByPair,
+  gameMatchesRecorded,
+  resolveLeagueFixtureRound,
+} from './competition-calendar.js';
 import { recordKnockoutResult, winnerFromGame, loserFromGame } from './world-cup-bracket.js';
 import { isKnockoutShootoutCompetition, KNOCKOUT_COMPETITIONS } from './knockout-shootout.js';
 import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
@@ -37,6 +43,110 @@ export function resolveRoundAlreadyRecorded(
     return false;
   }
 
+  return true;
+}
+
+export function resolveRoundForLiveCommit(liveMatchGame, currentRound, userClub, championshipFixtures) {
+  if (
+    liveMatchGame &&
+    userClub &&
+    (liveMatchGame.home === userClub || liveMatchGame.away === userClub)
+  ) {
+    const inferred = resolveLeagueFixtureRound(liveMatchGame, championshipFixtures);
+    if (inferred != null) return inferred;
+    const pairRound = findLeagueFixtureByPair(liveMatchGame, championshipFixtures)?.round;
+    if (pairRound != null) return pairRound;
+    const liveRound = Number(liveMatchGame.round);
+    if (Number.isFinite(liveRound) && liveRound > 0) return liveRound;
+  }
+  return currentRound;
+}
+
+function buildUserLiveLeagueResult(deps, liveMatchGame) {
+  const userClub = deps.getUserClub();
+  const userAtHome = liveMatchGame.home === userClub;
+  const liveGoals = deps.getLiveSideGoals();
+  return {
+    home: liveMatchGame.home,
+    away: liveMatchGame.away,
+    homeGoals: userAtHome ? deps.getHomeGoals() : deps.getAwayGoals(),
+    awayGoals: userAtHome ? deps.getAwayGoals() : deps.getHomeGoals(),
+    user: true,
+    fixture: liveMatchGame,
+    round: liveMatchGame.round,
+    competition: liveMatchGame.competition,
+    goals: userAtHome
+      ? { home: [...liveGoals.home], away: [...liveGoals.away] }
+      : { home: [...liveGoals.away], away: [...liveGoals.home] },
+    penalties: liveMatchGame.penalties || liveMatchGame.shootoutPenalties || null,
+    shootoutWinner: liveMatchGame.shootoutWinner || null,
+    shootoutPenalties: liveMatchGame.shootoutPenalties || liveMatchGame.penalties || null,
+    completed: isKnockoutShootoutCompetition(liveMatchGame) ? true : undefined,
+  };
+}
+
+/** Garante placar/tabela/histórico do jogo ao vivo — evita loop quando currentRound ≠ game.round. */
+function ensureLiveNationalRoundCommitted(deps, { liveMatchGame, roundForCommit, seasonRoundHistory }) {
+  if (!liveMatchGame) return false;
+  const userClub = deps.getUserClub();
+  if (liveMatchGame.home !== userClub && liveMatchGame.away !== userClub) return false;
+
+  const championshipFixtures = deps.getChampionshipFixtures?.() || [];
+  const pairMatch = findLeagueFixtureByPair(liveMatchGame, championshipFixtures);
+  const resolvedRound =
+    resolveLeagueFixtureRound(liveMatchGame, championshipFixtures)
+    ?? pairMatch?.round
+    ?? roundForCommit;
+  const effectiveRound = resolvedRound || roundForCommit;
+
+  if (typeof deps.isFixtureCompleted === 'function' && deps.isFixtureCompleted(liveMatchGame)) return true;
+
+  if (!Number.isFinite(Number(liveMatchGame.round)) || Number(liveMatchGame.round) <= 0) {
+    liveMatchGame.round = effectiveRound;
+  }
+
+  const userResult = buildUserLiveLeagueResult(deps, liveMatchGame);
+  userResult.round = effectiveRound;
+  const userGame = pairMatch?.game || deps.leagueUserGameForRound(effectiveRound) || liveMatchGame;
+
+  const userDivision = deps.getUserDivision();
+  const historyHasResult =
+    seasonRoundHistory.some(item =>
+      findRecordedGame(userGame, item.games || [])
+      || findRecordedGameByPair(userGame, item.games || []),
+    );
+  if (userDivision !== 'D' || effectiveRound <= SERIE_D_GROUP_ROUNDS) {
+    if (!historyHasResult) deps.applyRoundToTable(userResult);
+  }
+
+  let entry = seasonRoundHistory.find(item => item.round === effectiveRound);
+  if (!entry) {
+    entry = { round: effectiveRound, games: [], userStats: null };
+    seasonRoundHistory.push(entry);
+  }
+  if (
+    !findRecordedGame(userGame, entry.games || [])
+    && !findRecordedGameByPair(userGame, entry.games || [])
+  ) {
+    entry.games = [
+      ...(entry.games || []),
+      compactMatchResult(userResult, { keepData: involvesClub(userResult, userClub) }),
+    ];
+  }
+
+  liveMatchGame.homeGoals = userResult.homeGoals;
+  liveMatchGame.awayGoals = userResult.awayGoals;
+
+  const canon = pairMatch?.game
+    || findLeagueFixtureByPair(liveMatchGame, deps.getNationalCompetitions()?.[userDivision]?.fixtures || championshipFixtures)?.game;
+  if (canon) {
+    if (!Number.isFinite(Number(canon.round)) || Number(canon.round) <= 0) canon.round = effectiveRound;
+    canon.homeGoals = userResult.homeGoals;
+    canon.awayGoals = userResult.awayGoals;
+    if (isKnockoutShootoutCompetition(canon)) canon.completed = true;
+  }
+
+  deps.invalidateUserScheduleCache?.();
   return true;
 }
 
@@ -223,10 +333,17 @@ export function createRoundAdvanceEngine(deps) {
       if (liveMatchGame && isKnockoutShootoutCompetition(liveMatchGame)) deps.commitLiveKnockoutResult();
       deps.pushUserMatchResultMessage(liveMatchGame, gateResult);
 
-      const roundAtStart = deps.getCurrentRound();
-      const seasonRoundHistory = deps.getSeasonRoundHistory();
       const userClub = deps.getUserClub();
-      const userGame = deps.leagueUserGameForRound(roundAtStart);
+      const seasonRoundHistory = deps.getSeasonRoundHistory();
+      let roundForCommit = resolveRoundForLiveCommit(
+        liveMatchGame,
+        deps.getCurrentRound(),
+        userClub,
+        deps.getChampionshipFixtures?.(),
+      );
+      if (roundForCommit !== deps.getCurrentRound()) deps.setCurrentRound(roundForCommit);
+      const roundAtStart = roundForCommit;
+      const userGame = deps.leagueUserGameForRound(roundAtStart) || liveMatchGame;
       let alreadyRecorded = resolveRoundAlreadyRecorded(seasonRoundHistory, roundAtStart, {
         userGame,
         userLeaguePlayed: deps.userLeaguePlayed,
@@ -247,7 +364,7 @@ export function createRoundAdvanceEngine(deps) {
         deps.commitLiveAvailability();
         const completedGames = deps.simulateRoundResults(true);
         completedGames.forEach(deps.recordGameLeaders);
-        if (deps.getUserDivision() !== 'D' || roundAtStart <= 10) {
+        if (deps.getUserDivision() !== 'D' || roundAtStart <= SERIE_D_GROUP_ROUNDS) {
           completedGames.forEach(deps.applyRoundToTable);
         }
         try {
@@ -286,12 +403,23 @@ export function createRoundAdvanceEngine(deps) {
         advancePostMatchDay();
       }
 
+      if (liveMatchGame) {
+        ensureLiveNationalRoundCommitted(deps, { liveMatchGame, roundForCommit: roundAtStart, seasonRoundHistory });
+      }
+
       const userDivision = deps.getUserDivision();
       const careerSeason = deps.getCareerSeason();
       const completedSeason = roundAtStart === 38 || (userDivision === 'D' && roundAtStart === 22);
       if (userDivision === 'D' && roundAtStart === 22) deps.finishRemainingNationalRounds(23);
-      if (!alreadyRecorded || liveMatchGame) deps.setCurrentRound(roundAtStart + 1);
+      if (userDivision === 'D' && (deps.userLeaguePlayed?.() ?? 0) < SERIE_D_GROUP_ROUNDS) {
+        deps.setCurrentRound((deps.userLeaguePlayed?.() ?? 0) + 1);
+      } else if (!alreadyRecorded || liveMatchGame) {
+        deps.setCurrentRound(roundAtStart + 1);
+      } else if ((deps.userLeaguePlayed?.() ?? 0) >= roundAtStart) {
+        deps.setCurrentRound(roundAtStart + 1);
+      }
       deps.reconcileCurrentRound();
+      deps.syncCareerCalendarAfterRoundAdvance?.();
       if (!alreadyRecorded) deps.processAiMarketAfterRound();
 
       const championshipFixtures = deps.getChampionshipFixtures();
@@ -306,13 +434,13 @@ export function createRoundAdvanceEngine(deps) {
       if (liveMatchGame && (liveMatchGame.home === userClub || liveMatchGame.away === userClub)) {
         deps.notifyUserMatchPlayed?.();
       }
+      resetLiveMatchSession(deps);
       deps.persistAfterRoundAdvance();
       try {
         deps.refreshSeasonPresentation();
       } catch (error) {
         console.warn('[brfut] falha ao atualizar UI pós-rodada', error);
       }
-      resetLiveMatchSession(deps);
       const sackedNow = deps.evaluateManagerJobRisk();
       if (sackedNow) {
         /* modal bloqueia avanço */

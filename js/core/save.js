@@ -1,7 +1,8 @@
-import { SAVE_KEYS, LEGACY_SAVE_KEYS, CAREER_INDEX_KEY, isSlotBundleKey } from './constants.js';
+import { SAVE_KEYS, LEGACY_SAVE_KEYS, CAREER_INDEX_KEY, ACTIVE_SLOT_SESSION_KEY, isSlotBundleKey, slotBundleKeys } from './constants.js';
 import { normalizeWorldCupHistory } from '../engine/world-cup-history.js';
 import { stampSyncableSave } from './save-sync.js';
 import { isCloudStorageActive, queueCloudDelete, queueCloudSave } from './storage-api.js';
+import { migrateLegacyStorageKeysInPlace } from './save-key-normalizer.js';
 
 /** Limites de cota do localStorage (~5–10 MB por origem). */
 export const STORAGE_LIMITS = {
@@ -44,39 +45,8 @@ export function readJson(key, fallback = null) {
 
 /** Copia chaves legadas Matchday → BR Fut (local + sessionStorage). */
 export function migrateLegacyStorageKeys() {
-  const migrateStore = storage => {
-    if (!storage) return;
-    Object.entries(LEGACY_SAVE_KEYS).forEach(([logical, legacyKey]) => {
-      const newKey = SAVE_KEYS[logical];
-      if (!newKey || legacyKey === newKey) return;
-      try {
-        const legacy = storage.getItem(legacyKey);
-        const current = storage.getItem(newKey);
-        if (legacy && !current) storage.setItem(newKey, legacy);
-      } catch {
-        /* ignore quota */
-      }
-    });
-  };
-  migrateStore(localStorage);
-  migrateStore(sessionStorage);
-  const sessionPairs = [
-    ['brfut-fresh-career-boot', 'matchday-fresh-career-boot'],
-    ['brfut-skip-persist-once', 'matchday-skip-persist-once'],
-    ['brfut-career-reload', 'matchday-career-reload'],
-    ['brfut-skip-session-end', 'matchday-skip-session-end'],
-    ['brfut-autosave-mode', 'matchday-autosave-mode'],
-  ];
-  sessionPairs.forEach(([nextKey, legacyKey]) => {
-    try {
-      for (const storage of [localStorage, sessionStorage]) {
-        const legacy = storage.getItem(legacyKey);
-        if (legacy && !storage.getItem(nextKey)) storage.setItem(nextKey, legacy);
-      }
-    } catch {
-      /* ignore */
-    }
-  });
+  migrateLegacyStorageKeysInPlace(localStorage);
+  migrateLegacyStorageKeysInPlace(sessionStorage);
 }
 
 const quotaWarnedKeys = new Set();
@@ -166,6 +136,39 @@ export function reclaimLocalStorageSpace({ aggressive = false, preserveKeys = []
     removeKey(SAVE_KEYS.pace);
   }
 
+  const pressure = getStoragePressure({ fresh: true });
+  if (pressure.level !== 'ok') {
+    let activeSlotId = null;
+    try {
+      activeSlotId = readJson(CAREER_INDEX_KEY, null)?.activeSlotId || null;
+    } catch {
+      /* ignore */
+    }
+    try {
+      const sessionSlot = sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY);
+      if (sessionSlot) activeSlotId = sessionSlot;
+    } catch {
+      /* ignore */
+    }
+
+    const keepSlotKeys = new Set();
+    if (pressure.level !== 'critical' && activeSlotId) {
+      Object.values(slotBundleKeys(activeSlotId)).forEach(key => keepSlotKeys.add(key));
+    }
+
+    try {
+      const slotKeysToDrop = [];
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (!key || !isSlotBundleKey(key) || preserve.has(key)) continue;
+        if (pressure.level === 'critical' || !keepSlotKeys.has(key)) slotKeysToDrop.push(key);
+      }
+      slotKeysToDrop.forEach(removeKey);
+    } catch {
+      /* ignore */
+    }
+  }
+
   try {
     const keysToDrop = [];
     for (let i = 0; i < localStorage.length; i += 1) {
@@ -203,7 +206,6 @@ function warnQuotaOnce(key, error) {
   console.warn('[brfut] cota de localStorage esgotada', key, error);
   try {
     window.dispatchEvent(new CustomEvent('brfut:save-quota', { detail: { key } }));
-    window.dispatchEvent(new CustomEvent('matchday:save-quota', { detail: { key } }));
   } catch {
     /* ignore */
   }
@@ -213,7 +215,7 @@ function warnQuotaOnce(key, error) {
  * Grava JSON com proteção de cota. Retorna false se falhar.
  * Em QuotaExceeded, remove chaves regeneráveis e tenta novamente.
  */
-export function writeJson(key, value) {
+export function writeJson(key, value, { scheduleSlotSync = true } = {}) {
   const payload = stampSyncableSave(key, value);
   let raw;
   try {
@@ -234,10 +236,14 @@ export function writeJson(key, value) {
       }
     }
     if (
-      key === SAVE_KEYS.career
-      || key === SAVE_KEYS.season
-      || key === SAVE_KEYS.playerHistory
-      || key === SAVE_KEYS.liveMatch
+      scheduleSlotSync
+      && getStoragePressure().level !== 'critical'
+      && (
+        key === SAVE_KEYS.career
+        || key === SAVE_KEYS.season
+        || key === SAVE_KEYS.playerHistory
+        || key === SAVE_KEYS.liveMatch
+      )
     ) {
       void import('./career-slot-manager.js')
         .then(mod => mod.scheduleActiveSlotSync())
@@ -340,8 +346,23 @@ function sanitizeWorldRostersOnLoad(worldRosters) {
   return out;
 }
 
+function readActiveSlotIdForLoad() {
+  try {
+    const session = sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY);
+    if (session) return session;
+  } catch {
+    /* ignore */
+  }
+  const index = readJson(CAREER_INDEX_KEY, null);
+  return index?.activeSlotId || null;
+}
+
 export function loadCareerSave() {
-  const raw = readJson(SAVE_KEYS.career, null);
+  let raw = readJson(SAVE_KEYS.career, null);
+  if (!raw) {
+    const slotId = readActiveSlotIdForLoad();
+    if (slotId) raw = readJson(slotBundleKeys(slotId).career, null);
+  }
   if (!raw) return null;
   return {
     ...raw,
@@ -351,7 +372,12 @@ export function loadCareerSave() {
 }
 
 export function loadSeasonSave() {
-  return readJson(SAVE_KEYS.season, null);
+  let raw = readJson(SAVE_KEYS.season, null);
+  if (!raw) {
+    const slotId = readActiveSlotIdForLoad();
+    if (slotId) raw = readJson(slotBundleKeys(slotId).season, null);
+  }
+  return raw;
 }
 
 export function isSeasonValidForCareer(career, season) {
@@ -392,10 +418,10 @@ export function consumeFreshCareerBoot() {
   }
 }
 
-export function clearSeasonSave() {
+export function clearSeasonSave({ cloudDeletes = true } = {}) {
   localStorage.removeItem(SAVE_KEYS.season);
   localStorage.removeItem(SAVE_KEYS.liveMatch);
-  if (isCloudStorageActive()) {
+  if (cloudDeletes && isCloudStorageActive()) {
     queueCloudDelete(SAVE_KEYS.season);
     queueCloudDelete(SAVE_KEYS.liveMatch);
   }
@@ -428,7 +454,15 @@ const CAREER_RELOAD_KEY = 'brfut-career-reload';
 
 export function hasLocalCareerSave() {
   try {
-    return !!localStorage.getItem(SAVE_KEYS.career);
+    if (localStorage.getItem(SAVE_KEYS.career)) return true;
+    if (localStorage.getItem(LEGACY_SAVE_KEYS.career)) return true;
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && isSlotBundleKey(key) && key.endsWith('-career') && localStorage.getItem(key)) {
+        return true;
+      }
+    }
+    return false;
   } catch {
     return false;
   }
@@ -473,22 +507,40 @@ export function consumeSkipSessionEndOnce() {
   }
 }
 
+/** Hard refresh / F5 — pagehide dispara mas não é fechamento de aba. */
+export function isReloadNavigation() {
+  try {
+    const nav = performance.getEntriesByType('navigation')[0];
+    return nav?.type === 'reload';
+  } catch {
+    return false;
+  }
+}
+
+export function shouldPreserveAuthOnPageHide() {
+  return isReloadNavigation() || consumeSkipSessionEndOnce();
+}
+
 /**
  * Limpa carreira + temporada + live (+ treino opcional) para liberar cota
  * e evitar conflito ao iniciar Novo Jogo.
  */
-export function clearCareerStorage({ clearTraining = true, clearPlayerHistory = true } = {}) {
+export function clearCareerStorage({
+  clearTraining = true,
+  clearPlayerHistory = true,
+  cloudDeletes = true,
+} = {}) {
   try {
     localStorage.removeItem(SAVE_KEYS.career);
-    if (isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.career);
+    if (cloudDeletes && isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.career);
   } catch {
     /* ignore */
   }
-  clearSeasonSave();
+  clearSeasonSave({ cloudDeletes });
   if (clearTraining) {
     try {
       localStorage.removeItem(SAVE_KEYS.training);
-      if (isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.training);
+      if (cloudDeletes && isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.training);
     } catch {
       /* ignore */
     }
@@ -496,7 +548,7 @@ export function clearCareerStorage({ clearTraining = true, clearPlayerHistory = 
   if (clearPlayerHistory && SAVE_KEYS.playerHistory) {
     try {
       localStorage.removeItem(SAVE_KEYS.playerHistory);
-      if (isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.playerHistory);
+      if (cloudDeletes && isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.playerHistory);
     } catch {
       /* ignore */
     }

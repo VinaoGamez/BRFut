@@ -345,6 +345,22 @@ export function getStadiumInvestments(club) {
   return Math.max(0, Math.round(Number(club?.stadiumInvestments) || 0));
 }
 
+/** Níveis de expansão de capacidade (0–5): setores acima do baseline; legado usa stadiumCapacityLevel. */
+export function getStadiumCapacityExpansionLevel(club) {
+  if (!club) return 0;
+  if (Number.isFinite(Number(club.stadiumCapacityLevel))) {
+    return Math.max(0, Math.min(5, Math.round(Number(club.stadiumCapacityLevel))));
+  }
+  const sectors = club.stadiumSectors || {};
+  let expansions = 0;
+  for (const sectorId of Object.keys(STADIUM_SECTOR_DEFS)) {
+    const baseline = STADIUM_SECTOR_DEFS[sectorId].baselineLevel || 0;
+    const current = Math.max(0, Math.round(Number(sectors[sectorId]) || 0));
+    expansions += Math.max(0, current - baseline);
+  }
+  return Math.max(0, Math.min(5, expansions));
+}
+
 export function canOfferStadiumNaming(club, division = 'A') {
   if (!club) return false;
   if (division !== 'A' && division !== 'B') return false;

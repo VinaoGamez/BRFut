@@ -4,7 +4,7 @@ import {
   fetchGoogleAuthConfig,
   getAuthToken,
   getCloudUser,
-  initStorageBackend,
+  ensureStorageHydrated,
   isAuthRememberEnabled,
   isCloudStorageActive,
   loginAccount,
@@ -489,7 +489,7 @@ export function mountAccountPanel({
       return { mode: 'local', backend: true };
     }
 
-    const state = await initStorageBackend();
+    const state = await ensureStorageHydrated();
     if (state.mode === 'cloud' && isCloudStorageActive()) {
       renderLoggedIn(getCloudUser());
       refreshCareerUi();

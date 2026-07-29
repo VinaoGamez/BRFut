@@ -3,31 +3,6 @@ import { teamCrestHtml } from '../../ui/team-crest.js';
 import { buildChampionEntries, renderChampionsLayout } from './champions.js';
 import { seasonGoalGauge } from './goal-gauge.js';
 
-const LEAGUE_ORDER = [
-  { key: 'A', label: 'Série A' },
-  { key: 'B', label: 'Série B' },
-  { key: 'C', label: 'Série C' },
-  { key: 'D', label: 'Série D' },
-  { key: 'CUP', label: 'Copa do Brasil' },
-];
-
-const scorerMedalIcon = () =>
-  `<svg class="season-stat-icon scorer" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true" focusable="false">
-    <circle cx="14" cy="14" r="13" fill="#2a220d" stroke="#ffc94f" stroke-width="1.5"/>
-    <circle cx="14" cy="14" r="9" fill="#3a2d0b" stroke="#ffe36a" stroke-width="1"/>
-    <path fill="#ffc94f" d="M10 17l2.2-6.5h3.6L18 17h-2.4l-.6-2h-3.8l-.6 2H10zm3.2-4.2h2.4l-1.2-3.6-1.2 3.6z"/>
-    <text x="14" y="22" text-anchor="middle" fill="#ffe36a" font-size="5" font-weight="800" font-family="DM Sans,sans-serif">GOL</text>
-  </svg>`;
-
-const assistMedalIcon = () =>
-  `<svg class="season-stat-icon assist" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true" focusable="false">
-    <circle cx="14" cy="14" r="13" fill="#0d2732" stroke="#63d9ff" stroke-width="1.5"/>
-    <circle cx="14" cy="14" r="9" fill="#123843" stroke="#9ae8ff" stroke-width="1"/>
-    <path fill="none" stroke="#63d9ff" stroke-width="1.6" stroke-linecap="round" d="M9 14h7M14 11l3 3-3 3"/>
-    <circle cx="9" cy="14" r="1.5" fill="#b6ff38"/>
-    <text x="14" y="22" text-anchor="middle" fill="#9ae8ff" font-size="4.5" font-weight="800" font-family="DM Sans,sans-serif">AST</text>
-  </svg>`;
-
 const MODAL_HTML = `
 <div id="seasonTransitionModal" class="modal hidden">
   <div class="modal-card season-summary-modal">
@@ -63,15 +38,15 @@ const MODAL_HTML = `
           <div id="seasonChampionsTeamStats" class="season-champions-team-stats-wrap"></div>
         </div>
         <div id="seasonChampionsPyramid" class="season-champions-pyramid"></div>
+        <div id="seasonChampionsWorldCupWrap" class="season-champions-world-cup-wrap hidden">
+          <h4 class="season-champions-extra-title">Copa do Mundo</h4>
+          <div id="seasonChampionsWorldCup" class="season-champions-extra"></div>
+        </div>
         <div id="seasonChampionsExtraWrap" class="season-champions-extra-wrap hidden">
           <h4 class="season-champions-extra-title">Outros títulos</h4>
           <div id="seasonChampionsExtra" class="season-champions-extra"></div>
         </div>
       </div>
-    </section>
-    <section class="season-summary-section">
-      <header><h3>Líderes de estatística</h3><small>Artilheiro e assistências por competição</small></header>
-      <div id="seasonLeaders" class="season-leaders-grid"></div>
     </section>
     <section class="season-summary-section" id="seasonRewardsSection">
       <header><h3>Premiação da temporada</h3><small>Orçamento do clube atualizado para a próxima temporada</small></header>
@@ -129,12 +104,8 @@ const PREVIEW_GOAL_SAMPLES = {
 export function createSeasonSummaryFeature(deps) {
   const {
     $,
-    clubCrestInitials,
     onStartNextSeason,
     onCloseSeasonSummary,
-    clubSeasonLeaders,
-    clubSeasonRatingSummary,
-    formatMatchRating,
   } = deps;
   let handlersBound = false;
   let previewMode = false;
@@ -213,39 +184,6 @@ export function createSeasonSummaryFeature(deps) {
     bindHandlers();
   };
 
-  const leaderRow = (kind, label, entry, metric, metricLabel, iconMarkup) => {
-    if (!entry?.name || entry.name === '—') {
-      return `<div class="season-leader-row ${kind}">
-        <div class="season-leader-icon">${iconMarkup}</div>
-        <div class="season-leader-copy">
-          <span class="season-leader-label">${label}</span>
-          <span class="season-leader-player">—</span>
-          <span class="season-leader-meta">Sem dados registrados</span>
-        </div>
-      </div>`;
-    }
-    return `<div class="season-leader-row ${kind}">
-      <div class="season-leader-icon">${iconMarkup}</div>
-      <div class="season-leader-copy">
-        <span class="season-leader-label">${label}</span>
-        <span class="season-leader-player">${entry.name}</span>
-        <span class="season-leader-meta">${entry.club}</span>
-        <span class="season-leader-stat"><em>${entry[metric]}</em> ${metricLabel}</span>
-      </div>
-    </div>`;
-  };
-
-  const leadersCard = (key, label, scorers, assistants) => {
-    const isCup = key === 'CUP';
-    const scorer = scorers[0];
-    const assistant = assistants[0];
-    return `<article class="season-leaders-card ${isCup ? 'cup' : ''}">
-      <div class="season-leaders-card-head">${label}</div>
-      ${leaderRow('scorer', 'Artilheiro', scorer, 'goals', scorer?.goals === 1 ? 'gol' : 'gols', scorerMedalIcon())}
-      ${leaderRow('assist', 'Assistências', assistant, 'assists', assistant?.assists === 1 ? 'assistência' : 'assistências', assistMedalIcon())}
-    </article>`;
-  };
-
   const movementCard = (title, clubs, userClub, type) => {
     const icon = type === 'promote' ? '↑' : '↓';
     const items = clubs.length
@@ -262,7 +200,7 @@ export function createSeasonSummaryFeature(deps) {
     return `<div class="season-rewards">
       <div class="season-rewards-total"><span>${totalLabel}</span><strong>+ ${formatBudget(total)}</strong></div>
       ${lines.map(line => `<div class="season-reward-line"><span>${line.label}</span><b>+ ${formatBudget(line.amount)}</b></div>`).join('')}
-      <div class="season-reward-line" style="margin-top:6px;padding-top:8px;border-top:1px solid #234b55"><span>Orçamento do clube</span><b>${formatBudget(budgetAfter)}</b></div>
+      <div class="season-reward-line season-reward-budget"><span>Orçamento do clube</span><b>${formatBudget(budgetAfter)}</b></div>
     </div>`;
   };
 
@@ -357,15 +295,9 @@ export function createSeasonSummaryFeature(deps) {
         recopaSubtitle,
       });
       renderChampionsLayout(championsRoot, entries, {
-        clubSeasonLeaders,
-        clubSeasonRatingSummary,
-        formatMatchRating,
+        leadersByDivision,
       });
     }
-    $('#seasonLeaders').innerHTML = LEAGUE_ORDER.map(({ key, label }) => {
-      const leaders = leadersByDivision[key] || { scorers: [], assistants: [] };
-      return leadersCard(key, label, leaders.scorers, leaders.assistants);
-    }).join('');
     const rewardsEl = $('#seasonRewards');
     const rewardsSection = $('#seasonRewardsSection');
     if (rewardsEl && rewardsSection) {

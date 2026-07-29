@@ -189,6 +189,8 @@ export function createSeasonTransitionEngine(deps) {
     const continentalChampions = deps.getContinentalChampions?.() || {};
     if (continentalChampions.LIBERTADORES) champions.LIBERTADORES = continentalChampions.LIBERTADORES;
     if (continentalChampions.SUDAMERICANA) champions.SUDAMERICANA = continentalChampions.SUDAMERICANA;
+    const worldCupChampion = deps.getWorldCupChampion?.();
+    if (worldCupChampion) champions.WORLD_CUP = worldCupChampion;
     const championEstaduais = deps.getStateLeagueChampions?.() || [];
     const recopaSubtitle = deps.getRecopaSubtitle?.() || null;
     deps.setPriorSeasonChampions?.({
@@ -214,6 +216,14 @@ export function createSeasonTransitionEngine(deps) {
     const leagueChampion = champions[userDivision];
     const serieDPhase = userDivision === 'D' ? deps.resolveSerieDPrizePhase(userClub, dKnockout) : null;
     const cupPhase = deps.resolveCupPrizePhase(userClub, cupCompetition);
+    const userStateDivision = deps.getUserStateLeagueDivision?.();
+    const stateLeague = userStateDivision
+      ? {
+          phase: deps.resolveStateLeaguePrizePhase(userClub, userStateDivision),
+          label: userStateDivision.label || 'Estadual',
+          tier: userStateDivision.tier || 1,
+        }
+      : null;
     const prize = deps.computeSeasonPrize({
       division: userDivision,
       position,
@@ -224,6 +234,7 @@ export function createSeasonTransitionEngine(deps) {
       userClub,
       serieDPhase,
       cupPhase,
+      stateLeague,
     });
 
     const userClubState = clubs[userClub];
@@ -314,6 +325,19 @@ export function createSeasonTransitionEngine(deps) {
         assistants: deps.championshipLeadersFor('CUP', 'assists'),
       },
     };
+    if (champions.WORLD_CUP && deps.worldCupLeadersFor) {
+      leadersByDivision.WORLD_CUP = {
+        scorers: deps.worldCupLeadersFor('scorers'),
+        assistants: deps.worldCupLeadersFor('assists'),
+      };
+    }
+    championEstaduais.forEach(item => {
+      if (!item?.key || !deps.stateLeagueLeadersFor) return;
+      leadersByDivision[item.key] = {
+        scorers: deps.stateLeagueLeadersFor(item.uf, item.tier || 1, 'scorers'),
+        assistants: deps.stateLeagueLeadersFor(item.uf, item.tier || 1, 'assists'),
+      };
+    });
     const movements = [
       { title: 'Série B → Série A', clubs: promB, type: 'promote' },
       { title: 'Série A → Série B', clubs: relA, type: 'relegate' },

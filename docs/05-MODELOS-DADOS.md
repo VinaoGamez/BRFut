@@ -1,317 +1,137 @@
-# 05 — Modelos de Dados
+# 05 — Modelos de dados
 
-## localStorage
+## Chaves `localStorage` (canônicas)
 
-### `matchday-new-game` (v4)
+Prefixo **`brfut-*`**. Migração automática de `matchday-*` via `save-key-normalizer.js`.
 
-Save principal da carreira.
+| Chave | Conteúdo |
+|-------|----------|
+| `brfut-career` | Save principal da carreira ativa |
+| `brfut-season` | Estado da temporada em curso |
+| `brfut-training-rules` | Regras de treino (antes/depois/livre) |
+| `brfut-live-match` | Snapshot partida ao vivo |
+| `brfut-player-history` | Histórico estatístico global |
+| `brfut-last-seen-build` | Alerta de atualização |
+| `brfut-career-index` | Índice de slots (máx. 5) |
+| `brfut-active-slot-id` | Slot ativo na sessão |
+
+### Bundles por slot
+
+```
+brfut-slot-{id}-career
+brfut-slot-{id}-season
+brfut-slot-{id}-player-history
+brfut-slot-{id}-live-match
+```
+
+`activateSlot(id)` copia o bundle do slot para as chaves **ativas** acima.
+
+### Preferências (não sync obrigatório)
+
+| Chave | Valores |
+|-------|---------|
+| `brfut-pace` | `fast` \| `standard` \| `detailed` (legado: `futmanager-pace`) |
+| `brfut-autosave-mode` | modo autosave |
+
+---
+
+## API nuvem
+
+- **GET/PUT** `/api/saves` — payload chave→JSON (mesmas chaves canônicas).
+- Merge: timestamp + `save-sync.js` + `mergeSlotBundleFromCloud`.
+- Dados VPS: `/var/lib/brfut/data/saves/` (ver [VPS-LOCAWEB.md](./VPS-LOCAWEB.md)).
+
+---
+
+## Career save (`brfut-career`)
+
+Campos principais (evolução contínua — ver `MODULE_VERSIONS` em `constants.js`):
 
 ```typescript
 interface CareerSave {
-  version: 4
   seed: number
-  careerSeason: number          // ex: 2026
+  clubName: string
   managerName: string
-  userClub: string
-  userDivision: 'A' | 'B' | 'C' | 'D'
-  clubs: Record<string, Club>
-  messages: Message[]
-  nationalRanking?: RankingEntry[]
-  createdAt: string             // ISO
-}
-```
-
-### `matchday-season`
-
-Estado volátil da temporada em curso.
-
-```typescript
-interface SeasonSave {
-  round: number
-  competitions: CompetitionState[]
-  cupCompetition: CupState
-  nationalRanking?: RankingEntry[]
-  // tabelas, jogos disputados, etc.
-}
-```
-
-### `matchday-training-rules`
-
-```typescript
-interface TrainingRules {
-  before: TrainingSlotConfig
-  after: TrainingSlotConfig
-  free: TrainingSlotConfig
-}
-```
-
-### `futmanager-pace`
-
-String: `'fast'` | `'standard'` | `'detailed'`
-
-### `matchday-live-match` (legado)
-
-Removido ao criar nova carreira. Não usar.
-
-### `matchday-player-history` (v1)
-
-Histórico de desempenho por jogador (todos os clubes). **Não** é apagado por `clearSeasonSave` — sobrevive ao avanço de temporada. Nova carreira (`clearCareerStorage`) limpa a chave.
-
-Identidade estável para o futuro mercado:
-
-```text
-playerKey = slug(name) + '#' + age
-```
-
-Ex.: `jose-silva#28`. Transferências futuras atualizam `club` sem perder `players[playerKey].seasons`.
-
-```typescript
-interface PlayerHistorySave {
-  version: 1
-  season: number | null          // temporada corrente do buffer
-  players: Record<string, {
-    name: string
-    club: string                 // último clube conhecido
-    seasons: Record<string, {    // chave = ano
-      apps: number
-      starts: number
-      minutes: number
-      goals: number
-      assists: number
-      yellow: number
-      red: number
-      passesEst: number          // rateio do total do time (não é passe “real”)
-      ratingSum: number
-      ratingCount: number
-      avgRating?: number | null  // congelada no finalizeSeason (média 1.0–10.0, passo 0.5)
-    }>
-  }>
-  matchLogs: Array<{             // só temporada corrente; cap ≈ jogos do calendário (ligas+copa)
-    id: string
-    season: number
-    round: number | null
-    competition: string
-    leg?: string | null
-    date?: string | null
-    home: string
-    away: string
-    homeGoals: number
-    awayGoals: number
-    players: Array<{
-      key: string
-      name: string
-      club: string
-      pos: string
-      minutes: number
-      started: boolean
-      goals: number
-      assists: number
-      yellow: boolean
-      red: boolean
-      passesEst: number
-      rating: number | null      // 1.0–10.0, passo 0.5
-    }>
-  }>
-  seasonArchives: Array<{        // últimas ~12 temporadas (balanço slim)
-    season: number
-    userClub: string | null
-    userDivision: string | null
-    seasonGoal?: object | null
-    seasonGoalResult?: object | null
-    champions?: Record<string, string> | null
-    movements?: Array<{ title: string, type: string, clubs: string[] }>
-    leaders?: object | null
-  }>
-}
-```
-
-Política de memória:
-- `matchLogs` guarda detalhe jogo a jogo **apenas da temporada corrente**, com cap = nº de jogos do calendário (A/B/C/D + Copa).
-- No `finalizeSeason`, os logs são apagados; fica o rollup em `players.*.seasons` (inclui `avgRating`).
-- Quota: se estourar localStorage, cortar `matchLogs` primeiro; `players.*.seasons` e `seasonArchives` têm prioridade.
-
-Módulos: `js/engine/player-match-stats.js` (ficha + nota), `js/engine/player-history.js` (arquivo / rollup / prune).
-
----
-
-## Entidade: Club
-
-```typescript
-interface Club {
-  name: string
   division: 'A' | 'B' | 'C' | 'D'
-  power: number               // 56–84 típico
-  formation: string           // ex: '4-3-3'
-  roster: Player[]
-  position?: number             // posição na tabela
-  points?: number
-  played?: number
-  won?: number
-  drawn?: number
-  lost?: number
-  gf?: number
-  ga?: number
-  preventionProgram?: number    // 0–3
-  treatmentProgram?: number
-  groupId?: number              // Série D
+  season: number                    // ex: 2026
+  clubStatus?: { environment, support, board, finances, budget }
+  divisionTeams?: Record<string, string[]>
+  worldRosters?: Record<string, Player[]>
+  userRoster?: Player[]
+  worldSeed?: number
+  foundingClubName?: string
+  careerClubHistory?: string[]
+  regionalBaseClubs?: string[]
+  nationalTeamCode?: string
+  preferences?: { pace, … }
+  pendingSponsorChoice?: boolean
+  // … extensões por feature (transfers, youth, bank loan, …)
 }
 ```
 
 ---
 
-## Entidade: Player
+## Season save (`brfut-season`)
 
-```typescript
-interface Player {
-  name: string
-  role: 'GOL'|'ZAG'|'LAT'|'VOL'|'MC'|'MEI'|'PE'|'PD'|'ATA'
-  age: number
-  overall: number
+Estado volátil da temporada — regravado com debounce (`career-persistence` + `season-save-writer`):
 
-  // Atributos técnicos
-  finishing: number
-  passing: number
-  dribble: number
-  speed: number
-  marking: number
-  tackling: number
-  heading: number
-  positioning: number
-  reflexes: number
-  penaltySaving: number
-  overallBase: number
+- `currentRound`, calendário materializado
+- Tabelas, copa, Série D, estadual, ranking parcial
+- `liveMatchSnapshot` (espelho legacy)
+- Mensagens da temporada (cap em `MEMORY_LIMITS`)
+- Objetivos, crise manager, empréstimo, etc.
 
-  // Estado
-  starter: boolean
-  workload: 'low' | 'medium' | 'high'
-  injury: { type: string; daysLeft: number } | null
-  suspension: { gamesLeft: number } | null
-  restrictedReturn?: boolean
-
-  // Especialistas
-  freeKick?: boolean
-  penalty?: boolean
-}
-```
+`clearSeasonSave()` — apaga temporada; carreira permanece.
 
 ---
 
-## Entidade: Message
+## Player history
 
-```typescript
-interface Message {
-  id?: number
-  category: 'match'|'medical'|'discipline'|'system'|'transfer'|string
-  title: string
-  body: string
-  date: string | Date
-  read?: boolean
-}
-```
+- Chave global ou por slot (`brfut-slot-*-player-history`).
+- `playerKey = slug(nome) + '#' + idade` (evolução: `playerId`).
+- Sobrevive avanço de temporada; limpo em `clearCareerData('career'|'all')`.
 
 ---
 
-## Entidade: Fixture (liga)
+## Slots (índice)
 
 ```typescript
-interface Fixture {
-  round: number
-  home: string
-  away: string
-  homeGoals?: number
-  awayGoals?: number
-  played: boolean
-  date: Date
-}
-```
-
----
-
-## Entidade: CupFixture
-
-```typescript
-interface CupFixture {
-  gameNumber: number
-  home: string
-  away: string
-  homeGoals: number | null
-  awayGoals: number | null
-  date: Date
-  twoLegged: boolean
-  leg?: 1 | 2
-  aggregateHome?: number
-  aggregateAway?: number
-}
-```
-
----
-
-## Entidade: CupCompetition
-
-```typescript
-interface CupCompetition {
-  currentPhase: number
-  champion: string | null
-  stages: Array<{
-    name: string
-    fixtures: CupFixture[]
+interface CareerIndex {
+  slots: Array<{
+    id: string
+    label: string              // "{Clube} {Ano}" automático
+    clubName: string
+    season: number
+    updatedAt: string
   }>
+  activeSlotId?: string
 }
 ```
 
----
-
-## Calendário (`calendarGames`)
-
-```typescript
-// Map<string, CalendarEvent[]>
-// chave: timestamp do dia (meia-noite)
-
-interface CalendarEvent {
-  type: 'league' | 'cup' | 'training'
-  label: string
-  club?: string
-  opponent?: string
-  isHome?: boolean
-  date: Date
-}
-```
+Limite: **5 slots** (`canCreateSlot`).
 
 ---
 
-## Persistência — funções
+## Limpeza unificada
 
-| Função | Grava |
-|--------|-------|
-| `persistCareer` | `matchday-new-game` |
-| `persistSeason` | `matchday-season` |
-| `playerHistory.persist` | `matchday-player-history` |
-| `hydrateSaves` | Lê career + season + training + pace (histórico tem load próprio) |
+`clearCareerData(scope)` em `save-clear.js`:
 
-**Serialização de datas:** `Date` → ISO string no save → `new Date()` no hydrate.
-
----
-
-## Validação
-
-- `version !== 4` → save inválido
-- JSON corrompido → tratado como sem carreira
-- Clubes/jogadores faltantes → fallback ou regeração conforme contexto
+| scope | Efeito |
+|-------|--------|
+| `session` | Flags de sessão, live match ativo |
+| `career` | Carreira + temporada + histórico do slot |
+| `all` | Todos slots + índice + nuvem (DELETE) |
 
 ---
 
-## Backup manual
+## Versionamento
 
-No DevTools do navegador:
+- `BUILD_VERSION` / release notes — alerta testers.
+- `MODULE_VERSIONS` — migrações por módulo ao hidratar save.
 
-```javascript
-// Exportar
-copy(localStorage.getItem('matchday-new-game'))
-copy(localStorage.getItem('matchday-season'))
-copy(localStorage.getItem('matchday-player-history'))
+---
 
-// Importar
-localStorage.setItem('matchday-new-game', '...')
-localStorage.setItem('matchday-season', '...')
-localStorage.setItem('matchday-player-history', '...')
-```
+## Documentação relacionada
+
+- [Arquitetura — Persistência](./02-ARQUITETURA.md)
+- [Hospedagem — backup](./07-HOSPEDAGEM.md)

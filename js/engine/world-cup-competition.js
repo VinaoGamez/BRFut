@@ -4,6 +4,7 @@
 
 import { prepareWorldCupEdition } from './world-cup-history.js';
 import { buildWorldCupGroupFixtures, WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
+import { WORLD_CUP_WINDOW } from './season-calendar-mold.js';
 import {
   computeAllGroupStandings,
   isGroupStageComplete,
@@ -238,6 +239,46 @@ function tryAdvanceKnockoutStage(competition) {
   competition.knockoutFixtures.push(...nextFixtures);
   competition.knockoutStage = nextStage;
   return true;
+}
+
+export function worldCupWindowEndDate(year) {
+  const y = Number(year);
+  const [month, day] = WORLD_CUP_WINDOW.end;
+  return new Date(y, month, day, 12, 0, 0, 0);
+}
+
+export function worldCupWindowStartDate(year) {
+  const y = Number(year);
+  const [month, day] = WORLD_CUP_WINDOW.start;
+  return new Date(y, month, day, 12, 0, 0, 0);
+}
+
+/**
+ * CMU sem seleção do usuário — simula jogos até a data atual do calendário.
+ * Se o calendário já passou da janela (19/jul) e a Copa não fechou, completa o restante.
+ */
+export function advanceWorldCupSpectatorThroughWindow(competition, careerDate, year, options = {}) {
+  if (!competition || competition.phase === 'complete') return false;
+  const date = careerDate instanceof Date ? careerDate : new Date(careerDate);
+  if (Number.isNaN(date.getTime())) return false;
+  const windowStart = worldCupWindowStartDate(year);
+  if (date.getTime() < windowStart.getTime()) return false;
+
+  let changed = advanceWorldCupThroughDate(competition, date, {
+    ...options,
+    isUserTeam: () => false,
+  });
+
+  const windowEnd = worldCupWindowEndDate(year);
+  if (competition.phase !== 'complete' && date.getTime() > windowEnd.getTime()) {
+    changed =
+      advanceWorldCupThroughDate(competition, date, {
+        ...options,
+        isUserTeam: () => false,
+      }) || changed;
+  }
+
+  return changed;
 }
 
 /**

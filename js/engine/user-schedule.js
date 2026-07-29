@@ -1,6 +1,6 @@
 import { FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { clamp } from '../ui/dom.js';
-import { findRecordedGame, gameMatchesRecorded } from './competition-calendar.js';
+import { findRecordedGame, findRecordedGameByPair, gameMatchesRecorded, resolveLeagueFixtureRound } from './competition-calendar.js';
 import { isKnockoutShootoutCompetition, formatKnockoutFixtureScore } from './knockout-shootout.js';
 import { parseCalendarDate } from './season-scheduler.js';
 import { isRecopaNationalGame } from './recopa-national.js';
@@ -49,9 +49,18 @@ export function createUserScheduleEngine({
   const leagueFixtureRecorded = game => {
     if (!game?.home || !game?.away) return false;
     const seasonRoundHistory = getSeasonRoundHistory();
-    const byRound = game.round && seasonRoundHistory.find(item => item.round === game.round);
-    if (byRound?.games?.some(entry => gameMatchesRecorded(game, entry))) return true;
-    return seasonRoundHistory.some(item => item.games?.some(entry => gameMatchesRecorded(game, entry)));
+    const championshipFixtures = getChampionshipFixtures();
+    const resolvedRound = resolveLeagueFixtureRound(game, championshipFixtures);
+    const byRound =
+      resolvedRound != null
+        ? seasonRoundHistory.find(item => item.round === resolvedRound)
+        : game.round && seasonRoundHistory.find(item => item.round === game.round);
+    if (byRound?.games?.some(entry => gameMatchesRecorded(game, entry) || findRecordedGameByPair(game, entry))) {
+      return true;
+    }
+    return seasonRoundHistory.some(item =>
+      item.games?.some(entry => gameMatchesRecorded(game, entry) || findRecordedGameByPair(game, entry)),
+    );
   };
 
   const isSerieDGroupStageGame = game =>
@@ -66,7 +75,12 @@ export function createUserScheduleEngine({
     if (game.competition === WORLD_CUP_COMPETITION) return !!game.completed || game.homeGoals != null;
     if (game.competition === 'COPA DO BRASIL' || isKnockoutShootoutCompetition(game)) return !!game.completed;
     if (leagueFixtureRecorded(game)) return true;
-    return (game.round || 99) <= userLeaguePlayed();
+    if (Number.isFinite(Number(game.homeGoals)) && Number.isFinite(Number(game.awayGoals))) return true;
+    const played = userLeaguePlayed();
+    const resolvedRound = resolveLeagueFixtureRound(game, getChampionshipFixtures());
+    if (resolvedRound != null) return resolvedRound <= played;
+    if (Number.isFinite(Number(game.round)) && Number(game.round) > 0) return Number(game.round) <= played;
+    return false;
   };
 
   const userKnockoutFixtures = () =>
@@ -122,8 +136,15 @@ export function createUserScheduleEngine({
 
   const lastCompletedUserEntry = () => userSchedule().filter(entry => isFixtureCompleted(entry.game)).pop();
 
-  const leagueUserGameForRound = round =>
-    (getChampionshipFixtures()[round - 1] || []).find(isUserFixture) || null;
+  const leagueUserGameForRound = round => {
+    const fromGroup = (getChampionshipFixtures()[round - 1] || []).find(isUserFixture);
+    if (fromGroup) return fromGroup;
+    if (getUserDivision() === 'D' && round > SERIE_D_GROUP_ROUNDS) {
+      const knockoutRound = getNationalCompetitionsD()?.fixtures?.[round - 1];
+      if (Array.isArray(knockoutRound)) return knockoutRound.find(isUserFixture) || null;
+    }
+    return null;
+  };
 
   const firstPendingLeagueRound = () => Math.max(1, userLeaguePlayed() + 1);
 
@@ -203,6 +224,19 @@ export function createUserScheduleEngine({
     return `${result.homeGoals}—${result.awayGoals}`;
   };
 
+  const syncCareerCalendarAfterRoundAdvance = () => {
+    const last = lastCompletedUserEntry();
+    if (last?.details?.date) {
+      const afterMatch = new Date(last.details.date);
+      afterMatch.setDate(afterMatch.getDate() + 1);
+      afterMatch.setHours(12, 0, 0, 0);
+      if (getCareerCalendarDate().getTime() < afterMatch.getTime()) {
+        advanceCareerCalendarTo(afterMatch);
+      }
+    }
+    normalizeCalendarBeforeNextMatch();
+  };
+
   return {
     invalidateUserScheduleCache,
     isUserFixture,
@@ -223,6 +257,7 @@ export function createUserScheduleEngine({
     restDaysUntilNextFixture,
     intervalDaysForRoundAdvance,
     normalizeCalendarBeforeNextMatch,
+    syncCareerCalendarAfterRoundAdvance,
     ensureCalendarMatchConsistency,
     fixtureResultLabel,
   };

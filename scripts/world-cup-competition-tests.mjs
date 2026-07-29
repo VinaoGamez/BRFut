@@ -6,6 +6,7 @@ import {
   createWorldCupCompetition,
   getWorldCupAllFixtures,
   advanceWorldCupThroughDate,
+  advanceWorldCupSpectatorThroughWindow,
   simulateNationalTeamMatch,
 } from '../js/engine/world-cup-competition.js';
 import { WORLD_CUP_GROUP_FIXTURE_COUNT } from '../js/engine/world-cup-calendar.js';
@@ -61,6 +62,18 @@ check('CPU simula grupos — mata-mata só depois', () => {
   assert(comp.knockoutGenerated === true);
   assert(comp.knockoutFixtures.length === 16);
   assert(getWorldCupAllFixtures(comp).length === 72 + 16);
+});
+
+check('espectador simula CMU progressivamente na janela', () => {
+  const comp = createWorldCupCompetition({ year: 2026, random: () => 0.42 });
+  const midJune = new Date(2026, 5, 15, 12);
+  advanceWorldCupSpectatorThroughWindow(comp, midJune, 2026, {
+    random: () => 0.42,
+    simulate: simulateNationalTeamMatch,
+  });
+  assert(comp.phase !== 'complete' || comp.knockoutGenerated === true);
+  const played = comp.groupFixtures.filter(g => g.completed || g.homeGoals != null).length;
+  assert(played > 0 && played < comp.groupFixtures.length);
 });
 
 check('julho sem final placeholder antes dos grupos', () => {

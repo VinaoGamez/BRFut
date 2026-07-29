@@ -34,6 +34,7 @@ import {
   estimateGateReceiptSectors,
   getStadiumInvestments,
   canOfferStadiumNaming,
+  getStadiumCapacityExpansionLevel,
   sectorSeats,
   normalizeTicketPrices,
   clampSectorTicketPrice,
@@ -121,6 +122,17 @@ export const CUP_PHASE_SHARE = {
   champion: { pct: 1, label: 'Copa do Brasil · Campeão' },
 };
 
+/** Premiação estadual — participação fixa + campanha por fase (% do pool por divisão). */
+export const STATE_LEAGUE_PARTICIPATION = { 1: 160_000, 2: 100_000, 3: 70_000, 4: 45_000 };
+export const STATE_LEAGUE_PHASE_POOL = { 1: 640_000, 2: 420_000, 3: 280_000, 4: 180_000 };
+export const STATE_LEAGUE_PHASE_SHARE = {
+  league: { pct: 0.15, labelSuffix: 'Fase inicial' },
+  quarter: { pct: 0.42, labelSuffix: 'Quartas de final' },
+  semi: { pct: 0.58, labelSuffix: 'Semifinal' },
+  final: { pct: 0.78, labelSuffix: 'Finalista' },
+  champion: { pct: 1, labelSuffix: 'Campeão' },
+};
+
 export function clubAppearsInTies(ties, club) {
   return (ties || []).some(tie => tie?.home === club || tie?.away === club);
 }
@@ -155,6 +167,31 @@ export function resolveCupPrizePhase(club, cupCompetition = {}) {
     if (played) furthest = Math.max(furthest, Number(stage.index) || 0);
   }
   return furthest;
+}
+
+/**
+ * Fase mais avançada do estadual para premiação.
+ * @returns {'league'|'quarter'|'semi'|'final'|'champion'|null}
+ */
+export function resolveStateLeaguePrizePhase(club, competition = null) {
+  if (!club || !competition) return null;
+  if (competition.champion === club) return 'champion';
+  const knockout = competition.knockout || {};
+  if (clubAppearsInTies(knockout.final, club)) return 'final';
+  if (clubAppearsInTies(knockout.semis, club)) return 'semi';
+  if (clubAppearsInTies(knockout.quarters, club)) return 'quarter';
+  const played = (competition.fixtures || [])
+    .flat()
+    .some(game => game?.home === club || game?.away === club);
+  return played ? 'league' : null;
+}
+
+function statePhasePrizeLine(shareMap, key, pool, competitionLabel) {
+  const entry = shareMap[key];
+  if (!entry || !(entry.pct > 0)) return null;
+  const amount = Math.round(pool * entry.pct);
+  if (amount <= 0) return null;
+  return { label: `${competitionLabel} · ${entry.labelSuffix}`, amount };
 }
 
 function phasePrizeLine(shareMap, key, pool) {
@@ -615,6 +652,12 @@ export function estimateRoundCostBill(club, division = club?.division || 'A', op
   return (
     estimateWageBill(club, division) +
     estimateStaffBill(club, division, options) +
+    estimateScoutStaffBill(club, {
+      division,
+      offSeason: !!options.offSeason,
+      careerDate: options.careerDate,
+      staffOptions: options,
+    }) +
     estimateStadiumOpsBill(club, division)
   );
 }
@@ -675,6 +718,8 @@ export function chargeRoundCosts(club, {
   season = null,
   clubName = null,
   clubs = null,
+  offSeason = false,
+  careerDate = null,
 } = {}) {
   if (!club) {
     return {
@@ -724,12 +769,18 @@ export function chargeRoundCosts(club, {
   };
   const wagesDue = estimateWageBill(club, division, { softCap: false });
   const youthWagesDue = estimateYouthWageBill(club, division);
-  const scoutStaffDue = estimateScoutStaffBill(club);
+  const scoutStaffDue = estimateScoutStaffBill(club, {
+    division,
+    offSeason: !!offSeason,
+    careerDate,
+    staffOptions: staffOpts,
+  });
+  const technicalStaffDue = estimateStaffBill(club, division, staffOpts);
   const loanOutDue =
     clubName && clubs
       ? estimateLoanOutWageBill(clubName, clubs, resolvePlayerRoundWage)
       : 0;
-  const staffDue = estimateStaffBill(club, division, staffOpts) + scoutStaffDue;
+  const staffDue = technicalStaffDue + scoutStaffDue;
   const stadiumDue = estimateStadiumOpsBill(club, division);
   const due = wagesDue + youthWagesDue + loanOutDue + staffDue + stadiumDue;
   const balanceBefore = getBalance(club);
@@ -746,8 +797,13 @@ export function chargeRoundCosts(club, {
   };
   const wagesOd = splitOverdraft(wagesDue + youthWagesDue);
   const loanOutOd = splitOverdraft(loanOutDue);
-  const staffOd = splitOverdraft(staffDue);
-  const stadiumOd = Math.max(0, overdraft - wagesOd - loanOutOd - staffOd);
+  const staffOdTotal = splitOverdraft(staffDue);
+  const staffOd =
+    scoutStaffDue > 0 && staffDue > 0
+      ? Math.round((staffOdTotal * technicalStaffDue) / staffDue)
+      : staffOdTotal;
+  const scoutStaffOd = Math.max(0, staffOdTotal - staffOd);
+  const stadiumOd = Math.max(0, overdraft - wagesOd - loanOutOd - staffOdTotal);
 
   club.lastWageBill = {
     due: wagesDue + youthWagesDue,
@@ -770,8 +826,10 @@ export function chargeRoundCosts(club, {
   club.lastStaffBill = {
     due: staffDue,
     paid: staffDue,
-    shortfall: staffOd,
-    overdraft: staffOd,
+    shortfall: staffOdTotal,
+    overdraft: staffOdTotal,
+    technical: technicalStaffDue,
+    scouts: scoutStaffDue,
     reputation: Math.max(40, Math.min(99, Number(managerReputation) || DEFAULT_MANAGER_REPUTATION)),
     managerId: contract?.managerId || null,
     score: contract?.score ?? null,
@@ -817,10 +875,19 @@ export function chargeRoundCosts(club, {
   pushCostLedger(club, {
     reason: 'staff_wages',
     label: `Comissão técnica${roundLabel}`,
-    paid: staffDue,
-    due: staffDue,
+    paid: technicalStaffDue,
+    due: technicalStaffDue,
     shortfall: staffOd,
   });
+  if (scoutStaffDue > 0) {
+    pushCostLedger(club, {
+      reason: 'scout_wages',
+      label: `Olheiros · manutenção${roundLabel}`,
+      paid: scoutStaffDue,
+      due: scoutStaffDue,
+      shortfall: scoutStaffOd,
+    });
+  }
   pushCostLedger(club, {
     reason: 'stadium_ops',
     label: `Manutenção do estádio${roundLabel}`,
@@ -1007,7 +1074,7 @@ export const STADIUM_UPGRADES = {
     maxLevel: 5,
     baseCost: 2_500_000,
     costPerLevel: 1_200_000,
-    getLevel: club => Math.max(0, Math.min(5, Number(club?.stadiumCapacityLevel) || 0)),
+    getLevel: club => getStadiumCapacityExpansionLevel(club),
     applyEffect: club => {
       const division = club.division || 'A';
       const cfg = STADIUM_CAPACITY_BY_DIVISION[division] || STADIUM_CAPACITY_BY_DIVISION.A;
@@ -1076,13 +1143,30 @@ export function computeSeasonPrize({
   userClub = '',
   serieDPhase = null,
   cupPhase = null,
+  stateLeague = null,
 }) {
   const lines = [];
   let total = 0;
 
+  if (stateLeague?.label) {
+    const tier = Math.min(4, Math.max(1, Number(stateLeague.tier) || 1));
+    const competitionLabel = stateLeague.label;
+    const participationState = STATE_LEAGUE_PARTICIPATION[tier] ?? STATE_LEAGUE_PARTICIPATION[1];
+    total += participationState;
+    lines.push({ label: `${competitionLabel} · Participação`, amount: participationState });
+
+    const phaseKey = stateLeague.phase || 'league';
+    const pool = STATE_LEAGUE_PHASE_POOL[tier] ?? STATE_LEAGUE_PHASE_POOL[1];
+    const phaseLine = statePhasePrizeLine(STATE_LEAGUE_PHASE_SHARE, phaseKey, pool, competitionLabel);
+    if (phaseLine) {
+      total += phaseLine.amount;
+      lines.push(phaseLine);
+    }
+  }
+
   const participation = PARTICIPATION_PRIZE[division] ?? 1_000_000;
   total += participation;
-  lines.push({ label: 'Premiação por participação', amount: participation });
+  lines.push({ label: 'Participação em Torneio Nacional', amount: participation });
 
   if (division === 'D') {
     const phaseKey = serieDPhase || (champion === userClub ? 'champion' : 'group');
@@ -1278,6 +1362,7 @@ const EMPTY_SEASON_INFLOWS = () => ({
 const EMPTY_SEASON_OUTFLOWS = () => ({
   wages: 0,
   staff: 0,
+  scouting: 0,
   stadium: 0,
   upgrades: 0,
   loan_service: 0,
@@ -1300,6 +1385,7 @@ const seasonCashflowCategory = (type, reason) => {
   }
   if (reason === 'wages') return ['outflows', 'wages'];
   if (reason === 'staff_wages') return ['outflows', 'staff'];
+  if (reason === 'scout_wages' || reason === 'scout_travel') return ['outflows', 'scouting'];
   if (reason === 'stadium_ops' || reason === 'name_rights') return ['outflows', 'stadium'];
   if (String(reason || '').startsWith('upgrade:')) return ['outflows', 'upgrades'];
   if (reason === 'loan_interest' || reason === 'loan_repay' || reason === 'overdraft_interest') {
@@ -1321,6 +1407,19 @@ const applySeasonCashflowEntry = (cashflow, entry) => {
   const [bucket, key] = seasonCashflowCategory(entry.type, entry.reason);
   cashflow[bucket][key] = (Number(cashflow[bucket][key]) || 0) + amount;
   cashflow.movementCount = (Number(cashflow.movementCount) || 0) + 1;
+};
+
+/** Recalcula olheiros (manutenção + viagens) a partir do ledger curto. */
+const resyncScoutingFromLedger = (cashflow, ledger) => {
+  if (!cashflow || !Array.isArray(ledger)) return;
+  let scouting = 0;
+  ledger.forEach(entry => {
+    if (entry?.type !== 'spend') return;
+    if (entry.reason === 'scout_wages' || entry.reason === 'scout_travel') {
+      scouting += Math.max(0, Number(entry.amount) || 0);
+    }
+  });
+  cashflow.outflows.scouting = scouting;
 };
 
 /** Garante acumulador do DFC da temporada (sobrevive ao limite do ledger). */
@@ -1355,6 +1454,7 @@ export function ensureSeasonCashflow(club, season = null) {
       }
     }
   }
+  resyncScoutingFromLedger(club.seasonCashflow, club.budgetLedger);
   return club.seasonCashflow;
 }
 
@@ -3217,6 +3317,7 @@ export function createEconomyEngine() {
     computeSeasonPrize,
     resolveSerieDPrizePhase,
     resolveCupPrizePhase,
+    resolveStateLeaguePrizePhase,
     generateSponsorOffers,
     reshuffleSponsorOffers,
     applySponsorChoice,
@@ -3230,6 +3331,9 @@ export function createEconomyEngine() {
     SERIE_D_PHASE_SHARE,
     CUP_PHASE_POOL,
     CUP_PHASE_SHARE,
+    STATE_LEAGUE_PARTICIPATION,
+    STATE_LEAGUE_PHASE_POOL,
+    STATE_LEAGUE_PHASE_SHARE,
     NAME_RIGHTS_COST_BY_DIVISION,
     getBalance,
     ensureBudget,

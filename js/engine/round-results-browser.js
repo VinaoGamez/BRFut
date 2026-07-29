@@ -95,7 +95,7 @@ export function createRoundResultsBrowser(deps) {
       } else {
         divisionTabs.classList.remove('is-locked');
         const tabs = [
-          ...(worldCupCompetition && userNationalTeamName ? [{ id: 'CMU', label: 'COPA DO MUNDO' }] : []),
+          ...(worldCupCompetition ? [{ id: 'CMU', label: 'COPA DO MUNDO' }] : []),
           ...divisions.map(division => ({ id: division, label: `SÉRIE ${division}` })),
         ];
         divisionTabs.innerHTML = tabs.map(tab => `<button class="${tab.id === roundBrowserDivision ? 'active' : ''}" data-round-division="${tab.id}">${tab.label}</button>`).join('');

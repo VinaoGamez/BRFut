@@ -1,4 +1,4 @@
-# Matchday Football — Risco e “quebra” financeira
+# BR Fut — Risco e “quebra” financeira
 
 **Escopo:** empréstimo bancário + folha + saúde financeira + demissão + **falência formal**.  
 **Status:** calibração **v6** — demissão v2 (Projeto Protegido + Crise Real) + pop-ups de aviso.

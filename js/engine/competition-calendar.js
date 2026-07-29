@@ -58,6 +58,73 @@ export function findRecordedGame(game, games = []) {
   return games.find(entry => gameMatchesRecorded(game, entry)) || null;
 }
 
+/** Mesmo confronto ignorando rodada — save antigo / currentRound dessincronizado. */
+export function findRecordedGameByPair(game, games = []) {
+  if (!game?.home || !game?.away || !Array.isArray(games)) return null;
+  const key = fixturePairKey(game.home, game.away);
+  return games.find(entry => entry && fixturePairKey(entry.home, entry.away) === key) || null;
+}
+
+/** Localiza confronto no calendário nacional pela dupla (home/away). */
+export function findLeagueFixtureByPair(game, fixtures) {
+  if (!game?.home || !game?.away || !Array.isArray(fixtures)) return null;
+  const key = fixturePairKey(game.home, game.away);
+  for (let index = 0; index < fixtures.length; index++) {
+    const roundGames = fixtures[index];
+    if (!Array.isArray(roundGames)) continue;
+    const match = roundGames.find(
+      candidate => candidate && fixturePairKey(candidate.home, candidate.away) === key,
+    );
+    if (match) {
+      const matchRound = Number(match.round);
+      return {
+        game: match,
+        round: Number.isFinite(matchRound) && matchRound > 0 ? matchRound : index + 1,
+      };
+    }
+  }
+  return null;
+}
+
+/** Rodada do confronto — usa `game.round` ou posição no calendário nacional. */
+export function resolveLeagueFixtureRound(game, fixtures) {
+  const direct = Number(game?.round);
+  if (Number.isFinite(direct) && direct > 0) return direct;
+  if (!game?.home || !game?.away || !Array.isArray(fixtures)) return null;
+  for (let index = 0; index < fixtures.length; index++) {
+    const roundGames = fixtures[index];
+    if (!Array.isArray(roundGames)) continue;
+    const match = roundGames.find(
+      candidate =>
+        candidate &&
+        fixturePairKey(candidate.home, candidate.away) === fixturePairKey(game.home, game.away),
+    );
+    if (match) {
+      const matchRound = Number(match.round);
+      return Number.isFinite(matchRound) && matchRound > 0 ? matchRound : index + 1;
+    }
+  }
+  return null;
+}
+
+/** Garante `round` em rodadas de grupos (save antigo / merge incompleto). */
+export function ensureNationalFixtureRounds(fixtures, { groupRounds = 10 } = {}) {
+  if (!Array.isArray(fixtures)) return false;
+  let changed = false;
+  fixtures.slice(0, groupRounds).forEach((roundGames, roundIndex) => {
+    if (!Array.isArray(roundGames)) return;
+    const targetRound = roundIndex + 1;
+    roundGames.forEach(game => {
+      if (!game || typeof game !== 'object') return;
+      if (Number(game.round) !== targetRound) {
+        game.round = targetRound;
+        changed = true;
+      }
+    });
+  });
+  return changed;
+}
+
 export function getCalendarPolicy(competitionKey) {
   return COMPETITION_CALENDAR_POLICIES[competitionKey] || COMPETITION_CALENDAR_POLICIES.brasileirao;
 }

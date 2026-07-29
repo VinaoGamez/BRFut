@@ -32,12 +32,14 @@ import {
   scoutGradeLabel,
   SCOUT_TALENT_COUNT_ODDS,
   SCOUT_TALENT_STAR_ODDS,
-  SCOUT_COST_PER_SLOT,
+  estimateScoutStaffBill,
+  estimateScoutTravelCost,
+  isValidScoutRegion,
   ensureYouthState,
   formatScoutReportBody,
   purgeExpiredScoutReports,
 } from '../../engine/youth-academy.js';
-import { getStructureLevel } from '../../engine/economy.js';
+import { estimateStaffBill, getStructureLevel } from '../../engine/economy.js';
 
 /**
  * UI — Categoria de Base (infra, olheiros, elenco U-20).
@@ -62,6 +64,7 @@ export function createYouthAcademyFeature(deps) {
     lastNames,
     onBudgetChanged,
     getRetiredPool,
+    isOffSeason,
   } = deps;
 
   let activeTab = 'squad';
@@ -171,7 +174,23 @@ export function createYouthAcademyFeature(deps) {
     const careerDate = getCareerDate?.() || new Date();
     const scLv = getEffectiveScoutingLevel(club);
     const maxSlots = getScoutSlotCount(club);
-    const costHint = scLv > 0 ? SCOUT_COST_PER_SLOT[scLv] || 0 : 0;
+    const division = getUserDivision?.() || club.division || 'A';
+    const offSeason = typeof isOffSeason === 'function' ? !!isOffSeason() : false;
+    const staffBill = estimateStaffBill(club, division);
+    const maintTotal = estimateScoutStaffBill(club, {
+      division,
+      staffBill,
+      careerDate,
+      offSeason,
+    });
+    const travelCost =
+      pendingRegion && isValidScoutRegion(pendingRegion)
+        ? estimateScoutTravelCost(club, pendingRegion, {
+            division,
+            clubName: getUserClub?.(),
+            userUf: deps.getUserUf?.(),
+          })
+        : 0;
     const available = listAvailableScouts(club, careerDate);
 
     const regionOptions = REGION_OPTIONS.map(
@@ -274,7 +293,7 @@ export function createYouthAcademyFeature(deps) {
           </div>`;
 
     el.innerHTML = `
-      <p class="youth-scout-meta">Olheiros: ${maxSlots} · Custo: ${costHint > 0 ? `${formatBudget(costHint)}/rodada por olheiro` : '—'} · Missão dura ${SCOUT_LOCK_MONTHS} meses</p>
+      <p class="youth-scout-meta">Olheiros: ${maxSlots} · ${maintTotal > 0 ? `Manutenção: ${formatBudget(maintTotal)}/rodada (piso 35% comissão · missão +20%${offSeason ? ' · entressafra 20%' : ''})` : 'Manutenção: —'} · Missão: ${SCOUT_LOCK_MONTHS} meses${travelCost > 0 ? ` · Viagem estimada: ${formatBudget(travelCost)}` : ''}</p>
       ${searchBar}
       ${statusHtml}
       <h3 class="youth-subtitle">Relatório de captação</h3>
@@ -408,8 +427,17 @@ export function createYouthAcademyFeature(deps) {
           ...ctx(),
         });
         if (!res.ok) {
+          if (res.error === 'insufficient_funds') {
+            pushMessage?.({
+              category: 'club',
+              type: 'warning',
+              title: 'Olheiros',
+              body: `Saldo insuficiente para a viagem (${formatBudget(res.travelCost || 0)}).`,
+            });
+          }
           return;
         }
+        onBudgetChanged?.();
         render();
         return;
       }

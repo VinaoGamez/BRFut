@@ -7,13 +7,12 @@ import {
   formatSlotDivision,
   formatSlotUpdatedAt,
   getLastPlayedSlot,
-  hydrateSlot,
-  migrateLegacySingleSaveToSlots,
   readCareerIndex,
   slotLimitLabel,
 } from '../../core/career-slot-manager.js';
-import { hydrateSlotBundleFromCloud, initStorageBackend } from '../../core/storage-api.js';
-import { clearSessionCareerData, markSkipSessionEndOnce } from '../../core/save.js';
+import { activateSlot } from '../../core/career-activate.js';
+import { clearCareerData } from '../../core/save-clear.js';
+import { markSkipSessionEndOnce } from '../../core/save.js';
 import { CAREER_SLOT_LIMIT } from '../../core/constants.js';
 
 function ensureModalRoot() {
@@ -74,7 +73,6 @@ export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } 
   const close = () => modal?.classList.add('hidden');
 
   const renderList = () => {
-    migrateLegacySingleSaveToSlots();
     const index = readCareerIndex();
     const lastId = getLastPlayedSlot()?.id;
     const sorted = [...index.slots].sort(
@@ -102,12 +100,10 @@ export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } 
     if (!slotId) return;
     markSkipSessionEndOnce();
     try {
-      await initStorageBackend({ skipProbe: true });
-      await hydrateSlotBundleFromCloud(slotId);
+      await activateSlot(slotId, { skipProbe: true, reason: 'home-load' });
     } catch {
       /* offline/local */
     }
-    hydrateSlot(slotId);
     close();
     await onStartSlot?.(slotId);
   };
@@ -118,7 +114,7 @@ export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } 
       return;
     }
     markSkipSessionEndOnce();
-    clearSessionCareerData();
+    await clearCareerData('session');
     const slotId = createNewSlot();
     if (!slotId) return;
     close();
@@ -141,14 +137,8 @@ export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } 
     startNewCareer,
     startSlot,
     renderList,
-    getLastPlayedSlot: () => {
-      migrateLegacySingleSaveToSlots();
-      return getLastPlayedSlot();
-    },
-    hasAnySlot: () => {
-      migrateLegacySingleSaveToSlots();
-      return readCareerIndex().slots.length > 0;
-    },
+    getLastPlayedSlot: () => getLastPlayedSlot(),
+    hasAnySlot: () => readCareerIndex().slots.length > 0,
   };
 }
 

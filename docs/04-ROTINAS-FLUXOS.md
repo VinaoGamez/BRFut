@@ -1,145 +1,124 @@
-# 04 — Rotinas e Fluxos
+# 04 — Rotinas e fluxos
 
-## Rotinas de boot
-
-| Rotina | Quando | Ação |
-|--------|--------|------|
-| `hydrateSaves` | Load | Lê localStorage |
-| Career gate | Sem save | Modal nova carreira / redirect |
-| World gen | Nova carreira | Gera clubes, fixtures, copa |
-| `renderCurrentView` | Após boot / nav | Renderiza view ativa |
-
----
-
-## Rotina: Nova carreira
-
-1. Usuário abre `index.html?novo=1` ou clica Novo Jogo em `home.html`
-2. Modal coleta: técnico, clube, divisão, formação
-3. `#confirmNewGame` → gera universo
-4. `persistCareer()` + `persistSeason()`
-5. `redirectGame()` — remove `?novo=1`
-6. Render dashboard
-
-**Cancelar:** se veio de `?novo=1` sem save → `home.html`
-
----
-
-## Rotina: Navegação entre views
-
-```
-.nav-btn[data-view] → click
-  → activeView = view
-  → renderCurrentView()
-    → renderDashboard | renderSquad | renderTactics | ...
-```
-
----
-
-## Rotina: Rodada de campeonato
+## Boot da home (`home.html`)
 
 ```mermaid
 sequenceDiagram
     participant U as Usuário
-    participant S as site.js
-    participant E as Engine
+    participant H as home.js
+    participant A as account API
 
-    U->>S: Iniciar rodada
-    S->>S: simulateRoundResults()
-    alt Jogo do usuário
-        S->>U: Modal partida ao vivo
-        U->>S: Assistir / pular
-        S->>E: tick / advance / shot
-    else Outros jogos
-        S->>E: simulateRoundMatch (cada jogo)
+    U->>H: Abre home
+    H->>A: probeBackend / refresh
+    alt Sem login
+        U->>H: Jogar local / Login
+    else Com login
+        U->>H: Novo / Continuar slot
+        H->>H: activateSlot(slotId)
+        H->>U: index.html?slot=
     end
-    S->>S: Atualizar tabelas e copa
-    S->>S: advanceSeasonRound()
-    S->>S: persistSeason()
-    S->>U: Mensagens + resultados
+```
+
+## Boot do jogo (`main.js` → `engine.js`)
+
+| Etapa | Módulo | Ação |
+|-------|--------|------|
+| 1 | `career-activate` | `runCareerBootMigration()` |
+| 2 | `main.js` | Auth gate, `prepareGameSession` |
+| 3 | `storage-api` | `ensureStorageHydrated`, merge nuvem |
+| 4 | `career-slot-manager` | `hydrateSlot` → chaves ativas |
+| 5 | `engine.js` | `bootEngine()` |
+| 6 | pyramid + clubs bootstrap | Mundo e elencos |
+| 7 | features | `createDashboard`, `createTactics`, … |
+| 8 | `main.js` | `markBootReady()` |
+
+Pós-boot (idle): restore partida ao vivo → sim idle CPU → transição de temporada.
+
+---
+
+## Nova carreira
+
+1. Home → **Novo Jogo** ou slot vazio → criador (Opções / modal).
+2. Coleta: técnico, clube, divisão, UF/origem (se estadual).
+3. `persistCareer` + geração pirâmide/elencos/calendário.
+4. Redirect `index.html` (com `?slot=` se aplicável).
+5. Sponsor picker se pendente; dashboard hidratado.
+
+**Cancelar sem save:** volta `home.html`.
+
+---
+
+## Navegação
+
+```
+.nav[data-view] → click
+  → router (ui/router.js)
+  → feature.render*()
+```
+
+Features lazy: calendário (`calendar-view`), mercado (`transfers-ui`).
+
+---
+
+## Rodada de campeonato
+
+```mermaid
+sequenceDiagram
+    participant U as Usuário
+    participant E as engine/compositor
+    participant R as round-advance
+    participant S as match-sim
+
+    U->>E: Jogar / Simular rodada
+    alt Partida usuário
+        E->>E: match-live-entry open
+        U->>E: Ao vivo ou simular
+        E->>S: tick / simulateRoundMatch
+        U->>E: AVANÇAR (pós-jogo)
+    else Só CPU
+        E->>R: simulateIdleRound
+    end
+    E->>R: advanceSeasonRound
+    E->>E: persistSeason + messages
 ```
 
 ---
 
-## Rotina: Partida ao vivo
+## Partida ao vivo
 
-1. Abre modal com estado `liveMatch`
-2. `setInterval` ou `requestAnimationFrame` chama `tick`
-3. Cada tick: `advance` → eventos → atualiza DOM
-4. `bindLiveActions()` reanexa botões
-5. Fim: `finalizeLiveMatch` → stats → `pushMessage`
+1. `#playMatch` → `match-live-entry` valida calendário/sponsor.
+2. Pré-jogo: escalação, tática (`tactics` + `openPreparation`).
+3. `match-live-orchestration.tick` / relógio (`match-clock`).
+4. Pênaltis / shootout: handlers em `match-live-entry` + orchestration.
+5. Fim: `match-live-session.renderFinalSummary` → NOTAS / AVANÇAR.
+6. `exitLiveMatch` → `advanceSeasonRound`.
 
-**Controles:** velocidade, pular para fim, substituições (se disponível).
-
----
-
-## Rotina: Fim de temporada
-
-1. Última rodada detectada em `advanceSeasonRound`
-2. `prepareSeasonTransition` calcula movimentações
-3. Modal resumo exibido
-4. Usuário clica **Próxima temporada**
-5. `#startNextSeason` → reset parcial, novo calendário
-6. `finalizeNationalRankingSeason`
-7. `redirectGame()` + persist
+**Restore:** `live-match-persist` + `tryRestoreLiveMatch` no boot.
 
 ---
 
-## Rotina: Copa do Brasil
+## Fim de temporada
 
-1. Fixtures gerados por fase
-2. A cada rodada relevante: `simulateCupFixtures` (ou integrado na rodada)
-3. Vencedores avançam; agregado em jogos de ida/volta
-4. `currentPhase` incrementa até FINAL
-5. Campeão em `cupCompetition.champion`
-
----
-
-## Rotina: Treino
-
-- Configurado em `matchday-training-rules`
-- Dias livres / pré-jogo / pós-jogo
-- Pode alterar `workload` e disparar `resolvePhysicalIncident`
+1. Última rodada / copa resolvida → `seasonComplete`.
+2. `season-transition.prepareSeasonTransition`.
+3. Modal `season-summary` — campeões, prêmios, objetivos.
+4. `#startNextSeason` → novo calendário, movimentações, ranking.
 
 ---
 
-## Rotina: Tratamento médico
+## Sync nuvem (por slot)
 
-1. Jogador lesionado aparece em elenco
-2. Modal tratamento → escolha de programa
-3. Atualiza `injury.daysLeft` ou flags de retorno
-4. `pushMessage` categoria `medical`
-
----
-
-## Handlers padronizados
-
-```javascript
-// Elementos estáveis
-onClick(element, handler)
-on(element, 'input', handler)
-
-// Formações (delegação)
-onClick(grid, e => {
-  const btn = e.target.closest('button')
-  if (btn) applyFormationChoice(btn.dataset.formation)
-})
-
-// Pós-ação sem query string
-redirectGame()  // location.replace(pathname)
-```
-
-**Exceção:** `bindLiveActions` usa `.onclick` em botões recriados.
-
----
-
-## Rotina: Opções / ritmo
-
-- Modal opções altera `futmanager-pace`
-- Afeta `gamePaceConfig` no próximo jogo ao vivo
+| Evento | Comportamento |
+|--------|---------------|
+| Login | Merge remoto → local |
+| Troca slot | Flush slot anterior, `hydrateSlot` novo |
+| `pagehide` com carreira | `markCareerReloadPending`, skip session end |
+| Debounce save | `career-slot-manager` + `storage-api` |
 
 ---
 
 ## Documentação relacionada
 
-- [Interface](./06-INTERFACE.md)
+- [Arquitetura — Sync](./02-ARQUITETURA.md)
 - [Modelos de dados](./05-MODELOS-DADOS.md)
+- [Interface](./06-INTERFACE.md)

@@ -2,125 +2,89 @@
 
 ## Shell (`index.html`)
 
-Estrutura fixa:
+- **Sidebar** — `.nav[data-view]`, escudo do clube, temporada
+- **Main** — seções `#dashboard`, `#squad`, `#tactics`, …
+- **Modais** — partida, opções, tratamento, campeonatos, mercado, etc.
+- **Boot gate** — splash até `markBootReady()` (`ui/boot-gate.js`)
 
-- **Header** — nome do clube, temporada, rodada
-- **Sidebar** — navegação `.nav-btn`
-- **Main** — container `#view-*` por seção
-- **Modais** — injetados por `site.js` no `document.body`
-
----
-
-## Views
-
-### Dashboard (`#view-dashboard`)
-
-- Próximo adversário e data
-- Resumo da tabela
-- Atalhos: jogar rodada, scout, mensagens recentes
-- Indicadores de lesões/suspensões
-
-### Elenco (`#view-squad`)
-
-- Tabela/lista de jogadores
-- Overall, posição, status (lesão, cartão, carga)
-- Ações: tratamento, detalhes
-
-### Táticas (`#view-tactics`)
-
-- Seletor de formação (grid de botões)
-- Sliders: pressão, ritmo, largura, profundidade, etc.
-- Campo com drag-drop dos 11 titulares
-- Banco de reservas
-
-### Tabela (`#view-table`)
-
-- Classificação da divisão do usuário
-- Destaque na linha do clube gerenciado
-- Link para detalhes do campeonato (modal)
-
-### Ranking (`#view-ranking`)
-
-- Ranking nacional de clubes
-- Pontuação acumulada na temporada
-
-### Mensagens (`#view-messages`)
-
-- Feed cronológico
-- Filtro por categoria
-- Limite 200 entradas
-
-### Calendário (`#view-calendar`)
-
-- Visão mensal/semanal de jogos e treinos
-- Cores por tipo: liga, copa, treino
+Entry: `js/main.js` (não carrega jogo sem auth/slot quando nuvem ativa).
 
 ---
 
-## Modais (runtime)
+## Views e features
 
-| ID / classe | Propósito |
-|-------------|-----------|
-| Modal nova carreira | Criação de save |
-| Modal opções | Ritmo, preferências |
-| Modal partida | Simulação ao vivo |
-| Modal tratamento | Programas médicos |
-| Modal scout | Observação de jogadores |
-| Modal campeonato | Detalhes da competição |
-| Modal resultados rodada | Placares da rodada |
-| Modal transição | Fim de temporada |
-
-Modais usam overlay + `display`/`classList` para show/hide.
-
----
-
-## Partida ao vivo — UI
-
-Elementos típicos:
-
-- Placar e minuto
-- Barra de posse ou momentum (se habilitado)
-- Log de narração (scroll)
-- Estatísticas: chutes, cartões, substituições
-- Botões: velocidade, pular, fechar (após fim)
-
-`bindLiveActions()` após cada atualização do log/placar.
+| View / área | Feature (`js/feature/`) | Notas |
+|-------------|-------------------------|-------|
+| Dashboard | `dashboard/` | Próximo jogo, CTA rodada, indicadores |
+| Elenco | compositor + `shared/player-cells` | Badges lesão/cartão/fadiga |
+| Táticas | `tactics/` | Formação, sliders, campo |
+| Calendário | `calendar-view/` (lazy) | Treinos, jogos, relatório |
+| Campeonatos | `championship-page/` | Tabelas, pickers, bracket |
+| Ranking | `ranking-views/` | Nacional + filtros |
+| Mensagens | `messages/` | Feed FM-style, ações pendentes |
+| Escritório / Finanças | `economy/` | Orçamento, upgrades, empréstimo |
+| Mercado | `transfers/` (lazy UI) | Lista, ofertas, empréstimos |
+| Base / Juvenil | `youth-academy/` | Scouts, promoções |
+| Opções | `options/` | Ritmo, áudio, nova carreira, tester hub |
+| Conta | `account/` | Login, slots, sync |
 
 ---
 
-## Landing (`home.html`)
+## Partida ao vivo
 
-- Visual branding
-- **Novo Jogo** → `index.html?novo=1`
-- **Continuar** → `index.html` (se save existe)
-- Estilo: `css/home.css`, lógica: `js/home.js`
+| Peça | Módulo |
+|------|--------|
+| Relógio, placar, log | `match-live-ui/` |
+| Abrir/restaurar/fechar | `match-live-entry/` |
+| Resumo, AVANÇAR | `match-live-session/` |
+| Sons | `match-live-audio/` (lazy chunk) |
+| Rodada paralela | `live-day-matches/` |
 
----
-
-## Padrões visuais
-
-- Tema escuro/clube (variáveis CSS em `site.css`)
-- Tipografia sistema-ui
-- Componentes: cards, badges, tabelas responsivas
-- Botão primário: gradiente definido em `optionsCss` para `#confirmNewGame`
+Controles: pausa técnica, stats, adversário, pênaltis, shootout panel.
 
 ---
 
-## Acessibilidade e UX
+## Modais transversais
 
-- Textos em pt-BR
-- Datas formatadas localmente
-- Feedback via `pushMessage` após ações importantes
-- Reload limpo via `redirectGame()` evita loops de modal
+| Modal | Feature |
+|-------|---------|
+| Resumo temporada | `season-summary/` |
+| Objetivo / metas | `season-goal-card/` |
+| Patrocinadores | `sponsor-picker/` |
+| Demissão / crise | `manager-sack/`, `manager-job-warn/` |
+| Insolvência | `club-insolvency-warn/`, `club-bankruptcy/` |
+| Restrição mercado | `club-financial-restriction/` |
+| Aposentadoria | `retirement-modal/` |
+| Regras competição | `competition-rules-modal/` |
+| Cartas jogador | `player-card-modal/` |
+| Guia / feedback tester | `tester-hub/` |
 
 ---
 
-## Cache bust
+## Home (`home.html`)
 
-`index.html` referencia:
+- Login / conta (`account/inject-modals.js`)
+- Lista de slots (`career-slots/`)
+- Manutenção (`SITE_MAINTENANCE` em `constants.js`)
+- Alerta de build (`ui/update-alert.js`)
 
-```
-js/site.js?v=20260715-handlers
-```
+---
 
-Altere o query string ao publicar nova versão.
+## CSS
+
+Arquivos estáticos em `css/` — ex.: `layout.css`, `calendar.css`, `tactics-ui.css`, `economy-office.css`. Ordem de cascade preservada no `index.html`.
+
+---
+
+## Acessibilidade / UX
+
+- Hard refresh após deploy (`Ctrl+Shift+R`)
+- `brfut-last-seen-build` — popup de novidades (`release-notes.js`)
+- Navegação por teclado parcial em modais críticos
+
+---
+
+## Documentação relacionada
+
+- [Rotinas — partida](./04-ROTINAS-FLUXOS.md)
+- [Guia tester](./GUIA-TESTER.md)

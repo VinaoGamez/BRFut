@@ -1,4 +1,5 @@
 import { getStructureLevel, getPitchLevel } from './economy.js';
+import { getStadiumCapacityExpansionLevel } from './stadium-sectors.js';
 
 export const OBJECTIVE_CATEGORY_LABELS = {
   tournament: 'TORNEIOS',
@@ -40,7 +41,7 @@ const TOURNAMENT_EXTRA = [
   },
   {
     id: 't_serie_d_points',
-    label: 'Somar 12 pontos na fase de grupos',
+    label: 'Somar 12 pontos na fase de grupos da Série D',
     evaluate: { type: 'points_min', min: 12, minPlayed: 6 },
     divisions: ['D'],
   },
@@ -112,7 +113,7 @@ const STRUCTURE_TEMPLATES = [
     id: 's_capacity',
     label: 'Expandir capacidade do estádio (nível {target})',
     evaluateType: 'capacity_level',
-    readLevel: club => Math.max(0, Math.min(5, Number(club?.stadiumCapacityLevel) || 0)),
+    readLevel: club => getStadiumCapacityExpansionLevel(club),
     maxLevel: 5,
   },
 ];
@@ -321,7 +322,7 @@ export function seasonObjectiveLiveProgress(objective, ctx = {}, club = null) {
     prevention_level: () => Math.max(0, Math.min(3, Number(club?.preventionProgram) || 0)),
     structure_level: () => getStructureLevel(club),
     pitch_level: () => getPitchLevel(club),
-    capacity_level: () => Math.max(0, Math.min(5, Number(club?.stadiumCapacityLevel) || 0)),
+    capacity_level: () => getStadiumCapacityExpansionLevel(club),
   };
   const readLevel = levelReaders[ev.type];
   if (readLevel) {
@@ -330,9 +331,10 @@ export function seasonObjectiveLiveProgress(objective, ctx = {}, club = null) {
     const target = Number(ev.min) || current + 1;
     const span = Math.max(1, target - start);
     const score = Math.min(100, Math.round(((current - start) / span) * 100));
+    const unitLabel = ev.type === 'capacity_level' ? 'expansões' : 'nível';
     return {
       score: Math.max(0, score),
-      hint: `Nível ${current}/${target}`,
+      hint: `${current}/${target} ${unitLabel}`,
       status: current >= target ? 'met' : current > start ? 'near' : 'missed',
     };
   }

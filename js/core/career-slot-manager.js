@@ -9,7 +9,7 @@ import {
   ACTIVE_SLOT_SESSION_KEY,
   slotBundleKeys,
 } from './constants.js';
-import { readJson, writeJson } from './save.js';
+import { readJson, writeJson, getStoragePressure } from './save.js';
 import { isCloudStorageActive, queueCloudSave } from './storage-api.js';
 
 const INDEX_VERSION = 1;
@@ -125,32 +125,38 @@ export function upsertSlotManifest(manifest) {
   return entry;
 }
 
-function copyStorageKey(src, dest) {
-  try {
-    const raw = localStorage.getItem(src);
-    if (raw) localStorage.setItem(dest, raw);
-    else localStorage.removeItem(dest);
-  } catch {
-    /* ignore quota */
+function copyStorageKey(src, dest, { scheduleSlotSync = false, clearDestIfMissing = true } = {}) {
+  const value = readJson(src, null);
+  if (value == null) {
+    if (clearDestIfMissing) {
+      try {
+        localStorage.removeItem(dest);
+      } catch {
+        /* ignore */
+      }
+    }
+    return;
   }
+  writeJson(dest, value, { scheduleSlotSync });
 }
 
-export function copyActiveKeysToBundle(slotId) {
-  if (!slotId) return;
+export function copyActiveKeysToBundle(slotId, { force = false } = {}) {
+  if (!slotId || (!force && getStoragePressure().level === 'critical')) return;
   const bundle = slotBundleKeys(slotId);
-  copyStorageKey(SAVE_KEYS.career, bundle.career);
-  copyStorageKey(SAVE_KEYS.season, bundle.season);
-  copyStorageKey(SAVE_KEYS.playerHistory, bundle.playerHistory);
-  copyStorageKey(SAVE_KEYS.liveMatch, bundle.liveMatch);
+  copyStorageKey(SAVE_KEYS.career, bundle.career, { scheduleSlotSync: false });
+  copyStorageKey(SAVE_KEYS.season, bundle.season, { scheduleSlotSync: false });
+  copyStorageKey(SAVE_KEYS.playerHistory, bundle.playerHistory, { scheduleSlotSync: false });
+  copyStorageKey(SAVE_KEYS.liveMatch, bundle.liveMatch, { scheduleSlotSync: false });
 }
 
 export function copyBundleToActiveKeys(slotId) {
   if (!slotId) return;
   const bundle = slotBundleKeys(slotId);
-  copyStorageKey(bundle.career, SAVE_KEYS.career);
-  copyStorageKey(bundle.season, SAVE_KEYS.season);
-  copyStorageKey(bundle.playerHistory, SAVE_KEYS.playerHistory);
-  copyStorageKey(bundle.liveMatch, SAVE_KEYS.liveMatch);
+  const copyOpts = { scheduleSlotSync: false, clearDestIfMissing: false };
+  copyStorageKey(bundle.career, SAVE_KEYS.career, copyOpts);
+  copyStorageKey(bundle.season, SAVE_KEYS.season, copyOpts);
+  copyStorageKey(bundle.playerHistory, SAVE_KEYS.playerHistory, copyOpts);
+  copyStorageKey(bundle.liveMatch, SAVE_KEYS.liveMatch, copyOpts);
 }
 
 function queueBundleCloudSync(slotId) {
@@ -167,21 +173,46 @@ function queueBundleCloudSync(slotId) {
 }
 
 let slotSyncTimer = 0;
+let pendingSlotSyncId = null;
+
+export function cancelPendingSlotSync() {
+  if (slotSyncTimer) window.clearTimeout(slotSyncTimer);
+  slotSyncTimer = 0;
+  pendingSlotSyncId = null;
+}
+
+/** Flush debounced slot sync immediately (e.g. before slot switch or tab close). */
+export function flushPendingSlotSync() {
+  if (!slotSyncTimer && !pendingSlotSyncId) return false;
+  if (slotSyncTimer) {
+    window.clearTimeout(slotSyncTimer);
+    slotSyncTimer = 0;
+  }
+  const slotId = pendingSlotSyncId;
+  pendingSlotSyncId = null;
+  if (slotId) return syncActiveSlotFromCache({ slotId });
+  return syncActiveSlotFromCache();
+}
 
 /** Debounce — espelha cache ativo → bundle + índice. */
 export function scheduleActiveSlotSync({ name } = {}) {
-  if (!getActiveSlotId()) return;
+  if (getStoragePressure().level === 'critical') return;
+  const slotId = getActiveSlotId();
+  if (!slotId) return;
+  pendingSlotSyncId = slotId;
   if (slotSyncTimer) window.clearTimeout(slotSyncTimer);
   slotSyncTimer = window.setTimeout(() => {
     slotSyncTimer = 0;
-    syncActiveSlotFromCache({ name });
+    const capturedId = pendingSlotSyncId;
+    pendingSlotSyncId = null;
+    if (capturedId) syncActiveSlotFromCache({ slotId: capturedId });
   }, 400);
 }
 
-export function syncActiveSlotFromCache({ name } = {}) {
-  const slotId = getActiveSlotId();
+export function syncActiveSlotFromCache({ name, slotId: forcedSlotId } = {}) {
+  const slotId = forcedSlotId || getActiveSlotId();
   if (!slotId) return false;
-  copyActiveKeysToBundle(slotId);
+  copyActiveKeysToBundle(slotId, { force: true });
   const manifest = buildSlotManifest(slotId, { name });
   upsertSlotManifest(manifest);
   queueBundleCloudSync(slotId);
@@ -190,7 +221,18 @@ export function syncActiveSlotFromCache({ name } = {}) {
 
 export function hydrateSlot(slotId) {
   if (!slotId) return false;
+  const currentId = getActiveSlotId();
+  if (currentId && currentId !== slotId) {
+    flushPendingSlotSync();
+    syncActiveSlotFromCache({ slotId: currentId });
+  } else {
+    cancelPendingSlotSync();
+  }
   setActiveSlotId(slotId);
+  const bundle = slotBundleKeys(slotId);
+  if (!readJson(bundle.career, null)) {
+    copyActiveKeysToBundle(slotId, { force: true });
+  }
   copyBundleToActiveKeys(slotId);
   return true;
 }

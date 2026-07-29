@@ -55,7 +55,7 @@ export function createNationalTeamOffersUiFeature(deps) {
       document.body.insertAdjacentHTML('beforeend', MODAL_HTML);
     }
     bindHandlers();
-    preloadCompetitionTrophy('nacional').then(url => {
+    preloadCompetitionTrophy('world-cup').then(url => {
       const img = $('#ntOfferTrophy');
       if (img && url) {
         img.src = url;

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BR Fut — Diagnóstico localStorage</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 24px auto; padding: 0 16px; background: #0b1a22; color: #e8f4f3; }
+    h1 { font-size: 1.35rem; }
+    pre, table { font-size: 12px; }
+    pre { background: #102b35; padding: 12px; border-radius: 8px; overflow: auto; border: 1px solid #28505b; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    th, td { border: 1px solid #28505b; padding: 6px 8px; text-align: left; }
+    th { background: #123843; color: #63d9ff; }
+    .ok { color: #b6ff38; } .warn { color: #ffc94f; } .err { color: #ff8a8a; }
+    button { background: #1d5a6d; color: #fff; border: 1px solid #63d9ff; border-radius: 6px; padding: 8px 14px; cursor: pointer; margin: 4px 8px 4px 0; }
+  </style>
+</head>
+<body>
+  <h1>Diagnóstico de save (localStorage)</h1>
+  <p>Abra no <strong>mesmo navegador</strong> em que joga: <code>http://127.0.0.1:5081/storage-diag.html</code></p>
+  <button type="button" id="scanBtn">Analisar agora</button>
+  <button type="button" id="repairBtn">Tentar reparar slot ativo</button>
+  <div id="out"></div>
+  <script type="module" src="./js/storage-diag.js"></script>
+</body>
+</html>

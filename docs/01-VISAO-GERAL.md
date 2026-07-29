@@ -1,45 +1,70 @@
-# 01 — Visão Geral
+# 01 — Visão geral
 
-## O que é o Matchday Football Alpha 01
+## O que é o BR Fut
 
-Simulador de gestão de futebol brasileiro que roda no navegador. O jogador assume um clube em uma das quatro divisões nacionais, gerencia elenco e táticas, disputa campeonatos e a Copa do Brasil.
+Simulador de gestão de futebol brasileiro no navegador. O jogador assume um clube (Séries A–D), gerencia elenco, táticas, calendário, finanças, lesões e disputa Brasileirão, Copa do Brasil, estaduais (quando habilitado), ranking nacional e seleções.
 
 ## Público e objetivo
 
-- Experiência single-player offline (com servidor HTTP local apenas para servir arquivos).
-- Foco em realismo brasileiro: Séries A–D, Copa do Brasil, calendário sazonal.
+- Single-player com save local e **sincronização opcional** via conta (API `api.brfut.com.br`).
+- Até **5 slots** de carreira por conta (`{Clube} {Ano}` automático).
+- Foco em calendário CBF, pirâmide oficial de clubes e partidas ao vivo tick-a-tick.
 
 ## Como jogar
 
-1. Execute `INICIAR-JOGO.bat`.
-2. Abra http://127.0.0.1:5080/home.html
-3. **Novo Jogo** → cria carreira | **Continuar** → retoma save.
+### Desenvolvimento (Vite)
+
+```powershell
+npm install
+npm run dev
+```
+
+Abra http://localhost:5080/home.html → login (se nuvem) → Novo Jogo / Continuar.
+
+### Testers (bundle hardened)
+
+```powershell
+npm run build
+py scripts\tester-server.py --port 5081 --bind 127.0.0.1
+```
+
+http://127.0.0.1:5081/home.html
+
+### Sem Node
+
+`INICIAR-JOGO.bat` — Python `http.server` na porta 5080 (módulos ES nativos).
 
 ## Componentes principais
 
 | Componente | Arquivo | Papel |
 |------------|---------|-------|
-| Landing | `home.html` + `js/home.js` | Entrada, detecção de save |
-| Shell do jogo | `index.html` | 7 views + estrutura DOM |
-| Motor | `js/site.js` | Simulação, UI, persistência |
-| Estilos | `css/*.css` + CSS runtime | Visual e layout |
+| Landing | `home.html` + `js/home.js` | Login, slots, nova carreira |
+| Shell | `index.html` | Views + modal de partida |
+| Entry jogo | `js/main.js` | Auth, `prepareGameSession`, `bootEngine` |
+| Compositor | `js/legacy/engine.js` | Wiring, estado de sessão, handlers restantes |
+| Motores | `js/engine/*` | Regras puras (sim, temporada, economia…) |
+| Features | `js/feature/*` | UI por tela (`create*Feature(deps)`) |
+| Core | `js/core/*` | Save, slots, sync, constantes |
 
 ## Divisões jogáveis
 
-- **Série A** — 20 clubes, 38 rodadas
-- **Série B** — 20 clubes, playoffs de acesso
-- **Série C** — 20 clubes, acesso direto e rebaixamento
-- **Série D** — 96 clubes em grupos, mata-mata
+| Divisão | Clubes | Formato (resumo) |
+|---------|--------|------------------|
+| Série A | 20 | 38 rodadas, turno e returno |
+| Série B | 20 | Acesso + playoffs |
+| Série C | 20–28 (por temporada) | Pontos corridos |
+| Série D | 96 | Grupos + mata-mata |
 
 ## Tecnologias
 
-- JavaScript ES6+ (sem bundler, sem framework)
-- HTML5 + CSS3
-- `localStorage` para saves
-- Python `http.server` para desenvolvimento local
+- **Vite 6** + ES modules
+- HTML5 / CSS3 (majoritariamente estático em `css/`)
+- `localStorage` + API REST (saves na nuvem)
+- Testes: `scripts/*-tests.mjs`, `npm run test:all`
 
 ## Documentação relacionada
 
 - [Arquitetura](./02-ARQUITETURA.md)
 - [Motores](./03-MOTORES.md)
+- [Modelos de dados](./05-MODELOS-DADOS.md)
 - [Documentação completa](./DOCUMENTACAO-COMPLETA.md)

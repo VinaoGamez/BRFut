@@ -2,7 +2,7 @@
  * Build pública para testers.
  * Nomenclatura: Alpha V.X.YY — sobe +0.05 a cada publicação (1.00 → 1.05 → …).
  */
-export const BUILD_VERSION = 'Alpha V.4.20';
+export const BUILD_VERSION = 'Alpha V.4.25';
 
 /** Nome público do jogo (UI, títulos, alertas de update). */
 export const GAME_BRAND_NAME = 'BR Fut';
@@ -150,7 +150,7 @@ function readStateLeagueFlag() {
 
 /** Página inicial (career welcome em index.html). */
 export const SITE_MAINTENANCE = {
-  enabled: true,
+  enabled: false,
   message: 'SERVIDOR EM MANUTENÇÃO',
 };
 

@@ -1,80 +1,99 @@
 # 02 — Arquitetura
 
-## Padrão arquitetural
+## Padrão
 
-**Monolito cliente** — uma IIFE em `js/site.js` concentra estado, lógica e apresentação. Não há separação formal em módulos ES; o acoplamento é por convenção de blocos dentro do arquivo.
+**Monolito cliente modular** — Vite + ES modules. Regras em `js/engine/` e `js/feature/`; `js/legacy/engine.js` é o **compositor** (~7,5k linhas): boot, wiring de factories e estado mínimo de sessão.
 
 ## Camadas
 
 ```
-┌─────────────────────────────────────────┐
-│  Apresentação (HTML + render* + modais) │
-├─────────────────────────────────────────┤
-│  Handlers (on, onClick, bindLiveActions)│
-├─────────────────────────────────────────┤
-│  Motores (match, round, season, cup)    │
-├─────────────────────────────────────────┤
-│  Geração (RNG, players, clubs, fixtures)│
-├─────────────────────────────────────────┤
-│  Persistência (localStorage hydrate/save) │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  home.html → js/home.js  │  index.html → js/main.js        │
+├─────────────────────────────────────────────────────────────┤
+│  js/feature/*     UI (dashboard, tactics, options, …)       │
+├─────────────────────────────────────────────────────────────┤
+│  js/legacy/engine.js   compositor + handlers residuais      │
+├─────────────────────────────────────────────────────────────┤
+│  js/engine/*      motores puros (match, season, transfers)  │
+├─────────────────────────────────────────────────────────────┤
+│  js/core/*        save, slots, sync API, career-activate    │
+├─────────────────────────────────────────────────────────────┤
+│  js/ui/*          dom, router, crests, boot-gate            │
+├─────────────────────────────────────────────────────────────┤
+│  localStorage + API nuvem (5081 / api.brfut.com.br)         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Fluxo de arquivos
+## Fluxo de boot (`index.html`)
 
-### `home.html` → `js/home.js`
+1. **`runCareerBootMigration()`** — migra `matchday-*` → `brfut-*`, slots legados.
+2. **Auth gate** — sem token → redirect `home.html` (exceto reload pendente).
+3. **`prepareGameSession({ slotId })`** — hidratação única da nuvem + `activateSlot`.
+4. **`bootEngine()`** — pirâmide, clubes, calendário, features, partida.
+5. **`markBootReady()`** — só em `main.js` (libera splash).
 
-- Verifica `localStorage` por save válido.
-- Botões redirecionam para `index.html` ou `index.html?novo=1`.
+## Extrações recentes do compositor (2026-07)
 
-### `index.html` → `js/site.js`
+| Módulo | Responsabilidade |
+|--------|------------------|
+| `engine/career-pyramid-bootstrap.js` | Pirâmide A–D (CBF ou fallback) |
+| `engine/career-clubs-bootstrap.js` | Elencos IA, `worldRosters`, cascade host |
+| `engine/season-save-writer.js` | `createSeasonSaveWriter` / `persistSeason` |
+| `engine/round-advance.js` | `createRoundAdvanceEngine` |
+| `feature/championship-page/` | UI Campeonatos, bracket Copa/Série D |
+| `feature/match-live-entry/` | `#playMatch`, restore snapshot, pênaltis |
+| `feature/match-live-audio/lazy.js` | Chunk dinâmico de áudio ao vivo |
+| `core/save-key-normalizer.js` | Chaves canônicas local/remoto |
+| `core/career-activate.js` | `activateSlot`, `prepareGameSession` |
+| `core/save-clear.js` | `clearCareerData(scope)` |
 
-- Carrega views vazias (containers).
-- `site.js` preenche conteúdo via `innerHTML` e listeners.
-- CSS adicional injetado: `optionsCss`, estilos de modais.
+Lista completa: [modularization.md](./modularization.md).
 
-## Estado global (dentro da IIFE)
+## Persistência (Fase Sync)
 
-Variáveis let/const mutáveis incluem:
+| Módulo | Função |
+|--------|--------|
+| `save-key-normalizer.js` | `matchday-*` → `brfut-*` |
+| `storage-api.js` | Cliente API, merge remoto, mutex de boot |
+| `career-slot-manager.js` | Índice + bundles por slot (máx. 5) |
+| `career-activate.js` | Pipeline **`activateSlot()`** |
+| `save-clear.js` | **`clearCareerData('session'|'career'|'all')`** |
+| `save-sync.js` | Merge temporada/carreira local vs nuvem |
 
-- `clubs` — mapa nome → clube
-- `careerSeason` — ano da temporada
-- `userClub`, `userDivision` — clube do jogador
-- `messages` — feed de notificações
-- `calendarGames` — `Map` de eventos por data
-- `cupCompetition` — fases da Copa
-- `nationalCompetitions` — ligas A/B/C/D
-- `nationalRankingEntries` — ranking anual
+### Boot idempotente
 
-## Boot sequence
+- `ensureStorageHydrated()` / `initStorageBackend()` — **uma vez** por sessão.
+- `activateSlot(id)` — merge bundle remoto, flush slot anterior, copia bundle → chaves ativas.
 
-1. `hydrateSaves()` — lê `matchday-new-game` e `matchday-season`
-2. Valida versão e integridade
-3. Se sem carreira → gate (modal ou redirect)
-4. Restaura datas (`new Date(iso)`)
-5. Inicializa copa/calendário se necessário
-6. `renderCurrentView()` + registro de handlers
-7. Pronto para interação
+## Estado de sessão (`bootEngine`)
+
+Variáveis no closure do compositor (não globais):
+
+- `clubs`, `userClub`, `careerSeason`, `savedNewGame`, `validSavedSeason`
+- `cupCompetition`, `nationalCompetitions`, `calendarGames`, …
+- Features instanciadas via `create*Feature({ getX, setX, … })`
+
+## Lazy loading
+
+- Calendário, mercado UI, base juvenil: `createLazyFeature()` em `engine/lazy-feature-loader.js`.
+- Áudio ao vivo: `createLazyMatchLiveAudio()` — chunk `match-live-*.js` separado no build.
+
+## Testes de regressão (sync/boot)
+
+```powershell
+node scripts/career-slot-tests.mjs
+node scripts/career-sync-tests.mjs
+node scripts/boot-order-tests.mjs
+npm run test:all
+```
 
 ## CSS
 
-| Arquivo | Escopo |
-|---------|--------|
-| `layout.css` | Grid, sidebar, header |
-| `site.css` | Componentes gerais |
-| `championship.css` | Tabelas e competições |
-| `calendar.css` | Agenda |
-| `home.css` | Landing |
-| Inline em `index.html` | Overrides pontuais |
-| `optionsCss` em `site.js` | Modal opções, botões |
-
-## Decisões de design
-
-- **Sem build:** deploy = copiar pasta.
-- **Sem API:** facilita alpha local; limita multiplayer/sync.
-- **innerHTML:** rápido para protótipo; exige rebind de handlers em áreas dinâmicas.
+Build Vite — CSS em `css/` linkado em `index.html` / importado nos entries. Features **não** injetam `<style>` (exceto `security/tester-hardening.js`).
 
 ## Documentação relacionada
 
+- [Plano de modularização](./PLANO-MODULARIZACAO.md)
 - [Motores](./03-MOTORES.md)
 - [Rotinas e fluxos](./04-ROTINAS-FLUXOS.md)
+- [VPS / API](./VPS-LOCAWEB.md)

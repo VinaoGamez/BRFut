@@ -2,7 +2,7 @@ import './security/https-upgrade.js';
 import './security/tester-hardening.js';
 import '../css/release-notes-viewer.css';
 import '../css/live-volume.css';
-import { BUILD_VERSION, FEATURES, SAVE_KEYS, SITE_MAINTENANCE } from './core/constants.js';
+import { BUILD_VERSION, FEATURES, SITE_MAINTENANCE } from './core/constants.js';
 import { registerChunkLoadRecovery } from './core/chunk-load.js';
 import { createEventBus } from './core/event-bus.js';
 import { bootEngine } from './legacy/engine.js';
@@ -11,8 +11,6 @@ import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
 import {
   endBrowserSession,
   getAuthToken,
-  hydrateSlotBundleFromCloud,
-  initStorageBackend,
   probeBackend,
 } from './core/storage-api.js';
 import {
@@ -21,14 +19,15 @@ import {
   hasLocalCareerSave,
   markCareerReloadPending,
   markSkipSessionEndOnce,
-  migrateLegacyStorageKeys,
   purgeAllCareerStorage,
+  shouldPreserveAuthOnPageHide,
 } from './core/save.js';
 import {
-  hydrateSlot,
-  migrateLegacySingleSaveToSlots,
-  setActiveSlotId,
-} from './core/career-slot-manager.js';
+  prepareGameSession,
+  runCareerBootMigration,
+  hasPersistedCareer,
+} from './core/career-activate.js';
+import { ensureSlotPlayable } from './core/career-storage-health.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 
@@ -41,8 +40,7 @@ if (SITE_MAINTENANCE.enabled) {
   markBootReady();
   location.replace('home.html');
 } else {
-  migrateLegacyStorageKeys();
-  migrateLegacySingleSaveToSlots();
+  runCareerBootMigration();
   document.documentElement.dataset.build = BUILD_VERSION;
   registerChunkLoadRecovery();
   void showUpdateAlertIfNeeded(BUILD_VERSION);
@@ -60,13 +58,7 @@ if (SITE_MAINTENANCE.enabled) {
   let openCareerCreatorRef = null;
   let bootStarted = false;
 
-  const hasCareerSave = () => {
-    try {
-      return !!localStorage.getItem(SAVE_KEYS.career);
-    } catch {
-      return false;
-    }
-  };
+  const hasCareerSave = () => hasPersistedCareer();
 
   const redirectToHomeLanding = () => {
     markBootReady();
@@ -109,7 +101,7 @@ if (SITE_MAINTENANCE.enabled) {
         location.reload();
         return;
       }
-      await initStorageBackend({ skipProbe: true });
+      await prepareGameSession({ skipProbe: true });
       await account.refresh();
       startBootOnce();
     },
@@ -121,28 +113,40 @@ if (SITE_MAINTENANCE.enabled) {
 
       const params = new URLSearchParams(location.search);
       const slotParam = params.get('slot');
+      const isNewCareerBoot = params.has('novo');
 
       const token = getAuthToken();
 
       if (!token) {
         const reloadPending = consumeCareerReloadPending();
-        if (!reloadPending && !hasLocalCareerSave()) clearSessionCareerData();
-        redirectToHomeLanding();
+        if (!reloadPending && !hasLocalCareerSave() && !isNewCareerBoot) clearSessionCareerData();
+        if (!hasLocalCareerSave() && !isNewCareerBoot) {
+          redirectToHomeLanding();
+          return;
+        }
+        await prepareGameSession({ skipProbe: true, slotId: slotParam || null });
+        if (!isNewCareerBoot) {
+          const slotCheck = slotParam ? ensureSlotPlayable(slotParam) : { ok: hasLocalCareerSave() };
+          if (!slotCheck.ok) {
+            console.warn('[brfut] save local sem payload de carreira', slotCheck.reason, slotCheck.scan);
+            redirectToHomeLanding();
+            return;
+          }
+        }
+        await account.refresh();
+        startBootOnce();
         return;
       }
 
       consumeCareerReloadPending();
-      await initStorageBackend();
-      migrateLegacySingleSaveToSlots();
-
-      if (slotParam) {
-        try {
-          await hydrateSlotBundleFromCloud(slotParam);
-        } catch {
-          /* ignore */
+      await prepareGameSession({ slotId: slotParam || null });
+      if (!isNewCareerBoot) {
+        const slotCheck = slotParam ? ensureSlotPlayable(slotParam) : { ok: hasLocalCareerSave() };
+        if (!slotCheck.ok) {
+          console.warn('[brfut] save local sem payload de carreira', slotCheck.reason, slotCheck.scan);
+          redirectToHomeLanding();
+          return;
         }
-        setActiveSlotId(slotParam);
-        hydrateSlot(slotParam);
       }
 
       await account.refresh();
@@ -163,6 +167,7 @@ if (SITE_MAINTENANCE.enabled) {
       markSkipSessionEndOnce();
       return;
     }
+    if (shouldPreserveAuthOnPageHide()) return;
     if (bootStarted) return;
     endBrowserSession();
     clearSessionCareerData();

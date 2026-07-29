@@ -58,10 +58,26 @@ export const isSerieDGroupPhaseContext = (game, userDivision, serieDGroupRounds 
   return true;
 };
 
+export const resolveClubDivision = (clubName, clubs, serieDGroups) => {
+  const club = clubs?.[clubName];
+  if (!club) return null;
+  let division = club.division || 'A';
+  if (division === 'REG' && findSerieDGroupIndex(clubName, serieDGroups) >= 0) division = 'D';
+  return division;
+};
+
+export const clubDivisionLabel = (clubName, clubs, serieDGroups) => {
+  const division = resolveClubDivision(clubName, clubs, serieDGroups);
+  return division ? divisionDisplayName(division) : '—';
+};
+
 export const formatClubPositionLabel = (
   pos,
   { game = null, teamName = null, clubs = null, serieDGroups = [], userDivision = 'A', serieDGroupRounds = 10 } = {},
 ) => {
+  if (game?.competition === 'COPA DO BRASIL' && teamName) {
+    return clubDivisionLabel(teamName, clubs, serieDGroups);
+  }
   if (pos === '—' || pos == null) return '—';
   if (game && isStateLeagueGame(game) && game.phase === 'groups') {
     return `${pos}º no grupo`;
@@ -91,8 +107,7 @@ export const clubStandingContext = (
     if (nt) return `Copa do Mundo · FIFA ${nt.fifaRank}º`;
     return '';
   }
-  let division = club.division || 'A';
-  if (division === 'REG' && findSerieDGroupIndex(clubName, serieDGroups) >= 0) division = 'D';
+  const division = resolveClubDivision(clubName, clubs, serieDGroups) || 'A';
   const base = divisionDisplayName(division);
   let label = base;
   if (division === 'D') {
@@ -100,7 +115,8 @@ export const clubStandingContext = (
     const group = serieDGroupLabel(groupIndex);
     label = group ? `${base} · ${group}` : base;
   }
-  if (game?.competition === 'COPA DO BRASIL' || (game && isKnockoutShootoutCompetition(game))) return label;
+  if (game?.competition === 'COPA DO BRASIL') return '';
+  if (game && isKnockoutShootoutCompetition(game)) return label;
   if (isStateLeagueGame(game)) {
     const tierSuffix = game.stateTier > 1 ? ` · Div. ${game.stateTier}` : '';
     const stateName = game.stateUf ? ufLabel(game.stateUf) : '';

@@ -1,4 +1,5 @@
-import { resolveRoundAlreadyRecorded } from '../js/engine/round-advance.js';
+import { resolveRoundAlreadyRecorded, resolveRoundForLiveCommit } from '../js/engine/round-advance.js';
+import { findLeagueFixtureByPair } from '../js/engine/competition-calendar.js';
 
 let passed = 0;
 let failed = 0;
@@ -62,6 +63,25 @@ check('history discarded when user fixture still pending', () => {
   });
   assert(!ok, 'pending user fixture must re-commit round');
   assert(!history.some(item => item.round === 5), 'stale history removed');
+});
+
+check('live commit round follows finished fixture round', () => {
+  const fixtures = [[{ home: 'Usuário FC', away: 'Rival', round: 5 }]];
+  const game = { home: 'Usuário FC', away: 'Rival' };
+  assert(resolveRoundForLiveCommit(game, 16, 'Usuário FC', fixtures) === 5, 'must infer fixture round');
+  assert(resolveRoundForLiveCommit(game, 16, 'Outro', fixtures) === 16, 'non-user fixture keeps currentRound');
+});
+
+check('findLeagueFixtureByPair resolves round without game.round', () => {
+  const fixtures = [
+    [],
+    [],
+    [],
+    [],
+    [{ home: 'Usuário FC', away: 'Rival', round: 5 }],
+  ];
+  const hit = findLeagueFixtureByPair({ home: 'Usuário FC', away: 'Rival' }, fixtures);
+  assert(hit?.round === 5, 'must locate pair in calendar');
 });
 
 console.log(`\nround-advance-tests: ${passed} passed, ${failed} failed`);

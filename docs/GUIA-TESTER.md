@@ -1,4 +1,4 @@
-# Guia do tester — Matchday Football Alpha
+# Guia do tester — BR Fut
 
 ## Links
 
@@ -12,12 +12,13 @@ Na home: **Guia do tester** e **Enviar feedback**. No jogo: Opções → mesma s
 
 Deep links: `home.html#guia` · `home.html#feedback`
 
-## Save e updates
+## Save, slots e sync
 
-- Carreira só neste navegador (`localStorage`).
-- Após deploy: hard refresh (`Ctrl+Shift+R`).
+- Até **5 slots** por conta; nome automático `{Clube} {Ano}`.
+- Carreira em `localStorage` (`brfut-*`) + sync na nuvem se logado.
+- Troca de slot: flush do anterior antes de carregar o novo.
+- Após deploy: hard refresh (`Ctrl+Shift+R`); limpar `brfut-last-seen-build` para testar alerta de update.
 - Histórico de builds: Opções → Consultar.
-- Popup de nova build: só quando o autor liberar (`promptUpdate` na release note).
 
 ## Fluxo mínimo
 

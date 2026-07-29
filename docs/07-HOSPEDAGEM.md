@@ -1,116 +1,89 @@
-# 07 — Hospedagem e Distribuição
+# 07 — Hospedagem e distribuição
 
-## Requisitos
+## Ambientes
 
-| Item | Versão mínima |
-|------|---------------|
-| Python | 3.x (no PATH) |
-| Navegador | Chrome, Firefox ou Edge (recente) |
-| SO | Windows (scripts `.bat`), ou qualquer OS com Python |
+| Ambiente | Como subir | URL |
+|----------|------------|-----|
+| Dev Vite | `npm run dev` | http://localhost:5080/home.html |
+| Testers hardened | `npm run build` + `py scripts\tester-server.py --port 5081` | http://127.0.0.1:5081/home.html |
+| GitHub Pages | push → workflow `deploy-testers.yml` | https://vinaogamez.github.io/BRFut/home.html |
+| API produção | VPS Locaweb | https://api.brfut.com.br |
+
+**Importante:** build local para 5081 **sem** `GITHUB_PAGES=true` (paths relativos `./assets/`).
 
 ---
 
-## Iniciar servidor local
+## Requisitos
 
-### Windows
+| Item | Versão |
+|------|--------|
+| Node.js | 18+ (Vite 6) |
+| Python | 3.x (servidor testers / legado) |
+| Navegador | Chrome, Firefox ou Edge recente |
 
-Duplo clique em `INICIAR-JOGO.bat` ou:
+---
 
-```bat
-cd "Matchday Football Alpha01"
-python -m http.server 5080
+## Build de testers
+
+```powershell
+cd Matchday-Alpha
+Remove-Item Env:GITHUB_PAGES -ErrorAction SilentlyContinue
+npm run build
+py scripts\tester-server.py --port 5081 --bind 127.0.0.1
 ```
 
-### macOS / Linux
+Confirmar HTTP 200 em `/home.html`. Após mudança de bundle: **Ctrl+Shift+R**.
 
-```bash
-cd "Matchday Football Alpha01"
-python3 -m http.server 5080
+GitHub Pages rebuild: **1–3 min** após push.
+
+---
+
+## Desenvolvimento
+
+```powershell
+npm install
+npm run dev
 ```
 
-### URLs
+Hot reload em http://localhost:5080. Entry jogo: `index.html` → `js/main.js`.
 
-| Página | URL |
-|--------|-----|
-| Home | http://127.0.0.1:5080/home.html |
-| Jogo | http://127.0.0.1:5080/index.html |
+---
+
+## Sem Node (legado)
+
+`INICIAR-JOGO.bat` — Python `http.server 5080` servindo módulos ES nativos.
 
 ---
 
 ## Rede local (LAN)
 
-1. Descubra o IP da máquina (`ipconfig` no Windows).
-2. Compartilhe: `http://192.168.x.x:5080/home.html`
-3. Firewall deve permitir entrada na porta 5080.
+1. IP da máquina (`ipconfig`).
+2. Compartilhar: `http://192.168.x.x:5080/home.html` (dev) ou `:5081` (testers).
+3. Liberar porta no firewall.
 
 ---
 
-## Acesso externo (internet)
+## Acesso externo temporário
 
-`INICIAR-LINK-EXTERNO.bat` executa `scripts/start-tunnel.ps1`:
-
-- Cria túnel Cloudflare temporário
-- URL pública muda a cada sessão
-- Adequado para demos; não para produção permanente
-
-**Pré-requisitos:** `cloudflared` instalado e configurado.
+`INICIAR-LINK-EXTERNO.bat` + `scripts/start-tunnel.ps1` (Cloudflare). Apenas demos — URL muda a cada sessão.
 
 ---
 
-## Distribuir o jogo
+## Distribuição
 
-1. Compacte a pasta do projeto (zip).
-2. Destinatário extrai e roda `INICIAR-JOGO.bat`.
-3. Saves ficam no navegador local do destinatário (não viajam com o zip).
-
-### Transferir save
-
-Backup das chaves `localStorage` (ver [05-MODELOS-DADOS.md](./05-MODELOS-DADOS.md)).
+1. `npm run build` → pasta `dist/`.
+2. Zip ou GitHub Pages.
+3. Saves ficam no navegador / nuvem do usuário — **não** viajam com o zip.
 
 ---
 
 ## Exportar documentação
 
-### Para PDF
-
-**Pandoc:**
-
 ```bash
-pandoc docs/DOCUMENTACAO-COMPLETA.md -o Matchday-Documentacao.pdf --toc -V lang=pt-BR
+pandoc docs/DOCUMENTACAO-COMPLETA.md -o BRFut-Documentacao.pdf --toc -V lang=pt-BR
 ```
 
-**VS Code / Cursor:**
-
-- Extensão "Markdown PDF"
-- Abrir `docs/DOCUMENTACAO-COMPLETA.md` → Export PDF
-
-**Navegador:**
-
-- Abrir preview Markdown → Imprimir → Salvar como PDF
-
-### Para Word / HTML
-
-```bash
-pandoc docs/DOCUMENTACAO-COMPLETA.md -o Matchday-Documentacao.docx
-pandoc docs/DOCUMENTACAO-COMPLETA.md -o Matchday-Documentacao.html --standalone --toc
-```
-
----
-
-## Estrutura da documentação exportável
-
-```
-docs/
-├── INDICE.md
-├── DOCUMENTACAO-COMPLETA.md   ← documento único
-├── 01-VISAO-GERAL.md
-├── 02-ARQUITETURA.md
-├── 03-MOTORES.md
-├── 04-ROTINAS-FLUXOS.md
-├── 05-MODELOS-DADOS.md
-├── 06-INTERFACE.md
-└── 07-HOSPEDAGEM.md
-```
+Índice: [INDICE.md](./INDICE.md).
 
 ---
 
@@ -118,16 +91,23 @@ docs/
 
 | Problema | Solução |
 |----------|---------|
-| Porta 5080 em uso | Encerre processo Python anterior ou mude a porta no `.bat` |
-| Página em branco | Verifique console (F12); confirme `site.js` carregou |
-| Save não aparece | Mesmo navegador/perfil; localStorage não limpo |
-| Modal não fecha | Atualize para versão com `redirectGame()` |
-| CORS / file:// | Use sempre o servidor HTTP, não abra HTML direto |
+| Porta 5080/5081 em uso | Encerrar processo ou mudar porta no script |
+| Página em branco | F12 → erro de chunk; hard refresh; rebuild |
+| Save não aparece | Mesmo perfil/navegador; verificar login e slot ativo |
+| CORS / `file://` | Usar servidor HTTP, não abrir HTML direto |
+| Sync falhou | Ver console `[brfut]`; `probeBackend`; token em localStorage |
 
 ---
 
 ## Segurança
 
-- Não há autenticação nem dados sensíveis no servidor.
-- Túnel externo expõe arquivos estáticos — use apenas temporariamente.
-- Não commitar credenciais em scripts de túnel.
+- Testers 5081: `security/tester-hardening.js`, headers via `tester-server.py`.
+- Detalhes: [SECURITY.md](./SECURITY.md).
+- Não commitar secrets; API usa token por usuário.
+
+---
+
+## Documentação relacionada
+
+- [Guia tester](./GUIA-TESTER.md)
+- [VPS](./VPS-LOCAWEB.md)

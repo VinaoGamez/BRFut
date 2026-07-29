@@ -1,19 +1,11 @@
 import { $, $$, on, onClick, redirectGame, clamp, cleanCareerText } from '../ui/dom.js';
-import { markBootReady } from '../ui/boot-gate.js';
 import { clubLabelHtml, clubCrestTitleHtml } from '../ui/club-label.js';
 import { applyTeamCrestToElement, teamCrestHtml, clubCrestInitials as teamCrestInitials } from '../ui/team-crest.js';
 import { bindBoardRosterHover } from '../ui/board-roster-hover.js';
 import { createHeaderGuideRenderer } from '../ui/header-guide.js';
 import { ensureCompetitionTrophy, hydratePickerTrophyIcons, preloadCompetitionTrophy, resolveChampionshipTrophyKey } from '../ui/competition-trophies.js';
-import {
-  buildPageCompetitionOptions,
-  championshipPickerActiveId,
-  isStateChampionshipPage,
-  renderEstaduaisHub,
-} from '../feature/championship-page/hub.js';
-import { createChampionshipPageFocus } from '../feature/championship-page/focus.js';
+import { createChampionshipPageFeature } from '../feature/championship-page/index.js';
 import { createChampionshipLastGamesOpener } from '../feature/championship-page/last-games.js';
-import { createCompetitionRulesModalFeature } from '../feature/competition-rules-modal/index.js';
 import { createSeasonGoalCardFeature } from '../feature/season-goal-card/index.js';
 import { serieDPhaseIndexForRound } from '../engine/serie-d-format.js';
 import { filterPlayableRoundGames, isPlayableRoundGame } from '../engine/round-game-filter.js';
@@ -35,13 +27,6 @@ import { createDashboardFeature } from '../feature/dashboard/index.js';
 import { createTacticsFeature } from '../feature/tactics/index.js';
 import { createSeasonSummaryFeature } from '../feature/season-summary/index.js';
 import { createRetirementModalFeature } from '../feature/retirement-modal/index.js';
-import {
-  buildPlayerStatusFingerprint,
-  countActiveRosterChangeAlerts,
-  getActiveRosterChangeAlert,
-  rosterChangeRowClass,
-  scanRosterStatusChanges,
-} from '../engine/roster-change-alerts.js';
 import { processSeasonRetirements, markRetiredInHistoryStore } from '../engine/player-retirement.js';
 import { createPlayerCells, outfield, fatigueCell, rosterFatigueCell } from '../feature/shared/player-cells.js';
 import { renderTableFootIcon } from '../lab/card-back.js';
@@ -124,14 +109,9 @@ import {
 import { collectYouthTrainingPlayers } from '../engine/youth-academy.js';
 import {
   generatePlayer as generatePlayerCore,
-  GENERIC_SQUAD_ROLES,
   DIVISION_CLUB_POWER,
-  pickStarterFlags,
-  rollProfessionalSquadSize,
-  sanitizeSetPieceForDivision,
 } from '../engine/player-generation.js';
 import { resolvePlayerId, ensurePlayerId } from '../engine/player-identity.js';
-import { dedupeRosterNames } from '../engine/player-names.js';
 import { playerKey as historyPlayerKey, formatMatchRating, buildMatchPlayerSheets, playerKey } from '../engine/player-match-stats.js';
 import {
   loadCareerSave,
@@ -205,7 +185,6 @@ import {
 import {
   loadOfficialBrazilWorld,
   ensureImportClubsForUfs,
-  ensureAllImportClubs,
   pickCascadeVictim,
   serieDGroupSizes,
   buildOfficialSerieDGroups,
@@ -223,15 +202,12 @@ import {
   applyCareerHostNameSwap,
   buildSerieATemplate,
   divisionFixturesIncludeClub,
-  finalizeHostReplacementCascade,
-  findClubDivision,
   hasCareerOriginReplacement,
   injectRealClubsIntoPyramid,
   prepareClubListForFixtures,
   dedupeAllDivisionTeams,
   resolveHostClubMeta,
   runFullRelegationCascade,
-  ensureCascadePyramidIntegrity,
   ensureSerieDUserEnrollment,
 } from '../engine/career-club-replacement.js';
 import {
@@ -241,6 +217,8 @@ import {
   findRecordedGame,
   gameMatchesRecorded,
   applySavedSerieDFixtures,
+  ensureNationalFixtureRounds,
+  resolveLeagueFixtureRound,
 } from '../engine/competition-calendar.js';
 import {
   LEAGUE_CALENDAR_WINDOWS,
@@ -295,7 +273,9 @@ import {
   createWorldCupCompetition,
   getWorldCupAllFixtures,
   advanceWorldCupThroughDate,
+  advanceWorldCupSpectatorThroughWindow,
   serializeWorldCupCompetition,
+  simulateNationalTeamMatch,
   worldCupCalendarSummary,
 } from '../engine/world-cup-competition.js';
 import { nationalTeamByCode, resolveNationalTeam } from '../engine/national-teams.js';
@@ -327,6 +307,7 @@ import {
   normalizeNationalTeamOfferState,
   shouldIssueNextNationalTeamOffer,
   shouldShowNationalTeamOfferPopup,
+  finalizeNationalTeamOfferDeclines,
   generateNextNationalTeamOffer,
   getCurrentNationalTeamProposalTeams,
   repairNationalTeamOfferBatches,
@@ -359,11 +340,14 @@ import { createSponsorPickerFeature } from '../feature/sponsor-picker/index.js';
 import { createOptionsFeature } from '../feature/options/index.js';
 import { createLiveDayMatchesFeature } from '../feature/live-day-matches/index.js';
 import { createMatchLiveUiFeature } from '../feature/match-live-ui/index.js';
-import { createMatchLiveAudioFeature } from '../feature/match-live-audio/index.js';
+import { createLazyMatchLiveAudio } from '../feature/match-live-audio/lazy.js';
+import { bootstrapCareerDivisionTeams } from '../engine/career-pyramid-bootstrap.js';
+import { bootstrapCareerClubs } from '../engine/career-clubs-bootstrap.js';
 import { createMatchAvailability } from '../engine/match-availability.js';
 import { createAwaySubController } from '../engine/match-live-away-subs.js';
 import { createLiveMatchOrchestration } from '../engine/match-live-orchestration.js';
 import { createMatchLiveSessionFeature } from '../feature/match-live-session/index.js';
+import { createMatchLiveEntryFeature } from '../feature/match-live-entry/index.js';
 import { tacticalKickoffMessage } from '../feature/tactics/tactical-confrontation.js';
 import {
   ENGINE_TUNING,
@@ -568,6 +552,7 @@ export async function bootEngine({
     computeSeasonPrize,
     resolveSerieDPrizePhase,
     resolveCupPrizePhase,
+    resolveStateLeaguePrizePhase,
     ensureBudget,
     ensureStadium,
     getStructureLevel,
@@ -675,7 +660,6 @@ export async function bootEngine({
     userLeagueDisciplineKey,
     getFocusCompetitionKey: () => fixtureCompetitionKey(liveMatchGame || nextUserGame) || userLeagueDisciplineKey(),
   });
-const rosterChangeAlertHolder = { fn: null };
   const engineTuning = ENGINE_TUNING;
   let buildSimLineup;
   let substitutionPriority;
@@ -701,8 +685,7 @@ const rosterChangeAlertHolder = { fn: null };
   document.body.classList.add('dark-mode');
   let startMatchClock=()=>{};
   let openSeasonGoalPreview=()=>{};
-  const matchLiveAudio=createMatchLiveAudioFeature();
-  matchLiveAudio.syncControls?.();
+  const matchLiveAudio=createLazyMatchLiveAudio();
   const optionsUi=createOptionsFeature({
     $, $$, onClick, redirectGame, cleanCareerText, writeJson, clearSeasonSave, clearCareerStorage, markSkipPersistOnce, prepareForNewCareer, SAVE_KEYS,
     hasCareer: !!savedNewGame,
@@ -797,7 +780,6 @@ const rosterChangeAlertHolder = { fn: null };
   const benchRoles=['GOL','ZAG','LAT','VOL','MC','MEI','ATA'];
   const firstNames=['Adriano','André','Arthur','Breno','Bruno','Caio','Carlos','Cristian','Daniel','Davi','Diego','Douglas','Eduardo','Enzo','Erick','Fábio','Felipe','Fernando','Gabriel','Guilherme','Gustavo','Heitor','Henrique','Hugo','Igor','Ítalo','João','Kaique','Leandro','Leonardo','Lucas','Luiz','Marcelo','Marcos','Matheus','Miguel','Murilo','Nathan','Nicolas','Otávio','Paulo','Pedro','Rafael','Renan','Rodrigo','Samuel','Thiago','Vitor','Victor','Wesley'];
   const lastNames=['Almeida','Alves','Amaral','Andrade','Araújo','Barbosa','Batista','Cardoso','Carvalho','Castro','Correia','Costa','Cunha','Dias','Duarte','Esteves','Ferreira','Freitas','Garcia','Gomes','Henrique','Leite','Lima','Lopes','Machado','Marques','Martins','Mendes','Monteiro','Moreira','Moura','Nascimento','Neves','Nunes','Oliveira','Pereira','Pires','Ramos','Reis','Ribeiro','Rocha','Rodrigues','Santos','Silva','Soares','Souza','Teixeira','Vieira'];
-  const formationsForClubs=['4-3-3','4-4-2','3-5-2','4-2-3-1','4-1-4-1','5-3-2','4-3-1-2','3-4-3'];
   const divisionRules={
     A:{name:'Série A',clubs:20,power:DIVISION_CLUB_POWER.A,format:'38 rodadas em turno e returno',promotion:0,relegation:4},
     B:{name:'Série B',clubs:20,power:DIVISION_CLUB_POWER.B,format:'38 rodadas; 1º e 2º sobem, 3º–6º disputam playoffs',promotion:4,relegation:4},
@@ -825,348 +807,50 @@ const rosterChangeAlertHolder = { fn: null };
     brazilianCities.forEach(city=>clubSuffixes.forEach(suffix=>generatedClubPool.push(`${suffix} ${city}`)));
     for(let index=generatedClubPool.length-1;index>0;index--){const swap=int(0,index),value=generatedClubPool[index];generatedClubPool[index]=generatedClubPool[swap];generatedClubPool[swap]=value;}
   }
-  const divisionTeams={A:[...teams],B:[],C:[],D:[]};
-  let careerWorldNeedsPersist=false;
-  let serieCSizeRepaired=false;
-  let serieDLayoutRepaired=false;
-  let careerPyramidFreshlyGenerated=false;
-  if(savedNewGame){
-    const worldSeedMatches=!savedNewGame.worldSeed||savedNewGame.worldSeed===savedNewGame.seed;
-    const restoredDivisions=!savedNewGame.freshWorld
-      &&worldSeedMatches
-      &&savedNewGame.divisionTeams
-      &&Object.keys(divisionRules).every(division=>Array.isArray(savedNewGame.divisionTeams[division]));
-    const foundingClubName=savedNewGame.foundingClubName||savedNewGame.clubName||userClub;
-    const careerClubHistory=Array.isArray(savedNewGame.careerClubHistory)
-      ?savedNewGame.careerClubHistory.filter(Boolean)
-      :[foundingClubName].filter(Boolean);
-    if(restoredDivisions){
-      Object.keys(divisionRules).forEach(division=>divisionTeams[division]=[...savedNewGame.divisionTeams[division]]);
-      Object.assign(divisionTeams,dedupeAllDivisionTeams(divisionTeams));
-    }else{
-      // Mundo ainda não persistido: pirâmide oficial CBF 2026 ou fallback fictício legado.
-      const protectedNames=new Set(
-        [userClub,foundingClubName,...careerClubHistory,careerHostMeta?.hostName]
-          .filter(Boolean)
-          .map(name=>name.toLocaleLowerCase('pt-BR')),
-      );
-      if(officialBrazilWorld){
-        divisionTeams.A=[...officialBrazilWorld.divisionTeams.A];
-        divisionTeams.B=[...officialBrazilWorld.divisionTeams.B];
-        divisionTeams.C=[...officialBrazilWorld.divisionTeams.C];
-        divisionTeams.D=[...officialBrazilWorld.divisionTeams.D];
-        if(!Array.isArray(savedNewGame.regionalBaseClubs)||!savedNewGame.regionalBaseClubs.length){
-          savedNewGame.regionalBaseClubs=[...officialBrazilWorld.regionalNames];
-        }
-      }else{
-        divisionTeams.A=[...teams];
-        const available=generatedClubPool.filter(name=>!protectedNames.has(name.toLocaleLowerCase('pt-BR')));
-        while(divisionTeams.A.length<divisionRules.A.clubs){
-          const filler=available.shift();
-          if(!filler)break;
-          divisionTeams.A.push(filler);
-        }
-        Object.keys(divisionRules).forEach(division=>{
-          if(division==='A')return;
-          const generatedCount=divisionRules[division].clubs;
-          const generated=available.splice(0,generatedCount);
-          divisionTeams[division]=generated;
-        });
-        Object.assign(
-          divisionTeams,
-          injectRealClubsIntoPyramid(divisionTeams,{
-            protectedNames:[userClub,foundingClubName,...careerClubHistory,careerHostMeta?.hostName].filter(Boolean),
-            realClubs:getAllRealClubs(),
-            userClub,
-            targets:{
-              A:divisionRules.A.clubs,
-              B:divisionRules.B.clubs,
-              C:divisionRules.C.clubs,
-              D:divisionRules.D.clubs,
-            },
-          }),
-        );
-      }
-      if(useCareerOriginFlow&&careerHostMeta?.hostName){
-        Object.assign(
-          divisionTeams,
-          applyCareerHostNameSwap(divisionTeams,{
-            userClub,
-            replacedHostClub:careerHostMeta.hostName,
-            hostDivision:careerHostMeta.hostDivision,
-          }),
-        );
-      }else{
-        Object.keys(divisionRules).forEach(division=>{
-          if(division!==userDivision)return;
-          if(divisionTeams[division].some(name=>normClubName(name)===normClubName(userClub)))return;
-          const swapIndex=divisionTeams[division].findIndex(name=>!protectedNames.has(name.toLocaleLowerCase('pt-BR')));
-          if(swapIndex>=0)divisionTeams[division][swapIndex]=userClub;
-          else divisionTeams[division].unshift(userClub);
-        });
-      }
-      Object.assign(divisionTeams,dedupeAllDivisionTeams(divisionTeams));
-      careerWorldNeedsPersist=true;
-      careerPyramidFreshlyGenerated=true;
-    }
-    const namesInWorld=()=>{
-      const keys=new Set();
-      Object.values(divisionTeams).flat().forEach(name=>{
-        if(name)keys.add(normClubName(name));
-      });
-      return keys;
-    };
-    [foundingClubName,...careerClubHistory].filter(Boolean).forEach(name=>{
-      if(namesInWorld().has(normClubName(name)))return;
-      divisionTeams.D.push(name);
-      careerWorldNeedsPersist=true;
-    });
-    // CBF 2026+: corrige Série C inflada (bug antigo: +4 clubes/temporada sem teto).
-    const serieCNorm=normalizeDivisionTeamsSerieC(divisionTeams,{
-      season:careerSeason,
-      userClub,
-      fillPool:generatedClubPool,
-      dTarget:SERIE_D_CLUBS,
-    });
-    if(serieCNorm.changed){
-      Object.keys(divisionRules).forEach(division=>{
-        divisionTeams[division]=[...serieCNorm.divisionTeams[division]];
-      });
-      careerWorldNeedsPersist=true;
-      serieCSizeRepaired=true;
-    }
-    if(officialBrazilWorld&&restoredDivisions&&savedNewGame?.replacementMode!=='cascade'){
-      const pyramidRepair=repairDivisionTeamsWithOfficial(divisionTeams,officialBrazilWorld,{
-        userClub,
-        userDivision,
-        foundingClubName,
-        careerClubHistory,
-        replacedHostClub:savedNewGame?.replacedHostClub||careerHostMeta?.hostName||null,
-      });
-      if(pyramidRepair.changed){
-        Object.keys(divisionRules).forEach(division=>{
-          divisionTeams[division]=[...pyramidRepair.divisionTeams[division]];
-        });
-        careerWorldNeedsPersist=true;
-        serieDLayoutRepaired=true;
-      }
-    }
-    if(!savedNewGame.foundingClubName||!Array.isArray(savedNewGame.divisionTeams))careerWorldNeedsPersist=true;
-    divisionRules.C.clubs=serieCClubsForSeason(careerSeason);
-    divisionRules.C.relegation=serieCRelegationSlots();
-    Object.keys(divisionRules).forEach(division=>{
-      if(division==='C')return;
-      divisionRules[division].clubs=divisionTeams[division].length;
-    });
-    divisionRules.C.clubs=divisionTeams.C.length;
-    teams.splice(0,teams.length,...divisionTeams[userDivision]);
-    if(careerWorldNeedsPersist){
-      Object.assign(savedNewGame,{
-        foundingClubName,
-        careerClubHistory:[...new Set([foundingClubName,...careerClubHistory,userClub].filter(Boolean))],
-        divisionTeams:Object.fromEntries(Object.keys(divisionRules).map(division=>[division,[...divisionTeams[division]]])),
-        regionalBaseClubs:Array.isArray(savedNewGame.regionalBaseClubs)?[...savedNewGame.regionalBaseClubs]:[],
-        worldSeed:savedNewGame.seed,
-      });
-      delete savedNewGame.freshWorld;
-      persistCareer({...savedNewGame});
-    }
-  }
-  const clubs={};
-  const createClub=(club,division,index)=>{
-    const rule=divisionRules[division];
-    const basePower=int(rule.power[0],rule.power[1]);
-    const formation=club===userClub?'4-3-3':formationsForClubs[int(0,formationsForClubs.length-1)];
-    const roles=[...GENERIC_SQUAD_ROLES].slice(0, rollProfessionalSquadSize(gameRandom));
-    const starterFlags=pickStarterFlags(roles.length,gameRandom);
-    const roster=roles.map((role,playerIndex)=>generatedPlayer(role,playerIndex+index*29,basePower,division,starterFlags[playerIndex]));
-    dedupeRosterNames(roster);
-    assignSquadJerseyNumbers(roster);
-    const top11=[...roster].sort((a,b)=>b.overall-a.overall).slice(0,11);
-    const power=Math.round(top11.reduce((sum,player)=>sum+player.overall,0)/11);
-    const environmentRange=initialEnvironmentRanges[division];
-    const clubUf=getRealClub(club)?.uf||(club===userClub?savedNewGame?.userUf:null)||null;
-    return{name:club,division,uf:clubUf,power,roster,formation,style:['Posse de bola','Contra-ataque','Pressão alta'][int(0,2)],mentality:['Defensiva','Equilibrada','Ofensiva'][int(0,2)],position:index+1,environment:int(...environmentRange),support:int(38,94),board:int(38,94),finances:int(35,96)};
-  };
-  if(savedNewGame){
-    Object.entries(divisionTeams).forEach(([division,names])=>names.forEach((club,index)=>{clubs[club]=createClub(club,division,index);}));
-    if(useCareerOriginFlow&&careerHostMeta?.hostName&&(careerPyramidFreshlyGenerated||savedNewGame?.replacementMode==='cascade')){
-      const isCascadeCareer=savedNewGame?.replacementMode==='cascade';
-      if(isCascadeCareer){
-        const cascadeFix=ensureCascadePyramidIntegrity({
-          divisionTeams,
-          clubs,
-          regionalBaseClubs:savedNewGame.regionalBaseClubs||[],
-          userClub,
-          victimClub:careerHostMeta.hostName,
-          startDivision:savedNewGame.targetDivision||userDivision,
-          cascadeSeed:savedNewGame.seed||0,
-        });
-        if(cascadeFix.applied){
-          Object.keys(divisionRules).forEach(division=>{
-            divisionTeams[division]=[...cascadeFix.divisionTeams[division]];
-          });
-          savedNewGame.regionalBaseClubs=[...cascadeFix.regionalBaseClubs];
-          if(Array.isArray(cascadeFix.serieDReplacements)&&cascadeFix.serieDReplacements.length){
-            savedNewGame.serieDCascadeReplacements=cascadeFix.serieDReplacements;
-          }
-          serieDLayoutRepaired=true;
-        }
-        const victimDivision=cascadeFix.victimDivision||findClubDivision(divisionTeams,careerHostMeta.hostName);
-        if(victimDivision&&!clubs?.[careerHostMeta.hostName]){
-          const hostIndex=divisionTeams[victimDivision].findIndex(name=>name===careerHostMeta.hostName);
-          clubs[careerHostMeta.hostName]=createClub(
-            careerHostMeta.hostName,
-            victimDivision,
-            Math.max(0,hostIndex),
-          );
-        }else if(clubs[careerHostMeta.hostName]&&victimDivision){
-          clubs[careerHostMeta.hostName].division=victimDivision;
-        }
-        if(clubs[userClub])clubs[userClub].division=cascadeFix.userDivision||userDivision;
-        if(cascadeFix.applied){
-          teams.splice(0,teams.length,...divisionTeams[userDivision]);
-          Object.assign(savedNewGame,{
-            divisionTeams:Object.fromEntries(Object.keys(divisionRules).map(division=>[division,[...divisionTeams[division]]])),
-            regionalBaseClubs:[...savedNewGame.regionalBaseClubs],
-          });
-          persistCareer({...savedNewGame});
-          careerWorldNeedsPersist=true;
-        }
-      }else{
-        const cascade=finalizeHostReplacementCascade({
-          divisionTeams,
-          clubs,
-          regionalBaseClubs:savedNewGame.regionalBaseClubs||[],
-          replacedHostClub:careerHostMeta.hostName,
-          hostDivision:careerHostMeta.hostDivision,
-          userClub,
-        });
-        Object.keys(divisionRules).forEach(division=>{
-          divisionTeams[division]=[...cascade.divisionTeams[division]];
-        });
-        savedNewGame.regionalBaseClubs=[...cascade.regionalBaseClubs];
-        const victimDivision=findClubDivision(cascade.divisionTeams,careerHostMeta.hostName)||cascade.hostClubDivision;
-        const victimNeedsClub=cascade.hostClubCreated&&cascade.hostClubDivision;
-        if(victimNeedsClub&&victimDivision){
-          const hostIndex=divisionTeams[victimDivision].findIndex(name=>name===careerHostMeta.hostName);
-          clubs[careerHostMeta.hostName]=createClub(
-            careerHostMeta.hostName,
-            victimDivision,
-            Math.max(0,hostIndex),
-          );
-        }else if(clubs[careerHostMeta.hostName]&&victimDivision){
-          clubs[careerHostMeta.hostName].division=victimDivision;
-        }
-        cascade.regionalBaseClubs.forEach(clubName=>{
-          if(clubs[clubName])clubs[clubName].regionalBase=true;
-        });
-        if(clubs[userClub])clubs[userClub].division=cascade.userDivision||userDivision;
-        teams.splice(0,teams.length,...divisionTeams[userDivision]);
-        Object.assign(savedNewGame,{
-          divisionTeams:Object.fromEntries(Object.keys(divisionRules).map(division=>[division,[...divisionTeams[division]]])),
-          regionalBaseClubs:[...savedNewGame.regionalBaseClubs],
-        });
-        persistCareer({...savedNewGame});
-        careerWorldNeedsPersist=true;
-      }
-    }
-    // Elencos do mundo (IA + usuário) — base do mercado de transferências.
-    if(savedNewGame.worldRosters&&typeof savedNewGame.worldRosters==='object'){
-      applyWorldRosters(clubs,savedNewGame.worldRosters,{
-        seed:savedNewGame.seed,
-        season:careerSeason,
-      });
-    }
-    const user=clubs[userClub];
-    if(Array.isArray(savedNewGame.userRoster)&&savedNewGame.userRoster.length>=18)user.roster=savedNewGame.userRoster.map(player=>({injuryHistory:[],workload:{minutesLast7Days:0,minutesLast14Days:0,matchesLast14Days:0,consecutiveStarts:0,highIntensityLoad:0,lastMatchRound:0},...player,fatigue:100}));
-    let userSetPieceRepaired=0;
-    user.roster.forEach(player=>{
-      if(sanitizeSetPieceForDivision(player,user.division||userDivision))userSetPieceRepaired+=1;
-    });
-    user._setPieceRepaired=userSetPieceRepaired;
-    assignSquadJerseyNumbers(user.roster);
-    squad.splice(0,squad.length,...user.roster);
-    // Carreira nova: faixa estável (55–88). Continuação: permite variação
-    // acumulada na temporada (28–98) sem “resetar” o painel ao recarregar.
-    const userEnvironmentRange=initialEnvironmentRanges[userDivision],initialStatus=savedNewGame.clubStatus||{environment:int(...userEnvironmentRange),support:int(55,88),board:int(55,88),finances:int(55,88)};
-    const continuingCareer=!!(validSavedSeason||Array.isArray(savedNewGame.userRoster));
-    // Só força 4-3-3 / estilo padrão em carreira nova — não apagar tática salva.
-    if(!continuingCareer){user.formation='4-3-3';user.style='Posse de bola';user.mentality='Equilibrada';}
-    if(continuingCareer){
-      user.environment=clamp(initialStatus.environment,28,98);
-      user.support=clamp(initialStatus.support,28,98);
-      user.board=clamp(initialStatus.board,28,98);
-      user.finances=clamp(initialStatus.finances,28,98);
-    }else{
-      user.environment=clamp(initialStatus.environment,...userEnvironmentRange);
-      user.support=clamp(initialStatus.support,55,88);
-      user.board=clamp(initialStatus.board,55,88);
-      user.finances=clamp(initialStatus.finances,55,88);
-    }
-    user.budget=Math.max(0,Number(initialStatus.budget??initialBudget(userDivision)));
-    ensureBudget(user,userDivision);
-  }
-  else teams.forEach((club,index)=>{
-    if(club===userClub){
-      clubs[club]={name:club,division:'A',roster:squad,formation:'4-3-3',style:'Posse de bola',mentality:'Equilibrada',position:4};
-      return;
-    }
-    const power=int(...DIVISION_CLUB_POWER.A);
-    const squadSize = rollProfessionalSquadSize(gameRandom);
-    const roles = [...GENERIC_SQUAD_ROLES].slice(0, squadSize);
-    const starterFlags = pickStarterFlags(roles.length, gameRandom);
-    const roster = assignSquadJerseyNumbers(
-      roles.map((role, i) => generatedPlayer(role, i + index * 5, power, 'A', starterFlags[i])),
-    );
-    const top11=[...roster].sort((a,b)=>b.overall-a.overall).slice(0,11);
-    clubs[club]={
-      name:club,
-      division:'A',
-      power:Math.round(top11.reduce((sum,p)=>sum+p.overall,0)/11),
-      roster,
-      formation:formationsForClubs[int(0,formationsForClubs.length-1)],
-      style:['Posse de bola','Contra-ataque','Pressão alta'][int(0,2)],
-      mentality:['Defensiva','Equilibrada','Ofensiva'][int(0,2)],
-      position:index+1,
-    };
+  const pyramidState=bootstrapCareerDivisionTeams({
+    savedNewGame,
+    userClub,
+    userDivision,
+    careerSeason,
+    teams,
+    divisionRules,
+    generatedClubPool,
+    officialBrazilWorld,
+    useCareerOriginFlow,
+    careerHostMeta,
+    persistCareer,
   });
-  const setPieceRepaired=stampWorldPlayers(clubs,{seed:savedNewGame?.seed||0,season:careerSeason})
-    +(clubs[userClub]?._setPieceRepaired||0);
-  if(clubs[userClub])delete clubs[userClub]._setPieceRepaired;
-  if(savedNewGame){
-    // Primeira gravação ou migração de snapshot gordo (estourava cota do localStorage).
-    const worldSample=Object.values(savedNewGame.worldRosters||{}).find(roster=>Array.isArray(roster)&&roster[0])?.[0];
-    const worldFat=!!(worldSample&&(worldSample.workload||Array.isArray(worldSample.injuryHistory)||worldSample.injuryHistory));
-    if(!savedNewGame.worldRosters||worldFat||setPieceRepaired>0){
-      savedNewGame.worldRosters=collectWorldRosters(clubs,{skipClub:userClub,merge:savedNewGame.worldRosters||{}});
-      if(Array.isArray(clubs[userClub]?.roster))savedNewGame.userRoster=clubs[userClub].roster;
-      persistCareer({...savedNewGame});
-    }
-  }
-  const continuingCareer=!!(validSavedSeason||(savedNewGame&&Array.isArray(savedNewGame.userRoster)&&savedNewGame.userRoster.length>=18));
-  Object.values(clubs).forEach(club=>{
-    const attackers=club.roster.filter(p=>['ATA','PE','PD','MEI','MC'].includes(p.pos)).sort((a,b)=>(b.finishing+b.heading*.2)-(a.finishing+a.heading*.2));
-    const creators=club.roster.filter(p=>p.pos!=='GOL').sort((a,b)=>(b.passing+b.playmaking)-(a.passing+a.playmaking));
-    club.environment=club.environment??(club.name===userClub?86:int(...initialEnvironmentRanges[club.division||'A']));
-    club.support=club.support??int(42,92);
-    club.board=club.board??int(42,92);
-    club.finances=club.finances??int(40,94);
-    if(club.name===userClub){
-      if(savedNewGame?.stadiumName)club.stadiumName=String(savedNewGame.stadiumName).trim();
-      ensureBudget(club,club.division||userDivision);
-      ensureStadium(club,club.division||userDivision,{newGame:!continuingCareer});
-    }
-    club.medicalInvestment=club.medicalInvestment??0;
-    club.preventionProgram=club.preventionProgram??0;
-    // Setores v2: ensureStadium() no bloco do usuário define estrutura/gramado/setores.
-    if(club.name!==userClub){
-      club.pitchCondition=club.pitchCondition||'good';
-      club.pitchLevel=Number.isFinite(Number(club.pitchLevel))?club.pitchLevel:3;
-      club.stadiumStructure=Number.isFinite(Number(club.stadiumStructure))?club.stadiumStructure:2;
-    }
-    club.seasonLeaders={scorer:attackers[0]||club.roster[0],goals:savedNewGame?0:int(4,18),assistant:creators[0]||club.roster[1],assists:savedNewGame?0:int(3,14)};
+  const divisionTeams=pyramidState.divisionTeams;
+  let careerWorldNeedsPersist=pyramidState.careerWorldNeedsPersist;
+  let serieCSizeRepaired=pyramidState.serieCSizeRepaired;
+  let serieDLayoutRepaired=pyramidState.serieDLayoutRepaired;
+  let careerPyramidFreshlyGenerated=pyramidState.careerPyramidFreshlyGenerated;
+  const clubsBoot=bootstrapCareerClubs({
+    savedNewGame,
+    validSavedSeason,
+    userClub,
+    userDivision,
+    careerSeason,
+    divisionTeams,
+    divisionRules,
+    teams,
+    squad,
+    useCareerOriginFlow,
+    careerHostMeta,
+    careerPyramidFreshlyGenerated,
+    gameRandom,
+    int,
+    initialEnvironmentRanges,
+    assignSquadJerseyNumbers,
+    persistCareer,
+    initialBudget,
+    ensureBudget,
+    ensureStadium,
   });
+  const clubs=clubsBoot.clubs;
+  let continuingCareer=clubsBoot.continuingCareer;
+  if(clubsBoot.careerWorldNeedsPersist)careerWorldNeedsPersist=true;
+  if(clubsBoot.serieDLayoutRepaired)serieDLayoutRepaired=true;
   // Os quatro indicadores institucionais atuam em áreas distintas e em escala
   // moderada. Eles inclinam probabilidades, mas nunca substituem elenco, tática,
   // atributos individuais ou a aleatoriedade natural de uma partida.
@@ -1301,7 +985,6 @@ const rosterChangeAlertHolder = { fn: null };
   let renderHeaderGuide=()=>{};
   let rankingViews=null;
   let renderSeasonGoalCard=()=>{};
-  let competitionRulesModal=null;
   const renderClubBudget=()=>{
     const club=clubs[userClub];
     if(club)ensureBudget(club,userDivision);
@@ -1457,6 +1140,8 @@ const rosterChangeAlertHolder = { fn: null };
       managerReputation:reputation,
       preferredDivision:manager?.preferredDivision||userDivision,
       titlePoints:manager?.titlePoints||0,
+      offSeason:seasonFullyComplete(),
+      careerDate:careerCalendarDate,
     });
     creditSponsorInstallment(clubs[userClub],{round,installments});
     creditNamingInstallment(clubs[userClub],{round,division:userDivision,season:careerSeason});
@@ -1666,10 +1351,14 @@ const rosterChangeAlertHolder = { fn: null };
         membershipByUf:savedNewGame.stateLeagueMembership||{},
         lotterySeed:savedNewGame.seed??null,
       });
-      void ensureAllImportClubs().then(()=>hydrateRealClubsFromImport(officialBrazilWorld?.importClubs)).catch(()=>{});
+      const membershipUfs = Object.keys(savedNewGame.stateLeagueMembership || {});
+      const ufsToLoad = [...new Set([userOriginUf, ...membershipUfs].filter(Boolean))];
+      void ensureImportClubsForUfs(ufsToLoad).then(()=>hydrateRealClubsFromImport(officialBrazilWorld?.importClubs)).catch(()=>{});
     }else{
       hydrateRealClubsFromImport(officialBrazilWorld?.importClubs);
-      void ensureAllImportClubs().then(()=>hydrateRealClubsFromImport(officialBrazilWorld?.importClubs)).catch(()=>{});
+      const membershipUfs = Object.keys(savedNewGame.stateLeagueMembership || {});
+      const ufsToLoad = [...new Set([userOriginUf, ...membershipUfs].filter(Boolean))];
+      void ensureImportClubsForUfs(ufsToLoad).then(()=>hydrateRealClubsFromImport(officialBrazilWorld?.importClubs)).catch(()=>{});
       stateLeagueEngine.build({
         clubs,
         regionalBaseClubs:savedNewGame.regionalBaseClubs||[],
@@ -1726,14 +1415,22 @@ const rosterChangeAlertHolder = { fn: null };
       applySavedSerieDFixtures(nationalCompetitions.D.fixtures,savedSeason.dFixtures,SERIE_D_GROUP_ROUNDS);
     }
     if(savedSeason.dKnockout)Object.assign(nationalCompetitions.D.knockout,savedSeason.dKnockout);
+    if(userDivision==='D'){
+      ensureNationalFixtureRounds(nationalCompetitions.D.fixtures,{groupRounds:SERIE_D_GROUP_ROUNDS});
+      ensureNationalFixtureRounds(championshipFixtures,{groupRounds:SERIE_D_GROUP_ROUNDS});
+    }
     // Remove entradas de histórico sem jogo do usuário concluído (anti-loop pós-migração de mandos).
     for(let index=seasonRoundHistory.length-1;index>=0;index--){
       const entry=seasonRoundHistory[index];
       const round=entry?.round;
       if(!round)continue;
+      const played=nationalCompetitions[userDivision]?.standings?.find(row=>row.club===userClub)?.played||0;
+      if(userDivision==='D'&&played<SERIE_D_GROUP_ROUNDS&&round>played+1){
+        seasonRoundHistory.splice(index,1);
+        continue;
+      }
       const userGame=(nationalCompetitions[userDivision]?.fixtures?.[round-1]||[]).find(item=>item?.home===userClub||item?.away===userClub);
       if(!userGame)continue;
-      const played=nationalCompetitions[userDivision]?.standings?.find(row=>row.club===userClub)?.played||0;
       if(played>=round)continue;
       if(findRecordedGame(userGame,entry.games||[]))continue;
       seasonRoundHistory.splice(index,1);
@@ -1949,28 +1646,12 @@ const rosterChangeAlertHolder = { fn: null };
     if(clubs[clubName]?.division==='REG')return '—';
     return clubs[clubName]?.position||'—';
   };
-  let pageCompetition=userDivision;
-  let openChampionshipLastGames=()=>{};
-  let pageStateRound=1;
-  let pageStateGroup=0;
-  let pageStateFixturesMode='round';
-  let pageStateFixturesOpen=false;
-  let pageSerieDGroup=userSerieDGroupIndexFound>=0?userSerieDGroupIndexFound:0;
-  let pageSerieDMode='groups'; // groups | knockout
-  let pageCupPhase=1;
-  let pageSerieDPhase=1;
-  let pageWorldCupGroup=0;
-  let pageWorldCupRound=1;
-  let pagePickerOpen=false;
-  let pageStateTierPickerOpen=false;
   let renderChampionshipPage=()=>{};
-  const PAGE_COMPETITION_OPTIONS=buildPageCompetitionOptions({FEATURES,savedNewGame});
-  const getPageCompetitionOptions=()=>{
-    if(!worldCupCompetition||!userNationalTeamName)return PAGE_COMPETITION_OPTIONS;
-    const cmu={id:'CMU',label:'Copa do Mundo',trophyKey:'nacional'};
-    if(PAGE_COMPETITION_OPTIONS.some(option=>option.id==='CMU'))return PAGE_COMPETITION_OPTIONS;
-    return [cmu,...PAGE_COMPETITION_OPTIONS];
-  };
+  let selectChampionshipPageCompetition=()=>{};
+  let getChampionshipPageState=()=>({});
+  let patchChampionshipPageState=()=>{};
+  let championshipPageIsKnockoutView=()=>false;
+  let setChampionshipPagePickerOpen=()=>{};
   const stateGroupRows=(competitionId,groupIndex)=>stateLeagueEngine.getGroupRows(competitionId,groupIndex);
   const storedNationalRanking=(validSavedSeason?savedSeason.nationalRanking:null)||savedNewGame?.nationalRanking||{entries:{}};
   const {entries:nationalRankingEntries,finalizedSeasons:nationalRankingFinalizedSeasons}=bootstrapNationalRankingEntries({
@@ -2200,6 +1881,16 @@ const rosterChangeAlertHolder = { fn: null };
   const reconcileCurrentRound=()=>{
     if(!savedNewGame)return;
     const played=userLeaguePlayed();
+    if(userDivision==='D'&&played<SERIE_D_GROUP_ROUNDS){
+      let target=played+1;
+      if(typeof nextLeagueUserEntry==='function'){
+        const pending=nextLeagueUserEntry()?.game;
+        const resolved=pending?resolveLeagueFixtureRound(pending,championshipFixtures):null;
+        if(resolved!=null)target=resolved;
+      }
+      currentRound=target;
+      return;
+    }
     const histMax=(seasonRoundHistory||[]).reduce((max,entry)=>Math.max(max,entry?.round||0),0);
     const floor=Math.max(played+1,histMax+1);
     if(currentRound<floor)currentRound=floor;
@@ -2524,6 +2215,7 @@ const rosterChangeAlertHolder = { fn: null };
     restDaysUntilNextFixture,
     intervalDaysForRoundAdvance,
     ensureCalendarMatchConsistency,
+    syncCareerCalendarAfterRoundAdvance,
     fixtureResultLabel,
     isPendingFixtureOverdue,
   }=createUserScheduleEngine({
@@ -2546,6 +2238,45 @@ const rosterChangeAlertHolder = { fn: null };
     advanceCareerCalendarTo,
     rescheduleAllCupFixtures,
   });
+  if(validSavedSeason&&userDivision==='D'){
+    const playedRow=nationalCompetitions.D.standings?.find(row=>row.club===userClub);
+    let completedGroup=0;
+    for(let round=1;round<=SERIE_D_GROUP_ROUNDS;round++){
+      const game=leagueUserGameForRound(round);
+      if(game&&isFixtureCompleted(game))completedGroup+=1;
+    }
+    if(playedRow&&completedGroup<playedRow.played)playedRow.played=completedGroup;
+    const userGroup=serieDGroups[userSerieDGroupIndex]||[];
+    const userGroupSet=new Set(userGroup);
+    const canonGroupFixtures=Array.from({length:SERIE_D_GROUP_ROUNDS},(_,roundIndex)=>
+      (buildCompetitionRoundRobinFixtures(userGroup,'serie-d-groups')[roundIndex]||[]).map(game=>({...game,round:roundIndex+1})),
+    );
+    let serieDFixtureRepaired=false;
+    for(let round=1;round<=SERIE_D_GROUP_ROUNDS;round++){
+      const roundGames=championshipFixtures[round-1];
+      if(!Array.isArray(roundGames))continue;
+      roundGames.forEach(game=>{
+        if(!game||!isUserFixture(game)||isKnockoutShootoutCompetition(game))return;
+        const opponent=game.home===userClub?game.away:game.home;
+        if(userGroupSet.has(opponent))return;
+        const replacement=(canonGroupFixtures[round-1]||[]).find(item=>item.home===userClub||item.away===userClub);
+        if(!replacement)return;
+        game.home=replacement.home;
+        game.away=replacement.away;
+        game.round=round;
+        delete game.homeGoals;
+        delete game.awayGoals;
+        delete game.completed;
+        serieDFixtureRepaired=true;
+      });
+    }
+    if(serieDFixtureRepaired){
+      ensureNationalFixtureRounds(nationalCompetitions.D.fixtures,{groupRounds:SERIE_D_GROUP_ROUNDS});
+      ensureNationalFixtureRounds(championshipFixtures,{groupRounds:SERIE_D_GROUP_ROUNDS});
+    }
+    reconcileCurrentRound();
+    invalidateUserScheduleCache();
+  }
   const clubCrestInitials=teamCrestInitials;
   /** Badge de divisão só no chaveamento da Copa (evita poluir tabelas/listas). */
   const cupClubLabel=(name,opts)=>clubLabelHtml(name,{clubs,userClub,userDivision},opts);
@@ -2721,7 +2452,7 @@ const rosterChangeAlertHolder = { fn: null };
       type:'match-result',
       title:'RESULTADO DA PARTIDA',
       body:lines.join('\n'),
-      round:currentRound,
+      round:resolveLeagueFixtureRound(game,championshipFixtures)??game.round??currentRound,
       meta:{
         competition:resultMeta.competition,
         roundLabel:resultMeta.roundLabel,
@@ -2739,10 +2470,15 @@ const rosterChangeAlertHolder = { fn: null };
   const fixtureCompetitionLabel=game=>{if(game.competition==='COPA DO BRASIL')return `Copa ${game.leg}`;if(isKnockoutShootoutCompetition(game))return `Série D · ${game.leg||'Eliminatórias'}`;return `${game.round}ª`;};
   advanceWorldCupThroughDateLocal=date=>{
     if(!worldCupCompetition||!date)return false;
-    const changed=advanceWorldCupThroughDate(worldCupCompetition,date,{
-      random:gameRandom,
-      isUserTeam:game=>game.competition===WORLD_CUP_COMPETITION&&isUserFixture(game),
-    });
+    const changed=userNationalTeamCode
+      ?advanceWorldCupThroughDate(worldCupCompetition,date,{
+        random:gameRandom,
+        isUserTeam:game=>game.competition===WORLD_CUP_COMPETITION&&isUserFixture(game),
+      })
+      :advanceWorldCupSpectatorThroughWindow(worldCupCompetition,date,careerSeason,{
+        random:gameRandom,
+        simulate:simulateNationalTeamMatch,
+      });
     if(changed)refreshWorldCupFixtures();
     return changed;
   };
@@ -2904,8 +2640,6 @@ const rosterChangeAlertHolder = { fn: null };
   let rosterOvrMarkHtml=()=> '';
   /** HTML da coluna XP de treino — preenchido após init de playerDevelopment. */
   let rosterTrainingXpHtml=()=> '';
-  let scanUserRosterChangeAlerts=()=>{};
-  let updateSquadChangeNavBadge=()=>{};
   const rosterContracts=createRosterContractsFeature({
     $,
     $$,
@@ -2916,7 +2650,6 @@ const rosterChangeAlertHolder = { fn: null };
     onRenewalRespond:opts=>respondToContractRenewal(opts),
   });
   const renderRoster=()=>{
-    try{scanUserRosterChangeAlerts();}catch{/* boot */}
     const list=$('#playerList');
     if(!list)return;
     syncRosterFilterOptions();
@@ -2941,10 +2674,7 @@ const rosterChangeAlertHolder = { fn: null };
         contractTone==='warning'?' roster-contract-warning':
         contractTone==='critical'?' roster-contract-critical':
         contractTone==='expired'?' roster-contract-expired':'';
-      const changeId=resolvePlayerId(p)||playerKey(p)||historyPlayerKey(p);
-      const changeAlert=playerDevelopment?getActiveRosterChangeAlert(playerDevelopment,changeId,careerCalendarDate):null;
-      const changeClass=rosterChangeRowClass(changeAlert);
-      return `<div class="player-row roster-expanded${contractClass}${changeClass?` ${changeClass}`:''}">
+      return `<div class="player-row roster-expanded${contractClass}">
       <span>${playerRename.renderNameCell(p,{showLoan:true,clubName:userClub,allowRename:true})}</span>
       <span class="badge">${p.pos}</span>
       <span>${p.age}</span>
@@ -2977,7 +2707,6 @@ const rosterChangeAlertHolder = { fn: null };
       btn.classList.toggle('is-desc',active&&rosterSort.dir==='desc');
     });
     rosterContracts.updateButtonBadge?.();
-    try{updateSquadChangeNavBadge();}catch{/* boot */}
     const contractModal=$('#rosterContractModal');
     if(contractModal&&!contractModal.classList.contains('hidden')){
       rosterContracts.render?.();
@@ -3190,10 +2919,15 @@ const rosterChangeAlertHolder = { fn: null };
   rebuildCalendarGames();
   advanceWorldCupThroughDateLocal=date=>{
     if(!worldCupCompetition||!date)return false;
-    const changed=advanceWorldCupThroughDate(worldCupCompetition,date,{
-      random:gameRandom,
-      isUserTeam:game=>game.competition===WORLD_CUP_COMPETITION&&isUserFixture(game),
-    });
+    const changed=userNationalTeamCode
+      ?advanceWorldCupThroughDate(worldCupCompetition,date,{
+        random:gameRandom,
+        isUserTeam:game=>game.competition===WORLD_CUP_COMPETITION&&isUserFixture(game),
+      })
+      :advanceWorldCupSpectatorThroughWindow(worldCupCompetition,date,careerSeason,{
+        random:gameRandom,
+        simulate:simulateNationalTeamMatch,
+      });
     if(changed){
       refreshWorldCupFixtures();
       rebuildCalendarGames();
@@ -3234,6 +2968,19 @@ const rosterChangeAlertHolder = { fn: null };
     if(repaired.changed){
       nationalTeamOfferState=repaired.state;
       syncNationalTeamOfferStateToSave();
+    }
+    if(
+      !userNationalTeamCode &&
+      nationalTeamOfferState.issuedCount>=NATIONAL_TEAM_OFFER_COUNT &&
+      nationalTeamOfferState.offers.length &&
+      !nationalTeamOfferState.declinedAll &&
+      nationalTeamOfferState.snoozedUntil
+    ){
+      const until=new Date(nationalTeamOfferState.snoozedUntil);
+      if(!Number.isNaN(until.getTime())&&careerCalendarDate>=until){
+        nationalTeamOfferState=finalizeNationalTeamOfferDeclines(nationalTeamOfferState,careerSeason);
+        syncNationalTeamOfferStateToSave();
+      }
     }
   };
   issueNationalTeamOfferIfDue=()=>{
@@ -3299,10 +3046,15 @@ const rosterChangeAlertHolder = { fn: null };
   };
   denyAllNationalTeamOffers=()=>{
     refreshNationalTeamOfferState();
-    nationalTeamOfferState.snoozedUntil=addDaysToCareerDate(
-      careerCalendarDate,
-      NATIONAL_TEAM_OFFER_WEEK_DAYS,
-    );
+    const isFinalWindow=nationalTeamOfferState.issuedCount>=NATIONAL_TEAM_OFFER_COUNT;
+    if(isFinalWindow){
+      nationalTeamOfferState=finalizeNationalTeamOfferDeclines(nationalTeamOfferState,careerSeason);
+    }else{
+      nationalTeamOfferState.snoozedUntil=addDaysToCareerDate(
+        careerCalendarDate,
+        NATIONAL_TEAM_OFFER_WEEK_DAYS,
+      );
+    }
     syncNationalTeamOfferStateToSave();
     persistSeason(true);
   };
@@ -4382,10 +4134,7 @@ const rosterChangeAlertHolder = { fn: null };
     leagueData.forEach((row,index)=>clubs[row.club].position=index+1);
     const tableViewActive=$('#table')?.classList.contains('active');
     if(!skipChampionshipPage||tableViewActive)renderChampionshipPage();
-    if(!$('#cupBracketModal')?.classList.contains('hidden')){
-      if(bracketCompetition==='SERIE_D')renderSerieDBracket(championshipRoundView);
-      else renderCupBracket(championshipRoundView||cupCompetition.currentPhase||1);
-    }
+    championshipPage?.refreshCupBracketIfOpen?.();
     renderDashboardHero();
     renderDashboardMiniTable();
     renderDashboardUpcoming();
@@ -5155,23 +4904,12 @@ const rosterChangeAlertHolder = { fn: null };
   championshipSidebar.addEventListener('click',event=>{const leaderTab=event.target.closest('[data-championship-leader-tab]');if(leaderTab){championshipLeaderMode=leaderTab.dataset.championshipLeaderTab;renderChampionshipLeaders();return;}const groupStep=Number(event.target.closest('[data-championship-group-step]')?.dataset.championshipGroupStep||0);if(!groupStep||championshipDivision!=='D'||championshipRoundView>10)return;championshipGroupView=(championshipGroupView+groupStep+serieDGroups.length)%serieDGroups.length;renderChampionshipRound();});
 
   document.body.insertAdjacentHTML('beforeend',`<div id="cupBracketModal" class="modal hidden cup-bracket-modal"><div class="modal-card"><button id="closeCupBracket" class="close" type="button" aria-label="Fechar">×</button><header class="cup-bracket-head"><div class="cup-bracket-titles"><label id="cupBracketCompetitionLabel">CHAVEAMENTO · COPA DO BRASIL</label><h2 id="cupBracketTitle">Fase</h2></div><div id="cupBracketActions"></div></header><div id="cupBracketBody" class="cup-bracket-body"></div></div></div>`);
-  let bracketCompetition='CUP';
   let openCupBracket=()=>{};
   let openSerieDBracket=()=>{};
   let closeCupBracket=()=>{$('#cupBracketModal')?.classList.add('hidden');};
   let goCupBracketNextPhase=()=>{};
   let goCupBracketPrevPhase=()=>{};
-  const setBracketCompetitionLabel=text=>{
-    const label=$('#cupBracketCompetitionLabel');
-    if(label)label.textContent=text;
-  };
-  onClick('#closeCupBracket',()=>closeCupBracket());
-  onClick('#cupBracketModal',event=>{
-    if(event.target.id==='cupBracketModal'){closeCupBracket();return;}
-    if(event.target.closest('[data-cup-bracket-close]')){closeCupBracket();return;}
-    if(event.target.closest('[data-cup-bracket-prev]:not(:disabled)')){goCupBracketPrevPhase();return;}
-    if(event.target.closest('[data-cup-bracket-next]:not(:disabled)')){goCupBracketNextPhase();return;}
-  });
+  let championshipPage=null;
 
   const starters = () => activeUserSquad.slice(0,11);
   const activeStarters=()=>starters().filter((player,index)=>!playerUnavailable(player)&&!cards?.home?.[index]?.red&&!cards?.home?.[index]?.injured);
@@ -5287,28 +5025,6 @@ const rosterChangeAlertHolder = { fn: null };
     if(!mark)return '';
     return formatOvrMarkHtml(mark.delta,{weeks:OVR_MARK_WEEKS});
   };
-  const rosterChangePlayerId=player=>resolvePlayerId(player)||playerKey(player)||historyPlayerKey(player);
-  scanUserRosterChangeAlerts=()=>{
-    if(!playerDevelopment||!squad?.length)return;
-    scanRosterStatusChanges(squad,playerDevelopment,careerCalendarDate,{
-      getPlayerId:rosterChangePlayerId,
-      fingerprint:p=>buildPlayerStatusFingerprint(p,{injuryInAcutePhase,injuryInRestrictedPhase}),
-    });
-  };
-  updateSquadChangeNavBadge=()=>{
-    if(!playerDevelopment)return;
-    const count=countActiveRosterChangeAlerts(squad,playerDevelopment,careerCalendarDate,rosterChangePlayerId,{forNav:true});
-    const badge=$('#squadChangeNavBadge');
-    badge?.classList.toggle('hidden',count<=0);
-    const nav=document.querySelector('.nav[data-view="squad"]');
-    if(nav&&count>0){
-      nav.dataset.changeAlerts=String(count);
-    }else if(nav){
-      delete nav.dataset.changeAlerts;
-    }
-  };
-  rosterChangeAlertHolder.fn=player=>getActiveRosterChangeAlert(playerDevelopment,rosterChangePlayerId(player),careerCalendarDate);
-  scanUserRosterChangeAlerts();
   rosterTrainingXpHtml=player=>{
     const id=resolvePlayerId(player)||playerKey(player)||historyPlayerKey(player);
     const progress=getTrainingProgressForPlayer(playerDevelopment,id);
@@ -5427,6 +5143,7 @@ const rosterChangeAlertHolder = { fn: null };
       getCareerSeason:()=>careerSeason,
       getCareerDate:()=>careerCalendarDate,
       getUserUf:()=>savedNewGame?.userUf||getRealClub(userClub)?.uf||'SP',
+      isOffSeason:()=>seasonFullyComplete(),
       getRetiredPool:()=>savedNewGame?.retiredPool||[],
       evaluateRosterPayroll,
       pushMessage,
@@ -5487,7 +5204,6 @@ const rosterChangeAlertHolder = { fn: null };
   careerCalendar.setOnAdvanced(()=>{
     autoMarkStaleMessages?.();
     syncCalendarDevelopmentPulses();
-    try{scanUserRosterChangeAlerts();updateSquadChangeNavBadge();}catch{/* boot */}
   });
   syncCalendarDevelopmentPulses();
   try{renderRoster();}catch{/* boot */}
@@ -6010,1097 +5726,79 @@ const rosterChangeAlertHolder = { fn: null };
       shootoutPenalties:liveMatchGame.shootoutPenalties??game.shootoutPenalties,
     };
   };
-  const cupBracketTieFromStage=(stage,tieId)=>{
-    const games=overlayPendingLiveKnockoutGames(cupTieGames(stage,tieId));
-    if(!games.length)return null;
-    const sideA=games[0].home,sideB=games[0].away;
-    const aggregate=cupTieAggregate(games);
-    const allDone=games.every(game=>game.completed);
-    const played=games.some(game=>game.completed);
-    let winner=games.find(game=>game.winner)?.winner||games.find(game=>game.shootoutWinner)?.shootoutWinner||null;
-    if(!winner&&allDone){
-      const goalsA=aggregate.get(sideA)||0,goalsB=aggregate.get(sideB)||0;
-      if(goalsA!==goalsB)winner=goalsA>goalsB?sideA:sideB;
-    }
-    const penLabel=games.map(game=>game.penalties||game.shootoutPenalties).find(Boolean)||'';
-    const legMeta=games.map(game=>{
-      const details=fixtureDetails(game);
-      const score=game.completed?formatKnockoutFixtureScore(game,{separator:'-'}):'×';
-      return `${game.leg} ${details.display} ${score}`;
-    }).join(' · ');
-    return {
-      tieId,sideA,sideB,winner,penLabel,legMeta,played,allDone,
-      scoreA:played?String(aggregate.get(sideA)||0):'—',
-      scoreB:played?String(aggregate.get(sideB)||0):'—',
-      userTie:sideA===userClub||sideB===userClub,
-    };
-  };
-  const renderCupTreeTeam=(name,score,{winner=null,plain=false}={})=>{
-    const classes=['cup-tree-team'];
-    if(name===userClub)classes.push('user-club');
-    if(winner===name)classes.push('winner');
-    const main=plain?`<b>${name}</b>`:cupClubLabel(name,{tag:'b'});
-    return `<div class="${classes.join(' ')}">${teamCrestHtml(name)}<span class="cup-tree-team-main">${main}</span><em>${score}</em></div>`;
-  };
-  const renderCupTreeMatch=(tie,{plain=false}={})=>{
-    const badge=tie.userTie?`<div class="cup-tree-user-badge">${tie.winner===userClub?'VOCÊ AVANÇOU':tie.allDone?'VOCÊ ELIMINADO':'SEU JOGO'}</div>`:'';
-    const metaLine=[tie.legMeta,tie.penLabel?`PÊN. ${tie.penLabel}`:''].filter(Boolean).join(' · ');
-    const winnerLine=tie.winner?`<strong>Classificado: ${tie.winner}</strong>`:'';
-    return `<article class="cup-tree-match ${tie.userTie?'user-tie':''} ${tie.userTie?'':'dim-tie'}" data-user-tie="${tie.userTie?'1':'0'}">
-      ${badge}
-      ${renderCupTreeTeam(tie.sideA,tie.scoreA,{winner:tie.winner,plain})}
-      ${renderCupTreeTeam(tie.sideB,tie.scoreB,{winner:tie.winner,plain})}
-      <div class="cup-tree-match-meta"><span>${metaLine}</span>${winnerLine}</div>
-    </article>`;
-  };
-  const renderCupPhase5Pot=()=>{
-    const phase4=cupCompetition.stages.find(item=>item.index===4);
-    const fromPhase4=phase4?.winners?.length
-      ?phase4.winners
-      :phase4?.fixtures
-        ?[...new Set(phase4.fixtures.map(game=>game.tieId))]
-          .map(tieId=>cupBracketTieFromStage(phase4,tieId))
-          .map(tie=>tie?.winner)
-          .filter(Boolean)
-        :[];
-    const pendingSlots=Math.max(0,12-fromPhase4.length);
-    const serieA=cupSerieAEntrants.slice(0,20);
-    const chips=[
-      ...serieA.map(name=>teamCrestHtml(name,{className:name===userClub?'user-club':''})),
-      ...fromPhase4.map(name=>teamCrestHtml(name,{className:name===userClub?'user-club':''})),
-      ...Array.from({length:pendingSlots},()=>'<i class="tbd">?</i>'),
-    ].join('');
-    return `<div class="cup-tree-pot"><strong>POTES DO SORTEIO</strong><div class="cup-tree-pot-grid">${chips}</div></div>`;
-  };
-  const cupBracketPhaseStatus=(stage)=>{
-    if(stage?.completed)return 'CONCLUÍDA';
-    if(stage)return 'EM DISPUTA';
-    return 'AGUARDANDO SORTEIO';
-  };
-  const cupBracketPhaseNav=(phaseIndex)=>{
-    const prevStage=cupCompetition.stages.find(item=>item.index===phaseIndex-1);
-    const nextStage=cupCompetition.stages.find(item=>item.index===phaseIndex+1);
-    const prevReady=Boolean(prevStage?.fixtures?.length);
-    const nextReady=Boolean(nextStage?.fixtures?.length);
-    return `<div class="cup-bracket-phase-nav" role="group" aria-label="Navegar fases">
-      <button type="button" class="cup-bracket-btn ghost cup-bracket-nav" data-cup-bracket-prev ${prevReady?'':'disabled'} aria-label="Fase anterior" title="${prevReady?'Fase anterior':'Não há fase anterior'}">←</button>
-      <button type="button" class="cup-bracket-btn ghost cup-bracket-nav" data-cup-bracket-next ${nextReady?'':'disabled'} aria-label="Próxima fase" title="${nextReady?'Próxima fase':'Aguarde o sorteio da próxima fase'}">→</button>
-    </div>`;
-  };
-  const cupBracketActionButtons=(phaseIndex,stage)=>{
-    const status=cupBracketPhaseStatus(stage);
-    const statusClass=stage?.completed?'':(stage?'':'is-wait');
-    return `<div class="cup-bracket-actions">
-      <span class="cup-bracket-status ${statusClass}">${status}</span>
-      <button type="button" class="cup-bracket-btn ghost" data-cup-bracket-close>FECHAR</button>
-      ${cupBracketPhaseNav(phaseIndex)}
-    </div>`;
-  };
-  const renderCupCenterSummary=(phaseIndex,stage,{userNote='',tieCount=0,userTie=false}={})=>{
-    const status=cupBracketPhaseStatus(stage);
-    const statusClass=stage?.completed?'is-done':(stage?'':'is-wait');
-    return `<aside class="cup-tree-pot ${userTie?'has-user':''}">
-      <div class="cup-tree-pot-info">
-        <strong class="cup-tree-pot-phase">${stage?.name||`Fase ${phaseIndex}`}</strong>
-        <p class="cup-tree-center-user">${userNote}</p>
-        <p class="cup-tree-center-count">${tieCount} confronto${tieCount===1?'':'s'}</p>
-        <span class="cup-tree-pot-status ${statusClass}">${status}</span>
-      </div>
-      <div class="cup-tree-center-nav">${cupBracketPhaseNav(phaseIndex)}</div>
-    </aside>`;
-  };
-  const renderCupBracket=(phaseIndex)=>{
-    const definition=cupPhaseDefinitions.find(item=>item.index===phaseIndex);
-    const stage=cupCompetition.stages.find(item=>item.index===phaseIndex);
-    const title=$('#cupBracketTitle'),actionsEl=$('#cupBracketActions'),body=$('#cupBracketBody');
-    if(!title||!actionsEl||!body)return;
-    title.textContent=stage?.name||definition?.name||`Fase ${phaseIndex}`;
-    actionsEl.innerHTML=cupBracketActionButtons(phaseIndex,stage);
-    if(!stage?.fixtures?.length){
-      body.innerHTML='<div class="cup-bracket-empty">Aguardando sorteio desta fase.</div>';
-      return;
-    }
-    // Só a fase clicada — sem colunas de fase anterior/seguinte nem slots inventados.
-    let ties=[...new Set(stage.fixtures.map(game=>game.tieId))]
-      .map(tieId=>cupBracketTieFromStage(stage,tieId))
-      .filter(Boolean);
-    const userTies=ties.filter(tie=>tie.userTie);
-    ties=[...userTies,...ties.filter(tie=>!tie.userTie)];
-    if(ties.length===1){
-      body.innerHTML=`<div class="cup-tree single-final"><div class="cup-tree-center"><div class="cup-tree-final-slot"><span>${stage.name}</span>${renderCupTreeMatch(ties[0])}<div class="cup-tree-center-nav">${cupBracketPhaseNav(phaseIndex)}</div></div></div></div>`;
-      return;
-    }
-    const mid=Math.ceil(ties.length/2);
-    const left=ties.slice(0,mid);
-    const right=ties.slice(mid);
-    const userTie=userTies[0];
-    const userNote=userTie
-      ?userTie.winner===userClub
-        ?`${userClub} classificado`
-        :userTie.allDone
-          ?`${userClub} eliminado`
-          :`Confronto de ${userClub}`
-      :'Seu clube não está nesta fase';
-    const centerHtml=phaseIndex===5
-      ?`${renderCupPhase5Pot()}<div class="cup-tree-center-nav">${cupBracketPhaseNav(phaseIndex)}</div>`
-      :renderCupCenterSummary(phaseIndex,stage,{userNote,tieCount:ties.length,userTie:Boolean(userTie)});
-    body.innerHTML=`<div class="cup-tree phase-only ${userTies.length?'has-user-path':''}">
-      <div class="cup-tree-wing left"><div class="cup-tree-round"><div class="cup-tree-matches">${left.map(renderCupTreeMatch).join('')}</div></div></div>
-      <div class="cup-tree-center">${centerHtml}</div>
-      <div class="cup-tree-wing right"><div class="cup-tree-round"><div class="cup-tree-matches">${right.map(renderCupTreeMatch).join('')}</div></div></div>
-    </div>`;
-    requestAnimationFrame(()=>{
-      const focus=body.querySelector('[data-user-tie="1"]');
-      focus?.scrollIntoView({block:'nearest',behavior:'smooth'});
-    });
-  };
-  const serieDBracketTieFromStage=(startRound,tieId)=>{
-    const games=overlayPendingLiveKnockoutGames(
-      serieDStageFixturesMerged(startRound)
-        .filter(game=>game.tieId===tieId)
-        .sort((a,b)=>(a.leg==='IDA'?0:1)-(b.leg==='IDA'?0:1)),
-    );
-    if(!games.length)return null;
-    const sideA=games[0].home,sideB=games[0].away;
-    const aggregate=cupTieAggregate(games);
-    const allDone=games.every(game=>game.completed);
-    const played=games.some(game=>game.completed);
-    let winner=games.find(game=>game.winner)?.winner||games.find(game=>game.shootoutWinner)?.shootoutWinner||null;
-    if(!winner&&allDone){
-      const goalsA=aggregate.get(sideA)||0,goalsB=aggregate.get(sideB)||0;
-      if(goalsA!==goalsB)winner=goalsA>goalsB?sideA:sideB;
-    }
-    const penLabel=games.map(game=>game.penalties||game.shootoutPenalties).find(Boolean)||'';
-    const legMeta=games.map(game=>{
-      const details=fixtureDetails(game);
-      const score=game.completed?formatKnockoutFixtureScore(game,{separator:'-'}):'×';
-      return `${game.leg||'JOGO'} ${details.display} ${score}`;
-    }).join(' · ');
-    return {
-      tieId,sideA,sideB,winner,penLabel,legMeta,played,allDone,
-      scoreA:played?String(aggregate.get(sideA)||0):'—',
-      scoreB:played?String(aggregate.get(sideB)||0):'—',
-      userTie:sideA===userClub||sideB===userClub,
-    };
-  };
-  const serieDBracketPhaseNav=phaseIndex=>{
-    const prevDef=serieDKnockoutPhaseDefs.find(item=>item.index===phaseIndex-1);
-    const nextDef=serieDKnockoutPhaseDefs.find(item=>item.index===phaseIndex+1);
-    const prevReady=Boolean(prevDef&&serieDKnockoutPhaseMeta(prevDef).generated);
-    const nextReady=Boolean(nextDef&&serieDKnockoutPhaseMeta(nextDef).generated);
-    return `<div class="cup-bracket-phase-nav" role="group" aria-label="Navegar fases">
-      <button type="button" class="cup-bracket-btn ghost cup-bracket-nav" data-cup-bracket-prev ${prevReady?'':'disabled'} aria-label="Fase anterior" title="${prevReady?'Fase anterior':'Não há fase anterior'}">←</button>
-      <button type="button" class="cup-bracket-btn ghost cup-bracket-nav" data-cup-bracket-next ${nextReady?'':'disabled'} aria-label="Próxima fase" title="${nextReady?'Próxima fase':'Aguarde o sorteio da próxima fase'}">→</button>
-    </div>`;
-  };
-  const renderSerieDBracket=phaseIndex=>{
-    const definition=serieDKnockoutPhaseDefs.find(item=>item.index===phaseIndex)||serieDKnockoutPhaseDefs[0];
-    const meta=serieDKnockoutPhaseMeta(definition);
-    const title=$('#cupBracketTitle'),actionsEl=$('#cupBracketActions'),body=$('#cupBracketBody');
-    if(!title||!actionsEl||!body)return;
-    title.textContent=definition.name;
-    const statusClass=meta.completed?'':(meta.generated?'':'is-wait');
-    actionsEl.innerHTML=`<div class="cup-bracket-actions">
-      <span class="cup-bracket-status ${statusClass}">${meta.status}</span>
-      <button type="button" class="cup-bracket-btn ghost" data-cup-bracket-close>FECHAR</button>
-      ${serieDBracketPhaseNav(definition.index)}
-    </div>`;
-    if(!meta.generated){
-      body.innerHTML='<div class="cup-bracket-empty">Aguardando sorteio desta fase.</div>';
-      return;
-    }
-    const fixtures=serieDStageFixturesMerged(definition.startRound);
-    let ties=[...new Set(fixtures.map(game=>game.tieId).filter(Boolean))]
-      .map(tieId=>serieDBracketTieFromStage(definition.startRound,tieId))
-      .filter(Boolean);
-    const userTies=ties.filter(tie=>tie.userTie);
-    ties=[...userTies,...ties.filter(tie=>!tie.userTie)];
-    const hasPlayoff=definition.key==='semi'&&Boolean(nationalCompetitions.D.knockout?.stages?.playoff?.length);
-    if(hasPlayoff){
-      const {semi,playoff}=splitSerieDSemiPlayoffTies(ties);
-      const renderGroup=(label,hint,groupTies)=>!groupTies.length?'':`<section class="cup-tree-stage-group">
-        <header><h4>${label}</h4><small>${hint}</small></header>
-        <div class="cup-tree-matches">${sortChampionshipTiesUserFirst(groupTies).map(tie=>renderCupTreeMatch(tie,{plain:true})).join('')}</div>
-      </section>`;
-      body.innerHTML=`<div class="cup-tree-split-stages">
-        <div class="cup-tree-split-nav">${serieDBracketPhaseNav(definition.index)}</div>
-        ${renderGroup('SEMIFINAL','Vencedores avançam à final · os 4 semifinalistas já estão garantidos na Série C na próxima temporada',semi)}
-        ${renderGroup('REPESCAGEM','Vencedores conquistam o acesso à Série C',playoff)}
-      </div>`;
-      requestAnimationFrame(()=>{
-        const focus=body.querySelector('[data-user-tie="1"]');
-        focus?.scrollIntoView({block:'nearest',behavior:'smooth'});
-      });
-      return;
-    }
-    const stageLabel=definition.name;
-    if(ties.length===1){
-      body.innerHTML=`<div class="cup-tree single-final"><div class="cup-tree-center"><div class="cup-tree-final-slot"><span>${stageLabel}</span>${renderCupTreeMatch(ties[0],{plain:true})}<div class="cup-tree-center-nav">${serieDBracketPhaseNav(definition.index)}</div></div></div></div>`;
-      return;
-    }
-    const mid=Math.ceil(ties.length/2);
-    const left=ties.slice(0,mid);
-    const right=ties.slice(mid);
-    const userTie=userTies[0];
-    const userNote=userTie
-      ?userTie.winner===userClub
-        ?`${userClub} classificado`
-        :userTie.allDone
-          ?`${userClub} eliminado`
-          :`Confronto de ${userClub}`
-      :'Seu clube não está nesta fase';
-    const statusClassCenter=meta.completed?'is-done':(meta.generated?'':'is-wait');
-    const centerHtml=`<aside class="cup-tree-pot ${userTie?'has-user':''}">
-      <div class="cup-tree-pot-info">
-        <strong class="cup-tree-pot-phase">${stageLabel}</strong>
-        <p class="cup-tree-center-user">${userNote}</p>
-        <p class="cup-tree-center-count">${ties.length} confronto${ties.length===1?'':'s'}</p>
-        <span class="cup-tree-pot-status ${statusClassCenter}">${meta.status}</span>
-      </div>
-      <div class="cup-tree-center-nav">${serieDBracketPhaseNav(definition.index)}</div>
-    </aside>`;
-    body.innerHTML=`<div class="cup-tree phase-only ${userTies.length?'has-user-path':''}">
-      <div class="cup-tree-wing left"><div class="cup-tree-round"><div class="cup-tree-matches">${left.map(tie=>renderCupTreeMatch(tie,{plain:true})).join('')}</div></div></div>
-      <div class="cup-tree-center">${centerHtml}</div>
-      <div class="cup-tree-wing right"><div class="cup-tree-round"><div class="cup-tree-matches">${right.map(tie=>renderCupTreeMatch(tie,{plain:true})).join('')}</div></div></div>
-    </div>`;
-    requestAnimationFrame(()=>{
-      const focus=body.querySelector('[data-user-tie="1"]');
-      focus?.scrollIntoView({block:'nearest',behavior:'smooth'});
-    });
-  };
-  openCupBracket=phaseIndex=>{
-    const index=Number(phaseIndex)||1;
-    bracketCompetition='CUP';
-    championshipRoundView=index;
-    setBracketCompetitionLabel('CHAVEAMENTO · COPA DO BRASIL');
-    markCupPhaseSelection(index);
-    renderCupBracket(index);
-    $('#cupBracketModal')?.classList.remove('hidden');
-  };
-  openSerieDBracket=phaseIndex=>{
-    const index=Number(phaseIndex)||1;
-    bracketCompetition='SERIE_D';
-    championshipRoundView=index;
-    setBracketCompetitionLabel('CHAVEAMENTO · SÉRIE D');
-    markSerieDPhaseSelection(index);
-    renderSerieDBracket(index);
-    $('#cupBracketModal')?.classList.remove('hidden');
-  };
-  closeCupBracket=()=>{$('#cupBracketModal')?.classList.add('hidden');};
-  goCupBracketPrevPhase=()=>{
-    if(bracketCompetition==='SERIE_D'){
-      const current=Number(championshipRoundView)||1;
-      const prev=serieDKnockoutPhaseDefs.find(item=>item.index===current-1);
-      if(!prev||!serieDKnockoutPhaseMeta(prev).generated)return;
-      openSerieDBracket(prev.index);
-      return;
-    }
-    const current=Number(championshipRoundView)||1;
-    const prev=cupCompetition.stages.find(item=>item.index===current-1);
-    if(!prev?.fixtures?.length)return;
-    openCupBracket(prev.index);
-  };
-  goCupBracketNextPhase=()=>{
-    if(bracketCompetition==='SERIE_D'){
-      const current=Number(championshipRoundView)||1;
-      const next=serieDKnockoutPhaseDefs.find(item=>item.index===current+1);
-      if(!next||!serieDKnockoutPhaseMeta(next).generated)return;
-      openSerieDBracket(next.index);
-      return;
-    }
-    const current=Number(championshipRoundView)||1;
-    const next=cupCompetition.stages.find(item=>item.index===current+1);
-    if(!next?.fixtures?.length)return;
-    openCupBracket(next.index);
-  };
-
-  const placeChampionshipPagePickerMenu=()=>{
-    const btn=$('#championshipPagePickerBtn'),menu=$('#championshipPagePickerMenu');
-    if(!btn||!menu||!pagePickerOpen)return;
-    const rect=btn.getBoundingClientRect();
-    menu.style.position='fixed';
-    menu.style.top=`${Math.round(rect.bottom+6)}px`;
-    menu.style.right=`${Math.round(Math.max(8,window.innerWidth-rect.right))}px`;
-    menu.style.left='auto';
-    menu.style.zIndex='5000';
-  };
-  const setChampionshipPagePickerOpen=open=>{
-    pagePickerOpen=!!open;
-    if(pagePickerOpen)setChampionshipPageStateTierPickerOpen(false);
-    const btn=$('#championshipPagePickerBtn'),menu=$('#championshipPagePickerMenu');
-    const host=$('.championship-page-picker:not(.championship-page-state-tier-picker)');
-    btn?.setAttribute('aria-expanded',pagePickerOpen?'true':'false');
-    if(btn)btn.textContent=pagePickerOpen?'TODAS AS COMPETIÇÕES ▴':'TODAS AS COMPETIÇÕES ▾';
-    if(!menu)return;
-    menu.classList.toggle('hidden',!pagePickerOpen);
-    if(pagePickerOpen){
-      // Portal para body: evita clip do overflow da view/tabela.
-      if(menu.parentElement!==document.body)document.body.appendChild(menu);
-      placeChampionshipPagePickerMenu();
-      hydratePickerTrophyIcons(menu);
-    }else{
-      menu.style.position='';
-      menu.style.top='';
-      menu.style.right='';
-      menu.style.left='';
-      menu.style.zIndex='';
-      if(host&&menu.parentElement!==host)host.appendChild(menu);
-    }
-  };
-  const placeChampionshipPageStateTierPickerMenu=()=>{
-    const btn=$('#championshipPageStateTierBtn'),menu=$('#championshipPageStateTierMenu');
-    if(!btn||!menu||!pageStateTierPickerOpen)return;
-    const rect=btn.getBoundingClientRect();
-    menu.style.position='fixed';
-    menu.style.top=`${Math.round(rect.bottom+6)}px`;
-    menu.style.right=`${Math.round(Math.max(8,window.innerWidth-rect.right))}px`;
-    menu.style.left='auto';
-    menu.style.zIndex='5000';
-  };
-  const setChampionshipPageStateTierPickerOpen=open=>{
-    pageStateTierPickerOpen=!!open;
-    if(pageStateTierPickerOpen)setChampionshipPagePickerOpen(false);
-    const btn=$('#championshipPageStateTierBtn'),menu=$('#championshipPageStateTierMenu');
-    const host=$('#championshipPageStateTierPicker');
-    btn?.setAttribute('aria-expanded',pageStateTierPickerOpen?'true':'false');
-    if(btn&&!pageStateTierPickerOpen){
-      const parsed=isStateChampionshipPage(pageCompetition)?parseStateCompetitionKey(pageCompetition):null;
-      const tier=parsed?.tier||1;
-      const tiers=parsed?stateLeagueEngine.getTiersForUf(parsed.uf):[];
-      btn.textContent=tiers.length>1?`DIVISÃO ${tier} ▾`:'DIVISÕES ▾';
-    }else if(btn&&pageStateTierPickerOpen){
-      btn.textContent='DIVISÕES ▴';
-    }
-    if(!menu)return;
-    menu.classList.toggle('hidden',!pageStateTierPickerOpen);
-    if(pageStateTierPickerOpen){
-      if(menu.parentElement!==document.body)document.body.appendChild(menu);
-      placeChampionshipPageStateTierPickerMenu();
-    }else{
-      menu.style.position='';
-      menu.style.top='';
-      menu.style.right='';
-      menu.style.left='';
-      menu.style.zIndex='';
-      if(host&&menu.parentElement!==host)host.appendChild(menu);
-    }
-  };
-  const championshipPageIsKnockoutView=()=>pageCompetition==='CUP'||pageCompetition==='RECOPA'||(pageCompetition==='D'&&pageSerieDMode==='knockout');
-  const serieDMaxGeneratedPhaseIndex=()=>{
-    let max=0;
-    serieDKnockoutPhaseDefs.forEach(definition=>{
-      if(serieDKnockoutPhaseMeta(definition).generated)max=Math.max(max,definition.index);
-    });
-    return max;
-  };
-  const renderChampionshipPageTieSide=(name,side)=>{
-    const crest=teamCrestHtml(name,{className:'championship-page-tie-crest'});
-    const label=`<span class="championship-page-tie-club">${cupClubLabel(name,{tag:'b'})}</span>`;
-    return side==='away'
-      ?`<div class="championship-page-tie-side is-away">${label}${crest}</div>`
-      :`<div class="championship-page-tie-side is-home">${crest}${label}</div>`;
-  };
-  const renderChampionshipPageTie=tie=>{
-    if(!tie)return '';
-    const score=tie.played?`${tie.scoreA} — ${tie.scoreB}`:'×';
-    const winner=tie.winner?`<strong class="winner-note">Classificado: ${tie.winner}${tie.penLabel?` · Pên. ${tie.penLabel}`:''}</strong>`:'';
-    return `<article class="championship-page-tie ${tie.userTie?'user-tie':''}">
-      <div class="championship-page-tie-line">
-        ${renderChampionshipPageTieSide(tie.sideA,'home')}
-        <em>${score}</em>
-        ${renderChampionshipPageTieSide(tie.sideB,'away')}
-      </div>
-      <div class="championship-page-tie-meta">
-        <small>${tie.legMeta||'Confronto'}</small>
-        ${winner}
-      </div>
-    </article>`;
-  };
-  const wrapChampionshipPageTies=html=>`<div class="championship-page-ties">${html}</div>`;
-  const renderChampionshipPageFixtureCards=(games,{completed=false}={})=>{
-    const playable=filterPlayableRoundGames(games);
-    if(!playable.length)return '';
-    return playable.map(game=>{
-      const isUser=game.home===userClub||game.away===userClub||(userNationalTeamName&&(game.home===userNationalTeamName||game.away===userNationalTeamName));
-      const played=completed&&game.homeGoals!=null;
-      const pen=knockoutShootoutLabel(game)||game.penalties||game.shootoutPenalties;
-      const score=played?`${game.homeGoals} — ${game.awayGoals}${pen?` (${pen})`:''}`:'× — ×';
-      return `<article class="championship-page-tie ${isUser?'user-tie':''} ${played?'':'scheduled'}">
-        <div class="championship-page-tie-line">
-          ${renderChampionshipPageTieSide(game.home,'home')}
-          <em>${score}</em>
-          ${renderChampionshipPageTieSide(game.away,'away')}
-        </div>
-        ${isUser?'<div class="championship-page-tie-meta"><small class="user-game-tag">SEU JOGO</small></div>':''}
-      </article>`;
-    }).join('');
-  };
-  const stateLeagueRoundCompleted=(competitionId,round,games)=>{
-    const saved=(stateLeagueEngine.history[parseStateCompetitionKey(competitionId)?.uf||'']||[]).find(item=>item.round===round);
-    return Boolean(saved?.games?.length)||games.every(game=>game.completed);
-  };
-  const renderChampionshipPageFixturesOpenBtn=()=>`<section class="championship-page-round-panel is-collapsed"><button type="button" class="championship-page-fixtures-all-btn" data-state-fixtures-open>TODOS OS JOGOS</button></section>`;
-  const renderChampionshipPageFixturesToolbar=({roundLimit,round}={})=>{
-    const atFirst=(round||1)<=1;
-    const atLast=(round||1)>=(roundLimit||1);
-    return `<div class="championship-page-fixtures-toolbar is-open">
-      <button type="button" class="championship-page-fixtures-all-btn is-active" data-state-fixtures-open aria-expanded="true">TODOS OS JOGOS</button>
-      <div class="championship-page-fixtures-round-nav" role="group" aria-label="Rodada">
-        <button type="button" class="championship-page-fixtures-round-btn" data-state-fixtures-round-prev aria-label="Rodada anterior" ${atFirst?'disabled':''}>‹</button>
-        <strong>Rodada ${round||1}</strong>
-        <button type="button" class="championship-page-fixtures-round-btn" data-state-fixtures-round-next aria-label="Próxima rodada" ${atLast?'disabled':''}>›</button>
-      </div>
-    </div>`;
-  };
-  const renderChampionshipPageRoundFixtures=(games,{completed=false,roundLabel='',toolbarHtml=''}={})=>{
-    const list=renderChampionshipPageFixtureCards(games,{completed});
-    if(!list&&!toolbarHtml)return '<div class="championship-page-empty">Nenhum jogo nesta rodada.</div>';
-    return `<section class="championship-page-round-panel">${toolbarHtml}${list?wrapChampionshipPageTies(list):'<div class="championship-page-empty">Nenhum jogo nesta rodada.</div>'}</section>`;
-  };
-  const renderChampionshipPageAllRoundFixtures=(competitionId,roundLimit)=>{
-    const groups=[];
-    for(let round=1;round<=roundLimit;round+=1){
-      const games=stateLeagueEngine.getRoundGamesForBrowse(competitionId,round,{simulateMatch:simulateRoundMatch});
-      if(!games.length)continue;
-      const completed=stateLeagueRoundCompleted(competitionId,round,games);
-      const cards=renderChampionshipPageFixtureCards(games,{completed});
-      if(cards)groups.push(`<div class="championship-page-all-round-group"><header class="championship-page-all-round-label">Rodada ${round}</header>${wrapChampionshipPageTies(cards)}</div>`);
-    }
-    return groups.join('')||'<div class="championship-page-empty">Nenhum jogo disponível.</div>';
-  };
-  const serieDClubPairKey=(a,b)=>[String(a||''),String(b||'')].sort().join('|');
-  const serieDStagePairKeys=stageTies=>new Set((stageTies||[]).map(tie=>serieDClubPairKey(tie.home,tie.away)));
-  const sortChampionshipTiesUserFirst=ties=>{
-    const userTies=ties.filter(tie=>tie.userTie);
-    return [...userTies,...ties.filter(tie=>!tie.userTie)];
-  };
-  /** Na fase de semi, fixtures misturam semi + repescagem no mesmo round — separa pelo stages. */
-  const splitSerieDSemiPlayoffTies=ties=>{
-    const stages=nationalCompetitions.D?.knockout?.stages||{};
-    const semiKeys=serieDStagePairKeys(stages.semi);
-    const playoffKeys=serieDStagePairKeys(stages.playoff);
-    const semi=[],playoff=[],other=[];
-    ties.forEach(tie=>{
-      const key=serieDClubPairKey(tie.sideA,tie.sideB);
-      if(playoffKeys.has(key)&&!semiKeys.has(key))playoff.push(tie);
-      else if(semiKeys.has(key))semi.push(tie);
-      else other.push(tie);
-    });
-    // Índices sem match nos stages: primeiros vão para semi (ordem de installTieRounds).
-    if(other.length){
-      const expectedSemi=Math.max(0,(stages.semi||[]).length-semi.length);
-      other.forEach((tie,index)=>(index<expectedSemi?semi:playoff).push(tie));
-    }
-    return {semi,playoff};
-  };
-  const renderChampionshipPageTieGroup=(label,ties,hint='')=>{
-    if(!ties.length)return '';
-    const list=sortChampionshipTiesUserFirst(ties).map(renderChampionshipPageTie).join('');
-    return `<section class="championship-page-tie-group">
-      <header class="championship-page-tie-group-head">
-        <h4>${label}</h4>
-        ${hint?`<small>${hint}</small>`:''}
-      </header>
-      <div class="championship-page-ties">${list}</div>
-    </section>`;
-  };
-  const seriesDGroupRowsForDisplay=groupIndex=>{
-    let rows=seriesDGroupRows(groupIndex).map(row=>({...row}));
-    const pending=pendingRoundPreviewGames();
-    if(pending?.length&&userDivision==='D'&&pageSerieDGroup===groupIndex){
-      pending.forEach(game=>{rows=applyTablePreviewToRows(rows,game);});
-    }
-    return rows;
-  };
-  const stateGroupRowsForDisplay=(competitionId,groupIndex)=>{
-    let rows=stateGroupRows(competitionId,groupIndex).map(row=>({...row}));
-    if(matchFinished&&!roundCommitted&&liveMatchGame&&isStateLeagueGame(liveMatchGame)){
-      const uf=String(liveMatchGame.stateUf||'').toUpperCase();
-      const tier=Number(liveMatchGame.stateTier)||1;
-      const gameComp=stateCompetitionKey(uf,tier);
-      if(gameComp===competitionId){
-        rows=applyTablePreviewToRows(rows,{
-          home:liveMatchGame.home,
-          away:liveMatchGame.away,
-          homeGoals:Number(liveMatchGame.homeGoals??0),
-          awayGoals:Number(liveMatchGame.awayGoals??0),
-        });
-      }
-    }
-    return rows;
-  };
-  const recopaFixtureForDisplay=()=>{
-    const game=recopaCompetition?.fixture;
-    if(!game)return null;
-    return typeof cupGameForDisplay==='function'?cupGameForDisplay(game):game;
-  };
-  const renderChampionshipPageKnockoutBody=()=>{
-    if(pageCompetition==='RECOPA'){
-      if(!recopaCompetition.ready){
-        return `<div class="championship-page-empty">${recopaNationalEmptyMessage(recopaCompetition)}</div>`;
-      }
-      if(recopaCompetition.skippedSameClub){
-        return `<div class="championship-page-empty">${recopaNationalEmptyMessage(recopaCompetition)}</div>`;
-      }
-      const game=recopaFixtureForDisplay();
-      if(!game){
-        return `<div class="championship-page-empty">${recopaNationalEmptyMessage(recopaCompetition)}</div>`;
-      }
-      const list=renderChampionshipPageFixtureCards([game],{completed:recopaCompetition.complete||hasPendingLiveKnockoutPostMatch()});
-      return list?wrapChampionshipPageTies(list):`<div class="championship-page-empty">${recopaNationalEmptyMessage(recopaCompetition)}</div>`;
-    }
-    if(pageCompetition==='CUP'){
-      const definition=cupPhaseDefinitions.find(item=>item.index===pageCupPhase);
-      const stage=cupCompetition.stages.find(item=>item.index===pageCupPhase);
-      if(!stage?.fixtures?.length){
-        return `<div class="championship-page-empty">Aguardando sorteio${definition?` da ${definition.name}`:' desta fase'}.</div>`;
-      }
-      let ties=[...new Set(stage.fixtures.map(game=>game.tieId))]
-        .map(tieId=>cupBracketTieFromStage(stage,tieId))
-        .filter(Boolean);
-      ties=sortChampionshipTiesUserFirst(ties);
-      const list=ties.map(renderChampionshipPageTie).join('')||'<div class="championship-page-empty">Sem confrontos nesta fase.</div>';
-      return wrapChampionshipPageTies(list);
-    }
-    const definition=serieDKnockoutPhaseDefs.find(item=>item.index===pageSerieDPhase)||serieDKnockoutPhaseDefs[0];
-    const meta=serieDKnockoutPhaseMeta(definition);
-    if(!meta.generated){
-      return `<div class="championship-page-empty">Aguardando sorteio da ${definition.name.toLowerCase()}.</div>`;
-    }
-    const fixtures=serieDStageFixturesMerged(definition.startRound);
-    let ties=[...new Set(fixtures.map(game=>game.tieId).filter(Boolean))]
-      .map(tieId=>serieDBracketTieFromStage(definition.startRound,tieId))
-      .filter(Boolean);
-    const hasPlayoff=definition.key==='semi'&&Boolean(nationalCompetitions.D.knockout?.stages?.playoff?.length);
-    if(hasPlayoff){
-      const {semi,playoff}=splitSerieDSemiPlayoffTies(ties);
-      const groups=[
-        renderChampionshipPageTieGroup('SEMIFINAL',semi,'Vencedores avançam à final · os 4 semifinalistas já estão garantidos na Série C na próxima temporada'),
-        renderChampionshipPageTieGroup('REPESCAGEM',playoff,'Vencedores conquistam o acesso à Série C'),
-      ].filter(Boolean).join('');
-      return groups
-        ?`<div class="championship-page-tie-groups">${groups}</div>`
-        :'<div class="championship-page-empty">Sem confrontos nesta fase.</div>';
-    }
-    ties=sortChampionshipTiesUserFirst(ties);
-    const list=ties.map(renderChampionshipPageTie).join('')||'<div class="championship-page-empty">Sem confrontos nesta fase.</div>';
-    return wrapChampionshipPageTies(list);
-  };
-  renderChampionshipPage=()=>{
-    const tableCard=$('.championship-page-table');
-    const sub=$('#championshipPageSub');
-    const title=$('#championshipPageTitle');
-    const titleTextEl=$('#championshipPageTitleText');
-    const trophyEl=$('#championshipPageTrophy');
-    const head=$('#championshipPageHead');
-    const body=$('#leagueTable');
-    const prevBtn=$('#championshipPagePrev');
-    const nextBtn=$('#championshipPageNext');
-    const menu=$('#championshipPagePickerMenu');
-    const serieDModeTabs=$('#championshipPageSerieDMode');
-    const stateTierPicker=$('#championshipPageStateTierPicker');
-    const stateTierMenu=$('#championshipPageStateTierMenu');
-    if(!body||!title)return;
-
-    const isStateHub=pageCompetition==='ESTADUAIS';
-    const isStateComp=isStateChampionshipPage(pageCompetition);
-    const stateParsed=isStateComp?parseStateCompetitionKey(pageCompetition):null;
-    const stateTiers=stateParsed?stateLeagueEngine.getTiersForUf(stateParsed.uf):[];
-    const showStateTierPicker=isStateComp&&stateTiers.length>1;
-    stateTierPicker?.classList.toggle('hidden',!showStateTierPicker);
-    if(stateTierMenu&&showStateTierPicker){
-      stateTierMenu.innerHTML=stateTiers.map(tier=>{
-        const id=stateCompetitionKey(stateParsed.uf,tier);
-        const active=id===pageCompetition;
-        const division=stateLeagueEngine.getDivisionForBrowse(id,userClub);
-        const teamCount=division?.teams?.length||0;
-        const lotteryTag=division?.lottery?' · Sorteio':'';
-        return `<button type="button" role="option" data-page-state-tier="${tier}" class="${active?'is-active':''}" aria-selected="${active?'true':'false'}">Divisão ${tier}${teamCount?` · ${teamCount} clubes`:''}${lotteryTag}</button>`;
-      }).join('');
-    }
-    if(!showStateTierPicker)setChampionshipPageStateTierPickerOpen(false);
-
-    if(serieDModeTabs){
-      const showSerieDModes=pageCompetition==='D'&&isSerieDKnockoutUiActive();
-      serieDModeTabs.classList.toggle('hidden',!showSerieDModes);
-      if(showSerieDModes){
-        $$('#championshipPageSerieDMode [data-page-serie-d-mode]').forEach(button=>{
-          const active=button.dataset.pageSerieDMode===pageSerieDMode;
-          button.classList.toggle('is-active',active);
-          button.setAttribute('aria-selected',active?'true':'false');
-        });
-      }
-    }
-
-    if(pageCompetition==='D'){
-      const lastGroup=Math.max(0,serieDGroups.length-1);
-      pageSerieDGroup=clamp(pageSerieDGroup,0,lastGroup);
-      if(pageSerieDMode==='knockout'){
-        if(!isSerieDKnockoutUiActive())pageSerieDMode='groups';
-        else{
-          const maxPhase=Math.max(1,serieDMaxGeneratedPhaseIndex());
-          pageSerieDPhase=clamp(pageSerieDPhase||1,1,maxPhase);
-        }
-      }
-    }else if(pageCompetition==='CUP'){
-      pageCupPhase=clamp(pageCupPhase||cupCompetition.currentPhase||1,1,cupPhaseDefinitions.length);
-    }
-
-    const knockout=championshipPageIsKnockoutView();
-    tableCard?.classList.toggle('is-knockout',knockout);
-
-    if(menu){
-      const pickerActive=championshipPickerActiveId(pageCompetition);
-      menu.innerHTML=getPageCompetitionOptions().map(option=>`<button type="button" role="option" data-page-competition="${option.id}" class="${option.id===pickerActive?'is-active':''}" aria-selected="${option.id===pickerActive?'true':'false'}"><span class="championship-page-picker-trophy-slot" data-trophy-key="${option.trophyKey||'nacional'}" aria-hidden="true"></span><span>${option.label}</span></button>`).join('');
-    }
-
-    let subText='COMPETIÇÃO NACIONAL';
-    let titleText=`BRASILEIRÃO SÉRIE ${pageCompetition}`;
-    let canPrev=false,canNext=false;
-    let stateInLeaguePhase=false;
-
-    if(isStateHub){
-      subText='CAMPEONATOS ESTADUAIS';
-      titleText='ESCOLHA O ESTADO';
-    }else if(pageCompetition==='RECOPA'){
-      const status=recopaCompetition.complete?'ENCERRADA':recopaCompetition.ready?'EM DISPUTA':'AGUARDANDO';
-      subText=`RECOPA NACIONAL · ${status}`;
-      titleText='FINAL';
-      canPrev=false;
-      canNext=false;
-    }else if(pageCompetition==='CUP'){
-      const definition=cupPhaseDefinitions.find(item=>item.index===pageCupPhase);
-      const stage=cupCompetition.stages.find(item=>item.index===pageCupPhase);
-      const status=stage?.completed?'FASE CONCLUÍDA':stage?'EM DISPUTA':'AGUARDANDO SORTEIO';
-      subText=`COPA DO BRASIL · ${status}`;
-      titleText=definition?.name||`Fase ${pageCupPhase}`;
-      canPrev=pageCupPhase>1;
-      canNext=pageCupPhase<cupPhaseDefinitions.length;
-    }else if(isStateComp){
-      const division=stateLeagueEngine.getDivisionForBrowse(pageCompetition,userClub);
-      const roundLimit=stateLeagueEngine.getRoundLimit(pageCompetition);
-      pageStateRound=clamp(pageStateRound||stateLeagueEngine.getCurrentRound(pageCompetition,userClub),1,roundLimit);
-      const leagueRounds=division?.leagueRoundCount??division?.groupRoundCount??0;
-      const paulista=isPaulistaFormat(division);
-      stateInLeaguePhase=pageStateRound<=leagueRounds;
-      const stateName=stateParsed?ufLabel(stateParsed.uf):'Estadual';
-      if(stateInLeaguePhase){
-        if(paulista){
-          subText=division?.complete?'ESTADUAL · ENCERRADO':'ESTADUAL · FASE DE GRUPOS';
-          titleText=`${stateName} · GRUPO ${String.fromCharCode(65+(pageStateGroup||0))}`;
-          canPrev=(pageStateGroup||0)>0;
-          canNext=(pageStateGroup||0)<1||roundLimit>leagueRounds;
-        }else{
-          subText=division?.complete?'ESTADUAL · ENCERRADO':'ESTADUAL · PONTOS CORRIDOS';
-          titleText=`${stateName} · CLASSIFICAÇÃO`;
-          canPrev=false;
-          canNext=roundLimit>leagueRounds;
-        }
-      }else{
-        subText=division?.complete?'ESTADUAL · ENCERRADO':'ESTADUAL · MATA-MATA';
-        titleText=stateLeagueEngine.getKnockoutPhaseTitle(pageCompetition,pageStateRound)||'FINAL';
-        canPrev=pageStateRound>1;
-        canNext=pageStateRound<roundLimit;
-      }
-    }else if(pageCompetition==='CMU'){
-      const groups=WORLD_CUP_GROUP_LETTERS;
-      pageWorldCupGroup=clamp(pageWorldCupGroup||0,0,groups.length-1);
-      const activeGroup=groups[pageWorldCupGroup];
-      const inKnockout=(pageWorldCupRound||1)>=4||worldCupCompetition?.phase==='knockout';
-      if(inKnockout){
-        const phaseLabel=KNOCKOUT_SCHEDULE.find(item=>item.round===(pageWorldCupRound||4))?.phase||'MATA-MATA';
-        subText=worldCupCompetition?.complete?'COPA DO MUNDO · ENCERRADA':'COPA DO MUNDO · MATA-MATA';
-        titleText=phaseLabel;
-        canPrev=(pageWorldCupRound||4)>4;
-        canNext=(pageWorldCupRound||4)<9;
-      }else{
-        subText=worldCupCompetition?.complete?'COPA DO MUNDO · ENCERRADA':'COPA DO MUNDO · FASE DE GRUPOS';
-        titleText=`GRUPO ${activeGroup}`;
-        canPrev=pageWorldCupGroup>0;
-        canNext=pageWorldCupGroup<groups.length-1;
-      }
-    }else if(pageCompetition==='D'&&pageSerieDMode==='knockout'){
-      const definition=serieDKnockoutPhaseDefs.find(item=>item.index===pageSerieDPhase)||serieDKnockoutPhaseDefs[0];
-      const meta=serieDKnockoutPhaseMeta(definition);
-      const nextDef=serieDKnockoutPhaseDefs.find(item=>item.index===pageSerieDPhase+1);
-      subText=`SÉRIE D · MATA-MATA · ${meta.status}`;
-      titleText=definition.key==='semi'&&nationalCompetitions.D.knockout?.stages?.playoff?.length
-        ?'SEMIFINAL E REPESCAGEM'
-        :definition.name;
-      canPrev=true;
-      canNext=Boolean(nextDef&&serieDKnockoutPhaseMeta(nextDef).generated);
-    }else if(pageCompetition==='D'){
-      const lastGroup=Math.max(0,serieDGroups.length-1);
-      subText='PRIMEIRA FASE · GRUPOS';
-      titleText=`BRASILEIRÃO SÉRIE D · GRUPO A${pageSerieDGroup+1}`;
-      canPrev=pageSerieDGroup>0;
-      canNext=pageSerieDGroup<lastGroup||isSerieDKnockoutUiActive();
-    }else{
-      const competition=nationalCompetitions[pageCompetition];
-      const clubsCount=pageCompetition==='C'
-        ?serieCClubsForSeason(careerSeason)
-        :(competition?.teams?.length||competition?.clubs||20);
-      subText='COMPETIÇÃO NACIONAL';
-      titleText=`BRASILEIRÃO SÉRIE ${pageCompetition}`;
-      if(competition?.format)subText=`${clubsCount} CLUBES · PONTOS CORRIDOS`;
-    }
-
-    if(sub)sub.textContent=subText;
-    if(titleTextEl)titleTextEl.textContent=titleText;
-    else if(title)title.textContent=titleText;
-    if(trophyEl){
-      void ensureCompetitionTrophy(pageCompetition,trophyEl);
-      void preloadCompetitionTrophy(resolveChampionshipTrophyKey(pageCompetition));
-    }
-    if(prevBtn)prevBtn.disabled=!canPrev;
-    if(nextBtn)nextBtn.disabled=!canNext;
-    const lastGamesBtn=$('#championshipPageLastGamesBtn');
-    if(lastGamesBtn)lastGamesBtn.classList.toggle('hidden',pageCompetition==='CUP'||pageCompetition==='RECOPA'||pageCompetition==='CMU'||isStateHub);
-
-    if(isStateHub){
-      tableCard?.classList.remove('is-knockout');
-      if(head)head.innerHTML='';
-      body.innerHTML=renderEstaduaisHub({stateLeagueEngine,userClub,stateFlagMarkup});
-    }else if(knockout){
-      if(head)head.innerHTML='';
-      body.innerHTML=renderChampionshipPageKnockoutBody();
-    }else if(isStateComp&&stateInLeaguePhase){
-      tableCard?.classList.remove('is-knockout');
-      const division=stateLeagueEngine.getDivisionForBrowse(pageCompetition,userClub);
-      const leagueRounds=division?.leagueRoundCount??division?.groupRoundCount??0;
-      const paulista=isPaulistaFormat(division);
-      const groupIndex=paulista?Math.max(0,Math.min(1,pageStateGroup||0)):0;
-      if(head)head.innerHTML='<span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
-      const rows=stateGroupRowsForDisplay(pageCompetition,groupIndex);
-      const rowsHtml=rows.map((row,index)=>{
-        const pos=index+1;
-        const advance=index<4?'promotion':'';
-        return `<div class="league-row ${advance} ${row.club===userClub?'highlight':''}" data-club="${row.club}" role="button" tabindex="0"><span>${pos}</span><span class="club-link">${row.club}</span><span>${row.played}</span><span>${row.wins}</span><span>${row.draws}</span><span>${row.losses}</span><span>${row.goalDiff>=0?'+':''}${row.goalDiff}</span><span>${row.points}</span></div>`;
-      }).join('')||'<div class="championship-page-empty">Sem classificação disponível.</div>';
-      const zoneLegend=paulista
-        ?'<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>4 primeiros · Quartas de final</span></div>'
-        :'<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>4 primeiros · Semifinal</span></div>';
-      let gamesHtml='';
-      if(!pageStateFixturesOpen){
-        gamesHtml=renderChampionshipPageFixturesOpenBtn();
-      }else{
-        const roundLimit=stateLeagueEngine.getRoundLimit(pageCompetition);
-        const toolbar=renderChampionshipPageFixturesToolbar({roundLimit,round:pageStateRound});
-        const games=stateLeagueEngine.getRoundGamesForBrowse(pageCompetition,pageStateRound,{simulateMatch:simulateRoundMatch});
-        const completed=stateLeagueRoundCompleted(pageCompetition,pageStateRound,games);
-        gamesHtml=renderChampionshipPageRoundFixtures(games,{completed,toolbarHtml:toolbar});
-      }
-      body.innerHTML=`<div class="championship-page-league-body"><div class="championship-page-standings-block">${rowsHtml}${zoneLegend}</div>${gamesHtml}</div>`;
-    }else if(isStateComp){
-      tableCard?.classList.add('is-knockout');
-      const games=stateLeagueEngine.getRoundGamesForBrowse(pageCompetition,pageStateRound,{simulateMatch:simulateRoundMatch});
-      const saved=(stateLeagueEngine.history[parseStateCompetitionKey(pageCompetition)?.uf||'']||[]).find(item=>item.round===pageStateRound);
-      const completed=Boolean(saved?.games?.length)||games.every(game=>game.completed);
-      const roundLimit=stateLeagueEngine.getRoundLimit(pageCompetition);
-      const phaseLabel=stateLeagueEngine.getRoundPhaseLabel(pageCompetition,pageStateRound);
-      let gamesHtml='';
-      if(!pageStateFixturesOpen){
-        gamesHtml=`${renderChampionshipPageRoundFixtures(games,{completed,roundLabel:phaseLabel})}${renderChampionshipPageFixturesOpenBtn()}`;
-      }else{
-        const toolbar=renderChampionshipPageFixturesToolbar({roundLimit,round:pageStateRound});
-        gamesHtml=renderChampionshipPageRoundFixtures(games,{completed,toolbarHtml:toolbar});
-      }
-      if(head)head.innerHTML='';
-      body.innerHTML=gamesHtml;
-    }else if(pageCompetition==='CMU'){
-      tableCard?.classList.remove('is-knockout');
-      const inKnockout=(pageWorldCupRound||1)>=4||worldCupCompetition?.phase==='knockout';
-      if(inKnockout){
-        const round=pageWorldCupRound||4;
-        const games=getWorldCupAllFixtures(worldCupCompetition).filter(game=>Number(game.round)===round);
-        const phaseLabel=KNOCKOUT_SCHEDULE.find(item=>item.round===round)?.phase||`Rodada ${round}`;
-        const completed=games.length>0&&games.every(game=>game.completed||game.homeGoals!=null);
-        if(head)head.innerHTML='';
-        body.innerHTML=renderChampionshipPageRoundFixtures(games,{completed,roundLabel:phaseLabel});
-      }else{
-        const activeGroup=WORLD_CUP_GROUP_LETTERS[pageWorldCupGroup]||'A';
-        const rows=worldCupCompetition?computeGroupStandings(activeGroup,worldCupCompetition.groupFixtures,gameRandom):[];
-        if(head)head.innerHTML='<span>#</span><span>SELEÇÃO</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
-        const rowsHtml=rows.map((row,index)=>{
-          const pos=index+1;
-          const advance=index<2?'promotion':'';
-          return `<div class="league-row ${advance} ${row.name===userNationalTeamName?'highlight':''}" data-national-team="${row.code||''}" role="button" tabindex="0"><span>${pos}</span><span class="club-link">${row.name}</span><span>${row.played||0}</span><span>${row.wins||0}</span><span>${row.draws||0}</span><span>${row.losses||0}</span><span>${row.gd>=0?'+':''}${row.gd||0}</span><span>${row.points||0}</span></div>`;
-        }).join('')||'<div class="championship-page-empty">Sem classificação disponível.</div>';
-        const zoneLegend='<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>2 primeiros · Avançam no grupo</span></div>';
-        body.innerHTML=rowsHtml+zoneLegend;
-      }
-    }else{
-      if(head)head.innerHTML='<span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
-      const rows=['A','B','C'].includes(pageCompetition)
-        ?standingsRowsForDisplay(pageCompetition)
-        :pageCompetition==='D'
-          ?seriesDGroupRowsForDisplay(pageSerieDGroup)
-          :[...(nationalCompetitions[pageCompetition]?.standings||[])].sort((a,b)=>b.points-a.points||b.wins-a.wins||b.goalDiff-a.goalDiff);
-      const rowsHtml=rows.map((row,index)=>{
-        const pos=index+1;
-        const zone=pageCompetition==='D'
-          ?(index<4?'promotion':'')
-          :leagueClassificationZone(pageCompetition,index,rows.length);
-        return `<div class="league-row ${zone} ${row.club===userClub?'highlight':''}" data-club="${row.club}" role="button" tabindex="0"><span>${pos}</span><span class="club-link">${row.club}</span><span>${row.played}</span><span>${row.wins}</span><span>${row.draws}</span><span>${row.losses}</span><span>${row.goalDiff>=0?'+':''}${row.goalDiff}</span><span>${row.points}</span></div>`;
-      }).join('')||'<div class="championship-page-empty">Sem classificação disponível.</div>';
-      const zoneLegend=pageCompetition==='A'
-        ?'<div class="championship-page-zone-legend"><span><i class="relegation" aria-hidden="true"></i>Z4 · Rebaixamento</span></div>'
-        :pageCompetition==='B'
-          ?'<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>G4 · Acesso</span><span><i class="relegation" aria-hidden="true"></i>Z4 · Rebaixamento</span></div>'
-          :pageCompetition==='C'
-            ?`<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>G4 · Acesso</span><span><i class="relegation" aria-hidden="true"></i>Z${serieCRelegationZone} · Rebaixamento</span></div>`
-            :pageCompetition==='D'
-              ?`<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>4 primeiros · Avançam do grupo</span>${isSerieDKnockoutUiActive()&&pageSerieDGroup===Math.max(0,serieDGroups.length-1)?'<span>› Mata-mata disponível</span>':''}</div>`
-              :'';
-      body.innerHTML=rowsHtml+zoneLegend;
-    }
-    setChampionshipPagePickerOpen(false);
-    setChampionshipPageStateTierPickerOpen(false);
-  };
-  const selectChampionshipPageCompetition=competitionId=>{
-    const valid=getPageCompetitionOptions().some(option=>option.id===competitionId)||isStateChampionshipPage(competitionId);
-    if(!valid)return;
-    pageCompetition=competitionId;
-    if(competitionId==='CMU'){
-      const letter=findUserWorldCupGroup(worldCupCompetition,userNationalTeamName);
-      pageWorldCupGroup=Math.max(0,WORLD_CUP_GROUP_LETTERS.indexOf(letter||'A'));
-      const userFixtures=worldCupCompetition?getWorldCupAllFixtures(worldCupCompetition).filter(game=>game.home===userNationalTeamName||game.away===userNationalTeamName):[];
-      const pending=userFixtures.find(game=>!game.completed&&game.homeGoals==null);
-      pageWorldCupRound=pending?.round||userFixtures.filter(game=>game.completed||game.homeGoals!=null).at(-1)?.round||1;
-    }
-    if(isStateChampionshipPage(competitionId)){
-      pageStateRound=stateLeagueEngine.getCurrentRound(competitionId,userClub);
-      pageStateGroup=0;
-      pageStateFixturesMode='round';
-      pageStateFixturesOpen=false;
-    }
-    if(competitionId==='ESTADUAIS'){
-      pageStateGroup=0;
-    }
-    if(competitionId==='CUP')pageCupPhase=clamp(cupCompetition.currentPhase||1,1,cupPhaseDefinitions.length);
-    if(competitionId==='D'){
-      if(isSerieDKnockoutUiActive()&&currentRound>SERIE_D_GROUP_ROUNDS){
-        pageSerieDMode='knockout';
-        pageSerieDPhase=serieDPhaseIndexForRound(currentRound);
-      }else{
-        pageSerieDMode='groups';
-        pageSerieDGroup=Math.max(0,userSerieDGroupIndex);
-      }
-    }
-    setChampionshipPagePickerOpen(false);
-    setChampionshipPageStateTierPickerOpen(false);
-    renderChampionshipPage();
-  };
-  const getChampionshipPageState=()=>({
-    pageCompetition,
-    pageCupPhase,
-    pageStateRound,
-    pageStateGroup,
-    pageSerieDMode,
-    pageSerieDPhase,
-    pageSerieDGroup,
-    pageWorldCupGroup,
-    pageWorldCupRound,
-  });
-  const patchChampionshipPageState=patch=>{
-    if(patch.pageCupPhase!==undefined)pageCupPhase=patch.pageCupPhase;
-    if(patch.pageStateRound!==undefined)pageStateRound=patch.pageStateRound;
-    if(patch.pageStateGroup!==undefined)pageStateGroup=patch.pageStateGroup;
-    if(patch.pageSerieDMode!==undefined)pageSerieDMode=patch.pageSerieDMode;
-    if(patch.pageSerieDPhase!==undefined)pageSerieDPhase=patch.pageSerieDPhase;
-    if(patch.pageSerieDGroup!==undefined)pageSerieDGroup=patch.pageSerieDGroup;
-    if(patch.pageWorldCupGroup!==undefined)pageWorldCupGroup=patch.pageWorldCupGroup;
-    if(patch.pageWorldCupRound!==undefined)pageWorldCupRound=patch.pageWorldCupRound;
-  };
-  ({focusChampionshipPageForUserGame,focusChampionshipPageForNextUserGame}=createChampionshipPageFocus({
-    getUserDivision:()=>userDivision,
+  championshipPage=createChampionshipPageFeature({
+    $,$$,onClick,clamp,router,
     getUserClub:()=>userClub,
-    getClubs:()=>clubs,
-    clamp,
-    cupPhaseDefinitions,
+    getUserDivision:()=>userDivision,
+    getUserNationalTeamName:()=>userNationalTeamName,
+    getUserSerieDGroupIndex:()=>userSerieDGroupIndex,
+    getCurrentRound:()=>currentRound,
+    getCareerSeason:()=>careerSeason,
+    getWorldCupCompetition:()=>worldCupCompetition,
+    getNationalCompetitions:()=>nationalCompetitions,
+    getCupCompetition:()=>cupCompetition,
+    getRecopaCompetition:()=>recopaCompetition,
+    getCupPhaseDefinitions:()=>cupPhaseDefinitions,
+    getSerieDKnockoutPhaseDefs:()=>serieDKnockoutPhaseDefs,
+    getSerieDGroups:()=>serieDGroups,
+    getCupSerieAEntrants:()=>cupSerieAEntrants,
     stateLeagueEngine,
-    isStateLeagueGame,
-    isStateChampionshipPage,
+    stateFlagMarkup,
+    cupClubLabel,
+    knockoutShootoutLabel,
+    recopaNationalEmptyMessage,
+    serieCClubsForSeason,
+    leagueClassificationZone,
+    serieCRelegationZone,
+    standingsRowsForDisplay,
+    seriesDGroupRows,
+    stateGroupRows,
+    applyTablePreviewToRows,
+    pendingRoundPreviewGames,
+    getMatchFinished:()=>matchFinished,
+    getRoundCommitted:()=>roundCommitted,
+    getLiveMatchGame:()=>liveMatchGame,
+    simulateRoundMatch,
+    gameRandom,
+    overlayPendingLiveKnockoutGames,
+    cupTieGames,
+    cupTieAggregate,
+    cupGameForDisplay,
+    hasPendingLiveKnockoutPostMatch,
+    fixtureDetails,
+    markCupPhaseSelection,
+    markSerieDPhaseSelection,
+    serieDKnockoutPhaseMeta,
+    serieDStageFixturesMerged,
+    setBracketRoundView:index=>{championshipRoundView=index;},
+    getBracketRoundView:()=>championshipRoundView,
+    isSerieDKnockoutUiActive,
+    isWorldCupDashboardActive:isWorldCupDashboard,
+    getNextPendingUserEntry:()=>nextPendingUserEntry,
     isKnockoutShootoutCompetition,
+    isStateLeagueGame,
     isUserFixture,
     getRealClub,
-    stateCompetitionKey,
-    getPageState:getChampionshipPageState,
-    patchPageState:patchChampionshipPageState,
-    selectChampionshipPageCompetition,
+    getClubs:()=>clubs,
+    getSavedNewGame:()=>savedNewGame,
+  });
+  ({
     renderChampionshipPage,
-    getCurrentRound:()=>currentRound,
-  }));
-  openChampionshipStandings=()=>{
-    router.openView('table');
-    focusChampionshipPageForUserGame(liveMatchGame);
-  };
-  // Mini-tabela do Dashboard: vai para a seção Campeonatos (não abre o modal).
-  onClick('#openChampionship',()=>router.openView('table'));
-  router.onView('table',()=>{
-    if(isWorldCupDashboard()&&worldCupCompetition){
-      selectChampionshipPageCompetition('CMU');
-      return;
-    }
-    focusChampionshipPageForNextUserGame(nextPendingUserEntry);
-  });
-  const stepChampionshipPageNav=step=>{
-    if(isStateChampionshipPage(pageCompetition)){
-      const division=stateLeagueEngine.getDivisionForBrowse(pageCompetition,userClub);
-      const leagueRounds=division?.leagueRoundCount??division?.groupRoundCount??0;
-      const limit=stateLeagueEngine.getRoundLimit(pageCompetition);
-      const inLeaguePhase=(pageStateRound||1)<=leagueRounds;
-      if(inLeaguePhase){
-        if(isPaulistaFormat(division)){
-          if(step>0){
-            if(pageStateGroup<1)pageStateGroup+=1;
-            else if(limit>leagueRounds)pageStateRound=leagueRounds+1;
-          }else if(step<0&&pageStateGroup>0){
-            pageStateGroup-=1;
-          }
-        }else if(step>0&&limit>leagueRounds){
-          pageStateRound=leagueRounds+1;
-        }else if(step<0){
-          pageStateRound=clamp((pageStateRound||1)-1,1,leagueRounds);
-        }
-        renderChampionshipPage();
-        return;
-      }
-      if(step<0&&pageStateRound<=leagueRounds+1){
-        if(isPaulistaFormat(division)){
-          pageStateRound=leagueRounds;
-          pageStateGroup=1;
-        }else{
-          pageStateRound=leagueRounds;
-        }
-        renderChampionshipPage();
-        return;
-      }
-      pageStateRound=clamp((pageStateRound||1)+step,1,limit);
-    }else if(pageCompetition==='CMU'){
-      const inKnockout=(pageWorldCupRound||1)>=4||worldCupCompetition?.phase==='knockout';
-      if(inKnockout){
-        pageWorldCupRound=clamp((pageWorldCupRound||4)+step,4,9);
-      }else if(step>0){
-        pageWorldCupGroup=Math.min(WORLD_CUP_GROUP_LETTERS.length-1,(pageWorldCupGroup||0)+1);
-      }else{
-        pageWorldCupGroup=Math.max(0,(pageWorldCupGroup||0)-1);
-      }
-    }else if(pageCompetition==='CUP'){
-      pageCupPhase=clamp(pageCupPhase+step,1,cupPhaseDefinitions.length);
-    }else if(pageCompetition==='D'){
-      const lastGroup=Math.max(0,serieDGroups.length-1);
-      if(pageSerieDMode==='knockout'){
-        if(step<0){
-          if(pageSerieDPhase>1)pageSerieDPhase-=1;
-          else{
-            pageSerieDMode='groups';
-            pageSerieDGroup=lastGroup;
-          }
-        }else{
-          const nextDef=serieDKnockoutPhaseDefs.find(item=>item.index===pageSerieDPhase+1);
-          if(nextDef&&serieDKnockoutPhaseMeta(nextDef).generated)pageSerieDPhase+=1;
-        }
-      }else if(step>0){
-        if(pageSerieDGroup<lastGroup)pageSerieDGroup+=1;
-        else if(isSerieDKnockoutUiActive()){
-          pageSerieDMode='knockout';
-          pageSerieDPhase=1;
-        }
-      }else{
-        pageSerieDGroup=Math.max(0,pageSerieDGroup-1);
-      }
-    }else return;
-    renderChampionshipPage();
-  };
-  onClick('#championshipPagePickerBtn',event=>{
-    event.stopPropagation();
-    setChampionshipPagePickerOpen(!pagePickerOpen);
-  });
-  onClick('#championshipPageStateTierBtn',event=>{
-    event.stopPropagation();
-    setChampionshipPageStateTierPickerOpen(!pageStateTierPickerOpen);
-  });
-  onClick('#championshipPageStateTierMenu',event=>{
-    const option=event.target.closest('[data-page-state-tier]');
-    if(!option||!isStateChampionshipPage(pageCompetition))return;
-    const parsed=parseStateCompetitionKey(pageCompetition);
-    if(!parsed)return;
-    const tier=Number(option.dataset.pageStateTier)||1;
-    selectChampionshipPageCompetition(stateCompetitionKey(parsed.uf,tier));
-  });
-  onClick('#championshipPagePickerMenu',event=>{
-    const option=event.target.closest('[data-page-competition]');
-    if(!option)return;
-    selectChampionshipPageCompetition(option.dataset.pageCompetition);
-  });
-  onClick('#championshipPageSerieDMode',event=>{
-    const button=event.target.closest('[data-page-serie-d-mode]');
-    if(!button||pageCompetition!=='D'||!isSerieDKnockoutUiActive())return;
-    const mode=button.dataset.pageSerieDMode==='groups'?'groups':'knockout';
-    if(mode===pageSerieDMode)return;
-    pageSerieDMode=mode;
-    if(mode==='knockout')pageSerieDPhase=serieDPhaseIndexForRound(currentRound);
-    else pageSerieDGroup=Math.max(0,userSerieDGroupIndex);
-    renderChampionshipPage();
-  });
-  onClick('#leagueTable',event=>{
-    const btn=event.target.closest('[data-estadual-uf]');
-    if(btn&&pageCompetition==='ESTADUAIS'&&!btn.disabled){
-      selectChampionshipPageCompetition(stateCompetitionKey(btn.dataset.estadualUf,1));
-      return;
-    }
-    if(!isStateChampionshipPage(pageCompetition))return;
-    const division=stateLeagueEngine.getDivisionForBrowse(pageCompetition,userClub);
-    const roundLimit=stateLeagueEngine.getRoundLimit(pageCompetition);
-    if(event.target.closest('[data-state-fixtures-open]')){
-      pageStateFixturesOpen=true;
-      pageStateFixturesMode='round';
-      pageStateRound=clamp(pageStateRound||stateLeagueEngine.getCurrentRound(pageCompetition,userClub),1,roundLimit);
-      renderChampionshipPage();
-      return;
-    }
-    if(!pageStateFixturesOpen)return;
-    if(event.target.closest('[data-state-fixtures-round-prev]')){
-      pageStateFixturesMode='round';
-      pageStateRound=clamp((pageStateRound||1)-1,1,roundLimit);
-      renderChampionshipPage();
-      return;
-    }
-    if(event.target.closest('[data-state-fixtures-round-next]')){
-      pageStateFixturesMode='round';
-      pageStateRound=clamp((pageStateRound||1)+1,1,roundLimit);
-      renderChampionshipPage();
-    }
-  });
-  onClick('#championshipPagePrev',()=>stepChampionshipPageNav(-1));
-  onClick('#championshipPageNext',()=>stepChampionshipPageNav(1));
-  competitionRulesModal=createCompetitionRulesModalFeature({$,onClick});
-  competitionRulesModal.bindHandlers({
-    getPageCompetition:()=>pageCompetition,
-    getCareerSeason:()=>careerSeason,
-  });
-  onClick('#championshipPageLastGamesBtn',()=>openChampionshipLastGames());
-  document.addEventListener('click',event=>{
-    if(pagePickerOpen){
-      if(event.target.closest?.('#championshipPagePickerBtn')||event.target.closest?.('#championshipPagePickerMenu')||event.target.closest?.('.championship-page-picker:not(.championship-page-state-tier-picker)'))return;
-      setChampionshipPagePickerOpen(false);
-    }
-    if(pageStateTierPickerOpen){
-      if(event.target.closest?.('#championshipPageStateTierBtn')||event.target.closest?.('#championshipPageStateTierMenu')||event.target.closest?.('#championshipPageStateTierPicker'))return;
-      setChampionshipPageStateTierPickerOpen(false);
-    }
-  });
-  window.addEventListener('resize',()=>{
-    if(pagePickerOpen)placeChampionshipPagePickerMenu();
-    if(pageStateTierPickerOpen)placeChampionshipPageStateTierPickerMenu();
-  });
-  document.querySelector('main > .view')?.addEventListener('scroll',()=>{
-    if(pagePickerOpen)placeChampionshipPagePickerMenu();
-    if(pageStateTierPickerOpen)placeChampionshipPageStateTierPickerMenu();
-  },{passive:true});
-  renderChampionshipPage();
+    selectChampionshipPageCompetition,
+    getChampionshipPageState,
+    patchChampionshipPageState,
+    openChampionshipStandings,
+    focusChampionshipPageForUserGame,
+    focusChampionshipPageForNextUserGame,
+    championshipPageIsKnockoutView,
+    setChampionshipPagePickerOpen,
+    openCupBracket,
+    openSerieDBracket,
+    closeCupBracket,
+    goCupBracketPrevPhase,
+    goCupBracketNextPhase,
+  }=championshipPage);
+  championshipPage.init();
 
   const {
     resolveCupTie,
@@ -7233,8 +5931,8 @@ const rosterChangeAlertHolder = { fn: null };
     setRoundBrowserWorldCupGroup,
     bindCloseHandler,
   }=roundResultsBrowser;
-  openChampionshipLastGames=createChampionshipLastGamesOpener({
-    getPageCompetition:()=>pageCompetition,
+  championshipPage.setOpenChampionshipLastGames(createChampionshipLastGamesOpener({
+    getPageCompetition:()=>getChampionshipPageState().pageCompetition,
     getUserClub:()=>userClub,
     getCurrentRound:()=>currentRound,
     stateLeagueEngine,
@@ -7248,7 +5946,7 @@ const rosterChangeAlertHolder = { fn: null };
     setRoundBrowserWorldCupGroup,
     renderRoundResultsBrowser,
     openRoundResultsModal:()=>$('#roundResultsModal').classList.remove('hidden'),
-  });
+  }));
   bindCloseHandler(()=>{
     // Pós-jogo pendente: volta ao resumo; senão só atualiza o CTA do dashboard.
     if(matchStarted&&matchFinished&&!roundCommitted&&liveMatchGame)reopenMatchWindow();
@@ -8126,6 +6824,7 @@ const rosterChangeAlertHolder = { fn: null };
     updateSeriesDKnockout,
     finishRemainingNationalRounds:(...args)=>finishRemainingNationalRounds(...args),
     reconcileCurrentRound,
+    syncCareerCalendarAfterRoundAdvance,
     processAiMarketAfterRound,
     fixtureDate,
     maybeSendNationalTeamOffers,
@@ -8232,6 +6931,7 @@ const rosterChangeAlertHolder = { fn: null };
     displayedClubPosition,
     resolveSerieDPrizePhase,
     resolveCupPrizePhase,
+    resolveStateLeaguePrizePhase,
     computeSeasonPrize,
     ensureBudget,
     getBalance,
@@ -8253,6 +6953,36 @@ const rosterChangeAlertHolder = { fn: null };
     pushSeasonEndBrief,
     leadersFor,
     championshipLeadersFor,
+    stateLeagueLeadersFor:(uf,tier=1,mode)=>{
+      if(!FEATURES.stateLeague)return [];
+      const metric=mode==='scorers'?'goals':'assists';
+      const source=mode==='scorers'?allScorers:allAssistants;
+      const divisions=stateLeagueEngine.competitions?.[uf];
+      const division=Array.isArray(divisions)
+        ?divisions.find(item=>(item.tier||1)===tier)||divisions[0]
+        :null;
+      if(!division?.teams?.length)return [];
+      const teamSet=new Set(division.teams.map(name=>normClubName(name)));
+      return source
+        .filter(player=>teamSet.has(normClubName(player.club))&&Number(player[metric])>0)
+        .sort((a,b)=>b[metric]-a[metric]||b.tieValue-a.tieValue||a.games-b.games);
+    },
+    worldCupLeadersFor:mode=>{
+      if(!worldCupCompetition?.champion)return [];
+      const metric=mode==='scorers'?'goals':'assists';
+      const source=mode==='scorers'?allScorers:allAssistants;
+      const teamNames=new Set(
+        getWorldCupAllFixtures(worldCupCompetition).flatMap(game=>[game.home,game.away]).filter(Boolean),
+      );
+      return source
+        .filter(player=>teamNames.has(player.club)&&Number(player[metric])>0)
+        .sort((a,b)=>b[metric]-a[metric]||b.tieValue-a.tieValue||a.games-b.games);
+    },
+    getWorldCupChampion:()=>{
+      if(!worldCupCompetition?.champion)return null;
+      const meta=nationalTeamByCode(worldCupCompetition.champion);
+      return meta?.name||worldCupCompetition.champion;
+    },
     archiveSeasonBalance:payload=>playerHistory.archiveSeasonBalance(payload),
     persistSeason,
     renderClubBudget,
@@ -8299,6 +7029,7 @@ const rosterChangeAlertHolder = { fn: null };
             out.push({
               key:`EST:${uf}:${division.tier||1}`,
               uf,
+              tier:division.tier||1,
               label:division.label||uf,
               clubName:division.champion,
             });
@@ -8306,6 +7037,13 @@ const rosterChangeAlertHolder = { fn: null };
         });
       });
       return out.sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
+    },
+    getUserStateLeagueDivision:()=>{
+      if(!FEATURES.stateLeague)return null;
+      const uf=String(savedNewGame?.userUf||getRealClub(userClub)?.uf||'SP').toUpperCase();
+      const divisions=stateLeagueEngine.competitions?.[uf];
+      if(!Array.isArray(divisions))return null;
+      return divisions.find(item=>(item.teams||[]).some(name=>normClubName(name)===normClubName(userClub)))||null;
     },
     getContinentalChampions:()=>({}),
     pruneClubMemory,
@@ -8636,444 +7374,84 @@ const rosterChangeAlertHolder = { fn: null };
     liveMatchPersist.clear();
     latestLiveMatchSnapshot=null;
   };
-  const applyNamedLineupOrder=(roster,names)=>{
-    if(!roster||!Array.isArray(names)||!names.length)return;
-    const byName=new Map(roster.map(player=>[player.name,player]));
-    const next=[];
-    names.forEach(name=>{
-      const player=byName.get(name);
-      if(player){next.push(player);byName.delete(name);}
-    });
-    byName.forEach(player=>next.push(player));
-    roster.splice(0,roster.length,...next);
-  };
-  const findFixtureForLiveSnapshot=ref=>{
-    if(!ref)return null;
-    const wanted=fixtureIdFromGame(ref);
-    const fromSchedule=userSchedule().find(entry=>fixtureIdFromGame(entry.game)===wanted)?.game;
-    if(fromSchedule)return fromSchedule;
-    for(const stage of cupCompetition.stages||[]){
-      const hit=(stage.fixtures||[]).find(game=>fixtureIdFromGame(game)===wanted);
-      if(hit)return hit;
-    }
-    for(const roundGames of championshipFixtures||[]){
-      const hit=(roundGames||[]).find(game=>fixtureIdFromGame(game)===wanted);
-      if(hit)return hit;
-    }
-    return null;
-  };
-  const resolvePersistedLiveSnapshot=()=>{
-    if(!savedNewGame?.seed)return null;
-    const discardWorldCupSnap=snap=>{
-      if(!snap?.fixture)return snap;
-      if(snap.fixture.competition===WORLD_CUP_COMPETITION&&!isWorldCupSeasonActive(careerSeason)){
-        clearLiveMatchSave();
-        return null;
-      }
-      return snap;
-    };
-    const fromKey=loadLiveMatchSave();
-    if(isValidLiveMatchSnapshot(fromKey,savedNewGame.seed)){
-      const hydrated=hydrateLiveMatchSnapshot(fromKey);
-      const kept=discardWorldCupSnap(hydrated);
-      if(kept)return kept;
-    }
-    const fromSeason=validSavedSeason?savedSeason.liveMatchSnapshot:null;
-    if(isValidLiveMatchSnapshot(fromSeason,savedNewGame.seed)){
-      const hydrated=hydrateLiveMatchSnapshot(fromSeason);
-      const kept=discardWorldCupSnap(hydrated);
-      if(kept)return kept;
-    }
-    return null;
-  };
-  const forceCompleteLockedLiveMatch=lock=>{
-    if(!lock?.home||!lock?.away)return false;
-    const ref={home:lock.home,away:lock.away,competition:lock.competition,round:lock.round,tieId:lock.tieId,leg:lock.leg,date:lock.date,gameNumber:lock.gameNumber};
-    const game=findFixtureForLiveSnapshot(ref)||ref;
-    if(isFixtureCompleted(game)){
-      clearLiveMatchPersist();
-      persistSeason(true);
-      return false;
-    }
-    const result=simulateRoundMatch(game.home,game.away,game);
-    liveMatchGame=game;
-    const userAtHome=game.home===userClub;
-    home=userAtHome?result.homeGoals:result.awayGoals;
-    away=userAtHome?result.awayGoals:result.homeGoals;
-    goals=result.goals?{home:[...(result.goals.home||[])],away:[...(result.goals.away||[])]}:{home:[],away:[]};
-    stats=result.data?{
-      home:{...blank(),possession:result.data.homePossession??50,passes:result.data.homePasses||0,accurate:result.data.homeAccurate||0,shots:result.data.homeShots||0,on:result.data.homeOnTarget||0,off:result.data.homeOff||0,saved:result.data.homeSaved||0,penalties:result.data.homePenalties||0,offsides:result.data.homeOffsides||0,keeperSaves:result.data.homeKeeperSaves||0,tackles:result.data.homeTackles||0,fouls:result.data.homeFouls||0,yellow:result.data.homeYellow||0,red:result.data.homeRed||0},
-      away:{...blank(),possession:result.data.awayPossession??50,passes:result.data.awayPasses||0,accurate:result.data.awayAccurate||0,shots:result.data.awayShots||0,on:result.data.awayOnTarget||0,off:result.data.awayOff||0,saved:result.data.awaySaved||0,penalties:result.data.awayPenalties||0,offsides:result.data.awayOffsides||0,keeperSaves:result.data.awayKeeperSaves||0,tackles:result.data.awayTackles||0,fouls:result.data.awayFouls||0,yellow:result.data.awayYellow||0,red:result.data.awayRed||0},
-    }:{home:blank(),away:blank()};
-    minute=90;matchStarted=true;matchFinished=true;preMatchPreparation=false;halftimeShown=true;
-    cards={home:starters().map(()=>({yellow:0,red:false,dismissal:null,injured:false,playThroughRisk:false})),away:matchClub().roster.slice(0,11).map(()=>({yellow:0,red:false,dismissal:null,injured:false,playThroughRisk:false}))};
-    timeline.innerHTML=`<p class="tl-event">Partida interrompida foi concluída automaticamente (anti recomeço).</p>`;
-    $('#matchStatus').textContent='Partida concluída automaticamente após interrupção.';
-    renderLiveMatchHeader(liveMatchGame);
-    modal.classList.remove('hidden');
-    score();
-    renderFinalSummary();
-    showFinalActions({openRatings:true});
-    clearLiveMatchSave();
-    latestLiveMatchSnapshot=null;
-    persistSeason(true);
-    return true;
-  };
-  const restoreLiveMatchFromSnapshot=(raw,{openModal=true}={})=>{
-    if(!isValidLiveMatchSnapshot(raw,savedNewGame?.seed))return false;
-    const snap=hydrateLiveMatchSnapshot(raw);
-    const linked=findFixtureForLiveSnapshot(snap.fixture);
-    const game=linked||{...snap.fixture};
-    if(linked){
-      if(snap.fixture.penalties!=null)linked.penalties=snap.fixture.penalties;
-      if(snap.fixture.shootoutWinner!=null)linked.shootoutWinner=snap.fixture.shootoutWinner;
-      if(snap.fixture.shootoutPenalties!=null)linked.shootoutPenalties=snap.fixture.shootoutPenalties;
-      if(snap.fixture.homeGoals!=null)linked.homeGoals=snap.fixture.homeGoals;
-      if(snap.fixture.awayGoals!=null)linked.awayGoals=snap.fixture.awayGoals;
-      if(snap.fixture.completed)linked.completed=true;
-    }
-    if(isFixtureCompleted(game)&&!snap.matchFinished){
-      clearLiveMatchPersist();
-      return false;
-    }
-    liveMatchGame=game;
-    if(!bindSquadForUserFixtureSync(game))return false;
-    if(snap.userFormation&&formations[snap.userFormation]){
-      formation=snap.userFormation;
-      if(!isWorldCupUserFixture(game,userNationalTeamName))clubs[userClub].formation=formation;
-    }
-    applyNamedLineupOrder(activeUserSquad,snap.userLineupOrder);
-    if(!isWorldCupUserFixture(game,userNationalTeamName))clubs[userClub].roster=squad;
-    positionAssignments=[...(formationRoles[formation]||formationRoles['4-3-3'])];
-    const awayClub=matchClub();
-    if(snap.awayFormation&&formations[snap.awayFormation])awayClub.formation=snap.awayFormation;
-    applyNamedLineupOrder(awayClub.roster,snap.awayLineupOrder);
-    minute=Number(snap.minute)||0;
-    home=Number(snap.home)||0;
-    away=Number(snap.away)||0;
-    pauses=Number(snap.pauses)||0;
-    halftimeShown=!!snap.halftimeShown;
-    secondHalfStarted=!!snap.secondHalfStarted||(
-      !!snap.halftimeShown&&
-      Number(snap.minute)>=45&&
-      !snap.preMatchPreparation&&
-      snap.activePreparationTitle!=='INTERVALO'&&
-      !snap.ui?.pauseOpen
-    );
-    stoppageFirst=Number(snap.stoppageFirst)||0;
-    stoppageSecond=Number(snap.stoppageSecond)||0;
-    stoppageElapsed=Number(snap.stoppageElapsed)||0;
-    stoppageActive=snap.stoppageActive||null;
-    stoppageHalfSnap=snap.stoppageHalfSnap&&typeof snap.stoppageHalfSnap==='object'?{fouls:Number(snap.stoppageHalfSnap.fouls)||0,yellow:Number(snap.stoppageHalfSnap.yellow)||0,red:Number(snap.stoppageHalfSnap.red)||0,subs:Number(snap.stoppageHalfSnap.subs)||0,goals:Number(snap.stoppageHalfSnap.goals)||0}:null;
-    matchStarted=true;
-    matchFinished=!!snap.matchFinished;
-    preMatchPreparation=!!snap.preMatchPreparation;
-    activePreparationTitle=snap.activePreparationTitle||'';
-    substitutions=Number(snap.substitutions)||0;
-    awaySubstitutions=Number(snap.awaySubstitutions)||0;
-    awaySubWindows=Number(snap.awaySubWindows)||0;
-    substitutedOut=snap.substitutedOut instanceof Set?snap.substitutedOut:new Set(snap.substitutedOut||[]);
-    disciplineEvents=Number(snap.disciplineEvents)||0;
-    availabilityCommitted=!!snap.availabilityCommitted;
-    roundResultMessagePushed=!!snap.roundResultMessagePushed;
-    stats=snap.stats||{home:blank(),away:blank()};
-    cards=snap.cards||{home:starters().map(()=>({yellow:0,red:false})),away:awayClub.roster.slice(0,11).map(()=>({yellow:0,red:false}))};
-    goals=snap.goals||{home:[],away:[]};
-    matchFactors=snap.matchFactors||null;
-    liveInjuries=snap.liveInjuries||{home:[],away:[]};
-    liveDeferredInjuries=snap.liveDeferredInjuries||{home:[],away:[]};
-    liveOpeningLineup=snap.liveOpeningLineup||{home:[],away:[]};
-    liveMinutesPlayed=snap.liveMinutesPlayed||{home:new Map(),away:new Map()};
-    matchDiscipline=snap.matchDiscipline||{home:new Map(),away:new Map()};
-    liveVolumeSamples=snap.liveVolumeSamples||[];
-    liveVolumePrev=snap.liveVolumePrev||null;
-    liveVolumePulse=snap.liveVolumePulse||{home:0.1,away:0.1};
-    liveVolumeIncidents=snap.liveVolumeIncidents||[];
-    postMatchMedicalQueue=Array.isArray(snap.postMatchMedicalQueue)?snap.postMatchMedicalQueue:[];
-    shootoutState=snap.shootoutState||null;
-    pendingPenalty=snap.pendingPenalty||null;
-    preMatchTacticSnapshot=snap.preMatchTacticSnapshot||null;
-    roundResults=null;
-    liveDayMatches.clearSnapshots();
-    matchLiveUi.setLiveClockSeconds?.(Number(snap.liveClockSeconds)||0);
-    if(preMatchPreparation){
-      timeline.innerHTML='';
-      timeline.classList.add('hidden');
-      $('#liveVolume')?.classList.add('hidden');
-    }else{
-      const html=snap.timelineHtml||`<p>${minute}' · Partida retomada após recarregar a página.</p>`;
-      timeline.innerHTML=/PRÉ-JOGO\s*·\s*Aguardando/.test(html)?'':html;
-      timeline.classList.toggle('hidden',!timeline.innerHTML.trim());
-    }
-    $('#matchStatus').textContent=snap.matchStatusText||(matchFinished?'Partida encerrada.':preMatchPreparation?'Organize sua equipe antes de iniciar a partida.':'A partida está em andamento…');
-    $('#matchActions').innerHTML='<button id="pauseMatch">Ⅱ PAUSA TÉCNICA <small id="pauseCounter">0/3</small></button><button id="liveStats">ESTATÍSTICAS AO VIVO</button><button id="liveOpponent">VER ADVERSÁRIO</button>';
-    bindLiveActions();
-    $('#pauseCounter').textContent=`${pauses}/3`;
-    if(typeof closePenaltyDuel==='function')closePenaltyDuel();
-    else $('#penaltyChoice')?.classList.add('hidden');
-    $('#shootoutPanel').classList.add('hidden');
-    $('#liveOpponentModal').classList.add('hidden');
-    $('#pausePanel').classList.add('hidden');
-    $('#stats').classList.add('hidden');
-    renderLiveMatchHeader(liveMatchGame);
-    score();
-    updateLiveMatchClock();
-    renderRoster();
-    drawBoard();
-    latestLiveMatchSnapshot=buildLiveMatchSnapshot(collectLiveMatchPersistState());
-    saveLiveMatchSave(latestLiveMatchSnapshot);
-    if(!openModal)return true;
-    if(matchFinished){
-      stopMatchClock();
-      modal.classList.remove('hidden');
-      // Save antigo / bug: empate no agregado sem disputa → reabre pênaltis
-      if(!shootoutState&&!liveMatchGame?.shootoutWinner&&liveKnockoutNeedsShootout()){
-        matchFinished=false;
-        startPenaltyShootout();
-        return true;
-      }
-      if(shootoutState){renderShootoutTrack();$('#shootoutPanel').classList.remove('hidden');}
-      else if(liveMatchGame?.penalties){$('#shootoutTitle').textContent=`Shootout ${liveMatchGame.penalties}`;$('#shootoutPanel').classList.remove('hidden');}
-      renderFinalSummary({processMedical:false});
-      showFinalActions({reopen:true});
-      return true;
-    }
-    modal.classList.remove('hidden');
-    if(pendingPenalty?.mode==='against'&&pendingPenalty?.current&&pendingPenalty?.other){
-      startPenaltyAgainst(pendingPenalty.current,pendingPenalty.other);
-      return true;
-    }
-    if(pendingPenalty?.current&&pendingPenalty?.other){
-      startPenaltyChoice(pendingPenalty.current,pendingPenalty.other);
-      return true;
-    }
-    if(shootoutState&&!matchFinished){
-      stopMatchClock();
-      $('#matchActions').classList.add('hidden');
-      $('#shootoutPanel').classList.remove('hidden');
-      resumeShootoutFlow();
-      return true;
-    }
-    if(preMatchPreparation||snap.ui?.pauseOpen||activePreparationTitle){
-      openPreparation(activePreparationTitle||(preMatchPreparation?'PRÉ-JOGO':'PAUSA TÉCNICA'));
-      return true;
-    }
-    $('#matchActions').classList.remove('hidden');
-    startMatchClock();
-    matchLiveAudio.startStadiumAmbient?.();
-    scheduleLiveMatchPersist();
-    return true;
-  };
-  const tryRestoreLiveMatch=({openModal=true}={})=>{
-    if(matchStarted&&liveMatchGame)return reopenMatchWindow();
-    const snap=resolvePersistedLiveSnapshot();
-    if(snap)return restoreLiveMatchFromSnapshot(snap,{openModal});
-    const lock=validSavedSeason?.activeLiveMatch;
-    if(lock&&savedNewGame?.seed&&(!validSavedSeason.seed||validSavedSeason.seed===savedNewGame.seed)){
-      return forceCompleteLockedLiveMatch(lock);
-    }
-    return false;
-  };
-  onClick('#playMatch',async()=>{
-    if(pendingSponsorChoice){
-      openSponsorPickerIfPending();
-      return;
-    }
-    refreshUserFixtures();
-    if(isUserSeasonIdle()){
-      renderUserMatchPresentation();
-      simulateNonHumanSeasonRemainder();
-      return;
-    }
-    if(seasonFullyComplete()||(seasonComplete()&&!nextPendingUserEntry())){
-      renderUserMatchPresentation();
-      if(!tryPrepareSeasonTransition()){
-        // Sem jogos do clube: abre o balanço mesmo se a Copa CPU já tiver sido resolvida no save.
-        if(!hasPendingUserFixtures())prepareSeasonTransition();
-      }
-      return;
-    }
-    // Partida persistida (refresh) tem prioridade sobre o fluxo de calendário.
-    if(tryRestoreLiveMatch()) return;
-    if(reopenMatchWindow()) return;
-    if(!nextPendingUserEntry()){
-      renderUserMatchPresentation();
-      return;
-    }
-    const nextEntry=nextPendingUserEntry();
-    // Libera jogo no dia agendado ou se o calendário passou do jogo (atrasado).
-    if(nextEntry&&isPendingFixtureOverdue(nextEntry)===false&&!sameCalendarDay(nextEntry.details.date,careerCalendarDate)){
-      $$('.nav').find(button=>button.dataset.view==='calendar')?.click();
-      return;
-    }
-    pushMatchDayBrief(nextEntry?.game);
-    liveMatchGame=nextEntry?.game||nextUserGame;
-    if(!(await bindSquadForUserFixture(liveMatchGame))){
-      pushMessage?.({category:'match',type:'error',title:'Elenco indisponível',body:'Não foi possível carregar o elenco da seleção. Recarregue a página e tente novamente.',round:currentRound,meta:{competition:'Copa do Mundo'}});
-      liveMatchGame=null;
-      return;
-    }
-    renderLiveMatchHeader(liveMatchGame);
-    // NÃO cumprir suspensão no pré-jogo — o banimento vale para esta partida.
-    // O cumprimento (serve) ocorre só após o jogo / avanço de rodada.
-    // Mantém a escalação/formação da tela Táticas; só limpa titulares indisponíveis.
-    sanitizeUserStartersForMatch();
-    orderRosterForFormation(matchClub().roster,matchClub().formation);
-    if(!isWorldCupUserFixture(liveMatchGame,userNationalTeamName))clubs[userClub].formation=formation;
-    else formation=resolveUserMatchFormation(liveMatchGame);
-    positionAssignments=[...(formationRoles[formation]||formationRoles['4-3-3'])];
-    const userSideClub=userSideClubForGame(liveMatchGame)||clubs[userClub];
-    matchStarted=true; matchFinished=false; preMatchPreparation=true; minute=0;home=0;away=0;pauses=0;halftimeShown=false;secondHalfStarted=false;pendingPenalty=null;shootoutState=null;disciplineEvents=0;substitutions=0;awaySubstitutions=0;awaySubWindows=0;stoppageFirst=0;stoppageSecond=0;stoppageElapsed=0;stoppageActive=null;stoppageHalfSnap=null;substitutedOut=new Set();roundResults=null;roundResultMessagePushed=false;postMatchMedicalQueue=[];matchDiscipline={home:new Map(),away:new Map()};liveInjuries={home:[],away:[]};liveDeferredInjuries={home:[],away:[]};liveOpeningLineup={home:starters().map(player=>player.name),away:matchClub().roster.slice(0,11).map(player=>player.name)};liveMinutesPlayed={home:new Map(starters().map(player=>[player.name,0])),away:new Map(matchClub().roster.slice(0,11).map(player=>[player.name,0]))};availabilityCommitted=false;liveDayMatches.clearSnapshots();preMatchTacticSnapshot=null;matchFactors={home:contextFactor({...seasonContext.home,position:userSideClub?.position||userSideClub?.fifaRank||clubs[userClub].position,isHome:isUserHomeMatch(liveMatchGame)}),away:contextFactor({...seasonContext.away,position:matchClub().position,isHome:!isUserHomeMatch(liveMatchGame)})};cards={home:starters().map(() => ({yellow:0,red:false,dismissal:null,injured:false,playThroughRisk:false})),away:matchClub().roster.slice(0,11).map(() => ({yellow:0,red:false,dismissal:null,injured:false,playThroughRisk:false}))};goals={home:[],away:[]};liveVolumeSamples=[];liveVolumePrev=null;liveVolumePulse={home:0.1,away:0.1};liveVolumeIncidents=[];stats={home:blank(),away:blank()};score();timeline.innerHTML='';timeline.classList.add('hidden');$('#liveVolume')?.classList.add('hidden');$('#matchActions').innerHTML='<button id="pauseMatch">Ⅱ PAUSA TÉCNICA <small id="pauseCounter">0/3</small></button><button id="liveStats">ESTATÍSTICAS AO VIVO</button><button id="liveOpponent">VER ADVERSÁRIO</button>';bindLiveActions();$('#pauseCounter').textContent='0/3';$('#matchStatus').textContent='Organize sua equipe antes de iniciar a partida.';modal.classList.remove('hidden');$('#penaltyChoice').classList.add('hidden');$('#shootoutPanel').classList.add('hidden');$('#liveOpponentModal').classList.add('hidden');updateLiveMatchClock();openPreparation('PRÉ-JOGO');
-    flushLiveMatchPersist();
-    persistSeason(true);
+  const matchLiveEntry=createMatchLiveEntryFeature({
+    $,$$,onClick,modal,timeline,
+    getSavedNewGame:()=>savedNewGame,
+    getValidSavedSeason:()=>validSavedSeason,
+    getCareerSeason:()=>careerSeason,
+    userSchedule,
+    getCupCompetition:()=>cupCompetition,
+    getChampionshipFixtures:()=>championshipFixtures,
+    fixtureIdFromGame,WORLD_CUP_COMPETITION,isWorldCupSeasonActive,
+    loadLiveMatchSave,clearLiveMatchSave,saveLiveMatchSave,buildLiveMatchSnapshot,hydrateLiveMatchSnapshot,isValidLiveMatchSnapshot,
+    isFixtureCompleted,simulateRoundMatch,
+    getUserClub:()=>userClub,getMatchClub:()=>matchClub(),getClubs:()=>clubs,
+    getFormations:()=>formations,getFormationRoles:()=>formationRoles,
+    getFormation:()=>formation,setFormation:v=>{formation=v;},
+    getActiveUserSquad:()=>activeUserSquad,getSquad:()=>squad,setSquad:v=>{squad=v;},
+    getLiveMatchGame:()=>liveMatchGame,setLiveMatchGame:v=>{liveMatchGame=v;},
+    getHomeScore:()=>home,setHomeScore:v=>{home=v;},
+    getAwayScore:()=>away,setAwayScore:v=>{away=v;},
+    getGoals:()=>goals,setGoals:v=>{goals=v;},
+    getStats:()=>stats,setStats:v=>{stats=v;},
+    getMinute:()=>minute,setMinute:v=>{minute=v;},
+    getMatchStarted:()=>matchStarted,setMatchStarted:v=>{matchStarted=v;},
+    getMatchFinished:()=>matchFinished,setMatchFinished:v=>{matchFinished=v;},
+    getPreMatchPreparation:()=>preMatchPreparation,setPreMatchPreparation:v=>{preMatchPreparation=v;},
+    getHalftimeShown:()=>halftimeShown,setHalftimeShown:v=>{halftimeShown=v;},
+    getSecondHalfStarted:()=>secondHalfStarted,setSecondHalfStarted:v=>{secondHalfStarted=v;},
+    getPauses:()=>pauses,setPauses:v=>{pauses=v;},
+    getStoppageFirst:()=>stoppageFirst,setStoppageFirst:v=>{stoppageFirst=v;},
+    getStoppageSecond:()=>stoppageSecond,setStoppageSecond:v=>{stoppageSecond=v;},
+    getStoppageElapsed:()=>stoppageElapsed,setStoppageElapsed:v=>{stoppageElapsed=v;},
+    getStoppageActive:()=>stoppageActive,setStoppageActive:v=>{stoppageActive=v;},
+    getStoppageHalfSnap:()=>stoppageHalfSnap,setStoppageHalfSnap:v=>{stoppageHalfSnap=v;},
+    getActivePreparationTitle:()=>activePreparationTitle,setActivePreparationTitle:v=>{activePreparationTitle=v;},
+    getSubstitutions:()=>substitutions,setSubstitutions:v=>{substitutions=v;},
+    getAwaySubstitutions:()=>awaySubstitutions,setAwaySubstitutions:v=>{awaySubstitutions=v;},
+    getAwaySubWindows:()=>awaySubWindows,setAwaySubWindows:v=>{awaySubWindows=v;},
+    getSubstitutedOut:()=>substitutedOut,setSubstitutedOut:v=>{substitutedOut=v;},
+    getDisciplineEvents:()=>disciplineEvents,setDisciplineEvents:v=>{disciplineEvents=v;},
+    getAvailabilityCommitted:()=>availabilityCommitted,setAvailabilityCommitted:v=>{availabilityCommitted=v;},
+    getRoundResultMessagePushed:()=>roundResultMessagePushed,setRoundResultMessagePushed:v=>{roundResultMessagePushed=v;},
+    getCards:()=>cards,setCards:v=>{cards=v;},
+    getMatchFactors:()=>matchFactors,setMatchFactors:v=>{matchFactors=v;},
+    getLiveInjuries:()=>liveInjuries,setLiveInjuries:v=>{liveInjuries=v;},
+    getLiveDeferredInjuries:()=>liveDeferredInjuries,setLiveDeferredInjuries:v=>{liveDeferredInjuries=v;},
+    getLiveOpeningLineup:()=>liveOpeningLineup,setLiveOpeningLineup:v=>{liveOpeningLineup=v;},
+    getLiveMinutesPlayed:()=>liveMinutesPlayed,setLiveMinutesPlayed:v=>{liveMinutesPlayed=v;},
+    getMatchDiscipline:()=>matchDiscipline,setMatchDiscipline:v=>{matchDiscipline=v;},
+    getLiveVolumeSamples:()=>liveVolumeSamples,setLiveVolumeSamples:v=>{liveVolumeSamples=v;},
+    getLiveVolumePrev:()=>liveVolumePrev,setLiveVolumePrev:v=>{liveVolumePrev=v;},
+    getLiveVolumePulse:()=>liveVolumePulse,setLiveVolumePulse:v=>{liveVolumePulse=v;},
+    getLiveVolumeIncidents:()=>liveVolumeIncidents,setLiveVolumeIncidents:v=>{liveVolumeIncidents=v;},
+    getPostMatchMedicalQueue:()=>postMatchMedicalQueue,setPostMatchMedicalQueue:v=>{postMatchMedicalQueue=v;},
+    getShootoutState:()=>shootoutState,setShootoutState:v=>{shootoutState=v;},
+    getPendingPenalty:()=>pendingPenalty,setPendingPenalty:v=>{pendingPenalty=v;},
+    getPreMatchTacticSnapshot:()=>preMatchTacticSnapshot,setPreMatchTacticSnapshot:v=>{preMatchTacticSnapshot=v;},
+    getRoundResults:()=>roundResults,setRoundResults:v=>{roundResults=v;},
+    getPositionAssignments:()=>positionAssignments,setPositionAssignments:v=>{positionAssignments=v;},
+    getLatestLiveMatchSnapshot:()=>latestLiveMatchSnapshot,setLatestLiveMatchSnapshot:v=>{latestLiveMatchSnapshot=v;},
+    getPauseLineupBaseline:()=>pauseLineupBaseline,setPauseLineupBaseline:v=>{pauseLineupBaseline=v;},
+    getRoundCommitted:()=>roundCommitted,getUserNationalTeamName:()=>userNationalTeamName,
+    isWorldCupUserFixture,bindSquadForUserFixtureSync,bindSquadForUserFixture,blank,starters,
+    renderLiveMatchHeader,score,renderFinalSummary,showFinalActions,reopenMatchWindow,openPreparation,
+    clearLiveMatchPersist,collectLiveMatchPersistState,scheduleLiveMatchPersist,flushLiveMatchPersist,persistSeason,
+    bindLiveActions,stopMatchClock,startMatchClock,updateLiveMatchClock,renderRoster,drawBoard,
+    closePenaltyDuel,isPenaltyDuelOpen,liveKnockoutNeedsShootout,startPenaltyShootout,renderShootoutTrack,
+    resumeShootoutFlow,startPenaltyAgainst,startPenaltyChoice,matchLiveUi,matchLiveAudio,liveDayMatches,
+    getPendingSponsorChoice:()=>pendingSponsorChoice,openSponsorPickerIfPending,refreshUserFixtures,
+    isUserSeasonIdle,renderUserMatchPresentation,simulateNonHumanSeasonRemainder,seasonFullyComplete,seasonComplete,
+    nextPendingUserEntry,tryPrepareSeasonTransition,hasPendingUserFixtures,prepareSeasonTransition,getNextUserGame:()=>nextUserGame,
+    pushMatchDayBrief,pushMessage,getCurrentRound:()=>currentRound,isPendingFixtureOverdue,sameCalendarDay,
+    getCareerCalendarDate:()=>careerCalendarDate,sanitizeUserStartersForMatch,orderRosterForFormation,
+    resolveUserMatchFormation,userSideClubForGame,isUserHomeMatch,getSeasonContext:()=>seasonContext,contextFactor,log,
+    tacticalKickoffMessage,DEFAULT_USER_TACTICS,getTactics:()=>tactics,matchVenueFor,resolveMatchAttendance,
+    applyPreMatchTraining,finalizePauseLineupEdits,closeFormationSuggestion,profile,opponentForMatch,
+    planPenaltyOutcome,runPenaltyDuelResolve,executeShootoutKick,currentShootoutClub,shootoutLineup,shot,renderStats,
   });
-  onClick('#simulateRemainder',()=>simulateNonHumanSeasonRemainder());
-  const openLastPostMatchView=()=>{
-    if(!(matchStarted&&matchFinished&&!roundCommitted&&liveMatchGame))return false;
-    $('#calendarMatchReportModal')?.classList.add('hidden');
-    const opened=reopenMatchWindow();
-    if(opened){
-      renderUserMatchPresentation();
-      // Reabrir pelo CTA não força NOTAS de novo — o usuário abre pelo botão NOTAS.
-    }
-    return opened;
-  };
-  onClick('#reopenPostMatch',()=>{openLastPostMatchView();});
-  onClick('#closeMatch',()=>{
-    // Pós-jogo: × só fecha a janela — AVANÇAR é quem confirma e avança a rodada.
-    if(matchFinished&&!roundCommitted){
-      flushLiveMatchPersist();
-      if(matchStarted)persistSeason(true);
-      stopMatchClock();
-      matchLiveAudio.stopAll();
-      closeFormationSuggestion();
-      $('#calendarMatchReportModal')?.classList.add('hidden');
-      $('#liveOpponentModal').classList.add('hidden');
-      modal.classList.add('hidden');
-      renderUserMatchPresentation();
-      return;
-    }
-    flushLiveMatchPersist();
-    if(matchStarted)persistSeason(true);
-    stopMatchClock();
-    matchLiveAudio.stopAll();
-    modal.classList.add('hidden');$('#liveOpponentModal').classList.add('hidden');closeFormationSuggestion();
-    $('#calendarMatchReportModal')?.classList.add('hidden');
-    renderUserMatchPresentation();
-  });
-  onClick('#resumeMatch',()=>{
-    matchLiveAudio.unlock();
-    const startingMatch=preMatchPreparation;
-    const startingSecondHalf=!startingMatch&&halftimeShown&&!matchFinished&&minute<=45;
-    if(startingMatch)pauseLineupBaseline=null;
-    else finalizePauseLineupEdits();
-    preMatchPreparation=false;
-    activePreparationTitle='';
-    $('#pausePanel').classList.add('hidden');
-    $('#stats').classList.add('hidden');
-    $('#matchActions').classList.remove('hidden');
-    $('#matchStatus').textContent='A partida está em andamento…';
-    const resumeClock=()=>{
-      updateLiveMatchClock();
-      matchLiveUi.refreshMatchFeed?.();
-      startMatchClock();
-      matchLiveAudio.startStadiumAmbient?.();
-      flushLiveMatchPersist();
-    };
-    if(startingMatch){
-      matchLiveUi.resetLiveClockSeconds();liveDayMatches.clearSnapshots();liveDayMatches.ensure();applyPreMatchTraining();renderRoster();
-      liveOpeningLineup={home:starters().map(player=>player.name),away:matchClub().roster.slice(0,11).map(player=>player.name)};
-      preMatchTacticSnapshot={...(tactics?.getTacticalValues?.()??DEFAULT_USER_TACTICS)};
-      const venue=matchVenueFor(liveMatchGame?.home||userClub);
-      const crowd=liveMatchGame?resolveMatchAttendance(liveMatchGame):null;
-      const crowdLine=crowd
-        ? ` Público: ${crowd.attendance.toLocaleString('pt-BR')} (${Math.round(crowd.fillRate*100)}% da capacidade).`
-        : '';
-      const kickoff=tacticalKickoffMessage(preMatchTacticSnapshot);
-      if(kickoff)log(kickoff,'tactic');
-      if(!liveVolumeSamples.length)liveVolumeSamples=[{minute:0,home:0.14,away:0.14}];
-      const whistleReady=matchLiveAudio.playKickoff();
-      const onKickoffWhistle=()=>{
-        timeline.classList.remove('hidden');
-        timeline.innerHTML=`<p>0' · A bola está rolando no ${venue.name}!${crowdLine}</p>`;
-        resumeClock();
-      };
-      if(whistleReady?.then)whistleReady.then(onKickoffWhistle);
-      else onKickoffWhistle();
-      return;
-    }
-    if(startingSecondHalf){
-      stoppageActive=null;
-      stoppageElapsed=0;
-      minute=45;
-      secondHalfStarted=true;
-      matchLiveUi.resetLiveClockSeconds();
-      log('Início do 2º tempo.','');
-      matchLiveAudio.playSecondHalf?.();
-      resumeClock();
-      return;
-    }
-    const whistleReady=matchLiveAudio.playResumeWhistle();
-    if(whistleReady?.then)whistleReady.then(resumeClock);
-    else resumeClock();
-  });
-  onClick('#penaltyTakers',e=>{
-    const button=e.target.closest('button');
-    if(!button||button.disabled)return;
-    if(pendingPenalty?.mode==='against'||pendingPenalty?.mode==='shootout-cpu')return;
-    const takerName=button.dataset.taker;
-    // Shootout: se o pending foi apagado após a cobrança da IA, recupera pela vez atual.
-    const shootoutKickClub=pendingPenalty?.mode==='shootout'
-      ?pendingPenalty.kickingClub
-      :(shootoutState&&currentShootoutClub()===userClub?userClub:null);
-    if(shootoutKickClub){
-      const lineup=shootoutLineup(shootoutKickClub),taker=lineup.find(player=>player.name===takerName);
-      if(!taker)return;
-      const kickingClub=shootoutKickClub;
-      const isUser=kickingClub===userClub;
-      const current=isUser?profile():opponentForMatch();
-      const other=isUser?opponentForMatch():profile();
-      const side=isUser?'home':'away';
-      const plan=planPenaltyOutcome(side,{...current,attack:current.attack+9},other,{taker:taker.name,penaltySkill:taker.penaltyTaking,shootout:true});
-      if(!plan?.outcome)return;
-      pendingPenalty={mode:'shootout',kickingClub};
-      const beginShootoutDuel=()=>{
-        runPenaltyDuelResolve(takerName,plan,()=>{
-          pendingPenalty=null;
-          executeShootoutKick(kickingClub,taker,plan);
-        });
-      };
-      const kickCue=matchLiveAudio.playPenaltyKick();
-      if(kickCue?.then)kickCue.then(beginShootoutDuel);
-      else beginShootoutDuel();
-      return;
-    }
-    const taker=starters().find(p=>p.name===takerName);
-    if(!taker||!pendingPenalty)return;
-    const pending={...pendingPenalty};
-    const plan=planPenaltyOutcome('home',{...pending.current,attack:pending.current.attack+9},pending.other,{taker:taker.name,penaltySkill:taker.penaltyTaking});
-    if(!plan?.outcome)return;
-    const beginPenaltyDuel=()=>{
-      runPenaltyDuelResolve(takerName,plan,()=>{
-        shot('home',{...pending.current,attack:pending.current.attack+9},pending.other,{
-          penalty:true,
-          taker:taker.name,
-          penaltySkill:taker.penaltyTaking,
-          forcedOutcome:plan.outcome,
-        });
-        closePenaltyDuel();
-        $('#matchActions').classList.remove('hidden');
-        $('#matchStatus').textContent='A partida está em andamento…';
-        pendingPenalty=null;
-        renderStats();
-        startMatchClock();
-      });
-    };
-    const kickCue=matchLiveAudio.playPenaltyKick();
-    if(kickCue?.then)kickCue.then(beginPenaltyDuel);
-    else beginPenaltyDuel();
-  });
-  
+  const {tryRestoreLiveMatch,restoreLiveMatchFromSnapshot}=matchLiveEntry;
+  matchLiveEntry.bindEntryHandlers();
   bindLiveActions();
   const autoBenchmarkCount=Number(new URLSearchParams(location.search).get('autoBenchmark'));
   if(autoBenchmarkCount>0&&typeof simulateRoundMatch==='function'){
@@ -9241,7 +7619,6 @@ const rosterChangeAlertHolder = { fn: null };
   // Pinta o dashboard com dados reais antes de liberar a shell — evita placeholders do index.html.
   const skipPresentationHydration=new URLSearchParams(location.search).has('benchmark')||new URLSearchParams(location.search).has('cupAudit');
   if(savedNewGame&&!skipPresentationHydration)refreshSeasonPresentation();
-  markBootReady();
   // Pós-boot leve: partida ao vivo, simulação idle ou transição de temporada.
   if(savedNewGame&&!skipPresentationHydration){
     const hydratePostBoot=()=>{
@@ -9255,7 +7632,6 @@ const rosterChangeAlertHolder = { fn: null };
     else setTimeout(hydratePostBoot,0);
   }
   } catch(error) {
-    markBootReady();
     document.documentElement.dataset.bootError=String(error?.stack||error);
     console.error('BR Fut failed to initialize',error);
     throw error;

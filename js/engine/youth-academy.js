@@ -2,7 +2,7 @@
  * Categoria de Base U-20 — infra, olheiros, elenco separado do profissional.
  */
 
-import { getStructureLevel, estimatePlayerWage, getBalance, spend } from './economy.js';
+import { getStructureLevel, estimatePlayerWage, estimateStaffBill, getBalance, spend } from './economy.js';
 import { generatePlayer, GENERIC_SQUAD_ROLES } from './player-generation.js';
 import { rollPotential, POT_CAPS } from './player-development.js';
 import { ensurePlayerId } from './player-identity.js';
@@ -20,7 +20,28 @@ export const ACADEMY_MAX_LEVEL = 5;
 export const SCOUTING_MAX_LEVEL = 3;
 
 export const SCOUT_SLOTS_BY_DEPT = Object.freeze({ 0: 0, 1: 1, 2: 2, 3: 3 });
-export const SCOUT_COST_PER_SLOT = Object.freeze({ 1: 2_500, 2: 3_500, 3: 4_500 });
+/** % da comissão técnica/rodada por classe do olheiro (A mais caro). */
+export const SCOUT_STAFF_SHARE_BY_GRADE = Object.freeze({ A: 0.16, B: 0.12, C: 0.1, D: 0.08 });
+export const SCOUT_SHARE_A = 0.16;
+/** Piso: classe A = 35% da comissão; demais classes proporcionais. */
+export const SCOUT_FLOOR_COMMISSION_RATIO = 0.35;
+export const SCOUT_DEPT_MULT = Object.freeze({ 1: 1, 2: 1.1, 3: 1.2 });
+/** +20% de manutenção enquanto o olheiro está em missão. */
+export const SCOUT_MISSION_MAINTENANCE_MULT = 1.2;
+/** Entressafra / sem calendário ativo: 20% da manutenção normal. */
+export const SCOUT_OFFSEASON_MAINTENANCE_MULT = 0.2;
+export const SCOUT_TRAVEL_BASE_BY_DIVISION = Object.freeze({
+  A: 38_000,
+  B: 24_000,
+  C: 16_000,
+  D: 11_000,
+});
+export const SCOUT_TRAVEL_BAND_MULT = Object.freeze({
+  same: 0.4,
+  neighbor: 0.7,
+  distant: 1,
+  extreme: 1.25,
+});
 export const INTAKE_BY_ACADEMY = Object.freeze([1, 2, 3, 4, 5, 6]);
 
 export const ACADEMY_UPGRADE = Object.freeze({
@@ -138,6 +159,16 @@ export const REGION_UFS = Object.freeze({
   norte: ['AC', 'AM', 'AP', 'PA', 'RO', 'RR', 'TO'],
   nordeste: ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'],
 });
+
+const SCOUT_TRAVEL_NEIGHBOR_KEYS = new Set([
+  'centro-oeste|nordeste',
+  'centro-oeste|norte',
+  'centro-oeste|sudeste',
+  'centro-oeste|sul',
+  'nordeste|norte',
+  'nordeste|sudeste',
+  'sudeste|sul',
+]);
 
 const SCOUT_NAME_POOL = Object.freeze([
   'Marcos Oliveira',
@@ -302,15 +333,93 @@ export function estimateYouthWageBill(club, division = club?.division || 'A') {
   return club.youthRoster.reduce((sum, p) => sum + computeYouthWage(p, division), 0);
 }
 
-export function estimateScoutStaffBill(club) {
+export function regionForUf(uf) {
+  return inferRegionFromUf(uf);
+}
+
+export function resolveClubHomeRegion(club, clubName, fallbackUf = 'SP') {
+  return regionForUf(resolveClubUf(club, clubName, fallbackUf));
+}
+
+function scoutGradeShare(grade) {
+  const key = scoutGradeLabel(grade);
+  return SCOUT_STAFF_SHARE_BY_GRADE[key] ?? SCOUT_STAFF_SHARE_BY_GRADE.D;
+}
+
+function scoutFloorShare(gradeShare) {
+  return SCOUT_FLOOR_COMMISSION_RATIO * (gradeShare / SCOUT_SHARE_A);
+}
+
+/** Manutenção de um olheiro por rodada (% comissão + piso 35% proporcional). */
+export function computeScoutSlotRoundCost(
+  staffBillPerRound,
+  grade = 'D',
+  deptLevel = 1,
+  { onMission = false, offSeason = false } = {},
+) {
+  const staff = Math.max(0, Math.round(Number(staffBillPerRound) || 0));
+  if (!(staff > 0)) return 0;
+  const gradeShare = scoutGradeShare(grade);
+  const deptMult = SCOUT_DEPT_MULT[deptLevel] ?? SCOUT_DEPT_MULT[1];
+  const nominal = staff * gradeShare * deptMult;
+  const floor = staff * scoutFloorShare(gradeShare);
+  let cost = Math.max(nominal, floor);
+  if (onMission) cost *= SCOUT_MISSION_MAINTENANCE_MULT;
+  if (offSeason) cost *= SCOUT_OFFSEASON_MAINTENANCE_MULT;
+  return Math.round(cost);
+}
+
+export function resolveScoutTravelBand(originRegion, targetRegion) {
+  const origin = String(originRegion || '').toLowerCase();
+  const target = String(targetRegion || '').toLowerCase();
+  if (!origin || !target) return 'distant';
+  if (origin === target) return 'same';
+  const pair = [origin, target].sort().join('|');
+  if (SCOUT_TRAVEL_NEIGHBOR_KEYS.has(pair)) return 'neighbor';
+  if (
+    (origin === 'sul' && (target === 'norte' || target === 'nordeste')) ||
+    (target === 'sul' && (origin === 'norte' || origin === 'nordeste'))
+  ) {
+    return 'extreme';
+  }
+  return 'distant';
+}
+
+export function estimateScoutTravelCost(
+  club,
+  targetRegion,
+  { division = club?.division || 'A', clubName = '', userUf = null } = {},
+) {
+  const origin = resolveClubHomeRegion(club, clubName, userUf || resolveClubUf(club, clubName));
+  const band = resolveScoutTravelBand(origin, targetRegion);
+  const base = SCOUT_TRAVEL_BASE_BY_DIVISION[division] ?? SCOUT_TRAVEL_BASE_BY_DIVISION.D;
+  const mult = SCOUT_TRAVEL_BAND_MULT[band] ?? SCOUT_TRAVEL_BAND_MULT.distant;
+  return Math.round(base * mult);
+}
+
+export function estimateScoutStaffBill(
+  club,
+  {
+    division = club?.division || 'A',
+    staffBill = null,
+    careerDate = null,
+    offSeason = false,
+    staffOptions = {},
+  } = {},
+) {
   ensureYouthState(club);
   const dept = getEffectiveScoutingLevel(club);
   if (dept <= 0) return 0;
+  const staff = staffBill ?? estimateStaffBill(club, division, staffOptions);
+  if (!(staff > 0)) return 0;
   let total = 0;
   club.scouts.forEach(slot => {
-    if (slot?.scoutName || slot?.region || slot?.lockedUntil) {
-      total += SCOUT_COST_PER_SLOT[dept] || SCOUT_COST_PER_SLOT[3];
-    }
+    if (!slot?.scoutName && !slot?.region && !slot?.lockedUntil) return;
+    const onMission = careerDate ? isScoutLocked(slot, careerDate) : !!slot?.lockedUntil;
+    total += computeScoutSlotRoundCost(staff, scoutGradeLabel(slot.scoutGrade), dept, {
+      onMission,
+      offSeason,
+    });
   });
   return total;
 }
@@ -759,6 +868,23 @@ export function runScoutSearch(club, { region, scoutSlot: slotIndex, clubName, c
     return { ok: false, error: 'scout_locked', lockedUntil: slot.lockedUntil };
   }
 
+  const travelCost = estimateScoutTravelCost(club, region, {
+    division: context.division || club.division || 'A',
+    clubName,
+    userUf: context.userUf,
+  });
+  if (travelCost > 0) {
+    const originRegion = resolveClubHomeRegion(club, clubName, context.userUf);
+    const payment = spend(club, travelCost, {
+      reason: 'scout_travel',
+      label: `Viagem olheiro · ${scoutRegionLabel(originRegion)} → ${scoutRegionLabel(region)}`,
+      meta: { region, originRegion, scoutSlot: slot.slot, travelCost },
+    });
+    if (!payment.ok) {
+      return { ok: false, error: 'insufficient_funds', travelCost, balance: getBalance(club) };
+    }
+  }
+
   const grade = scoutGradeLabel(slot.scoutGrade);
   const talentCount = rollScoutTalentCount(grade, random);
   if (!Array.isArray(club.scoutReports)) club.scoutReports = [];
@@ -797,6 +923,7 @@ export function runScoutSearch(club, { region, scoutSlot: slotIndex, clubName, c
     reports,
     talentCount,
     scoutGrade: grade,
+    travelCost,
     player: reports[0]?.player || null,
     scoutName: slot.scoutName,
     lockedUntil: slot.lockedUntil,

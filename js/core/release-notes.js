@@ -9,6 +9,35 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.4.25',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T14:35:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Site',
+        items: [
+          'Manutenção encerrada — home e jogo liberados normalmente.',
+        ],
+      },
+      {
+        label: 'Premiação e campeões',
+        items: [
+          'Participação nacional com rótulo claro e premiação estadual no balanço de fim de temporada.',
+          'Troféus dos campeões voltam ao layout clássico e não somem mais ao trocar de torneio.',
+        ],
+      },
+      {
+        label: 'Olheiros',
+        items: [
+          'Manutenção dos olheiros ligada à comissão técnica e à classe do olheiro.',
+          'Custo de viagem ao buscar talentos, conforme a região de origem e destino.',
+          'Linha própria de Olheiros no fluxo de caixa do Escritório.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.4.20',
     date: '2026-07-29',
     publishedAt: '2026-07-30T01:55:00-03:00',

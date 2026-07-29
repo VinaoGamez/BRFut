@@ -10,7 +10,9 @@ import {
   repairNationalTeamOfferBatches,
   normalizeNationalTeamOfferState,
   nationalTeamOfferPool,
+  finalizeNationalTeamOfferDeclines,
   NATIONAL_TEAM_OFFER_MONTH,
+  NATIONAL_TEAM_OFFER_COUNT,
   NATIONAL_TEAM_OFFER_TEAMS_PER_PROPOSAL,
   NATIONAL_TEAM_OFFER_WEEK_DAYS,
   WORLD_CUP_2026_YEAR,
@@ -150,5 +152,25 @@ assert.equal(
 );
 
 assert.equal(NATIONAL_TEAM_OFFER_WEEK_DAYS, 7, 'intervalo semanal de 7 dias');
+
+const declinedState = finalizeNationalTeamOfferDeclines(
+  normalizeNationalTeamOfferState(
+    {
+      year: 2026,
+      offers: [first],
+      issuedCount: NATIONAL_TEAM_OFFER_COUNT,
+      lastIssueDate: mar2026.toISOString(),
+    },
+    2026,
+  ),
+  2026,
+);
+assert.equal(declinedState.declinedAll, true, 'negar todos na última proposta encerra convites');
+assert.equal(declinedState.offers.length, 0, 'negar todos na última proposta limpa ofertas pendentes');
+assert.equal(
+  shouldShowNationalTeamOfferPopup({ year: 2026, careerDate: marWeek2, offerState: declinedState }),
+  false,
+  'popup não reaparece após negar todos na última proposta',
+);
 
 console.log('national-team-offers-tests: ok');

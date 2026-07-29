@@ -265,7 +265,7 @@ offersBody?.addEventListener('click', event => {
 
 applyLayout(readLayout());
 
-preloadCompetitionTrophy('nacional').then(url => {
+preloadCompetitionTrophy('world-cup').then(url => {
   if (trophyImg && url) {
     trophyImg.src = url;
     trophyImg.alt = 'Troféu Copa do Mundo';

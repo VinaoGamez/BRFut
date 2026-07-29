@@ -1,53 +1,37 @@
-# Plano de modularização — Alpha 02
+# Plano de modularização — BR Fut (Alpha 02+)
 
-Documento de referência da migração incremental. Ver `CHANGELOG.md` para o que já entrou em cada build.
+Documento de referência da migração incremental. Builds públicas: **`Alpha V.X.YY`** (+0,05 por release). Ver `js/core/release-notes.js` e `CHANGELOG.md`.
 
-## Estrutura atual
+## Estrutura atual (2026-07)
 
 ```
 js/
-  main.js                 ← entry (index.html)
-  site.js                 ← ponte legada
+  main.js                      ← entry index.html
+  home.js                      ← entry home.html
   core/
-    constants.js
-    event-bus.js
-    save.js
-  engine/
-    injury.js             ← motor de lesões (Fase B)
-    fatigue.js             ← motor de fadiga: recuperação, treino, desgaste ao vivo (Fase E)
-    match-tuning.js       ← calibração e escalação sim (Fase B)
-    match-core.js         ← formações e roundTactic (Fase B)
-    match-sim.js          ← simulateRoundMatch (Fase B)
-    match-live.js         ← ações ao vivo (Fase B)
-    match-availability.js         ← workload/disponibilidade + commit ao vivo (Fase F)
-    match-live-away-subs.js       ← banco/janelas/substituição do adversário ao vivo (Fase F)
-    match-live-orchestration.js   ← tick/advance/foul, lesões em jogo, pênaltis/shootout (Fase F)
+    constants.js, save.js, event-bus.js
+    storage-api.js, career-slot-manager.js
+    save-key-normalizer.js, career-activate.js, save-clear.js
+  engine/                        (~120 módulos)
+    injury, match-*, season-*, transfers, economy, …
+    career-pyramid-bootstrap.js, career-clubs-bootstrap.js
+    season-save-writer.js, round-advance.js
   ui/
-    dom.js
-    router.js
-  feature/
-    messages/index.js
-    shared/player-cells.js ← inclui fatigueCell (Fase E)
-    dashboard/index.js
-    calendar-view/index.js
-    tactics/index.js
-    economy/index.js
-    season-summary/index.js
-    options/index.js          ← ritmo, opções, nova carreira (Fase E)
-    live-day-matches/index.js ← modal "Ao vivo · Rodada" (Fase E)
-    match-live-ui/index.js    ← relógio, placar, log, adversário ao vivo (Fase E)
-    match-live-session/index.js ← resumo final, ações pós-jogo, abrir/reabrir partida (Fase F)
-    tester-hub/index.js       ← guia do tester + feedback (Fase D)
+    dom.js, router.js, boot-gate.js, …
+  feature/                       (~32 módulos)
+    dashboard, tactics, calendar-view, options, …
+    championship-page/, match-live-entry/, match-live-session/, …
   legacy/
-    engine.js             ← ratings, tactics, calendar/season, handlers restantes
+    engine.js                    ← compositor (~7,5k linhas)
 ```
 
 ## Regras
 
-1. **Motores não tocam DOM** — só regras e estado
-2. **Features não alteram simulação** — só UI + handlers
-3. **Save versionado** — ver `MODULE_VERSIONS` em `constants.js`
-4. **CSS por módulo** — engine sem injeção JS (Fase E passo 2); features (tactics, tactical-confrontation, calendar-view, economy, season-summary, player-cells) também sem `createElement('style')` (Fase E passo 4) — CSS extraído para `css/*.css` linkados em `index.html`. UI chrome (`update-alert`, `release-notes-viewer`, `tester-hub`) também em arquivos estáticos. Leftover conhecido: `security/tester-hardening.js` (hardening inline).
+1. **Motores não tocam DOM** — só regras e estado via deps.
+2. **Features não alteram simulação** — UI + handlers.
+3. **Save versionado** — `MODULE_VERSIONS` em `constants.js`.
+4. **CSS estático** — sem `createElement('style')` nas features (exceto hardening).
+5. **Lógica nova não entra em `legacy/engine.js`** — só wiring.
 
 ## Fases
 
@@ -58,74 +42,43 @@ js/
 | C | dashboard, tactics, calendar-view, player-cells | **Concluída** |
 | D | build testers, guia, feedback | **Concluída** |
 | E | economy, season-summary, options, live-day-matches, fatigue, match-live-ui | **Concluída** |
-| F | orquestração ao vivo: match-availability, match-live-away-subs, match-live-orchestration, match-live-session | **Concluída** |
+| F | match-availability, match-live-away-subs, match-live-orchestration, match-live-session | **Concluída** |
+| G | championship-page, match-live-entry, pyramid/clubs bootstrap, lazy audio, round-advance wiring | **Concluída** |
+| **Sync** | slots, cloud merge, activateSlot, save-clear, boot-order tests | **Concluída** |
 
-### Fase D — nota
+### Fase G — extrações do compositor
 
-- **Build testers:** `npm run build` → `dist/`, servidor hardened `5081`, GitHub Pages (`deploy-testers.yml`).
-- **Guia:** `docs/GUIA-TESTER.md` + modal na home/Opções (`feature/tester-hub`).
-- **Feedback:** formulário estruturado (copiar relatório ou abrir issue GitHub) +
-  `.github/ISSUE_TEMPLATE/tester-feedback.yml`.
+- `feature/championship-page/` — UI campeonatos (~1,3k linhas extraídas)
+- `feature/match-live-entry/` — play/restore/pênaltis (~750 linhas)
+- `engine/career-pyramid-bootstrap.js` — pirâmide A–D
+- `engine/career-clubs-bootstrap.js` — elencos e worldRosters
+- `feature/match-live-audio/lazy.js` — code-split áudio
+- `markBootReady` centralizado em `main.js`
+- Compositor: ~9,2k → ~7,5k linhas
 
-### Fase E — nota (concluída)
+### Fase Sync — persistência
 
-- **Passo 1:** extraídos `feature/options/index.js` (`createOptionsFeature`) e
-  `feature/live-day-matches/index.js` (`createLiveDayMatchesFeature`) de `legacy/engine.js`.
-  `MODULE_VERSIONS.options` e `MODULE_VERSIONS.liveDayMatches` em `constants.js`.
-- **Passo 2:** CSS do `legacy/engine.js` (e base de options/live-day) movido para
-  arquivos em `css/` linkados em `index.html` (ordem preserva o cascade antigo). Zero
-  `createElement('style')` restante no engine.
-- **Passo 3:** extraídos `engine/fatigue.js` (`createFatigueEngine`) e
-  `feature/match-live-ui/index.js` (`createMatchLiveUiFeature`). `fatigueCell` em
-  `feature/shared/player-cells.js`. `MODULE_VERSIONS.fatigue` e `MODULE_VERSIONS.matchLiveUi`
-  em `constants.js`.
-- **Também no escopo E (já extraídos antes/junto):** `feature/economy`, `feature/season-summary`.
-- **Passo 4:** CSS injetado via `document.createElement('style')` nas features restantes
-  movido para arquivos estáticos: `tactics/index.js` (6 blocos → `css/tactics-ui.css`),
-  `tactics/tactical-confrontation.js` → `css/tactical-confrontation.css`,
-  `calendar-view/index.js` (fullCalendarCss + matchReportCss → apensado a `css/calendar.css`),
-  `economy/index.js` (economyOfficeCss) → `css/economy-office.css`, `season-summary/index.js`
-  → `css/season-summary.css`, `shared/player-cells.js` (injectPlayerStatusCss) →
-  `css/player-status.css`. Todos os injetores e call sites (inclusive em `legacy/engine.js`)
-  foram removidos. Leftover: `security/tester-hardening.js` (hardening inline).
+- `save-key-normalizer.js` — chaves `brfut-*`
+- `career-activate.js` — `activateSlot`, `prepareGameSession`
+- `save-clear.js` — API unificada de limpeza
+- `storage-api.js` — mutex boot, merge bundle
+- Testes: `career-slot-tests`, `career-sync-tests`, `boot-order-tests`
 
-### Fase F — nota (concluída)
+## Próximo (opcional)
 
-Orquestração da partida ao vivo extraída de `legacy/engine.js` para quatro módulos novos,
-todos factory `create...(deps)` sem DOM direto no motor (callbacks para render/log/clock):
-
-- **`engine/match-availability.js`** (`createMatchAvailability`): `applyMatchWorkload`,
-  `applyMatchAvailability`, `serveAvailability`, `commitLiveAvailability`.
-- **`engine/match-live-away-subs.js`** (`createAwaySubController`): `awayBenchPlayers`,
-  `replaceAwayPlayer`, `maxAwaySubWindows`, `buildLiveAwaySubState`, `makeAwayFatigueSubstitution`.
-- **`engine/match-live-orchestration.js`** (`createLiveMatchOrchestration`): `tick`/`advance`/`foul`,
-  lesões em jogo (`tryLiveEventInjury`, `escalateLivePlayThroughInjury`,
-  `handleLivePlayThroughIncident`, `checkMinuteAggravation`, `enforceLiveRehabLimit`), `applyWear`
-  e todo o fluxo de pênaltis/shootout.
-- **`feature/match-live-session/index.js`** (`createMatchLiveSessionFeature`): `renderFinalSummary`,
-  `showFinalActions`, `exitLiveMatch`, `reopenMatchWindow`, `openPreparation`.
-
-`MODULE_VERSIONS.matchAvailability`, `.matchLiveAwaySubs`, `.matchLiveOrchestration`,
-`.matchLiveSession` em `constants.js`. Ratings ao vivo (`profile`, `playerFor`,
-`liveOverall`, etc.) em `engine/match-ratings.js` (`MODULE_VERSIONS.matchRatings`).
+- Subpastas `economy/` e `transfers/` (padrão `club-status/`) — wiring fino no compositor
+- Event-bus para persist/sync
+- Feature médica (tratamento pós-jogo) extraída do compositor
 
 ## Comandos
 
 ```bash
 npm install
-npm run dev      # Vite — http://127.0.0.1:5080
-npm run build    # Saída em dist/
-npm run preview  # Preview da build
+npm run dev      # http://127.0.0.1:5080
+npm run build    # dist/
+npm run test:all
 ```
 
-Sem Node: `INICIAR-JOGO.bat` serve os módulos ES nativamente via Python.
+Tester hardened: http://127.0.0.1:5081/home.html
 
-## Exportar build para testers
-
-```bash
-npm run build
-```
-
-Distribuir a pasta `dist/` ou zipar. Links apontam para `home.html`.
-
-Tester hardened (bundle): http://127.0.0.1:5081/home.html
+Ver também: [modularization.md](./modularization.md)

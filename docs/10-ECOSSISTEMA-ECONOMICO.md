@@ -3,7 +3,7 @@
 **Objetivo:** economia de clube que se comporta como um sistema fechado com feedbacks reais — arrecadação, folha, crédito, mercado e diretoria se empurram o tempo todo.  
 **Relacionado:** [09-RISCO-QUEBRA-FINANCEIRA.md](./09-RISCO-QUEBRA-FINANCEIRA.md) (risco / demissão).
 
-Este documento descreve a **visão do ecossistema** (como deve se sentir ao jogar) e ancora o que **já existe** no Alpha. Não é checklist de implementação.
+Este documento descreve a **visão do ecossistema** (como deve se sentir ao jogar) e ancora o que **já existe** no BR Fut Alpha. Não é checklist de implementação.
 
 ---
 

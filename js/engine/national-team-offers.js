@@ -51,6 +51,7 @@ export function normalizeNationalTeamOfferState(raw, year) {
       issuedCount: 0,
       lastIssueDate: null,
       snoozedUntil: null,
+      declinedAll: false,
     };
   }
   return {
@@ -59,6 +60,7 @@ export function normalizeNationalTeamOfferState(raw, year) {
     issuedCount: Math.max(0, Math.min(NATIONAL_TEAM_OFFER_COUNT, Number(raw.issuedCount) || 0)),
     lastIssueDate: raw.lastIssueDate || null,
     snoozedUntil: raw.snoozedUntil || null,
+    declinedAll: raw.declinedAll === true,
   };
 }
 
@@ -111,6 +113,7 @@ export function shouldShowNationalTeamOfferPopup({
 } = {}) {
   if (userNationalTeamCode) return false;
   const state = normalizeNationalTeamOfferState(offerState, year);
+  if (state.declinedAll) return false;
   if (!state.offers.length) return false;
 
   const date = toDate(careerDate);
@@ -250,4 +253,16 @@ export function formatNationalTeamOfferLetter(offer, year = WORLD_CUP_2026_YEAR)
 
 export function resolveNationalTeamName(code) {
   return nationalTeamByCode(code)?.name || null;
+}
+
+/** Encerra convites da temporada após "Negar todos" na última proposta. */
+export function finalizeNationalTeamOfferDeclines(state, year) {
+  const normalized = normalizeNationalTeamOfferState(state, year);
+  return {
+    ...normalized,
+    declinedAll: true,
+    offers: [],
+    snoozedUntil: null,
+    issuedCount: Math.max(normalized.issuedCount, NATIONAL_TEAM_OFFER_COUNT),
+  };
 }

@@ -7,23 +7,21 @@ import { createTesterHubFeature } from './feature/tester-hub/index.js';
 import { fetchPlayerStats, probeBackend } from './core/storage-api.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
-import { endBrowserSession } from './core/storage-api.js';
+import { endBrowserSession, getAuthToken } from './core/storage-api.js';
 import {
   clearSessionCareerData,
-  consumeSkipSessionEndOnce,
   hasLocalCareerSave,
   markCareerReloadPending,
   markSkipSessionEndOnce,
-  migrateLegacyStorageKeys,
   purgeAllCareerStorage,
+  shouldPreserveAuthOnPageHide,
 } from './core/save.js';
+import { SPONSOR_LOGO_URLS } from './assets/sponsor-logos.js';
 import {
-  migrateLegacySingleSaveToSlots,
-  setActiveSlotId,
-  hydrateSlot,
-} from './core/career-slot-manager.js';
-import { mountCareerSlotsUi, lastSaveHintText } from './feature/career-slots/index.js';
-import { hydrateSlotBundleFromCloud, initStorageBackend } from './core/storage-api.js';
+  runCareerBootMigration,
+  activateSlot,
+} from './core/career-activate.js';
+import { hasPlayableCareerSave } from './core/career-storage-health.js';
 
 function renderMaintenanceShell() {
   document.body.classList.add('home-maintenance-mode');
@@ -36,19 +34,7 @@ function renderMaintenanceShell() {
   }
   initSponsorRail();
 }
-
-const SPONSOR_LOGO_URLS = Object.fromEntries(
-  Object.entries(
-    import.meta.glob('../assets/sponsors/icons/*.png', {
-      eager: true,
-      query: '?url',
-      import: 'default',
-    }),
-  ).map(([path, url]) => {
-    const file = path.split('/').pop()?.replace(/\.png$/i, '') || '';
-    return [file, url];
-  }),
-);
+import { mountCareerSlotsUi, lastSaveHintText } from './feature/career-slots/index.js';
 
 const SPONSOR_ORDER = [
   'tekno-cursos',
@@ -174,8 +160,7 @@ if (SITE_MAINTENANCE.enabled) {
   endBrowserSession();
   renderMaintenanceShell();
 } else {
-  migrateLegacyStorageKeys();
-  migrateLegacySingleSaveToSlots();
+  runCareerBootMigration();
 }
 
 (() => {
@@ -211,11 +196,12 @@ if (SITE_MAINTENANCE.enabled) {
 
   const syncCareerActions = ({ loggedIn = null, hasBackend = null } = {}) => {
     const last = careerSlots.getLastPlayedSlot();
+    const lastPlayable = last ? hasPlayableCareerSave(last.id) : false;
     const hasSlot = careerSlots.hasAnySlot();
     const requiresLogin = hasBackend === true;
     const showCareer = hasSlot && (!requiresLogin || loggedIn === true);
 
-    continueBtn?.classList.toggle('hidden', !showCareer || !last);
+    continueBtn?.classList.toggle('hidden', !showCareer || !last || !lastPlayable);
     loadCareerBtn?.classList.toggle('hidden', !showCareer && requiresLogin);
     if (requiresLogin) {
       loadCareerBtn?.classList.toggle('hidden', !loggedIn);
@@ -225,8 +211,12 @@ if (SITE_MAINTENANCE.enabled) {
       continueBtn.href = `index.html?slot=${encodeURIComponent(last.id)}`;
     }
     if (lastSaveHint) {
-      if (last && showCareer) {
+      if (last && showCareer && lastPlayable) {
         lastSaveHint.textContent = lastSaveHintText(last);
+        lastSaveHint.classList.remove('hidden');
+      } else if (last && showCareer && !lastPlayable) {
+        lastSaveHint.textContent =
+          'Save incompleto — só restou o índice do slot. Abra storage-diag.html ou inicie nova carreira.';
         lastSaveHint.classList.remove('hidden');
       } else {
         lastSaveHint.textContent = '';
@@ -322,16 +312,13 @@ if (SITE_MAINTENANCE.enabled) {
   continueBtn?.addEventListener('click', async event => {
     event.preventDefault();
     const last = careerSlots.getLastPlayedSlot();
-    if (!last) return;
+    if (!last || !hasPlayableCareerSave(last.id)) return;
     markSkipSessionEndOnce();
     try {
-      await initStorageBackend({ skipProbe: true });
-      await hydrateSlotBundleFromCloud(last.id);
+      await activateSlot(last.id, { skipProbe: true, reason: 'home-continue' });
     } catch {
       /* local */
     }
-    setActiveSlotId(last.id);
-    hydrateSlot(last.id);
     goToGame({ slotId: last.id });
   });
 
@@ -342,7 +329,7 @@ if (SITE_MAINTENANCE.enabled) {
   document.getElementById('openTesterFeedback')?.addEventListener('click', () => testerHub.openFeedback());
 
   window.addEventListener('beforeunload', () => {
-    if (hasCareer()) markSkipSessionEndOnce();
+    if (hasCareer() || getAuthToken()) markSkipSessionEndOnce();
   });
 
   window.addEventListener('pagehide', event => {
@@ -352,7 +339,7 @@ if (SITE_MAINTENANCE.enabled) {
       markSkipSessionEndOnce();
       return;
     }
-    if (consumeSkipSessionEndOnce()) return;
+    if (shouldPreserveAuthOnPageHide()) return;
     endBrowserSession();
     clearSessionCareerData();
   });

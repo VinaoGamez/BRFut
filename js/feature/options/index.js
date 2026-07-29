@@ -1,4 +1,4 @@
-import { MODULE_VERSIONS, FEATURES, SITE_MAINTENANCE } from '../../core/constants.js';
+import { MODULE_VERSIONS, FEATURES, SITE_MAINTENANCE, SAVE_KEYS } from '../../core/constants.js';
 import '../../../css/new-career-modal.css';
 import { initReleaseNotesViewer, renderOptionsUpdateSummary } from '../../ui/release-notes-viewer.js';
 import { createTesterHubFeature } from '../tester-hub/index.js';
@@ -14,7 +14,8 @@ import {
   listAutosaveOptions,
   mergePreferencesIntoCareer,
 } from '../../core/save-preferences.js';
-import { endBrowserSession, flushCloudDeletesAsync, isCloudStorageActive, queueCloudSave } from '../../core/storage-api.js';
+import { endBrowserSession, isCloudStorageActive, queueCloudSave, getAuthToken } from '../../core/storage-api.js';
+import { clearCareerData } from '../../core/save-clear.js';
 import {
   canCreateSlot,
   createNewSlot,
@@ -155,7 +156,7 @@ export function createOptionsFeature(deps) {
   const injectModals = () => {
     document.body.insertAdjacentHTML(
       'beforeend',
-      `<div id="optionsModal" class="modal hidden"><div class="modal-card options-modal"><button id="closeOptions" class="close">×</button><label>CONFIGURAÇÕES</label><h2>Opções do Jogo</h2><section class="option-section"><label>NOVA CARREIRA</label><div class="new-game-action"><div><strong>Criar clube e iniciar carreira</strong><small>${newCareerBlurb}</small></div><button id="openNewGame" type="button">NOVO JOGO</button></div></section><section class="option-section"><label>SALVAMENTO</label><p>Escolha quando o jogo grava automaticamente. O ritmo de jogo também é salvo junto com a carreira.</p><div class="save-prefs-row"><select id="autosaveMode" autocomplete="off">${autosaveOptionsHtml}</select><button id="manualSaveBtn" type="button">SALVAR</button></div></section><section class="option-section"><label>RITMO DE JOGO</label><p>Define a duração da simulação contínua. Pausas técnicas e decisões do treinador continuam sob seu controle.</p><div id="paceChoices" class="option-choices">${Object.entries(GAME_PACE_CONFIG).map(([key, pace]) => `<button class="pace-choice" data-pace="${key}"><b>${pace.name}</b><small>${pace.detail}</small></button>`).join('')}</div></section><section class="option-section"><label>SONS AO VIVO</label><p>Apito, narração e reação da torcida durante a simulação de partida.</p><div id="liveAudioOptions" class="live-audio-options"></div></section><section class="option-section"><label>INFORMAÇÕES DE ATUALIZAÇÕES</label><div class="updates-info-row"><div class="updates-info-summary"><strong>Última Atualização</strong><span id="optionsLatestUpdate">—</span></div><button id="openReleaseNotes" type="button">CONSULTAR</button></div></section><section class="option-section"><label>CONTA</label><p>Encerra a sessão e volta à tela inicial. Seus dados ficam salvos na nuvem.</p><div class="options-logout-row"><button id="optionsLogout" type="button">SAIR</button></div></section><section class="option-section"><label>TESTERS</label><div class="new-game-action"><div><strong>Guia e feedback</strong><small>Como testar a build e enviar relatório estruturado (GitHub ou copiar texto).</small></div><div class="option-choices" style="flex:none;display:flex;gap:8px;flex-wrap:wrap"><button id="openTesterGuide" type="button">GUIA</button><button id="openTesterFeedback" type="button">FEEDBACK</button><button id="previewSeasonGoalGauge" type="button" title="Abre o balanço com dados fictícios — não altera a carreira">PREVIEW META</button></div></div></section></div></div>${buildNewGameModalHtml()}`,
+      `<div id="optionsModal" class="modal hidden"><div class="modal-card options-modal"><button id="closeOptions" class="close">×</button><label>CONFIGURAÇÕES</label><h2>Opções do Jogo</h2><section class="option-section"><label>NOVA CARREIRA</label><div class="new-game-action"><div><strong>Criar clube e iniciar carreira</strong><small>${newCareerBlurb}</small></div><button id="openNewGame" type="button">NOVO JOGO</button></div></section><section class="option-section"><label>SALVAMENTO</label><p>Escolha quando o jogo grava automaticamente. O ritmo de jogo também é salvo junto com a carreira.</p><p class="save-prefs-note"><small>Sempre grava neste navegador. Com conta conectada, espelha na nuvem (5081 / BR Fut). “SALVO LOCAL” = só navegador; nuvem não confirmou.</small></p><div class="save-prefs-row"><select id="autosaveMode" autocomplete="off">${autosaveOptionsHtml}</select><button id="manualSaveBtn" type="button">SALVAR</button></div></section><section class="option-section"><label>RITMO DE JOGO</label><p>Define a duração da simulação contínua. Pausas técnicas e decisões do treinador continuam sob seu controle.</p><div id="paceChoices" class="option-choices">${Object.entries(GAME_PACE_CONFIG).map(([key, pace]) => `<button class="pace-choice" data-pace="${key}"><b>${pace.name}</b><small>${pace.detail}</small></button>`).join('')}</div></section><section class="option-section"><label>SONS AO VIVO</label><p>Apito, narração e reação da torcida durante a simulação de partida.</p><div id="liveAudioOptions" class="live-audio-options"></div></section><section class="option-section"><label>INFORMAÇÕES DE ATUALIZAÇÕES</label><div class="updates-info-row"><div class="updates-info-summary"><strong>Última Atualização</strong><span id="optionsLatestUpdate">—</span></div><button id="openReleaseNotes" type="button">CONSULTAR</button></div></section><section class="option-section"><label>CONTA</label><p>Encerra a sessão e volta à tela inicial. Seus dados ficam salvos na nuvem.</p><div class="options-logout-row"><button id="optionsLogout" type="button">SAIR</button></div></section><section class="option-section"><label>TESTERS</label><div class="new-game-action"><div><strong>Guia e feedback</strong><small>Como testar a build e enviar relatório estruturado (GitHub ou copiar texto).</small></div><div class="option-choices" style="flex:none;display:flex;gap:8px;flex-wrap:wrap"><button id="openTesterGuide" type="button">GUIA</button><button id="openTesterFeedback" type="button">FEEDBACK</button><button id="previewSeasonGoalGauge" type="button" title="Abre o balanço com dados fictícios — não altera a carreira">PREVIEW META</button></div></div></section></div></div>${buildNewGameModalHtml()}`,
     );
   };
 
@@ -223,8 +224,12 @@ export function createOptionsFeature(deps) {
       })
     : null;
 
+  const paintLiveAudioOptions = root => {
+    if (!root || !matchLiveAudio?.renderOptions) return;
+    void Promise.resolve(matchLiveAudio.renderOptions(root));
+  };
   $('#careerClubName')?.addEventListener('input', () => careerCrestEditor?.refreshPreview());
-  matchLiveAudio?.renderOptions?.($('#liveAudioOptions'));
+  paintLiveAudioOptions($('#liveAudioOptions'));
 
   const testerHub = createTesterHubFeature({
     onOpenGuide: () => $('#optionsModal')?.classList.add('hidden'),
@@ -244,7 +249,7 @@ export function createOptionsFeature(deps) {
     $$('#paceChoices button').forEach(button =>
       button.classList.toggle('selected', button.dataset.pace === gamePace),
     );
-    matchLiveAudio?.renderOptions?.($('#liveAudioOptions'));
+    paintLiveAudioOptions($('#liveAudioOptions'));
     renderOptionsUpdateSummary();
   };
 
@@ -404,8 +409,7 @@ export function createOptionsFeature(deps) {
     }
     prepareForNewCareer?.();
     markSkipPersistOnce?.();
-    if (typeof clearCareerStorage === 'function') clearCareerStorage({ clearTraining: true });
-    else clearSeasonSave();
+    await clearCareerData('career', { cloud: 'await', clearTraining: true });
     retainCustomClubsForCareer(clubName);
     const careerPayload = {
       seed,
@@ -450,7 +454,6 @@ export function createOptionsFeature(deps) {
     markFreshCareerBoot();
     syncActiveSlotFromCache();
     if (isCloudStorageActive()) {
-      await flushCloudDeletesAsync([SAVE_KEYS.career, SAVE_KEYS.season]);
       queueCloudSave(SAVE_KEYS.career, careerPayload);
     }
     $('#newGameModal').classList.add('hidden');
@@ -482,22 +485,21 @@ export function createOptionsFeature(deps) {
     }
     const result = await onManualSave?.();
     const localOk = result?.localOk ?? result?.seasonLocalOk ?? (result === true);
-    const ok = result === true || (result && typeof result === 'object' && result.ok !== false);
     const cloudOk = result?.cloud === true;
     const cloudHint = (() => {
       if (!localOk) return 'MEMÓRIA CHEIA';
-      if (cloudOk) return 'SALVO!';
-      if (!ok) return 'SEM SAVE';
-      if (result?.cloudReason === 'cloud_inactive') return 'SALVO LOCAL';
-      const err = result?.cloudErrors?.[0];
-      if (err?.status === 401) return 'SESSÃO';
-      if (err?.status === 413) return 'MUITO GRANDE';
-      if (err?.status === 429) return 'LIMITE API';
-      if (result?.seasonOk === false || result?.careerOk === false) {
-        if (!err?.status) return 'SALVO LOCAL';
-        return `NUVEM ${err.status}`;
+      if (cloudOk && result?.careerOk && result?.seasonOk) return 'SALVO!';
+      if (result?.cloudReason === 'cloud_inactive') {
+        return getAuthToken() ? 'LOCAL (SEM NUVEM)' : 'SALVO LOCAL';
       }
-      return 'SALVO LOCAL';
+      if (result?.cloudReason === 'empty_batch') return 'LOCAL (VAZIO)';
+      const err = result?.cloudErrors?.[0];
+      if (err?.status === 401) return 'LOCAL (SESSÃO)';
+      if (err?.status === 413) return 'LOCAL (GRANDE)';
+      if (err?.status === 429) return 'LOCAL (LIMITE)';
+      if (localOk && (result?.seasonOk || result?.careerOk)) return 'LOCAL + PARCIAL';
+      if (localOk) return 'SALVO LOCAL';
+      return 'SEM SAVE';
     })();
     if (btn) {
       const prev = 'SALVAR';
@@ -505,7 +507,7 @@ export function createOptionsFeature(deps) {
       window.setTimeout(() => {
         btn.textContent = prev;
         btn.disabled = false;
-      }, 1400);
+      }, 1800);
     }
   });
 

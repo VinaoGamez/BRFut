@@ -77,7 +77,14 @@ export function createRosterContractsFeature(deps) {
     }
 
     const navBadge = $('#squadNavBadge');
-    navBadge?.classList.toggle('hidden', count === 0);
+    if (navBadge) {
+      navBadge.textContent = String(count);
+      navBadge.classList.toggle('hidden', count === 0);
+      navBadge.title =
+        count > 0
+          ? `${count} contrato${count === 1 ? '' : 's'} a vencer ou vencido${count === 1 ? '' : 's'}`
+          : '';
+    }
     const squadNav = document.querySelector('.nav[data-view="squad"]');
     if (squadNav) {
       squadNav.title =

@@ -1265,6 +1265,11 @@ export function createEconomyFeature(deps) {
       match: reason => reason === 'loan_out_wages',
     },
     { key: 'staff', label: 'Comissão técnica', match: reason => reason === 'staff_wages' },
+    {
+      key: 'scouting',
+      label: 'Olheiros',
+      match: reason => reason === 'scout_wages' || reason === 'scout_travel',
+    },
     { key: 'stadium', label: 'Manutenção do estádio', match: reason => reason === 'stadium_ops' },
     { key: 'upgrades', label: 'Investimentos', match: reason => String(reason || '').startsWith('upgrade:') },
     {

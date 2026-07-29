@@ -145,7 +145,6 @@ function tagEditableBlocks() {
     { sel: '#seasonGoalSection', id: 'goal-section' },
     { sel: '#seasonObjectivesSection', id: 'objectives-section' },
     { sel: '.season-champions-section', id: 'champions-section' },
-    { sel: '#seasonLeaders', id: 'leaders-section', parent: true },
     { sel: '#seasonRewardsSection', id: 'rewards-section' },
     { sel: '#seasonMovements', id: 'movements-section', parent: true },
     { sel: '.season-summary-actions', id: 'actions' },

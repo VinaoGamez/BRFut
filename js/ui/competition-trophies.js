@@ -5,6 +5,7 @@ const loaders = {
   estaduais: () => import('../../assets/competitions/trophies/trophy-estaduais.webp'),
   libertadores: () => import('../../assets/competitions/trophies/trophy-libertadores.webp'),
   'sul-americana': () => import('../../assets/competitions/trophies/trophy-sul-americana.webp'),
+  'world-cup': () => import('../../assets/competitions/trophies/trophy-world-cup.png'),
 };
 
 const cache = new Map();
@@ -21,6 +22,7 @@ export function resolveChampionshipTrophyKey(pageCompetition) {
   if (id === 'ESTADUAIS' || id.startsWith('EST:')) return 'estaduais';
   if (id === 'LIBERTADORES' || id === 'LIB') return 'libertadores';
   if (id === 'SUDAMERICANA' || id === 'SUD') return 'sul-americana';
+  if (id === 'CMU' || id === 'WORLD_CUP') return 'world-cup';
   return 'nacional';
 }
 

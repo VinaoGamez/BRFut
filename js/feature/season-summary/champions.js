@@ -1,7 +1,7 @@
 import { FEATURES } from '../../core/constants.js';
-import { formatMatchRating as defaultFormatMatchRating } from '../../engine/player-match-stats.js';
 import { FUTURE_COMPETITION_MOLD } from '../../engine/season-calendar-mold.js';
 import {
+  competitionTrophyUrl,
   ensureCompetitionTrophy,
   hydratePickerTrophyIcons,
   preloadCompetitionTrophy,
@@ -15,6 +15,7 @@ const LEAGUE_META = Object.freeze({
   C: { label: 'Série C', subtitle: 'Campeão da Série C', accent: '#ffc94f', cupStyle: false },
   D: { label: 'Série D', subtitle: 'Campeão da Série D', accent: '#ff9f6b', cupStyle: false },
   CUP: { label: 'Copa do Brasil', subtitle: 'Campeão da Copa do Brasil', accent: '#b6ff38', cupStyle: true },
+  WORLD_CUP: { label: 'Copa do Mundo', subtitle: 'Campeão da Copa do Mundo', accent: '#ffd24a', cupStyle: false },
   RECOPA: { label: 'Recopa Nacional', subtitle: 'Campeão da Recopa Nacional', accent: '#ffd24a', cupStyle: false },
   LIBERTADORES: { label: 'Libertadores', subtitle: 'Campeão da Libertadores', accent: '#c9a227', cupStyle: false },
   SUDAMERICANA: { label: 'Sul-Americana', subtitle: 'Campeão da Sul-Americana', accent: '#ff7a52', cupStyle: false },
@@ -28,10 +29,35 @@ const ESTADUAL_META = Object.freeze({
 });
 
 const PYRAMID_ORDER = ['A', 'B', 'C', 'D'];
-const NAV_ORDER = ['A', 'B', 'C', 'D', 'CUP', 'RECOPA', 'LIBERTADORES', 'SUDAMERICANA'];
+const NAV_ORDER = ['A', 'B', 'C', 'D', 'CUP', 'WORLD_CUP', 'RECOPA', 'LIBERTADORES', 'SUDAMERICANA'];
 
 const layoutState = new WeakMap();
 let documentHandlersBound = false;
+
+function getChampionsSection(root) {
+  return root?.closest('.season-champions-section') || root?.parentElement || root;
+}
+
+function queryPicker(root) {
+  const section = getChampionsSection(root);
+  return {
+    section,
+    btn: section?.querySelector('#seasonChampionsPickerBtn'),
+    menu: section?.querySelector('#seasonChampionsPickerMenu'),
+  };
+}
+
+function resolveTournamentLeadersKey(entry) {
+  if (!entry) return null;
+  if (entry.key === 'CMU') return 'WORLD_CUP';
+  if (['A', 'B', 'C', 'D', 'CUP', 'WORLD_CUP'].includes(entry.key)) return entry.key;
+  if (entry.competitionId === 'WORLD_CUP' || entry.competitionId === 'CMU') return 'WORLD_CUP';
+  if (entry.key?.startsWith('EST:')) return entry.key;
+  if (entry.competitionId && ['A', 'B', 'C', 'D', 'CUP'].includes(entry.competitionId)) {
+    return entry.competitionId;
+  }
+  return null;
+}
 
 function entryFromMeta(key, meta, clubName, { subtitleOverride = null } = {}) {
   if (!clubName) return null;
@@ -78,8 +104,10 @@ export function buildChampionEntries({
     });
     nav.push(entry);
     if (PYRAMID_ORDER.includes(key)) pyramid.push(entry);
-    else if (['RECOPA', 'LIBERTADORES', 'SUDAMERICANA'].includes(key)) extra.push(entry);
+    else if (['WORLD_CUP', 'RECOPA', 'LIBERTADORES', 'SUDAMERICANA'].includes(key)) extra.push(entry);
   });
+
+  const estaduais = [];
 
   if (FEATURES.stateLeague) {
     championEstaduais.forEach(item => {
@@ -93,10 +121,11 @@ export function buildChampionEntries({
         clubName: item.clubName,
         competitionId: 'ESTADUAIS',
         uf: item.uf || null,
+        tier: item.tier || 1,
         trophyKey: resolveChampionshipTrophyKey('ESTADUAIS'),
       };
       nav.push(entry);
-      extra.push(entry);
+      estaduais.push(entry);
     });
   }
 
@@ -109,20 +138,14 @@ export function buildChampionEntries({
   return {
     nav: withUserFlag(nav),
     pyramid: withUserFlag(pyramid),
+    estaduais: withUserFlag(estaduais),
     extra: withUserFlag(extra),
     defaultKey: resolveDefaultKey(nav, userDivision),
   };
 }
 
-function trophySize(variant) {
-  if (variant === 'featured') return 58;
-  if (variant === 'compact') return 40;
-  return 46;
-}
-
 export function championCardMarkup(entry, { featuredLayout = 'stacked' } = {}) {
   const { key, label, subtitle, accent, cupStyle, clubName, variant, isUserClub, competitionId } = entry;
-  const size = trophySize(variant);
   const crest = clubName ? teamCrestHtml(clubName, { className: 'season-champion-crest' }) : '—';
   const isShowcase = featuredLayout === 'horizontal' && variant === 'featured';
   const classes = [
@@ -137,17 +160,19 @@ export function championCardMarkup(entry, { featuredLayout = 'stacked' } = {}) {
     .filter(Boolean)
     .join(' ');
 
+  const trophyKey = resolveChampionshipTrophyKey(competitionId || key);
+  const trophyBlock = `<div class="season-champion-trophy" data-trophy-key="${trophyKey}">
+        <img class="season-champion-trophy-img" data-competition="${competitionId || key}" data-trophy-key="${trophyKey}" alt="" decoding="async">
+      </div>`;
+  const crestBlock = `<div class="season-champion-hero">${crest}</div>`;
+
+  // Destaque: troféu e escudo lado a lado; fila inferior: troféu acima do escudo (layout clássico).
   const visualRow = isShowcase
     ? `<div class="season-champion-visual-row">
-        <div class="season-champion-trophy">
-          <img class="season-champion-trophy-img" data-competition="${competitionId || key}" alt="" width="${size}" height="${size}" decoding="async" loading="lazy">
-        </div>
-        <div class="season-champion-hero">${crest}</div>
+        ${trophyBlock}
+        ${crestBlock}
       </div>`
-    : `<div class="season-champion-trophy">
-        <img class="season-champion-trophy-img" data-competition="${competitionId || key}" alt="" width="${size}" height="${size}" decoding="async" loading="lazy">
-      </div>
-      <div class="season-champion-hero">${crest}</div>`;
+    : `${trophyBlock}${crestBlock}`;
 
   return `<article class="${classes}" data-champion-key="${key}" style="--champion-accent:${accent}">
     <span class="season-champion-badge">${label}</span>
@@ -158,56 +183,48 @@ export function championCardMarkup(entry, { featuredLayout = 'stacked' } = {}) {
   </article>`;
 }
 
-function championTeamStatsMarkup(clubName, deps = {}) {
-  const {
-    clubSeasonLeaders,
-    clubSeasonRatingSummary,
-    formatMatchRating = defaultFormatMatchRating,
-  } = deps;
-  const leaders =
-    typeof clubSeasonLeaders === 'function'
-      ? clubSeasonLeaders(clubName)
-      : { scorer: { name: '—' }, goals: 0, assistant: { name: '—' }, assists: 0 };
-  const teamRating =
-    typeof clubSeasonRatingSummary === 'function'
-      ? clubSeasonRatingSummary(clubName)
-      : { average: null, matches: 0 };
-  const matches = Number(teamRating.matches) || 0;
-  const overallMeta =
-    matches === 1 ? '1 partida' : matches > 1 ? `${matches} partidas` : 'nota média';
+function championTournamentStatsMarkup(entry, deps = {}) {
+  const leadersKey = resolveTournamentLeadersKey(entry);
+  const bucket = leadersKey ? deps.leadersByDivision?.[leadersKey] : null;
+  const scorer = bucket?.scorers?.[0];
+  const assistant = bucket?.assistants?.[0];
+  const competitionLabel = entry?.label || 'Torneio';
 
-  return `<article class="card dashboard-team-stats season-champions-team-stats">
-    <label>ESTATISTICAS DO TIME</label>
+  const statRow = (kind, label, leader, metric, metricLabel, iconSrc) => {
+    if (!leader?.name || leader.name === '—') {
+      return `<article class="dashboard-team-stat">
+        <img class="dashboard-team-stat-icon" src="${iconSrc}" alt="" width="58" height="58" decoding="async">
+        <div class="dashboard-team-stat-copy">
+          <small>${label}</small>
+          <strong>—</strong>
+          <span>Sem dados registrados</span>
+        </div>
+      </article>`;
+    }
+    const value = Number(leader[metric]) || 0;
+    return `<article class="dashboard-team-stat">
+      <img class="dashboard-team-stat-icon" src="${iconSrc}" alt="" width="58" height="58" decoding="async">
+      <div class="dashboard-team-stat-copy">
+        <small>${label}</small>
+        <strong>${leader.name}</strong>
+        <span>${leader.club || '—'}</span>
+        <em>${value} ${metricLabel}</em>
+      </div>
+    </article>`;
+  };
+
+  return `<article class="card dashboard-team-stats season-champions-team-stats season-champions-tournament-stats">
+    <label>ESTATÍSTICAS DO TORNEIO</label>
+    <small class="season-champions-tournament-stats-sub">${competitionLabel}</small>
     <div class="dashboard-team-stats-list">
-      <article class="dashboard-team-stat">
-        <img class="dashboard-team-stat-icon" src="./brand/stats-scorer.png" alt="" width="46" height="46" decoding="async">
-        <div class="dashboard-team-stat-copy">
-          <small>ARTILHEIRO</small>
-          <strong>${leaders.scorer?.name || '—'}</strong>
-          <span>${leaders.goals || 0} gol${leaders.goals === 1 ? '' : 's'}</span>
-        </div>
-      </article>
-      <article class="dashboard-team-stat">
-        <img class="dashboard-team-stat-icon" src="./brand/stats-assist.png" alt="" width="46" height="46" decoding="async">
-        <div class="dashboard-team-stat-copy">
-          <small>ASSISTÊNCIAS</small>
-          <strong>${leaders.assistant?.name || '—'}</strong>
-          <span>${leaders.assists || 0} assist.</span>
-        </div>
-      </article>
-      <article class="dashboard-team-stat">
-        <img class="dashboard-team-stat-icon" src="./brand/stats-overall.png" alt="" width="46" height="46" decoding="async">
-        <div class="dashboard-team-stat-copy">
-          <small>MÉDIA DO TIME</small>
-          <strong>${formatMatchRating(teamRating.average)}</strong>
-          <span>${overallMeta}</span>
-        </div>
-      </article>
+      ${statRow('scorer', 'ARTILHEIRO', scorer, 'goals', scorer?.goals === 1 ? 'gol' : 'gols', './brand/stats-scorer.png')}
+      ${statRow('assist', 'ASSISTÊNCIAS', assistant, 'assists', assistant?.assists === 1 ? 'assistência' : 'assistências', './brand/stats-assist.png')}
     </div>
   </article>`;
 }
 
-function positionSeasonChampionsPickerMenu(btn, menu) {
+function positionSeasonChampionsPickerMenu(root) {
+  const { btn, menu } = queryPicker(root);
   if (!btn || !menu) return;
   const rect = btn.getBoundingClientRect();
   menu.style.position = 'fixed';
@@ -221,8 +238,7 @@ function setSeasonChampionsPickerOpen(root, open) {
   const state = layoutState.get(root);
   if (!state) return;
   state.pickerOpen = !!open;
-  const btn = root.querySelector('#seasonChampionsPickerBtn');
-  const menu = root.querySelector('#seasonChampionsPickerMenu');
+  const { btn, menu } = queryPicker(root);
   const entry = state.nav.find(item => item.key === state.selectedKey);
   btn?.setAttribute('aria-expanded', state.pickerOpen ? 'true' : 'false');
   if (btn) {
@@ -230,12 +246,11 @@ function setSeasonChampionsPickerOpen(root, open) {
     btn.textContent = state.pickerOpen ? `${label} ▴` : `${label} ▾`;
   }
   menu?.classList.toggle('hidden', !state.pickerOpen);
-  if (state.pickerOpen) positionSeasonChampionsPickerMenu(btn, menu);
+  if (state.pickerOpen) positionSeasonChampionsPickerMenu(root);
 }
 
 function renderSeasonChampionsPicker(root, state) {
-  const btn = root.querySelector('#seasonChampionsPickerBtn');
-  const menu = root.querySelector('#seasonChampionsPickerMenu');
+  const { btn, menu } = queryPicker(root);
   if (!menu) return;
   menu.innerHTML = state.nav
     .map(entry => {
@@ -246,6 +261,44 @@ function renderSeasonChampionsPicker(root, state) {
   hydratePickerTrophyIcons(menu);
   setSeasonChampionsPickerOpen(root, state.pickerOpen);
   btn?.toggleAttribute('disabled', state.nav.length <= 1);
+}
+
+function buildCompactChampionRow(state) {
+  const { pyramid = [], estaduais = [], selectedKey } = state;
+  const byKey = Object.fromEntries(pyramid.map(entry => [entry.key, entry]));
+  const primaryEstadual = estaduais[0] || null;
+  const isEstadualSelected = String(selectedKey || '').startsWith('EST:');
+  const row = [];
+
+  PYRAMID_ORDER.forEach(key => {
+    if (key === selectedKey || row.length >= 3) return;
+    if (byKey[key]) row.push(byKey[key]);
+  });
+
+  if (isEstadualSelected) {
+    if (selectedKey !== 'D' && byKey.D) row.push(byKey.D);
+  } else if (primaryEstadual && primaryEstadual.key !== selectedKey) {
+    row.push(primaryEstadual);
+  } else {
+    PYRAMID_ORDER.forEach(key => {
+      if (key === selectedKey || row.some(entry => entry.key === key)) return;
+      if (row.length >= 4) return;
+      if (byKey[key]) row.push(byKey[key]);
+    });
+  }
+
+  return row.slice(0, 4);
+}
+
+function renderPyramidRow(root, state) {
+  const pyramidEl = root.querySelector('#seasonChampionsPyramid');
+  if (!pyramidEl) return;
+  const visible = buildCompactChampionRow(state);
+  pyramidEl.innerHTML = visible.length
+    ? visible.map(entry => championCardMarkup({ ...entry, variant: 'compact' })).join('')
+    : '';
+  pyramidEl.classList.toggle('hidden', visible.length === 0);
+  pyramidEl.style.gridTemplateColumns = 'repeat(4, minmax(0, 1fr))';
 }
 
 function renderFeaturedShowcase(root, state) {
@@ -260,7 +313,7 @@ function renderFeaturedShowcase(root, state) {
   }
   if (statsEl) {
     statsEl.innerHTML = entry
-      ? championTeamStatsMarkup(entry.clubName, state.deps)
+      ? championTournamentStatsMarkup(entry, state.deps)
       : '<p class="season-champions-empty">Sem estatísticas disponíveis.</p>';
   }
 
@@ -268,7 +321,8 @@ function renderFeaturedShowcase(root, state) {
     card.classList.toggle('is-selected', card.dataset.championKey === state.selectedKey);
   });
 
-  hydrateChampionTrophies(root);
+  renderPyramidRow(root, state);
+  void hydrateChampionTrophies(root);
 }
 
 function selectSeasonChampion(root, key) {
@@ -281,10 +335,11 @@ function selectSeasonChampion(root, key) {
 
 function bindSeasonChampionsHandlers(root) {
   const state = layoutState.get(root);
-  if (!state || state.handlersBound) return;
+  const { section } = queryPicker(root);
+  if (!state || state.handlersBound || !section) return;
   state.handlersBound = true;
 
-  root.addEventListener('click', event => {
+  section.addEventListener('click', event => {
     const pickerBtn = event.target.closest('#seasonChampionsPickerBtn');
     if (pickerBtn) {
       event.stopPropagation();
@@ -306,6 +361,11 @@ function bindSeasonChampionsHandlers(root) {
     const extraCard = event.target.closest('#seasonChampionsExtra [data-champion-key]');
     if (extraCard) {
       selectSeasonChampion(root, extraCard.dataset.championKey);
+      return;
+    }
+    const worldCupCard = event.target.closest('#seasonChampionsWorldCup [data-champion-key]');
+    if (worldCupCard) {
+      selectSeasonChampion(root, worldCupCard.dataset.championKey);
     }
   });
 }
@@ -317,12 +377,15 @@ function bindDocumentHandlers() {
     document.querySelectorAll('#seasonChampions.season-champions-layout').forEach(root => {
       const state = layoutState.get(root);
       if (!state?.pickerOpen) return;
-      if (
-        event.target.closest('#seasonChampionsPickerBtn') ||
-        event.target.closest('#seasonChampionsPickerMenu') ||
-        event.target.closest('.season-champions-picker')
-      ) {
-        return;
+      const section = getChampionsSection(root);
+      if (section && event.target.closest('.season-champions-section') === section) {
+        if (
+          event.target.closest('#seasonChampionsPickerBtn') ||
+          event.target.closest('#seasonChampionsPickerMenu') ||
+          event.target.closest('.season-champions-picker')
+        ) {
+          return;
+        }
       }
       setSeasonChampionsPickerOpen(root, false);
     });
@@ -333,10 +396,7 @@ function bindDocumentHandlers() {
       document.querySelectorAll('#seasonChampions.season-champions-layout').forEach(root => {
         const state = layoutState.get(root);
         if (!state?.pickerOpen) return;
-        positionSeasonChampionsPickerMenu(
-          root.querySelector('#seasonChampionsPickerBtn'),
-          root.querySelector('#seasonChampionsPickerMenu'),
-        );
+        positionSeasonChampionsPickerMenu(root);
       });
     },
     { passive: true },
@@ -345,11 +405,12 @@ function bindDocumentHandlers() {
 
 export function renderChampionsLayout(root, bundle, deps = {}) {
   if (!root) return;
-  const { nav = [], pyramid = [], extra = [], defaultKey = null } = bundle || {};
+  const { nav = [], pyramid = [], estaduais = [], extra = [], defaultKey = null } = bundle || {};
 
   const state = layoutState.get(root) || {};
   state.nav = nav;
   state.pyramid = pyramid;
+  state.estaduais = estaduais;
   state.extra = extra;
   state.deps = deps;
   state.selectedKey = nav.some(entry => entry.key === state.selectedKey)
@@ -359,39 +420,61 @@ export function renderChampionsLayout(root, bundle, deps = {}) {
   layoutState.set(root, state);
 
   const pyramidEl = root.querySelector('#seasonChampionsPyramid');
+  const worldCupEl = root.querySelector('#seasonChampionsWorldCup');
+  const worldCupWrap = root.querySelector('#seasonChampionsWorldCupWrap');
   const extraEl = root.querySelector('#seasonChampionsExtra');
   const extraWrap = root.querySelector('#seasonChampionsExtraWrap');
+  const primaryEstadualKey = estaduais[0]?.key || null;
+  const worldCupEntries = extra.filter(entry => entry.key === 'WORLD_CUP');
+  const otherExtra = extra.filter(
+    entry => entry.key !== 'WORLD_CUP' && entry.key !== primaryEstadualKey && !entry.key?.startsWith('EST:'),
+  );
+  const secondaryEstaduais = estaduais.slice(1);
 
   if (pyramidEl) {
-    pyramidEl.innerHTML = pyramid.length
-      ? pyramid
-          .map(entry => championCardMarkup({ ...entry, variant: 'compact' }))
-          .join('')
-      : '';
-    pyramidEl.classList.toggle('hidden', pyramid.length === 0);
+    renderPyramidRow(root, state);
+  }
+  if (worldCupEl) {
+    worldCupEl.innerHTML = worldCupEntries
+      .map(entry => championCardMarkup({ ...entry, variant: 'extra' }))
+      .join('');
+  }
+  if (worldCupWrap) {
+    worldCupWrap.classList.toggle('hidden', worldCupEntries.length === 0);
   }
   if (extraEl) {
-    extraEl.innerHTML = extra.map(entry => championCardMarkup({ ...entry, variant: 'extra' })).join('');
+    const extraCards = [
+      ...secondaryEstaduais.map(entry => championCardMarkup({ ...entry, variant: 'extra' })),
+      ...otherExtra.map(entry => championCardMarkup({ ...entry, variant: 'extra' })),
+    ];
+    extraEl.innerHTML = extraCards.join('');
   }
   if (extraWrap) {
-    extraWrap.classList.toggle('hidden', extra.length === 0);
+    extraWrap.classList.toggle('hidden', secondaryEstaduais.length === 0 && otherExtra.length === 0);
   }
 
   renderSeasonChampionsPicker(root, state);
   renderFeaturedShowcase(root, state);
   bindSeasonChampionsHandlers(root);
   bindDocumentHandlers();
+  void hydrateChampionTrophies(root);
 }
 
 export function hydrateChampionTrophies(root = document) {
-  const keys = new Set();
-  root.querySelectorAll('.season-champion-trophy-img[data-competition]').forEach(img => {
-    const competition = img.dataset.competition || 'A';
-    const trophyKey = resolveChampionshipTrophyKey(competition);
-    keys.add(trophyKey);
-    ensureCompetitionTrophy(competition, img);
-  });
-  keys.forEach(key => {
-    preloadCompetitionTrophy(key).catch(() => {});
+  const imgs = [...root.querySelectorAll('.season-champion-trophy-img[data-competition]')];
+  if (!imgs.length) return Promise.resolve();
+
+  const keys = [
+    ...new Set(
+      imgs.map(img => img.dataset.trophyKey || resolveChampionshipTrophyKey(img.dataset.competition || 'A')),
+    ),
+  ];
+
+  return Promise.all(keys.map(key => preloadCompetitionTrophy(key).catch(() => null))).then(() => {
+    imgs.forEach(img => {
+      const url = competitionTrophyUrl(img.dataset.competition || 'A');
+      if (url) img.setAttribute('src', url);
+      else ensureCompetitionTrophy(img.dataset.competition || 'A', img);
+    });
   });
 }

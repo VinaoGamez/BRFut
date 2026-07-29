@@ -455,7 +455,6 @@ export function createSeasonSaveWriter({
       console.warn('[brfut] Não foi possível salvar a temporada (memória do navegador cheia).');
       try {
         window.dispatchEvent(new CustomEvent('brfut:save-quota', { detail: { key: SAVE_KEYS.season } }));
-        window.dispatchEvent(new CustomEvent('matchday:save-quota', { detail: { key: SAVE_KEYS.season } }));
       } catch { /* ignore */ }
     }
     if (ok && savedNewGame) {

@@ -12,6 +12,7 @@ import json
 import mimetypes
 import os
 import re
+import socket
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -282,6 +283,22 @@ class TesterHandler(SimpleHTTPRequestHandler):
         return candidate
 
 
+def ensure_port_free(bind: str, port: int) -> None:
+    """Evita empilhar vários tester-server na mesma porta (Windows aceita reuse silencioso)."""
+    probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        if sys.platform == 'win32':
+            probe.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        probe.bind((bind, port))
+    except OSError as error:
+        print(f'ERRO: porta {port} já em uso ({error}).')
+        print('Encerre o servidor anterior antes de subir outro:')
+        print('  Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match "tester-server" }')
+        sys.exit(1)
+    finally:
+        probe.close()
+
+
 def main() -> None:
     load_local_env()
     parser = argparse.ArgumentParser(description='BR Fut tester server (hardened)')
@@ -293,6 +310,7 @@ def main() -> None:
         help='Somente /api/* (produção atrás de nginx; sem arquivos estáticos).',
     )
     args = parser.parse_args()
+    ensure_port_free(args.bind, args.port)
 
     from brfut_api.cors import allowed_origins
     from brfut_api.google_auth import google_auth_enabled, google_client_id

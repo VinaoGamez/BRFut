@@ -2,7 +2,7 @@
  * Cliente da API BR Fut (porta 5081 / api.brfut.com.br).
  * Espelha saves do localStorage em Documentos/BR Fut quando o usuário está logado.
  */
-import { SAVE_KEYS, LEGACY_SAVE_KEYS, ALL_SYNCABLE_SAVE_KEYS, BRFUT_API_ORIGIN, saveKeyVariants, CAREER_INDEX_KEY, isSyncableSaveKey, isSlotBundleKey } from './constants.js';
+import { SAVE_KEYS, LEGACY_SAVE_KEYS, ALL_SYNCABLE_SAVE_KEYS, BRFUT_API_ORIGIN, saveKeyVariants, CAREER_INDEX_KEY, isSyncableSaveKey, isSlotBundleKey, slotBundleKeys } from './constants.js';
 import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves, mergeCareerSaves } from './save-sync.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
 import {
@@ -10,19 +10,24 @@ import {
   setCloudLocalTrimEnabled,
 } from './local-save-checkpoint.js';
 import { isLocalStorageCheckpoint } from './save-sync.js';
-import { consumeFreshCareerBoot } from './save.js';
+import { consumeFreshCareerBoot, readJson } from './save.js';
+import { normalizeRemoteSaveKeys } from './save-key-normalizer.js';
 
 const AUTH_TOKEN_KEY = 'brfut-auth-token';
 const AUTH_REMEMBER_KEY = 'brfut-auth-remember';
 const SYNCABLE_KEYS = ALL_SYNCABLE_SAVE_KEYS;
 const SYNC_DEBOUNCE_MS = 400;
+const SYNC_AUTH_BACKOFF_MS = 30_000;
 const PRESENCE_INTERVAL_MS = 120_000;
 
 let backendAvailable = null;
 let cloudActive = false;
 let currentUser = null;
+/** Snapshot de GET /api/saves — evita GET por chave quando o save remoto não existe. */
+let remoteSavesCache = null;
 const syncQueue = new Map();
 let syncTimer = 0;
+let syncAuthBlockedUntil = 0;
 let presenceTimer = 0;
 const syncWarned = new Set();
 
@@ -45,6 +50,45 @@ function warnSyncOnce(id, message, ...args) {
   if (syncWarned.has(id)) return;
   syncWarned.add(id);
   console.warn(message, ...args);
+}
+
+function deactivateCloudSync({ reason = 'auth_failed' } = {}) {
+  setAuthToken('');
+  cloudActive = false;
+  currentUser = null;
+  remoteSavesCache = null;
+  syncCloudLocalTrimFlag();
+  syncQueue.clear();
+  syncAuthBlockedUntil = Date.now() + SYNC_AUTH_BACKOFF_MS;
+  if (syncTimer) {
+    window.clearTimeout(syncTimer);
+    syncTimer = 0;
+  }
+  stopPresenceHeartbeat();
+  return reason;
+}
+
+function isSyncAuthBlocked() {
+  return syncAuthBlockedUntil > Date.now();
+}
+
+function handleSyncAuthFailure(error) {
+  if (error?.status !== 401) return false;
+  deactivateCloudSync();
+  warnSyncOnce('sync-auth', '[brfut] sessão expirada — sync na nuvem pausado. Entre novamente em Conta.', error);
+  return true;
+}
+
+function handleSyncInvalidKeyFailure(error, key) {
+  if (error?.status !== 400 || error?.code !== 'invalid_key') return false;
+  syncQueue.delete(key);
+  warnSyncOnce(
+    `sync-invalid-key-${key}`,
+    '[brfut] API rejeitou chave de save — reinicie o servidor 5081 ou atualize a API',
+    key,
+    error.message,
+  );
+  return true;
 }
 
 async function parseJsonResponse(response) {
@@ -173,6 +217,20 @@ function remoteHasCareer(remoteSaves) {
   return !!value;
 }
 
+function localHasAnyCareerPayload() {
+  if (readLocalSave(SAVE_KEYS.career)) return true;
+  if (readLocalSave(LEGACY_SAVE_KEYS?.career || 'matchday-new-game')) return true;
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && isSlotBundleKey(key) && key.endsWith('-career') && readLocalSave(key)) return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
 function normalizeRemoteSaveEntry(entry) {
   if (entry == null) return { value: null, updatedAt: 0 };
   if (typeof entry === 'object' && entry !== null && 'value' in entry) {
@@ -185,24 +243,24 @@ function normalizeRemoteSaveEntry(entry) {
   return { value: entry, updatedAt: 0 };
 }
 
-function readLocalSave(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+function setRemoteSavesCache(saves) {
+  remoteSavesCache = saves && typeof saves === 'object' ? saves : {};
 }
 
-function normalizeRemoteSaveKeys(saves) {
-  if (!saves || typeof saves !== 'object') return saves;
-  const out = { ...saves };
-  Object.entries(LEGACY_SAVE_KEYS).forEach(([logical, legacyKey]) => {
-    const newKey = SAVE_KEYS[logical];
-    if (!newKey || legacyKey === newKey) return;
-    if (out[legacyKey] != null && out[newKey] == null) out[newKey] = out[legacyKey];
-  });
-  return out;
+function rememberRemoteSave(key, value, updatedAt = Date.now()) {
+  if (!remoteSavesCache) remoteSavesCache = {};
+  remoteSavesCache[key] = { value, updatedAt };
+}
+
+function readCachedRemoteSave(key) {
+  if (!remoteSavesCache || !Object.prototype.hasOwnProperty.call(remoteSavesCache, key)) {
+    return undefined;
+  }
+  return normalizeRemoteSaveEntry(remoteSavesCache[key]).value;
+}
+
+function readLocalSave(key) {
+  return readJson(key, null);
 }
 
 function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
@@ -326,15 +384,27 @@ function flushSyncQueueKeepalive() {
       keepalive: true,
       cache: 'no-store',
     })
-      .then(response => {
+      .then(async response => {
         if (!response.ok) {
+          if (response.status === 401) {
+            handleSyncAuthFailure({ status: 401 });
+            return;
+          }
+          if (response.status === 400) {
+            const body = await parseJsonResponse(response);
+            if (handleSyncInvalidKeyFailure({ status: 400, code: body?.code, message: body?.error }, key)) {
+              return;
+            }
+          }
           syncQueue.set(key, value);
           scheduleCloudSync();
           return;
         }
         applyLocalCheckpointTrim(key, value);
+        rememberRemoteSave(key, prepareCloudSavePayload(key, value));
       })
       .catch(error => {
+        if (handleSyncAuthFailure(error)) return;
         warnSyncOnce(`keepalive-${key}`, '[brfut] falha ao sincronizar save (keepalive)', key, error);
         syncQueue.set(key, value);
         scheduleCloudSync();
@@ -420,12 +490,15 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
         method: 'PUT',
         body: JSON.stringify({ value: prepared }),
       });
+      rememberRemoteSave(key, prepared);
       applyLocalCheckpointTrim(key, value);
       results.push({ key, ok: true, bodyChars, slimmed: bodyChars < rawPayloadChars(value) });
     } catch (error) {
-      console.warn('[brfut] falha ao sincronizar save', key, error);
-      syncQueue.set(key, value);
-      scheduleCloudSync();
+      if (!handleSyncAuthFailure(error) && !handleSyncInvalidKeyFailure(error, key)) {
+        console.warn('[brfut] falha ao sincronizar save', key, error);
+        syncQueue.set(key, value);
+        scheduleCloudSync();
+      }
       results.push({
         key,
         ok: false,
@@ -441,10 +514,11 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
   const failed = results.filter(entry => !entry.ok);
   const seasonOk = results.some(entry => entry.key === SAVE_KEYS.season && entry.ok);
   const careerOk = results.some(entry => entry.key === SAVE_KEYS.career && entry.ok);
+  const synced = results.length - failed.length;
 
   return {
-    ok: seasonOk,
-    synced: results.length - failed.length,
+    ok: synced > 0 && seasonOk && careerOk,
+    synced,
     failed: failed.map(entry => entry.key),
     errors: failed,
     mode: 'cloud',
@@ -495,9 +569,12 @@ function flushSyncQueue() {
       body: JSON.stringify({ value: prepared }),
     })
       .then(() => {
+        rememberRemoteSave(key, prepared);
         applyLocalCheckpointTrim(key, value);
       })
       .catch(error => {
+        if (handleSyncAuthFailure(error)) return;
+        if (handleSyncInvalidKeyFailure(error, key)) return;
         warnSyncOnce(`sync-${key}`, '[brfut] falha ao sincronizar save', key, error);
         syncQueue.set(key, value);
         scheduleCloudSync();
@@ -506,13 +583,13 @@ function flushSyncQueue() {
 }
 
 function scheduleCloudSync() {
-  if (!isCloudStorageActive()) return;
+  if (!isCloudStorageActive() || isSyncAuthBlocked()) return;
   if (syncTimer) return;
   syncTimer = window.setTimeout(flushSyncQueue, SYNC_DEBOUNCE_MS);
 }
 
 export function queueCloudSave(key, value) {
-  if (!isCloudStorageActive() || !isSyncableSaveKey(key)) return;
+  if (!isCloudStorageActive() || isSyncAuthBlocked() || !isSyncableSaveKey(key)) return;
   syncQueue.set(key, value);
   scheduleCloudSync();
 }
@@ -552,6 +629,7 @@ export async function loginWithGoogleIdToken(idToken, { remember = false } = {})
   setAuthToken(body.token, { remember });
   currentUser = body.user;
   cloudActive = true;
+  syncAuthBlockedUntil = 0;
   syncCloudLocalTrimFlag();
   return initStorageBackend({ skipProbe: true, preferMigrate: true });
 }
@@ -564,6 +642,7 @@ export async function loginAccount(username, password, { remember = false } = {}
   setAuthToken(body.token, { remember });
   currentUser = body.user;
   cloudActive = true;
+  syncAuthBlockedUntil = 0;
   syncCloudLocalTrimFlag();
   return initStorageBackend({ skipProbe: true });
 }
@@ -576,6 +655,7 @@ export async function registerAccount(username, password, displayName, { remembe
   setAuthToken(body.token, { remember });
   currentUser = body.user;
   cloudActive = true;
+  syncAuthBlockedUntil = 0;
   syncCloudLocalTrimFlag();
   return initStorageBackend({ skipProbe: true, preferMigrate: true });
 }
@@ -601,6 +681,9 @@ export async function logoutAccount() {
 /** Encerra sessão no fechamento da aba (save já deve ter sido gravado antes). */
 export function endBrowserSession() {
   flushCloudSync({ keepalive: true });
+  if (isAuthRememberEnabled()) {
+    return;
+  }
   try {
     const token = getAuthToken();
     if (token && typeof fetch !== 'undefined') {
@@ -616,6 +699,7 @@ export function endBrowserSession() {
   setAuthToken('');
   currentUser = null;
   cloudActive = false;
+  remoteSavesCache = null;
   syncCloudLocalTrimFlag();
   stopPresenceHeartbeat();
   syncQueue.clear();
@@ -634,11 +718,38 @@ async function migrateLocalToCloud({ overwrite = false } = {}) {
   });
 }
 
+let storageInitPromise = null;
+
+/** Somente testes — reinicia mutex de hidratação. */
+export function resetStorageBackendState() {
+  storageInitPromise = null;
+  backendAvailable = null;
+  cloudActive = false;
+  remoteSavesCache = null;
+  currentUser = null;
+  syncQueue.clear();
+  syncAuthBlockedUntil = 0;
+}
+
+/** Alias — hidratação idempotente (mutex interno). */
+export async function ensureStorageHydrated(options = {}) {
+  return initStorageBackend(options);
+}
+
 /**
  * Inicializa backend de storage: valida sessão, baixa saves e opcionalmente migra localStorage.
  * @returns {Promise<{ mode: 'local'|'cloud', user?: object, dataRoot?: string }>}
  */
-export async function initStorageBackend({ skipProbe = false, preferMigrate = false } = {}) {
+export async function initStorageBackend({ skipProbe = false, preferMigrate = false, force = false } = {}) {
+  if (storageInitPromise && !force) return storageInitPromise;
+  storageInitPromise = initStorageBackendImpl({ skipProbe, preferMigrate }).catch(error => {
+    storageInitPromise = null;
+    throw error;
+  });
+  return storageInitPromise;
+}
+
+async function initStorageBackendImpl({ skipProbe = false, preferMigrate = false } = {}) {
   if (!skipProbe && !(await probeBackend())) {
     cloudActive = false;
     currentUser = null;
@@ -668,18 +779,31 @@ export async function initStorageBackend({ skipProbe = false, preferMigrate = fa
 
   const remote = await authedFetch('/api/saves');
   const remoteSaves = remote?.saves || {};
+  setRemoteSavesCache(remoteSaves);
   const hasRemoteCareer = remoteHasCareer(remoteSaves);
-  const hasLocalCareer = !!localStorage.getItem(SAVE_KEYS.career);
+  const hasLocalCareer = localHasAnyCareerPayload();
   const freshCareerBoot = consumeFreshCareerBoot();
 
-  if (!hasRemoteCareer && hasLocalCareer) {
-    await migrateLocalToCloud();
-    const refreshed = await authedFetch('/api/saves');
-    mergeRemoteSaves(refreshed?.saves || {}, { skipCareerSeasonHydrate: freshCareerBoot });
-  } else if (hasRemoteCareer) {
-    mergeRemoteSaves(remoteSaves, { skipCareerSeasonHydrate: freshCareerBoot });
-  } else if (freshCareerBoot && hasLocalCareer) {
-    mergeRemoteSaves({}, { skipCareerSeasonHydrate: true });
+  try {
+    if (!hasRemoteCareer && hasLocalCareer && preferMigrate !== false) {
+      await migrateLocalToCloud();
+      const refreshed = await authedFetch('/api/saves');
+      setRemoteSavesCache(refreshed?.saves || {});
+      mergeRemoteSaves(refreshed?.saves || {}, { skipCareerSeasonHydrate: freshCareerBoot });
+    } else {
+      mergeRemoteSaves(remoteSaves, { skipCareerSeasonHydrate: freshCareerBoot });
+    }
+  } catch (error) {
+    warnSyncOnce(
+      'hydrate-merge-failed',
+      '[brfut] falha ao sincronizar saves com a nuvem — usando cópia local',
+      error?.message || error,
+    );
+    try {
+      mergeRemoteSaves(remoteSaves, { skipCareerSeasonHydrate: freshCareerBoot });
+    } catch {
+      /* ignore */
+    }
   }
 
   syncCloudLocalTrimFlag();
@@ -784,31 +908,42 @@ export async function fetchAccountAvatarObjectUrl() {
 /** Baixa uma chave de save da nuvem (slot bundle, índice, etc.). */
 export async function fetchRemoteSaveKey(key) {
   if (!isCloudStorageActive()) return null;
+  if (remoteSavesCache) {
+    const cached = readCachedRemoteSave(key);
+    return cached === undefined ? null : cached;
+  }
   try {
     const body = await authedFetch(`/api/saves/${encodeURIComponent(key)}`);
     if (body == null) return null;
-    if (typeof body === 'object' && body !== null && 'value' in body) return body.value;
-    return body;
+    const value =
+      typeof body === 'object' && body !== null && 'value' in body ? body.value : body;
+    rememberRemoteSave(key, value);
+    return value;
   } catch {
     return null;
   }
 }
 
-/** Garante bundle local de um slot (baixa da nuvem o que faltar). */
-export async function hydrateSlotBundleFromCloud(slotId) {
-  if (!slotId) return;
-  const { slotBundleKeys } = await import('./constants.js');
+/** Merge bundle do slot com nuvem (sem sobrescrever local mais novo). */
+export async function mergeSlotBundleFromCloud(slotId) {
+  if (!slotId || !isCloudStorageActive()) return;
   const bundle = slotBundleKeys(slotId);
   await Promise.all(
     Object.values(bundle).map(async key => {
-      if (readLocalSave(key)) return;
       const remote = await fetchRemoteSaveKey(key);
       if (remote == null) return;
+      const local = readLocalSave(key);
+      const winner = local ? pickNewerSave(local, remote, key) : remote;
       try {
-        localStorage.setItem(key, JSON.stringify(remote));
+        localStorage.setItem(key, JSON.stringify(winner));
       } catch {
         /* ignore quota */
       }
     }),
   );
+}
+
+/** @deprecated Use mergeSlotBundleFromCloud — mantido por compatibilidade. */
+export async function hydrateSlotBundleFromCloud(slotId) {
+  return mergeSlotBundleFromCloud(slotId);
 }

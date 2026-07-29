@@ -1,8 +1,8 @@
 # 08 — Jogadas e ritmo de partida
 
-**Produto:** Matchday Football Alpha  
+**Produto:** BR Fut  
 **Escopo:** como nascem as jogadas, o ritmo do relógio e em que cada decisão se baseia  
-**Código principal:** `js/legacy/engine.js`, `js/engine/match-live.js`, `js/engine/match-sim.js`, `js/engine/match-tuning.js`, `js/engine/match-core.js`
+**Código principal:** `js/legacy/engine.js`, `js/engine/match-live.js`, `js/engine/match-sim.js`, `js/engine/match-tuning.js`, `js/engine/match-core.js`, `js/feature/match-live-entry/`
 
 ---
 
@@ -20,7 +20,7 @@ Atributos, tática, cansaço, mando de campo e contexto do clube **enviesam** as
 
 ## 2. Ritmo real do tempo (Opções)
 
-O **Ritmo de Jogo** (`futmanager-pace` / Opções) controla apenas a **velocidade do relógio ao vivo**. Não altera as regras das jogadas.
+O **Ritmo de Jogo** (`brfut-pace` / Opções; legado `futmanager-pace`) controla apenas a **velocidade do relógio ao vivo**. Não altera as regras das jogadas.
 
 | Ritmo | Intervalo entre ticks (`ms`) | Tempo contínuo aproximado (2 tempos) |
 |-------|------------------------------|--------------------------------------|

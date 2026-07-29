@@ -96,14 +96,14 @@ export const SEASON_GOAL_CATALOG = {
     id: 'D_group',
     division: 'D',
     tier: 'soft',
-    label: 'Avançar da fase de grupos',
+    label: 'Avançar da fase de grupos — Série D',
     evaluate: { type: 'serieD_phase', min: 'second', nearMin: 'second' },
   },
   D_deep: {
     id: 'D_deep',
     division: 'D',
     tier: 'medium',
-    label: 'Chegar às oitavas do mata-mata',
+    label: 'Chegar às oitavas do mata-mata — Série D',
     evaluate: { type: 'serieD_phase', min: 'round16', nearMin: 'third' },
   },
   D_access: {
@@ -217,6 +217,18 @@ const LIVE_GAUGE = {
   met: { short: 'No alvo', hint: 'Projeção de cumprir a meta', color: '#6dff8a' },
   near: { short: 'No ritmo', hint: 'No caminho da meta', color: '#ffc94f' },
   missed: { short: 'Abaixo', hint: 'Muito abaixo do esperado', color: '#ff6b7a' },
+};
+
+const SERIE_D_PHASE_DISPLAY = {
+  group: 'Fase de grupos',
+  second: '2ª fase',
+  third: '3ª fase',
+  round16: 'Oitavas',
+  quarter: 'Quartas',
+  semi: 'Semifinal',
+  playoff: 'Repescagem',
+  final: 'Final',
+  champion: 'Campeão',
 };
 
 const clampScore = n => Math.max(0, Math.min(100, Math.round(n)));
@@ -506,6 +518,13 @@ export function seasonGoalLiveProgress(goal, ctx = {}) {
   } else if (positionDead) {
     short = 'Abaixo';
     hint = 'Matematicamente fora da meta';
+  } else if (goal?.evaluate?.type === 'serieD_phase') {
+    const phaseKey = ctx.serieDPhase || 'group';
+    const phaseLabel = SERIE_D_PHASE_DISPLAY[phaseKey] || 'Série D';
+    hint = `${phaseLabel} · Série D`;
+    if (phaseRank(phaseKey) >= phaseRank(goal.evaluate.min)) {
+      short = status === 'exceeded' ? 'Acima' : 'Cumpriu';
+    }
   }
   return {
     status,
