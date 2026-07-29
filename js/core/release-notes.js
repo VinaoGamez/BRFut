@@ -9,6 +9,20 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.3.60',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T22:35:00-03:00',
+    title: 'BR Football foi atualizado',
+    topics: [
+      {
+        label: 'Carregamento do save',
+        items: [
+          'Correção ao abrir o jogo após atualização: o dashboard passa a carregar com os dados da sua carreira antes de aparecer na tela, sem misturar clube demo com o save real.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.3.55',
     date: '2026-07-29',
     publishedAt: '2026-07-29T03:00:00-03:00',

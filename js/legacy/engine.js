@@ -9204,19 +9204,21 @@ const rosterChangeAlertHolder = { fn: null };
     document.title=audit.anomalies.length?'CUP_AUDIT_FAIL':'CUP_AUDIT_OK';
     window.__cupAuditResult=audit;
   }
-  // Save idle (eliminado / sem jogos): retoma a simulação do calendário nacional.
+  // Pinta o dashboard com dados reais antes de liberar a shell — evita placeholders do index.html.
+  const skipPresentationHydration=new URLSearchParams(location.search).has('benchmark')||new URLSearchParams(location.search).has('cupAudit');
+  if(savedNewGame&&!skipPresentationHydration)refreshSeasonPresentation();
   markBootReady();
-  if(savedNewGame&&!new URLSearchParams(location.search).has('benchmark')&&!new URLSearchParams(location.search).has('cupAudit')){
-    const hydratePresentation=()=>{
-      refreshSeasonPresentation();
+  // Pós-boot leve: partida ao vivo, simulação idle ou transição de temporada.
+  if(savedNewGame&&!skipPresentationHydration){
+    const hydratePostBoot=()=>{
       const restoredLive=tryRestoreLiveMatch({openModal:true});
       if(!restoredLive){
         if(isUserSeasonIdle())setTimeout(()=>simulateNonHumanSeasonRemainder(),0);
         else if(seasonComplete())tryPrepareSeasonTransition();
       }
     };
-    if(typeof requestIdleCallback==='function')requestIdleCallback(hydratePresentation,{timeout:120});
-    else setTimeout(hydratePresentation,0);
+    if(typeof requestIdleCallback==='function')requestIdleCallback(hydratePostBoot,{timeout:120});
+    else setTimeout(hydratePostBoot,0);
   }
   } catch(error) {
     markBootReady();
