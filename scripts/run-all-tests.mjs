@@ -50,6 +50,7 @@ const SUITES = [
   { label: 'shootout-live', steps: [['scripts/shootout-live-tests.mjs']] },
   { label: 'competition-rules', steps: [['scripts/competition-rules-tests.mjs']] },
   { label: 'serie-c-calendar', steps: [['scripts/serie-c-calendar-tests.mjs']] },
+  { label: 'serie-d-knockout-legs', steps: [['scripts/serie-d-knockout-legs-tests.mjs']] },
   { label: 'messages-stale', steps: [['scripts/messages-stale-tests.mjs']] },
   { label: 'save-sync-controller', steps: [['scripts/save-sync-controller-tests.mjs']] },
   { label: 'club-solvency', steps: [['scripts/club-solvency-tests.mjs']] },

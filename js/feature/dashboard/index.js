@@ -97,6 +97,24 @@ export function createDashboardFeature(deps) {
   let leaderMode = 'scorers';
   let persistSeason = () => {};
   const dashboardReportGames = new Map();
+  const teamGamesReportGames = new Map();
+
+  const ensureTeamGamesModal = () => {
+    if ($('#teamGamesModal')) return;
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      `<div id="teamGamesModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="teamGamesTitle">
+        <div class="modal-card team-games-modal">
+          <button id="closeTeamGames" class="close" type="button" aria-label="Fechar">×</button>
+          <label>TEMPORADA ${getCareerSeason?.() || '—'}</label>
+          <h2 id="teamGamesTitle">Jogos do Time</h2>
+          <p id="teamGamesSummary">Calendário completo do clube.</p>
+          <div class="team-games-head"><span>PARTIDA</span><span>PLACAR</span><span>ESTATÍSTICAS</span></div>
+          <div id="teamGamesList" class="team-games-list"></div>
+        </div>
+      </div>`,
+    );
+  };
 
   const setPersist = fn => {
     persistSeason = typeof fn === 'function' ? fn : () => {};
@@ -1008,6 +1026,75 @@ export function createDashboardFeature(deps) {
     return `${game.homeGoals} — ${game.awayGoals}`;
   };
 
+  const allUserSeasonGames = () => {
+    const entries = [];
+    const seen = new Set();
+    const register = (game, sortDate) => {
+      if (!game || !isUserFixture(game)) return;
+      const key = [
+        game.home,
+        game.away,
+        game.round || '',
+        game.phase || '',
+        game.leg || '',
+        parseCalendarDate(sortDate || fixtureSortDate(game))?.getTime() || '',
+      ].join('|');
+      if (seen.has(key)) return;
+      seen.add(key);
+      entries.push({ game, sortDate: sortDate || fixtureSortDate(game) });
+    };
+    dashboardCompletedGames().forEach(game => register(game, game.sortDate));
+    userUpcomingSchedule().forEach(entry => register(entry.game, entry.details?.date));
+    return entries.sort((a, b) => compareSortDate(a, b));
+  };
+
+  const renderTeamGamesModal = () => {
+    ensureTeamGamesModal();
+    const games = allUserSeasonGames();
+    const list = $('#teamGamesList');
+    const summary = $('#teamGamesSummary');
+    teamGamesReportGames.clear();
+    const completedCount = games.filter(({ game }) => isCompletedDashboardGame(game)).length;
+    if (summary) {
+      summary.textContent = `${games.length} partida${games.length === 1 ? '' : 's'} · ${completedCount} encerrada${completedCount === 1 ? '' : 's'}`;
+    }
+    if (!list) return;
+    if (!games.length) {
+      list.innerHTML = '<div class="team-games-empty">Nenhuma partida encontrada nesta temporada.</div>';
+      return;
+    }
+    list.innerHTML = games
+      .map(({ game, sortDate }, index) => {
+        const completed = isCompletedDashboardGame(game);
+        const report = completed ? dashboardGameReport(game) : null;
+        const reportKey = `team-${index}`;
+        if (report) teamGamesReportGames.set(reportKey, report);
+        const date = parseCalendarDate(sortDate || fixtureSortDate(game));
+        const dateLabel = date
+          ? date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toUpperCase()
+          : 'SEM DATA';
+        const score = completed ? dashboardScoreLabel(game) : '×';
+        const result = completed ? userMatchResultLetter(game, isWorldCupFixture(game) ? getUserNationalTeamName?.() : getUserClub()) : '';
+        const tone = result === 'V' ? 'win' : result === 'E' ? 'draw' : result === 'D' ? 'loss' : 'scheduled';
+        return `<div class="team-game-row ${tone}">
+          <div class="team-game-fixture">
+            <small>${dateLabel} · ${dashboardRecentLabel(game)}</small>
+            <strong><span class="club-link" data-club="${game.home}" role="button" tabindex="0">${game.home}</span><i>×</i><span class="club-link" data-club="${game.away}" role="button" tabindex="0">${game.away}</span></strong>
+          </div>
+          <b class="team-game-score">${score}</b>
+          <button type="button" class="dashboard-match-report" data-team-match-report="${reportKey}" ${report ? '' : 'disabled'} title="${report ? 'Ver estatísticas finais' : 'Estatísticas disponíveis após a partida'}" aria-label="Ver estatísticas de ${game.home} contra ${game.away}">▤</button>
+        </div>`;
+      })
+      .join('');
+  };
+
+  const openTeamGamesModal = () => {
+    renderTeamGamesModal();
+    $('#teamGamesModal')?.classList.remove('hidden');
+  };
+
+  const closeTeamGamesModal = () => $('#teamGamesModal')?.classList.add('hidden');
+
   const renderRecentGamesDashboard = () => {
     const panel = $('#recentMatches');
     const roundLabel = $('#recentMatchesRound');
@@ -1059,6 +1146,22 @@ export function createDashboardFeature(deps) {
   };
 
   const bindHandlers = () => {
+    ensureTeamGamesModal();
+    onClick('#openTeamGames', openTeamGamesModal);
+    onClick('#closeTeamGames', closeTeamGamesModal);
+    onClick('#teamGamesModal', event => {
+      if (event.target.id === 'teamGamesModal') {
+        closeTeamGamesModal();
+        return;
+      }
+      const button = event.target.closest('[data-team-match-report]');
+      if (!button) return;
+      const report = teamGamesReportGames.get(button.dataset.teamMatchReport);
+      if (report) {
+        closeTeamGamesModal();
+        openCalendarMatchReport(report);
+      }
+    });
     onClick('.leader-tabs', event => {
       const tab = event.target.closest('[data-leader-tab]');
       if (!tab) return;

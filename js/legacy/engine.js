@@ -395,7 +395,10 @@ import {
 } from '../engine/knockout-shootout.js';
 import { rosterShootoutKickPair, simulateProbabilisticShootout } from '../engine/shootout-sim.js';
 import { createCupTieAdvanceEngine } from '../engine/cup-tie-advance.js';
-import { createSerieDKnockoutAdvance } from '../engine/serie-d-knockout-advance.js';
+import {
+  createSerieDKnockoutAdvance,
+  repairSerieDKnockoutReturnLegs,
+} from '../engine/serie-d-knockout-advance.js';
 
 /** Motor legado — migração incremental para módulos (Alpha 02). */
 export async function bootEngine({
@@ -1421,6 +1424,7 @@ export async function bootEngine({
   }
   nationalCompetitions[userDivision].standings=leagueData;
   if(userDivision==='D')nationalCompetitions.D.standings=leagueData;
+  let serieDReturnLegsRepaired=false;
   if(validSavedSeason){
     Object.entries(savedSeason.standings||{}).forEach(([division,rows])=>{const competition=nationalCompetitions[division];if(!competition)return;rows.forEach(saved=>{const row=competition.standings.find(item=>item.club===saved.club);if(row)Object.assign(row,saved);});competition.standings.sort((a,b)=>b.points-a.points||b.goalDiff-a.goalDiff||b.wins-a.wins);competition.standings.forEach((row,index)=>clubs[row.club].position=index+1);});
     Object.entries(savedSeason.fatigue||{}).forEach(([clubName,players])=>Object.entries(players).forEach(([playerName,value])=>{const player=clubs[clubName]?.roster.find(item=>item.name===playerName);if(player)player.fatigue=clamp(value,0,100);}));
@@ -1428,6 +1432,7 @@ export async function bootEngine({
       applySavedSerieDFixtures(nationalCompetitions.D.fixtures,savedSeason.dFixtures,SERIE_D_GROUP_ROUNDS);
     }
     if(savedSeason.dKnockout)Object.assign(nationalCompetitions.D.knockout,savedSeason.dKnockout);
+    serieDReturnLegsRepaired=repairSerieDKnockoutReturnLegs(nationalCompetitions.D.fixtures)>0;
     if(userDivision==='D'){
       ensureNationalFixtureRounds(nationalCompetitions.D.fixtures,{groupRounds:SERIE_D_GROUP_ROUNDS});
       ensureNationalFixtureRounds(championshipFixtures,{groupRounds:SERIE_D_GROUP_ROUNDS});
@@ -6154,7 +6159,7 @@ export async function bootEngine({
   messages.setPersist(persistSeason);
   void ensureTransfersUi().then(ui=>ui.setPersist?.(persistSeason));
   let bootPersistPending=false;
-  if(validSavedSeason&&(savedSeason.currentRound!==currentRound||knockoutShootoutSanitized))bootPersistPending=true;
+  if(validSavedSeason&&(savedSeason.currentRound!==currentRound||knockoutShootoutSanitized||serieDReturnLegsRepaired))bootPersistPending=true;
   if(calendarBootRepaired&&validSavedSeason)bootPersistPending=true;
   if(leagueScheduleMaterializedFresh&&validSavedSeason)bootPersistPending=true;
   careerPersistence.bindBeforeUnloadPersist();

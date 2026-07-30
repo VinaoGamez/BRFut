@@ -1,6 +1,32 @@
 /**
  * Série D knockout bracket: tie rounds, resolution, phase advance.
  */
+export function repairSerieDKnockoutReturnLegs(fixtures = []) {
+  const byTie = new Map();
+  fixtures
+    .filter(Array.isArray)
+    .flat()
+    .forEach(game => {
+      if (!game?.tieId) return;
+      const pair = byTie.get(game.tieId) || {};
+      if (game.leg === 'IDA') pair.first = game;
+      if (game.leg === 'VOLTA') pair.second = game;
+      byTie.set(game.tieId, pair);
+    });
+
+  let repaired = 0;
+  byTie.forEach(({ first, second }) => {
+    if (!first || !second) return;
+    if (second.completed || second.homeGoals != null || second.awayGoals != null) return;
+    if (second.home === first.away && second.away === first.home) return;
+    if (second.home !== first.home || second.away !== first.away) return;
+    second.home = first.away;
+    second.away = first.home;
+    repaired += 1;
+  });
+  return repaired;
+}
+
 export function createSerieDKnockoutAdvance(deps) {
   const dKnockout = deps.getDKnockout();
   dKnockout.stages = dKnockout.stages || {};
@@ -36,8 +62,8 @@ export function createSerieDKnockoutAdvance(deps) {
     const primary = (Array.isArray(ties) ? ties : []).filter(tie => tie?.home && tie?.away);
     const extra = (Array.isArray(extraTies) ? extraTies : []).filter(tie => tie?.home && tie?.away);
     const makeFixture = (tie, tieIndex, round, leg, phaseLabel) => ({
-      home: tie.home,
-      away: tie.away,
+      home: leg === 'VOLTA' ? tie.away : tie.home,
+      away: leg === 'VOLTA' ? tie.home : tie.away,
       round,
       competition: deps.KNOCKOUT_COMPETITIONS.SERIE_D,
       tieId: `d-ko-r${startRound}-t${tieIndex}`,

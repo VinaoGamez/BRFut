@@ -9,6 +9,29 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.80',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T22:52:14-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Calendário e resultados',
+        items: [
+          'O Dashboard agora possui a janela Jogos do Time, reunindo partidas concluídas e futuras da temporada.',
+          'As partidas concluídas podem abrir o relatório completo de estatísticas diretamente nessa janela.',
+          'O mata-mata da Série D agora alterna corretamente o mando entre os jogos de ida e volta.',
+          'Saves existentes corrigem automaticamente partidas de volta ainda não disputadas.',
+        ],
+      },
+      {
+        label: 'Campeões da temporada',
+        items: [
+          'Os cartões dos torneios visíveis agora mantêm o mesmo tamanho e permanecem alinhados na mesma linha.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.75',
     date: '2026-07-29',
     publishedAt: '2026-07-29T22:41:27-04:00',

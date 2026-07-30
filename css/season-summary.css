@@ -529,13 +529,15 @@
 }
 .season-champions-pyramid{
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:none;
+  grid-auto-flow:column;
+  grid-auto-columns:143px;
   gap:10px;
-}
-@media (max-width:860px){
-  .season-champions-pyramid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
+  justify-content:start;
+  overflow-x:auto;
+  padding:2px 0 8px;
+  scrollbar-width:thin;
+  scrollbar-color:#315b68 #0b1a22;
 }
 .season-champions-extra-wrap{
   display:grid;
@@ -640,6 +642,12 @@
   gap:6px;
   cursor:pointer;
   min-height:148px;
+}
+.season-champions-pyramid .season-champion-card{
+  box-sizing:border-box;
+  width:143px;
+  height:216px;
+  min-height:216px;
 }
 .season-champion-card.is-user-club{
   border-color:var(--champion-accent,#63d9ff);
@@ -1101,7 +1109,6 @@
 }
 @media(max-width:860px){
   .season-champions-showcase{grid-template-columns:1fr}
-  .season-champions-pyramid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .season-champions-extra{grid-template-columns:repeat(2,minmax(0,1fr))}
   .season-leaders-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
@@ -1168,7 +1175,7 @@
 }
 @media(max-width:560px){
   .season-summary-modal{padding:22px 18px 18px!important}
-  .season-champions-pyramid,.season-champions-extra,.season-leaders-grid,.season-movements-grid{grid-template-columns:1fr}
+  .season-champions-extra,.season-leaders-grid,.season-movements-grid{grid-template-columns:1fr}
   .season-summary-user{grid-template-columns:1fr;text-align:center;justify-items:center}
   .season-summary-actions button{width:100%;min-width:0}
 }

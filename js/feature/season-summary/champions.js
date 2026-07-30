@@ -293,12 +293,22 @@ function buildCompactChampionRow(state) {
 function renderPyramidRow(root, state) {
   const pyramidEl = root.querySelector('#seasonChampionsPyramid');
   if (!pyramidEl) return;
-  const visible = buildCompactChampionRow(state);
+  const candidates = [
+    ...buildCompactChampionRow(state),
+    ...(state.estaduais || []).slice(1),
+    ...(state.extra || []),
+  ];
+  const seen = new Set();
+  const visible = candidates.filter(entry => {
+    if (!entry?.key || entry.key === state.selectedKey || seen.has(entry.key)) return false;
+    seen.add(entry.key);
+    return true;
+  });
   pyramidEl.innerHTML = visible.length
     ? visible.map(entry => championCardMarkup({ ...entry, variant: 'compact' })).join('')
     : '';
   pyramidEl.classList.toggle('hidden', visible.length === 0);
-  pyramidEl.style.gridTemplateColumns = 'repeat(4, minmax(0, 1fr))';
+  pyramidEl.style.gridTemplateColumns = '';
 }
 
 function renderFeaturedShowcase(root, state) {
@@ -424,33 +434,21 @@ export function renderChampionsLayout(root, bundle, deps = {}) {
   const worldCupWrap = root.querySelector('#seasonChampionsWorldCupWrap');
   const extraEl = root.querySelector('#seasonChampionsExtra');
   const extraWrap = root.querySelector('#seasonChampionsExtraWrap');
-  const primaryEstadualKey = estaduais[0]?.key || null;
-  const worldCupEntries = extra.filter(entry => entry.key === 'WORLD_CUP');
-  const otherExtra = extra.filter(
-    entry => entry.key !== 'WORLD_CUP' && entry.key !== primaryEstadualKey && !entry.key?.startsWith('EST:'),
-  );
-  const secondaryEstaduais = estaduais.slice(1);
 
   if (pyramidEl) {
     renderPyramidRow(root, state);
   }
   if (worldCupEl) {
-    worldCupEl.innerHTML = worldCupEntries
-      .map(entry => championCardMarkup({ ...entry, variant: 'extra' }))
-      .join('');
+    worldCupEl.innerHTML = '';
   }
   if (worldCupWrap) {
-    worldCupWrap.classList.toggle('hidden', worldCupEntries.length === 0);
+    worldCupWrap.classList.add('hidden');
   }
   if (extraEl) {
-    const extraCards = [
-      ...secondaryEstaduais.map(entry => championCardMarkup({ ...entry, variant: 'extra' })),
-      ...otherExtra.map(entry => championCardMarkup({ ...entry, variant: 'extra' })),
-    ];
-    extraEl.innerHTML = extraCards.join('');
+    extraEl.innerHTML = '';
   }
   if (extraWrap) {
-    extraWrap.classList.toggle('hidden', secondaryEstaduais.length === 0 && otherExtra.length === 0);
+    extraWrap.classList.add('hidden');
   }
 
   renderSeasonChampionsPicker(root, state);

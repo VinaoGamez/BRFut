@@ -87,6 +87,7 @@ function openPanel() {
       C: 'Paysandu',
       D: 'Vinaz Athletic',
       CUP: 'Santos',
+      WORLD_CUP: 'Inglaterra',
       RECOPA: 'Santos',
     },
     recopaSubtitle: 'Título unificado (Brasileirão + Copa)',
