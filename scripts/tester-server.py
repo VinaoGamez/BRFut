@@ -289,6 +289,10 @@ def ensure_port_free(bind: str, port: int) -> None:
     try:
         if sys.platform == 'win32':
             probe.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        else:
+            # Reinícios do systemd podem deixar conexões recentes em TIME_WAIT.
+            # Isso não representa outro servidor escutando e não deve bloquear o boot.
+            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         probe.bind((bind, port))
     except OSError as error:
         print(f'ERRO: porta {port} já em uso ({error}).')
