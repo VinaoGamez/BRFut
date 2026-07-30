@@ -25,11 +25,45 @@ Object.defineProperty(PLAYER_HISTORY_LIMITS, 'maxMatchLogs', {
 
 const emptyStore = (season = null) => ({
   version: SAVE_VERSION.playerHistory || 1,
+  statsModelVersion: 2,
   players: {},
   season: season ?? null,
   matchLogs: [],
   seasonArchives: [],
 });
+
+function migrateCompetitionBuckets(store) {
+  if (Number(store?.statsModelVersion) >= 2) return store;
+  (store.matchLogs || []).forEach(log => {
+    const competitionId = normalizeStatsCompetitionId(log.competition);
+    (log.players || []).forEach(sheet => {
+      const player = store.players?.[sheet.key];
+      const seasonBucket = player?.seasons?.[String(log.season)];
+      if (!seasonBucket) return;
+      if (!seasonBucket.competitions || typeof seasonBucket.competitions !== 'object') {
+        seasonBucket.competitions = {};
+      }
+      if (!seasonBucket.competitions[competitionId]) {
+        seasonBucket.competitions[competitionId] = { ...emptyStatBucket(), clubs: {} };
+      }
+      applySheetToBucket(seasonBucket.competitions[competitionId], sheet);
+      if (!seasonBucket.clubs || typeof seasonBucket.clubs !== 'object') seasonBucket.clubs = {};
+      if (!seasonBucket.clubs[sheet.club]) seasonBucket.clubs[sheet.club] = emptyStatBucket();
+      applySheetToBucket(seasonBucket.clubs[sheet.club], sheet);
+      const comp = seasonBucket.competitions[competitionId];
+      if (!comp.clubs[sheet.club]) comp.clubs[sheet.club] = emptyStatBucket();
+      applySheetToBucket(comp.clubs[sheet.club], sheet);
+    });
+  });
+  Object.values(store.players || {}).forEach(player => {
+    Object.values(player?.seasons || {}).forEach(bucket => {
+      if (!bucket.competitions || typeof bucket.competitions !== 'object') bucket.competitions = {};
+      if (!bucket.clubs || typeof bucket.clubs !== 'object') bucket.clubs = {};
+    });
+  });
+  store.statsModelVersion = 2;
+  return store;
+}
 
 function slimLeaders(list, metric, limit = 5) {
   return (list || [])
@@ -56,13 +90,71 @@ function ensureSeasonBucket(player, year) {
       passesEst: 0,
       ratingSum: 0,
       ratingCount: 0,
+      competitions: {},
+      clubs: {},
     };
+  }
+  if (!player.seasons[key].competitions || typeof player.seasons[key].competitions !== 'object') {
+    player.seasons[key].competitions = {};
+  }
+  if (!player.seasons[key].clubs || typeof player.seasons[key].clubs !== 'object') {
+    player.seasons[key].clubs = {};
   }
   return player.seasons[key];
 }
 
-function applySheetToSeason(player, year, sheet) {
-  const bucket = ensureSeasonBucket(player, year);
+function emptyStatBucket() {
+  return {
+    apps: 0,
+    starts: 0,
+    minutes: 0,
+    goals: 0,
+    assists: 0,
+    yellow: 0,
+    red: 0,
+    passesEst: 0,
+    ratingSum: 0,
+    ratingCount: 0,
+  };
+}
+
+export function normalizeStatsCompetitionId(value, fallbackDivision = null) {
+  const raw = String(value || '').trim().toUpperCase();
+  if (!raw || raw === 'LEAGUE') return fallbackDivision ? `LEAGUE:${fallbackDivision}` : 'LEAGUE';
+  if (raw.includes('COPA DO BRASIL')) return 'CBR';
+  if (raw.includes('COPA DO MUNDO') || raw === 'CMU') return 'CMU';
+  if (raw.includes('RECOPA')) return 'RECOPA';
+  if (raw.startsWith('LEAGUE:')) return raw;
+  if (raw.includes('ESTADUAL')) return raw.replace(/\s+/g, ':');
+  return raw.replace(/\s+/g, ':');
+}
+
+export function buildStatsFixtureId(game, {
+  season,
+  competitionId = null,
+  round = null,
+  leg = null,
+} = {}) {
+  if (game?.fixtureId) return String(game.fixtureId);
+  const competition = normalizeStatsCompetitionId(competitionId || game?.competition || 'LEAGUE');
+  const clean = value => String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return [
+    Number(season) || 'season',
+    clean(competition),
+    clean(round ?? game?.round ?? game?.phaseIndex ?? 'x'),
+    clean(game?.home),
+    clean(game?.away),
+    clean(leg || game?.leg || 'single'),
+    clean(game?.gameNumber || game?.date || ''),
+  ].join(':');
+}
+
+function applySheetToBucket(bucket, sheet) {
   bucket.apps += 1;
   if (sheet.started) bucket.starts += 1;
   bucket.minutes += Number(sheet.minutes) || 0;
@@ -75,6 +167,85 @@ function applySheetToSeason(player, year, sheet) {
     bucket.ratingSum += Number(sheet.rating) || 0;
     bucket.ratingCount += 1;
   }
+}
+
+function applySheetToSeason(player, year, sheet, competitionId) {
+  const bucket = ensureSeasonBucket(player, year);
+  applySheetToBucket(bucket, sheet);
+  if (!bucket.clubs[sheet.club]) bucket.clubs[sheet.club] = emptyStatBucket();
+  applySheetToBucket(bucket.clubs[sheet.club], sheet);
+  const key = normalizeStatsCompetitionId(competitionId);
+  if (!bucket.competitions[key]) bucket.competitions[key] = { ...emptyStatBucket(), clubs: {} };
+  if (!bucket.competitions[key].clubs) bucket.competitions[key].clubs = {};
+  applySheetToBucket(bucket.competitions[key], sheet);
+  if (!bucket.competitions[key].clubs[sheet.club]) {
+    bucket.competitions[key].clubs[sheet.club] = emptyStatBucket();
+  }
+  applySheetToBucket(bucket.competitions[key].clubs[sheet.club], sheet);
+}
+
+/** Fonte única para card, elenco, dashboard e rankings. */
+export function resolvePlayerSeasonStats(
+  storeOrEngine,
+  playerOrKey,
+  season,
+  competitionId = null,
+  { clubId = null } = {},
+) {
+  const store = storeOrEngine?.getStore?.() || storeOrEngine;
+  const key = typeof playerOrKey === 'string' ? playerOrKey : playerKey(playerOrKey);
+  const seasonBucket = store?.players?.[key]?.seasons?.[String(season)] || null;
+  if (!seasonBucket) return null;
+  let bucket = competitionId
+    ? seasonBucket.competitions?.[normalizeStatsCompetitionId(competitionId)] || null
+    : seasonBucket;
+  if (bucket && clubId) bucket = bucket.clubs?.[clubId] || null;
+  if (!bucket) return null;
+  return {
+    ...bucket,
+    avgRating: bucket.avgRating != null ? Number(bucket.avgRating) : seasonAverageRating(bucket),
+  };
+}
+
+export function playerSeasonLeaderboard(
+  storeOrEngine,
+  { season, competitionId = null, metric = 'goals', clubNames = null, getClub = null } = {},
+) {
+  const store = storeOrEngine?.getStore?.() || storeOrEngine;
+  const allowed = new Set(['apps', 'minutes', 'goals', 'assists', 'yellow', 'red', 'avgRating']);
+  const field = allowed.has(metric) ? metric : 'goals';
+  const clubs = clubNames ? new Set(clubNames) : null;
+  const rows = [];
+  Object.entries(store?.players || {}).forEach(([key, record]) => {
+    const seasonBucket = record?.seasons?.[String(season)];
+    const baseBucket = competitionId
+      ? seasonBucket?.competitions?.[normalizeStatsCompetitionId(competitionId)]
+      : seasonBucket;
+    const clubIds = Object.keys(baseBucket?.clubs || {});
+    const scopes = clubIds.length ? clubIds : [record?.club].filter(Boolean);
+    scopes.forEach(clubId => {
+      if (clubs && !clubs.has(clubId)) return;
+      const stats = resolvePlayerSeasonStats(store, key, season, competitionId, { clubId })
+        || resolvePlayerSeasonStats(store, key, season, competitionId);
+      const value = Number(stats?.[field]) || 0;
+      if (!(value > 0)) return;
+      const club = typeof getClub === 'function' ? getClub(clubId) : null;
+      rows.push({
+        key,
+        name: record.name || '—',
+        club: clubId || '—',
+        division: club?.division || null,
+        games: Number(stats.apps) || 0,
+        goals: Number(stats.goals) || 0,
+        assists: Number(stats.assists) || 0,
+        avgRating: stats.avgRating,
+        [field]: value,
+      });
+    });
+  });
+  return rows.sort(
+    (a, b) => (Number(b[field]) || 0) - (Number(a[field]) || 0) || a.games - b.games || a.name.localeCompare(b.name),
+  );
 }
 
 /** Média da temporada (passo 0.5), ou null se não houver notas. */
@@ -204,6 +375,27 @@ export function clubSeasonLeadersFromHistory(store, clubName, season, { getClub 
 
   const year = season != null ? String(season) : null;
   if (!year) return empty;
+
+  const scorerRows = playerSeasonLeaderboard(store, {
+    season,
+    metric: 'goals',
+    clubNames: [clubName],
+    getClub,
+  });
+  const assistantRows = playerSeasonLeaderboard(store, {
+    season,
+    metric: 'assists',
+    clubNames: [clubName],
+    getClub,
+  });
+  if (scorerRows.length || assistantRows.length) {
+    return {
+      scorer: scorerRows[0] || { name: '—' },
+      goals: Number(scorerRows[0]?.goals) || 0,
+      assistant: assistantRows[0] || { name: '—' },
+      assists: Number(assistantRows[0]?.assists) || 0,
+    };
+  }
 
   const club = typeof getClub === 'function' ? getClub(clubName) : null;
   const rosterKeys = new Set();
@@ -353,11 +545,16 @@ export function backfillClubSeasonMatchLogs(
     const competition = meta.competition || 'LEAGUE';
     const round = meta.round ?? 'x';
     const leg = meta.leg || '';
-    const id = meta.id || `${year}-${competition}-${round}-${game.home}-${game.away}-${leg}`;
+    const id = buildStatsFixtureId(game, {
+      season: year,
+      competitionId: competition,
+      round,
+      leg,
+    });
     if (knownIds.has(id)) return;
     const log = engine.recordMatch(
       { ...game, completed: game.completed !== false },
-      { season: year, persist: false, competition, round, leg: leg || null, id },
+      { season: year, persist: false, competition, round, leg: leg || null, fixtureId: id },
     );
     if (log?.id) {
       knownIds.add(log.id);
@@ -458,6 +655,8 @@ function slimLogPlayer(sheet) {
     started: !!sheet.started,
     goals: sheet.goals,
     assists: sheet.assists,
+    ownGoals: sheet.ownGoals || 0,
+    passes: sheet.passesEst || 0,
     rating: sheet.rating,
     yellow: !!sheet.yellow,
     red: !!sheet.red,
@@ -503,6 +702,7 @@ export function loadPlayerHistoryStore() {
   const season = raw.season ?? null;
   const store = {
     version: Number(raw.version) || SAVE_VERSION.playerHistory || 1,
+    statsModelVersion: Number(raw.statsModelVersion) || 1,
     players: raw.players && typeof raw.players === 'object' ? raw.players : {},
     season,
     matchLogs: pruneMatchLogsForSeason(
@@ -514,13 +714,12 @@ export function loadPlayerHistoryStore() {
   try {
     if (JSON.stringify(store).length > 200_000) {
       store.matchLogs = pruneMatchLogsForSeason(store.matchLogs, season, 80);
-      store.players = prunePlayers(store.players, 1200);
       store.seasonArchives = pruneArchives(store.seasonArchives, 4);
     }
   } catch {
     store.matchLogs = [];
   }
-  return store;
+  return migrateCompetitionBuckets(store);
 }
 
 export function savePlayerHistoryStore(store, options = {}) {
@@ -537,7 +736,8 @@ export function savePlayerHistoryStore(store, options = {}) {
   };
   const payload = {
     version: SAVE_VERSION.playerHistory || 1,
-    players: prunePlayers(store.players),
+    statsModelVersion: 2,
+    players: store.players,
     season: store.season ?? null,
     matchLogs: pruneMatchLogsForSeason(store.matchLogs, store.season ?? null, budget),
     seasonArchives: pruneArchives(store.seasonArchives),
@@ -554,7 +754,6 @@ export function savePlayerHistoryStore(store, options = {}) {
       store.season ?? null,
       Math.max(24, Math.floor(budget / 6)),
     );
-    payload.players = prunePlayers(payload.players, 1000);
     payload.seasonArchives = pruneArchives(payload.seasonArchives, 4);
   }
   let ok = writeJson(SAVE_KEYS.playerHistory, payload);
@@ -570,13 +769,6 @@ export function savePlayerHistoryStore(store, options = {}) {
   // Ainda cheio: zera logs + arquivos de temporada.
   payload.matchLogs = [];
   payload.seasonArchives = [];
-  ok = writeJson(SAVE_KEYS.playerHistory, payload);
-  if (ok) return applyOk(payload);
-  // Último recurso: corta jogadores pela metade.
-  payload.players = prunePlayers(payload.players, Math.max(500, Math.floor(PLAYER_HISTORY_LIMITS.maxPlayersSoft / 2)));
-  ok = writeJson(SAVE_KEYS.playerHistory, payload);
-  if (ok) return applyOk(payload);
-  payload.players = {};
   ok = writeJson(SAVE_KEYS.playerHistory, payload);
   if (ok) return applyOk(payload);
   return false;
@@ -595,6 +787,9 @@ export function createPlayerHistoryEngine(deps = {}) {
   const getMatchLogBudget =
     typeof deps.getMatchLogBudget === 'function' ? deps.getMatchLogBudget : null;
   let store = loadPlayerHistoryStore();
+  void import('../core/player-stats-sync.js')
+    .then(module => module.queuePlayerStatsHistory(store.matchLogs))
+    .catch(() => {});
 
   const resolveBudget = () => {
     if (!getMatchLogBudget) return PLAYER_HISTORY_LIMITS.maxMatchLogsPerSeason;
@@ -613,7 +808,6 @@ export function createPlayerHistoryEngine(deps = {}) {
     if (pressure.level === 'critical') {
       store.matchLogs = [];
       store.seasonArchives = pruneArchives(store.seasonArchives, 2);
-      store.players = prunePlayers(store.players, 600);
     } else if (pressure.level === 'warn') {
       store.matchLogs = pruneMatchLogsForSeason(
         store.matchLogs,
@@ -627,7 +821,6 @@ export function createPlayerHistoryEngine(deps = {}) {
       store.season ?? null,
       resolveBudget(),
     );
-    store.players = prunePlayers(store.players);
     store.seasonArchives = pruneArchives(store.seasonArchives);
     try {
       localStorage.removeItem(SAVE_KEYS.liveMatch);
@@ -672,9 +865,16 @@ export function createPlayerHistoryEngine(deps = {}) {
     const allSheets = [...built.home, ...built.away];
     if (!allSheets.length) return null;
 
-    const id =
-      meta.id ||
-      `${season}-${meta.competition || 'L'}-${meta.round ?? 'x'}-${game.home}-${game.away}-${meta.leg || ''}`;
+    const competitionId = normalizeStatsCompetitionId(
+      meta.competition || game.competition || 'LEAGUE',
+      getClub(game.home)?.division || null,
+    );
+    const id = buildStatsFixtureId(game, {
+      season,
+      competitionId,
+      round: meta.round ?? game.round,
+      leg: meta.leg || game.leg,
+    });
 
     // Evita duplicar o mesmo id na temporada corrente.
     if (store.matchLogs.some(entry => entry.id === id)) {
@@ -689,14 +889,15 @@ export function createPlayerHistoryEngine(deps = {}) {
       }
       player.name = sheet.name;
       player.club = sheet.club;
-      applySheetToSeason(player, season, sheet);
+      applySheetToSeason(player, season, sheet, competitionId);
     });
 
     const log = {
       id,
+      fixtureId: id,
       season,
       round: meta.round ?? game.round ?? null,
-      competition: meta.competition || game.competition || 'LEAGUE',
+      competition: competitionId,
       leg: meta.leg || game.leg || null,
       date: meta.date || null,
       home: game.home,
@@ -712,6 +913,9 @@ export function createPlayerHistoryEngine(deps = {}) {
       resolveBudget(),
     );
     if (meta.persist !== false) persist();
+    void import('../core/player-stats-sync.js')
+      .then(module => module.queuePlayerStatsMatch(log))
+      .catch(() => {});
     return log;
   };
 

@@ -9,6 +9,24 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.85',
+    date: '2026-07-30',
+    publishedAt: '2026-07-30T02:00:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Estatísticas dos jogadores',
+        items: [
+          'Card, elenco, Dashboard e campeonatos agora consultam a mesma base de estatísticas.',
+          'A média do jogador aparece durante a temporada, sem precisar esperar o encerramento do ano.',
+          'Gols, assistências, jogos, cartões e notas agora são separados por competição e também somados no total geral.',
+          'Partidas já registradas não duplicam estatísticas ao carregar ou sincronizar um save.',
+          'Com conta conectada, as fichas das partidas entram em uma fila segura e são espelhadas na nuvem.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.80',
     date: '2026-07-29',
     publishedAt: '2026-07-29T22:52:14-04:00',

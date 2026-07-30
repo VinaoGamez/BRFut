@@ -4,12 +4,31 @@
 
 import { cardDisplayPos, resolveCardRoleKey } from '../../engine/player-card-variant-id.js';
 import { playerKey } from '../../engine/player-match-stats.js';
+import { resolvePlayerSeasonStats } from '../../engine/player-history.js';
 
-export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSeason, clubName, clubDivision } = {}) {
+export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSeason, clubName, clubDivision, remoteStats = null } = {}) {
   if (!player) return null;
 
   const key = playerKey(player);
-  const bucket = playerHistory?.getPlayer?.(key)?.seasons?.[String(careerSeason)];
+  const resolvedClub = clubName || player.clubName || player.club || null;
+  const localBucket = resolvePlayerSeasonStats(
+    playerHistory,
+    key,
+    careerSeason,
+    null,
+    { clubId: resolvedClub },
+  ) || resolvePlayerSeasonStats(playerHistory, key, careerSeason);
+  const remote = remoteStats?.total;
+  const bucket = remote
+    ? {
+        apps: remote.apps,
+        goals: remote.goals,
+        assists: remote.assists,
+        yellow: remote.yellow,
+        red: remote.red,
+        avgRating: remote.avg_rating,
+      }
+    : localBucket;
 
   const cardPlayer = {
     ...player,

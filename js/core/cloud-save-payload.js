@@ -2,6 +2,7 @@
 import { SAVE_KEYS } from './constants.js';
 
 const CLOUD_PAYLOAD_TARGET = 400_000;
+const PLAYER_HISTORY_CLOUD_TARGET = 1_800_000;
 
 const syncMetadata = value => ({
   saveRevision: Number(value?.saveRevision) || 0,
@@ -220,14 +221,18 @@ export function slimSeasonForCloudUpload(season) {
 
 export function slimPlayerHistoryForCloudUpload(history) {
   if (!history || typeof history !== 'object') return history;
-  if (payloadChars(history) <= CLOUD_PAYLOAD_TARGET) return history;
+  if (payloadChars(history) <= PLAYER_HISTORY_CLOUD_TARGET) return history;
 
   const matchLogs = Array.isArray(history.matchLogs) ? history.matchLogs.slice(-120) : [];
   const players = history.players && typeof history.players === 'object' ? history.players : {};
-  const entries = Object.entries(players);
   const slimPlayers = {};
-  for (const [id, record] of entries.slice(-200)) {
-    slimPlayers[id] = record;
+  // Nunca selecionar "os últimos N": a ordem do objeto não representa relevância
+  // e eliminava silenciosamente estatísticas da maioria dos jogadores.
+  for (const [id, record] of Object.entries(players)) {
+    const seasons = Object.entries(record?.seasons || {})
+      .sort(([a], [b]) => Number(b) - Number(a))
+      .slice(0, 8);
+    slimPlayers[id] = { ...record, seasons: Object.fromEntries(seasons) };
   }
   const slimmed = {
     ...syncMetadata(history),
@@ -237,14 +242,14 @@ export function slimPlayerHistoryForCloudUpload(history) {
     matchLogs,
     seasonArchives: Array.isArray(history.seasonArchives) ? history.seasonArchives.slice(-2) : [],
   };
-  if (payloadChars(slimmed) <= CLOUD_PAYLOAD_TARGET) return slimmed;
+  if (payloadChars(slimmed) <= PLAYER_HISTORY_CLOUD_TARGET) return slimmed;
 
   return {
     ...syncMetadata(history),
     version: history.version,
     season: history.season ?? null,
     players: slimPlayers,
-    matchLogs: matchLogs.slice(-60),
+    matchLogs: [],
     seasonArchives: [],
   };
 }

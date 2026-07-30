@@ -97,9 +97,57 @@ class BrfutApiTests(unittest.TestCase):
         )
         self.assertEqual(status, 200)
         self.assertEqual(body['user']['displayName'], 'Novo Nome')
-
         status, body = self._route('GET', '/api/auth/me', token=token)
         self.assertEqual(body['user']['displayName'], 'Novo Nome')
+
+    def test_player_stats_api_is_idempotent_and_scoped(self) -> None:
+        register_user(self.root, 'stats1', 'secret1', 'Stats')
+        token, _ = login_user(self.root, 'stats1', 'secret1')
+        match = {
+            'fixtureId': '2027-BSD-1-alpha-beta',
+            'season': 2027,
+            'competitionId': 'LEAGUE:D',
+            'round': 1,
+            'homeClub': 'Alpha',
+            'awayClub': 'Beta',
+            'homeGoals': 1,
+            'awayGoals': 0,
+            'players': [{
+                'playerId': 'p-1',
+                'name': 'Nascimento',
+                'clubId': 'Alpha',
+                'started': True,
+                'minutes': 90,
+                'goals': 1,
+                'assists': 0,
+                'yellow': False,
+                'red': False,
+                'passes': 31,
+                'rating': 7.5,
+            }],
+        }
+        for _ in range(2):
+            status, body = self._route(
+                'POST', '/api/careers/slot-1/stats/matches', {'matches': [match]}, token,
+            )
+            self.assertEqual(status, 200)
+            self.assertEqual(body['accepted'], 1)
+
+        status, body = self._route(
+            'GET', '/api/careers/slot-1/stats/players/p-1?season=2027', token=token,
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(body['total']['apps'], 1)
+        self.assertEqual(body['total']['goals'], 1)
+        self.assertEqual(body['total']['avg_rating'], 7.5)
+
+        status, body = self._route(
+            'GET',
+            '/api/careers/slot-1/stats/leaders?season=2027&competition=LEAGUE%3AD&metric=goals',
+            token=token,
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(body['leaders'][0]['player_name'], 'Nascimento')
 
     def test_player_stats(self) -> None:
         register_user(self.root, 'online1', 'secret1', 'One')

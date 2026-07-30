@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
-from urllib.parse import unquote
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from .auth import ApiError, get_user_avatar, get_player_stats, login_user, logout_user, register_user, resolve_session, update_user_profile
 from .google_auth import google_auth_enabled, google_client_id, login_with_google_id_token
@@ -17,6 +17,7 @@ from .saves import (
     migrate_saves,
     put_save,
 )
+from .player_stats import delete_career_stats, get_club_squad, get_leaders, get_player, put_match_batch
 
 
 def _json_response(status: int, payload: dict[str, Any]) -> tuple[int, dict[str, str], bytes]:
@@ -52,7 +53,9 @@ def handle_api(
 ) -> tuple[int, dict[str, str], bytes]:
     root = ensure_layout(default_data_root())
     method = method.upper()
-    path = unquote(path.split('?', 1)[0])
+    split = urlsplit(path)
+    query = parse_qs(split.query)
+    path = unquote(split.path)
     if not path.startswith('/api/'):
         raise ApiError(404, 'not_found', 'Endpoint não encontrado.')
 
@@ -128,6 +131,28 @@ def handle_api(
         token = _bearer_token(headers)
         user = resolve_session(root, token)
         username = user['username']
+
+        if len(parts) == 4 and parts[0] == 'careers' and parts[2:] == ['stats', 'matches'] and method == 'POST':
+            data = _parse_json(body) or {}
+            return _json_response(200, put_match_batch(root, username, parts[1], data))
+
+        if len(parts) == 5 and parts[0] == 'careers' and parts[2:4] == ['stats', 'players'] and method == 'GET':
+            season = int((query.get('season') or [0])[0])
+            return _json_response(200, get_player(root, username, parts[1], parts[4], season))
+
+        if len(parts) == 6 and parts[0] == 'careers' and parts[2:4] == ['stats', 'clubs'] and parts[5] == 'squad' and method == 'GET':
+            season = int((query.get('season') or [0])[0])
+            competition = (query.get('competition') or [None])[0]
+            return _json_response(200, get_club_squad(root, username, parts[1], parts[4], season, competition))
+
+        if len(parts) == 4 and parts[0] == 'careers' and parts[2:] == ['stats', 'leaders'] and method == 'GET':
+            season = int((query.get('season') or [0])[0])
+            competition = (query.get('competition') or [None])[0]
+            metric = (query.get('metric') or ['goals'])[0]
+            return _json_response(200, get_leaders(root, username, parts[1], season, competition, metric))
+
+        if len(parts) == 3 and parts[0] == 'careers' and parts[2] == 'stats' and method == 'DELETE':
+            return _json_response(200, {'removed': delete_career_stats(root, username, parts[1])})
 
         if method == 'GET' and rel == 'saves':
             return _json_response(200, {'saves': get_all_saves(root, username)})

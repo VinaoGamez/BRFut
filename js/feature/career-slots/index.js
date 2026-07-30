@@ -15,6 +15,7 @@ import { activateSlot } from '../../core/career-activate.js';
 import { clearCareerData } from '../../core/save-clear.js';
 import { markSkipSessionEndOnce, markFreshCareerBoot } from '../../core/save.js';
 import { CAREER_SLOT_LIMIT } from '../../core/constants.js';
+import { deleteCareerStats } from '../../core/player-stats-sync.js';
 
 function ensureModalRoot() {
   let root = document.getElementById('careerSlotsModalRoot');
@@ -141,6 +142,7 @@ export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } 
     if (!result.ok) {
       window.alert('Não foi possível confirmar a exclusão na nuvem. Verifique sua conexão e tente novamente.');
     }
+    if (result.ok) void deleteCareerStats(slotId);
     renderList();
   };
 

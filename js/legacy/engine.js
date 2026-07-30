@@ -166,7 +166,7 @@ import {
   seasonObjectiveLiveProgress,
   evaluateSeasonObjectives,
 } from '../engine/season-objectives.js';
-import { createPlayerHistoryEngine, PLAYER_HISTORY_LIMITS, seasonAverageRating, clubSeasonRatingSummary as computeClubSeasonRatingSummary, clubSeasonLeadersFromHistory, backfillClubSeasonMatchLogs } from '../engine/player-history.js';
+import { createPlayerHistoryEngine, PLAYER_HISTORY_LIMITS, seasonAverageRating, resolvePlayerSeasonStats, playerSeasonLeaderboard, clubSeasonRatingSummary as computeClubSeasonRatingSummary, clubSeasonLeadersFromHistory, backfillClubSeasonMatchLogs } from '../engine/player-history.js';
 import { recordKnockoutResult, winnerFromGame, loserFromGame } from '../engine/world-cup-bracket.js';
 import {
   SERIE_D_CLUBS,
@@ -1873,7 +1873,22 @@ export async function bootEngine({
   const allScorers=Object.values(clubs).flatMap(club=>club.roster.map(player=>({name:player.name,club:club.name,division:club.division,games:savedNewGame?0:int(9,13),goals:savedNewGame?0:int(0,8),tieValue:player.finishing+player.heading*.2}))).sort((a,b)=>b.goals-a.goals||b.tieValue-a.tieValue);
   const allAssistants=Object.values(clubs).flatMap(club=>club.roster.filter(player=>player.pos!=='GOL').map(player=>({name:player.name,club:club.name,division:club.division,games:savedNewGame?0:int(9,13),assists:savedNewGame?0:int(0,7),tieValue:player.passing+player.playmaking}))).sort((a,b)=>b.assists-a.assists||b.tieValue-a.tieValue);
   if(validSavedSeason){(savedSeason.scorers||[]).forEach(saved=>{const row=allScorers.find(item=>item.club===saved.club&&item.name===saved.name);if(row)Object.assign(row,saved);});(savedSeason.assistants||[]).forEach(saved=>{const row=allAssistants.find(item=>item.club===saved.club&&item.name===saved.name);if(row)Object.assign(row,saved);});allScorers.sort((a,b)=>b.goals-a.goals);allAssistants.sort((a,b)=>b.assists-a.assists);}
-  const leadersFor=(division,mode)=>{const metric=mode==='scorers'?'goals':'assists',source=mode==='scorers'?allScorers:allAssistants;return source.filter(player=>player.division===division).sort((a,b)=>b[metric]-a[metric]||b.tieValue-a.tieValue||a.games-b.games);};
+  const historyLeaders=(competitionId,mode,clubNames=null)=>{
+    if(!playerHistory)return [];
+    return playerSeasonLeaderboard(playerHistory,{
+      season:careerSeason,
+      competitionId,
+      metric:mode==='scorers'?'goals':'assists',
+      clubNames,
+      getClub:resolveClubForStats,
+    });
+  };
+  const leadersFor=(division,mode)=>{
+    const fromHistory=historyLeaders(`LEAGUE:${division}`,mode);
+    if(fromHistory.length)return fromHistory;
+    const metric=mode==='scorers'?'goals':'assists',source=mode==='scorers'?allScorers:allAssistants;
+    return source.filter(player=>player.division===division).sort((a,b)=>b[metric]-a[metric]||b.tieValue-a.tieValue||a.games-b.games);
+  };
   const resolveClubForStats=name=>clubs[name]||getNationalTeamClub(name)||null;
   const clubSeasonLeaders=clubName=>{
     if(!clubName)return {scorer:{name:'—'},goals:0,assistant:{name:'—'},assists:0};
@@ -1892,7 +1907,16 @@ export async function bootEngine({
     };
   };
   const dashboardStatsClub=()=>(isWorldCupDashboard()&&userNationalTeamName?userNationalTeamName:userClub);
-  const championshipLeadersFor=(division,mode)=>{const metric=mode==='scorers'?'goals':'assists',source=mode==='scorers'?allScorers:allAssistants;if(division==='CUP'){const cupClubs=new Set(copaDoBrasilFixtures.flatMap(game=>[game.home,game.away]));return source.filter(player=>cupClubs.has(player.club)).sort((a,b)=>b[metric]-a[metric]||b.tieValue-a.tieValue||a.games-b.games);}return leadersFor(division,mode);};
+  const championshipLeadersFor=(division,mode)=>{
+    if(division==='CUP'){
+      const fromHistory=historyLeaders('CBR',mode);
+      if(fromHistory.length)return fromHistory;
+      const metric=mode==='scorers'?'goals':'assists',source=mode==='scorers'?allScorers:allAssistants;
+      const cupClubs=new Set(copaDoBrasilFixtures.flatMap(game=>[game.home,game.away]));
+      return source.filter(player=>cupClubs.has(player.club)).sort((a,b)=>b[metric]-a[metric]||b.tieValue-a.tieValue||a.games-b.games);
+    }
+    return leadersFor(division,mode);
+  };
   currentRound=validSavedSeason?savedSeason.currentRound:Math.max(...leagueData.map(row=>row.played))+1;
   const userLeaguePlayed=()=>nationalCompetitions[userDivision]?.standings?.find(row=>row.club===userClub)?.played||0;
   const userGroupStageComplete=()=>userDivision!=='D'||userLeaguePlayed()>=SERIE_D_GROUP_ROUNDS;
@@ -4479,13 +4503,16 @@ export async function bootEngine({
   
   
   
-  const playerSeasonAvgLabel=player=>{
+  const playerSeasonAvgLabel=(player,clubName=null)=>{
     const key=playerKey(player);
-    const bucket=playerHistory?.getPlayer?.(key)?.seasons?.[String(careerSeason)];
-    const avg=bucket?.avgRating!=null?Number(bucket.avgRating):seasonAverageRating(bucket);
-    return formatMatchRating(avg);
+    return formatMatchRating(
+      (
+        resolvePlayerSeasonStats(playerHistory,key,careerSeason,null,{clubId:clubName||player.club||null})
+        || resolvePlayerSeasonStats(playerHistory,key,careerSeason)
+      )?.avgRating,
+    );
   };
-  const analysisTable=(title,players,{numbered=false,slotOffset=0,clubName=''}={})=>`<section class="analysis-roster"><h3>${title}</h3><div class="analysis-head"><span>JOGADOR</span><span>POS.</span><span>OVR</span><span>MÉDIA</span><span>CANSAÇO</span></div>${players.map((player,index)=>`<div class="analysis-player" data-slot="${slotOffset+index}" tabindex="0">${playerNameCell(player.name,player,{prefix:numbered?(index+1)+'. ': '',openCard:true,clubName})}<span>${player.pos}</span><span>${player.overall}</span><span class="analysis-avg">${playerSeasonAvgLabel(player)}</span>${fatigueCell(player)}</div>`).join('')}</section>`;
+  const analysisTable=(title,players,{numbered=false,slotOffset=0,clubName=''}={})=>`<section class="analysis-roster"><h3>${title}</h3><div class="analysis-head"><span>JOGADOR</span><span>POS.</span><span>OVR</span><span>MÉDIA</span><span>CANSAÇO</span></div>${players.map((player,index)=>`<div class="analysis-player" data-slot="${slotOffset+index}" tabindex="0">${playerNameCell(player.name,player,{prefix:numbered?(index+1)+'. ': '',openCard:true,clubName})}<span>${player.pos}</span><span>${player.overall}</span><span class="analysis-avg">${playerSeasonAvgLabel(player,clubName)}</span>${fatigueCell(player)}</div>`).join('')}</section>`;
   const clubManagerName=clubName=>managerRanking.byClub(clubName)?.name||clubs[clubName]?.managerName||(clubName===userClub?careerProfile.managerName:null)||'—';
   let unbindScoutBoardHover=null;
   const scoutBoardPlayerLabel=name=>{
@@ -7067,6 +7094,8 @@ export async function bootEngine({
         ?divisions.find(item=>(item.tier||1)===tier)||divisions[0]
         :null;
       if(!division?.teams?.length)return [];
+      const scoped=historyLeaders(division.label||`ESTADUAL:${uf}`,mode,division.teams);
+      if(scoped.length)return scoped;
       const teamSet=new Set(division.teams.map(name=>normClubName(name)));
       return source
         .filter(player=>teamSet.has(normClubName(player.club))&&Number(player[metric])>0)
@@ -7074,6 +7103,8 @@ export async function bootEngine({
     },
     worldCupLeadersFor:mode=>{
       if(!worldCupCompetition?.champion)return [];
+      const scoped=historyLeaders('CMU',mode);
+      if(scoped.length)return scoped;
       const metric=mode==='scorers'?'goals':'assists';
       const source=mode==='scorers'?allScorers:allAssistants;
       const teamNames=new Set(

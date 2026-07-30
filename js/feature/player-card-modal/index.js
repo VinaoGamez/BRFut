@@ -83,6 +83,9 @@ export function createPlayerCardModal(deps = {}) {
       careerSeason: deps.getCareerSeason?.(),
       clubName: ownerClub,
       clubDivision: ownerClub ? deps.getClubs?.()?.[ownerClub]?.division : null,
+      remoteStats: await import('../../core/player-stats-sync.js')
+        .then(module => module.fetchPlayerSeasonStats(resolvePlayerId(player), deps.getCareerSeason?.()))
+        .catch(() => null),
     });
 
     modal()?.classList.remove('hidden');

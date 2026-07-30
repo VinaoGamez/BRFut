@@ -88,8 +88,20 @@ Estado volátil da temporada — regravado com debounce (`career-persistence` + 
 ## Player history
 
 - Chave global ou por slot (`brfut-slot-*-player-history`).
-- `playerKey = slug(nome) + '#' + idade` (evolução: `playerId`).
+- Registros novos usam `playerId` imutável; `slug(nome) + '#' + idade` existe apenas como fallback legado.
+- Cada temporada possui total geral e buckets por `competitionId`.
+- `fixtureId` canônico torna a gravação de partidas idempotente.
 - Sobrevive avanço de temporada; limpo em `clearCareerData('career'|'all')`.
+
+### Estatísticas incrementais na nuvem
+
+- A fila offline fica em IndexedDB (`brfut-player-stats/match-outbox`).
+- `POST /api/careers/{careerId}/stats/matches` grava lotes idempotentes.
+- `GET /api/careers/{careerId}/stats/players/{playerId}?season=...` retorna total e competições.
+- `GET /api/careers/{careerId}/stats/clubs/{clubId}/squad?season=...&competition=...` retorna o elenco.
+- `GET /api/careers/{careerId}/stats/leaders?season=...&competition=...&metric=...` retorna rankings.
+- `DELETE /api/careers/{careerId}/stats` remove os dados estatísticos da carreira.
+- A VPS usa SQLite (`player-stats.sqlite3`) e isola todos os dados por usuário e carreira.
 
 ---
 

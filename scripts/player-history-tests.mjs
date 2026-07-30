@@ -19,6 +19,8 @@ import {
   clubSeasonRatingSummary,
   clubSeasonLeadersFromHistory,
   backfillClubSeasonMatchLogs,
+  resolvePlayerSeasonStats,
+  playerSeasonLeaderboard,
 } from '../js/engine/player-history.js';
 import { SAVE_KEYS } from '../js/core/constants.js';
 
@@ -292,6 +294,35 @@ check('recordMatch rolls into players.seasons and matchLogs', () => {
   assert.equal(found.id, log.id);
 });
 
+check('fonte única calcula média corrente e separa competições', () => {
+  memory.clear();
+  clearPlayerHistoryStore();
+  const { game, clubs } = makeGame();
+  const history = createPlayerHistoryEngine({ getClub: name => clubs[name] });
+  history.recordMatch(game, { season: 2026, competition: 'LEAGUE:A', id: 'league-stat' });
+  history.recordMatch(
+    { ...game, homeGoals: 1, goals: { home: [{ name: 'Ata Home', minute: 10 }], away: [] } },
+    { season: 2026, competition: 'COPA DO BRASIL', id: 'cup-stat' },
+  );
+  const key = playerKey({ name: 'Ata Home', age: 28 });
+  const total = resolvePlayerSeasonStats(history, key, 2026);
+  const league = resolvePlayerSeasonStats(history, key, 2026, 'LEAGUE:A');
+  const cup = resolvePlayerSeasonStats(history, key, 2026, 'CBR');
+  assert.equal(total.apps, 2);
+  assert.equal(league.apps, 1);
+  assert.equal(cup.apps, 1);
+  assert.equal(league.goals, 2);
+  assert.equal(cup.goals, 1);
+  assert.ok(total.avgRating != null, 'média corrente deve existir antes do fim da temporada');
+  const cupLeaders = playerSeasonLeaderboard(history, {
+    season: 2026,
+    competitionId: 'CBR',
+    metric: 'goals',
+  });
+  assert.equal(cupLeaders[0].name, 'Ata Home');
+  assert.equal(cupLeaders[0].goals, 1);
+});
+
 check('clubSeasonRatingSummary uses per-match average', () => {
   memory.clear();
   clearPlayerHistoryStore();
@@ -429,7 +460,7 @@ check('matchLogs stay within season budget and drop other seasons', () => {
   }
   history.persist();
   assert.equal(history.getStore().matchLogs.length, budget);
-  assert.equal(history.getStore().matchLogs[0].id, 'log-4');
+  assert.equal(history.getStore().matchLogs[0].round, 5);
   // Nova temporada descarta logs antigos (só buffer corrente).
   history.recordMatch(
     { ...game, home: 'Gamma', away: 'Delta', homeGoals: 1, awayGoals: 0 },
