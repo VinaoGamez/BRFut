@@ -7086,6 +7086,17 @@ export async function bootEngine({
       getNationalCompetitions:()=>nationalCompetitions,
       getCompetitionRoundHistory:()=>competitionRoundHistory,
       getCupCompetition:()=>cupCompetition,
+      getRecopaCompetition:()=>recopaCompetition,
+      getRecopaFixtures:()=>recopaFixtures,
+      getWorldCupCompetition:()=>worldCupCompetition,
+      getWorldCupFixtures:()=>worldCupFixtures,
+      getWorldCupChampion:()=>{
+        const championCode=resolveWorldCupChampionCode(worldCupCompetition);
+        if(!championCode)return null;
+        return nationalTeamByCode(championCode)?.name||championCode;
+      },
+      getStateLeagueResults:()=>stateLeagueEngine.exportSeasonResults(),
+      getStateLeagueSnapshot:()=>stateLeagueEngine.serialize(),
       getAllScorers:()=>allScorers,
       getAllAssistants:()=>allAssistants,
     }, meta),

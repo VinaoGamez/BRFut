@@ -3,7 +3,7 @@
  * Separado do brfut-season vivo — nunca se funde no boot do ano corrente.
  */
 
-const ARCHIVE_VERSION = 1;
+const ARCHIVE_VERSION = 2;
 const MAX_LEADERS = 10;
 const MAX_ROUND_GAMES = 12;
 
@@ -34,7 +34,21 @@ function slimGame(game) {
     round: game.round ?? null,
     date: game.date || null,
     competition: game.competition || null,
+    phase: game.phase || game.stage || null,
+    leg: game.leg || null,
+    group: game.group || null,
+    shootoutHome: game.shootoutHome ?? null,
+    shootoutAway: game.shootoutAway ?? null,
+    shootoutWinner: game.shootoutWinner || null,
     completed: !!(game.completed || game.homeGoals != null || game.hg != null),
+  };
+}
+
+function slimTournament({ champion = null, complete = false, fixtures = [] } = {}) {
+  return {
+    champion: champion || null,
+    complete: !!complete,
+    fixtures: (Array.isArray(fixtures) ? fixtures : []).map(slimGame).filter(Boolean),
   };
 }
 
@@ -125,6 +139,31 @@ export function buildSeasonArchive(input = {}) {
     standings,
     competitionRoundHistory: slimRoundHistory(input.competitionRoundHistory),
     cupCompetition: slimCup(input.cupCompetition),
+    recopaCompetition: input.recopaCompetition
+      ? {
+          ...slimTournament({
+            champion: input.recopaCompetition.champion,
+            complete: input.recopaCompetition.complete,
+            fixtures: input.recopaFixtures || [input.recopaCompetition.fixture].filter(Boolean),
+          }),
+          skippedSameClub: !!input.recopaCompetition.skippedSameClub,
+          brasileiroChampion: input.recopaCompetition.brasileiroChampion || null,
+          copaChampion: input.recopaCompetition.copaChampion || null,
+        }
+      : null,
+    worldCupCompetition: input.worldCupCompetition
+      ? slimTournament({
+          champion: input.worldCupChampion || input.worldCupCompetition.champion,
+          complete: input.worldCupCompetition.complete,
+          fixtures: input.worldCupFixtures,
+        })
+      : null,
+    stateLeagueResults: input.stateLeagueResults && typeof input.stateLeagueResults === 'object'
+      ? input.stateLeagueResults
+      : {},
+    stateLeagueSnapshot: input.stateLeagueSnapshot && typeof input.stateLeagueSnapshot === 'object'
+      ? input.stateLeagueSnapshot
+      : null,
     scorers: slimLeaders(input.scorers, 'goals'),
     assistants: slimLeaders(input.assistants, 'assists'),
     movements: Array.isArray(input.movements)

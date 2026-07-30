@@ -26,6 +26,11 @@ import { createChampionshipPageFocus } from './focus.js';
 /**
  * Campeonatos (view table) — classificação, mata-mata inline e modal de chaveamento.
  */
+export function resolveChampionshipPageRenderMode({ archiveView = false, knockoutView = false } = {}) {
+  if (archiveView) return 'archive';
+  return knockoutView ? 'knockout' : 'league';
+}
+
 export function createChampionshipPageFeature(deps) {
   const {
     $,
@@ -115,10 +120,25 @@ export function createChampionshipPageFeature(deps) {
   const PAGE_COMPETITION_OPTIONS = buildPageCompetitionOptions({ FEATURES, savedNewGame: getSavedNewGame() });
   const getPageCompetitionOptions = () => {
     const worldCupCompetition = getWorldCupCompetition();
-    if (!worldCupCompetition) return PAGE_COMPETITION_OPTIONS;
+    const archiveHasWorldCup = !!getViewArchive()?.worldCupCompetition;
+    if (!worldCupCompetition && !archiveHasWorldCup) return PAGE_COMPETITION_OPTIONS;
     const cmu = { id: 'CMU', label: 'Copa do Mundo', trophyKey: 'world-cup' };
     if (PAGE_COMPETITION_OPTIONS.some(option => option.id === 'CMU')) return PAGE_COMPETITION_OPTIONS;
     return [cmu, ...PAGE_COMPETITION_OPTIONS];
+  };
+
+  const archiveSupportsCompetition = competition => {
+    const archive = getViewArchive();
+    if (!archive) return ['A', 'B', 'C', 'D', 'CUP'].includes(competition);
+    if (['A', 'B', 'C', 'D', 'CUP'].includes(competition)) return true;
+    if (competition === 'RECOPA') return !!archive.recopaCompetition;
+    if (competition === 'CMU') return !!archive.worldCupCompetition;
+    if (competition === 'ESTADUAIS') return Object.keys(archive.stateLeagueResults || {}).length > 0;
+    if (isStateChampionshipPage(competition)) {
+      const parsed = parseStateCompetitionKey(competition);
+      return !!parsed && Array.isArray(archive.stateLeagueResults?.[parsed.uf]);
+    }
+    return false;
   };
 
   const placeChampionshipPagePickerMenu = () => {
@@ -799,7 +819,7 @@ export function createChampionshipPageFeature(deps) {
     const currentRound = getCurrentRound();
 
     syncChampionshipSeasonSelect();
-    if (isArchiveView() && !['A', 'B', 'C', 'D', 'CUP'].includes(pageCompetition)) {
+    if (isArchiveView() && !archiveSupportsCompetition(pageCompetition)) {
       pageCompetition = 'A';
     }
 
@@ -862,7 +882,11 @@ export function createChampionshipPageFeature(deps) {
       pageCupPhase = clamp(pageCupPhase || cupCompetition.currentPhase || 1, 1, cupPhaseDefinitions.length);
     }
 
-    const knockout = championshipPageIsKnockoutView();
+    const renderMode = resolveChampionshipPageRenderMode({
+      archiveView: isArchiveView(),
+      knockoutView: championshipPageIsKnockoutView(),
+    });
+    const knockout = renderMode === 'knockout';
     tableCard?.classList.toggle('is-knockout', knockout);
 
     if (menu) {
@@ -879,9 +903,16 @@ export function createChampionshipPageFeature(deps) {
 
     if (isArchiveView()) {
       subText = `ARQUIVO · TEMPORADA ${resolvedViewSeason()}`;
-    }
-
-    if (isStateHub) {
+      titleText = pageCompetition === 'CUP'
+        ? 'COPA DO BRASIL'
+        : pageCompetition === 'RECOPA'
+          ? 'RECOPA NACIONAL'
+          : pageCompetition === 'CMU'
+            ? 'COPA DO MUNDO'
+            : pageCompetition === 'ESTADUAIS' || isStateComp
+              ? 'CAMPEONATOS ESTADUAIS'
+              : `BRASILEIRÃO SÉRIE ${pageCompetition}`;
+    } else if (isStateHub) {
       subText = 'CAMPEONATOS ESTADUAIS';
       titleText = 'ESCOLHA O ESTADO';
     } else if (pageCompetition === 'RECOPA') {
@@ -978,14 +1009,14 @@ export function createChampionshipPageFeature(deps) {
     const lastGamesBtn = $('#championshipPageLastGamesBtn');
     if (lastGamesBtn) lastGamesBtn.classList.toggle('hidden', pageCompetition === 'CUP' || pageCompetition === 'RECOPA' || pageCompetition === 'CMU' || isStateHub || isArchiveView());
 
-    if (isStateHub) {
+    if (isStateHub && !isArchiveView()) {
       tableCard?.classList.remove('is-knockout');
       if (head) head.innerHTML = '';
       body.innerHTML = renderEstaduaisHub({ stateLeagueEngine, userClub, stateFlagMarkup });
     } else if (knockout) {
       if (head) head.innerHTML = '';
       body.innerHTML = renderChampionshipPageKnockoutBody();
-    } else if (isStateComp && stateInLeaguePhase) {
+    } else if (isStateComp && stateInLeaguePhase && !isArchiveView()) {
       tableCard?.classList.remove('is-knockout');
       const division = stateLeagueEngine.getDivisionForBrowse(pageCompetition, userClub);
       const leagueRounds = division?.leagueRoundCount ?? division?.groupRoundCount ?? 0;
@@ -1026,7 +1057,7 @@ export function createChampionshipPageFeature(deps) {
         gamesHtml = renderChampionshipPageRoundFixtures(games, { completed, toolbarHtml: toolbar });
       }
       body.innerHTML = `<div class="championship-page-league-body"><div class="championship-page-standings-block">${rowsHtml}${zoneLegend}</div>${gamesHtml}</div>`;
-    } else if (isStateComp) {
+    } else if (isStateComp && !isArchiveView()) {
       tableCard?.classList.add('is-knockout');
       const games = stateLeagueEngine.getRoundGamesForBrowse(pageCompetition, pageStateRound, { simulateMatch: simulateRoundMatch });
       const saved = (stateLeagueEngine.history[parseStateCompetitionKey(pageCompetition)?.uf || ''] || []).find(item => item.round === pageStateRound);
@@ -1041,7 +1072,7 @@ export function createChampionshipPageFeature(deps) {
       }
       if (head) head.innerHTML = '';
       body.innerHTML = gamesHtml;
-    } else if (pageCompetition === 'CMU') {
+    } else if (pageCompetition === 'CMU' && !isArchiveView()) {
       tableCard?.classList.remove('is-knockout');
       const inKnockout = (pageWorldCupRound || 1) >= 4 || worldCupCompetition?.phase === 'knockout';
       if (inKnockout) {
@@ -1063,7 +1094,7 @@ export function createChampionshipPageFeature(deps) {
         const zoneLegend = '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>2 primeiros · Avançam no grupo</span></div>';
         body.innerHTML = rowsHtml + zoneLegend;
       }
-    } else if (isArchiveView() && ['A', 'B', 'C', 'D', 'CUP'].includes(pageCompetition)) {
+    } else if (isArchiveView() && archiveSupportsCompetition(pageCompetition)) {
       tableCard?.classList.toggle('is-knockout', pageCompetition === 'CUP');
       const archive = getViewArchive();
       const year = resolvedViewSeason();
@@ -1083,6 +1114,39 @@ export function createChampionshipPageFeature(deps) {
           return `<section class="championship-page-archive-stage"><header><strong>${stage.name || `Fase ${stage.index}`}</strong><small>${stage.completed ? 'Concluída' : ''}</small></header>${fixtures}</section>`;
         }).join('');
         body.innerHTML = `<div class="championship-page-archive-banner">Temporada ${year} · arquivo · Campeão: <strong>${champ}</strong></div>${stages || '<div class="championship-page-empty">Sem dados da Copa neste arquivo.</div>'}`;
+      } else if (pageCompetition === 'RECOPA' || pageCompetition === 'CMU') {
+        if (head) head.innerHTML = '';
+        const tournament = pageCompetition === 'RECOPA'
+          ? archive.recopaCompetition
+          : archive.worldCupCompetition;
+        const label = pageCompetition === 'RECOPA' ? 'Recopa Nacional' : 'Copa do Mundo';
+        const fixtures = (tournament?.fixtures || []).map(game => {
+          const score = game.homeGoals != null ? `${game.homeGoals}–${game.awayGoals}` : '×';
+          const shootout = game.shootoutHome != null && game.shootoutAway != null
+            ? ` · Pên. ${game.shootoutHome}–${game.shootoutAway}`
+            : '';
+          const phase = game.phase ? `<small>${game.phase}${game.group ? ` · Grupo ${game.group}` : ''}</small>` : '';
+          return `<div class="championship-page-archive-fixture"><strong>${game.home}</strong> ${score} <strong>${game.away}</strong>${shootout}${phase}</div>`;
+        }).join('') || '<div class="championship-page-empty">Sem jogos registrados neste arquivo.</div>';
+        const champion = tournament?.champion || '—';
+        body.innerHTML = `<div class="championship-page-archive-banner">Temporada ${year} · arquivo · ${label} · Campeão: <strong>${champion}</strong></div>${fixtures}`;
+      } else if (pageCompetition === 'ESTADUAIS' || isStateChampionshipPage(pageCompetition)) {
+        if (head) head.innerHTML = '';
+        const parsed = isStateChampionshipPage(pageCompetition)
+          ? parseStateCompetitionKey(pageCompetition)
+          : null;
+        const states = Object.entries(archive.stateLeagueResults || {})
+          .filter(([uf]) => !parsed || uf === parsed.uf)
+          .sort(([a], [b]) => a.localeCompare(b));
+        const cards = states.flatMap(([uf, divisions]) =>
+          (divisions || [])
+            .filter(item => !parsed || Number(item.tier || 1) === Number(parsed.tier || 1))
+            .map(item => `<section class="championship-page-archive-stage">
+              <header><strong>${uf} · DIVISÃO ${item.tier || 1}</strong><small>${item.complete ? 'Concluída' : 'Incompleta'}</small></header>
+              <div class="championship-page-archive-fixture"><strong>Campeão: ${item.champion || '—'}</strong>${item.runnerUp ? `<small>Vice: ${item.runnerUp}</small>` : ''}</div>
+            </section>`),
+        ).join('');
+        body.innerHTML = `<div class="championship-page-archive-banner">Temporada ${year} · arquivo · Estaduais · somente leitura</div>${cards || '<div class="championship-page-empty">Sem resultados estaduais neste arquivo.</div>'}`;
       } else {
         if (head) head.innerHTML = '<span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
         const rows = [...(archive.standings?.[pageCompetition] || [])]
@@ -1329,7 +1393,7 @@ export function createChampionshipPageFeature(deps) {
       seasonSelect.addEventListener('change', () => {
         const year = Number(seasonSelect.value);
         pageViewSeason = Number.isFinite(year) ? year : getCareerSeason();
-        if (isArchiveView() && !['A', 'B', 'C', 'D', 'CUP'].includes(pageCompetition)) {
+        if (isArchiveView() && !archiveSupportsCompetition(pageCompetition)) {
           pageCompetition = 'A';
         }
         renderChampionshipPage();

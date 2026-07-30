@@ -49,6 +49,7 @@ const SUITES = [
   { label: 'knockout-shootout', steps: [['scripts/knockout-shootout-tests.mjs']] },
   { label: 'shootout-live', steps: [['scripts/shootout-live-tests.mjs']] },
   { label: 'competition-rules', steps: [['scripts/competition-rules-tests.mjs']] },
+  { label: 'championship-history', steps: [['scripts/championship-history-tests.mjs']] },
   { label: 'serie-c-calendar', steps: [['scripts/serie-c-calendar-tests.mjs']] },
   { label: 'serie-d-knockout-legs', steps: [['scripts/serie-d-knockout-legs-tests.mjs']] },
   { label: 'messages-stale', steps: [['scripts/messages-stale-tests.mjs']] },
