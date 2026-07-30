@@ -12,6 +12,7 @@ import { recordKnockoutResult, winnerFromGame, loserFromGame } from './world-cup
 import { isKnockoutShootoutCompetition, KNOCKOUT_COMPETITIONS } from './knockout-shootout.js';
 import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
 import { worldCupWindowEndDate } from './world-cup-competition.js';
+import { worldCupGroupMatchdayEndDate } from './world-cup-competition.js';
 
 /**
  * Histórico da rodada só conta se a tabela também refletiu o jogo — evita AVANÇAR
@@ -289,6 +290,11 @@ export function createRoundAdvanceEngine(deps) {
         if (!deps.getAvailabilityCommitted()) deps.commitLiveAvailability();
         deps.recordGameLeaders(liveMatchGame);
         deps.persistPlayerHistory();
+        if (!liveMatchGame.knockout && worldCupCompetition?.groupFixtures?.length) {
+          const matchday = Number(liveMatchGame.matchday || liveMatchGame.round || 1);
+          const matchdayEnd = worldCupGroupMatchdayEndDate(worldCupCompetition, matchday);
+          if (matchdayEnd) deps.advanceWorldCupThroughDateLocal(matchdayEnd);
+        }
         deps.refreshWorldCupFixtures?.();
         deps.rebuildCalendarGames();
         deps.invalidateUserScheduleCache?.();

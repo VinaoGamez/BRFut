@@ -77,10 +77,28 @@ export const TICKET_PRICE_RANGE = {
 };
 
 /**
- * Receita líquida da bilheteria após segurança, operação, impostos e taxas.
- * O preço mostrado na UI continua sendo o valor bruto pago pelo torcedor.
+ * Bilheteria bruta: público × preço real do setor.
+ * Custos do evento são lançados separadamente para manter o fluxo transparente.
  */
-export const GATE_REVENUE_SCALE = 0.3;
+// Modelo legado mantido apenas como referência para migrações e simuladores.
+// A renda exibida/creditada agora é sempre a bilheteria bruta real.
+export const GATE_REVENUE_SCALE = 1;
+export const GATE_REVENUE_MODEL = 2;
+export const MATCHDAY_OPERATION_FIXED_COST = 50_000;
+export const MATCHDAY_OPERATION_COST_PER_ATTENDEE = 10;
+export const MATCHDAY_OPERATION_MAX_GROSS_RATE = 0.7;
+
+/**
+ * Segurança, limpeza, equipes de apoio e logística do dia da partida.
+ * O teto preserva a rentabilidade dos jogos menores do modelo econômico anterior.
+ */
+export function estimateMatchdayOperationCost({ attendance = 0, revenue = 0 } = {}) {
+  const gross = Math.max(0, Math.round(Number(revenue) || 0));
+  if (!(gross > 0)) return 0;
+  const crowd = Math.max(0, Math.round(Number(attendance) || 0));
+  const operational = MATCHDAY_OPERATION_FIXED_COST + crowd * MATCHDAY_OPERATION_COST_PER_ATTENDEE;
+  return Math.max(0, Math.round(Math.min(gross * MATCHDAY_OPERATION_MAX_GROSS_RATE, operational)));
+}
 
 /**
  * Premiação de fim de temporada — calibrada vs INITIAL_BUDGET:
@@ -1403,7 +1421,13 @@ const seasonCashflowCategory = (type, reason) => {
   if (reason === 'wages') return ['outflows', 'wages'];
   if (reason === 'staff_wages') return ['outflows', 'staff'];
   if (reason === 'scout_wages' || reason === 'scout_travel') return ['outflows', 'scouting'];
-  if (reason === 'stadium_ops' || reason === 'name_rights') return ['outflows', 'stadium'];
+  if (
+    reason === 'stadium_ops' ||
+    reason === 'matchday_operations' ||
+    reason === 'name_rights'
+  ) {
+    return ['outflows', 'stadium'];
+  }
   if (String(reason || '').startsWith('upgrade:')) return ['outflows', 'upgrades'];
   if (reason === 'loan_interest' || reason === 'loan_repay' || reason === 'overdraft_interest') {
     return ['outflows', 'loan_service'];
@@ -2089,7 +2113,7 @@ export function estimateGateReceipt(
       channel: resolvedChannel,
       division,
       game,
-      gateScale: GATE_REVENUE_SCALE,
+      gateScale: 1,
       ticketPrices: club.ticketPrices,
       environment: club.environment,
       support: club.support,
@@ -2108,12 +2132,20 @@ export function estimateGateReceipt(
       base.attendance > 0
         ? Math.round(base.revenue * (clampedAttendance / base.attendance))
         : base.revenue;
+    const operationCost = estimateMatchdayOperationCost({
+      attendance: clampedAttendance,
+      revenue,
+    });
     return {
       ...base,
       channel: resolvedChannel,
       attendance: clampedAttendance,
       fillRate: cap > 0 ? clampedAttendance / cap : fillRate,
       revenue,
+      grossRevenue: revenue,
+      operationCost,
+      netRevenue: revenue - operationCost,
+      revenueModel: GATE_REVENUE_MODEL,
       capacity: cap,
       attraction,
     };
@@ -2123,13 +2155,18 @@ export function estimateGateReceipt(
   const cap = Math.max(1000, Number(capacity) || Number(club.stadiumCapacity) || 12_000);
   const attendance = Math.round(cap * fill);
   const price = weightedAverageTicketPrice(club, resolvedChannel);
-  const revenue = Math.round(attendance * price * GATE_REVENUE_SCALE);
+  const revenue = Math.round(attendance * price);
+  const operationCost = estimateMatchdayOperationCost({ attendance, revenue });
   return {
     channel: resolvedChannel,
     attendance,
     fillRate: fill,
     price,
     revenue,
+    grossRevenue: revenue,
+    operationCost,
+    netRevenue: revenue - operationCost,
+    revenueModel: GATE_REVENUE_MODEL,
     capacity: cap,
     attraction,
     environment: Number(club.environment) || 60,
@@ -2151,7 +2188,10 @@ export function computeMatchAttendance(club, game, { division = 'A', capacity = 
     const attendance = Math.round(Number(game.attendance));
     const fillRate = Math.max(0.28, Math.min(0.96, Number(game.fillRate)));
     let revenue;
-    if (Number.isFinite(Number(game.gateRevenue))) {
+    if (
+      Number(game.gateRevenueModel) === GATE_REVENUE_MODEL &&
+      Number.isFinite(Number(game.gateRevenue))
+    ) {
       revenue = Math.round(Number(game.gateRevenue));
     } else {
       const recalc = estimateGateReceipt(club, {
@@ -2166,12 +2206,19 @@ export function computeMatchAttendance(club, game, { division = 'A', capacity = 
           ? Math.round(recalc.revenue * (attendance / recalc.attendance))
           : recalc.revenue;
     }
+    const operationCost = Number.isFinite(Number(game.gateOperationCost))
+      ? Math.round(Number(game.gateOperationCost))
+      : estimateMatchdayOperationCost({ attendance, revenue });
     return {
       channel,
       attendance,
       fillRate,
       price,
       revenue,
+      grossRevenue: revenue,
+      operationCost,
+      netRevenue: revenue - operationCost,
+      revenueModel: GATE_REVENUE_MODEL,
       capacity: cap,
       attraction: competitionAttraction(game),
       environment: Number(club.environment) || 60,
@@ -2193,6 +2240,8 @@ export function attachMatchAttendance(club, game, options = {}) {
     game.attendance = estimate.attendance;
     game.fillRate = Number(estimate.fillRate.toFixed(4));
     game.gateRevenue = estimate.revenue;
+    game.gateRevenueModel = GATE_REVENUE_MODEL;
+    game.gateOperationCost = estimate.operationCost;
     if (Array.isArray(estimate.sectors) && estimate.sectors.length) {
       game.gateSectorBreakdown = estimate.sectors.map(s => ({
         id: s.id,
@@ -2235,8 +2284,28 @@ export function creditHomeGate(club, game, { division = 'A', capacity = null, at
     },
   });
   if (result?.ok) {
+    const operationResult = spend(club, estimate.operationCost, {
+      reason: 'matchday_operations',
+      label: `Operação da partida (${estimate.attendance.toLocaleString('pt-BR')} pessoas)`,
+      allowNegative: true,
+      meta: {
+        opponent: game.away,
+        competition: game.competition || 'LEAGUE',
+        phase: game.phase || null,
+        attendance: estimate.attendance,
+        grossRevenue: estimate.revenue,
+      },
+    });
     game.gateCredited = true;
     game.gateRevenue = result.entry.amount;
+    game.gateRevenueModel = GATE_REVENUE_MODEL;
+    game.gateOperationCost = operationResult?.entry?.amount || 0;
+    game.gateOperationCostCharged = !!operationResult?.ok;
+    result.grossRevenue = result.entry.amount;
+    result.operationCost = game.gateOperationCost;
+    result.netRevenue = result.grossRevenue - result.operationCost;
+    result.operationEntry = operationResult?.entry || null;
+    result.balance = getBalance(club);
   }
   return result;
 }

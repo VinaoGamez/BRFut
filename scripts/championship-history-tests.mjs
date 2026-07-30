@@ -2,8 +2,12 @@
  * Regressão do seletor de temporada na página de Campeonatos.
  * node scripts/championship-history-tests.mjs
  */
-import { resolveChampionshipPageRenderMode } from '../js/feature/championship-page/index.js';
+import {
+  resolveChampionshipPageRenderMode,
+  worldCupViewModelFromArchive,
+} from '../js/feature/championship-page/index.js';
 import { buildSeasonArchive } from '../js/engine/season-archive.js';
+import { computeGroupStandings } from '../js/engine/world-cup-standings.js';
 
 let passed = 0;
 let failed = 0;
@@ -67,12 +71,28 @@ check('arquivo preserva Recopa Nacional, Copa do Mundo e Estaduais', () => {
       MT: [{ tier: 1, champion: 'Cuiabá', runnerUp: 'Operário', complete: true }],
     },
   });
-  assertEqual(archive.version, 2);
+  assertEqual(archive.version, 3);
   assertEqual(archive.recopaCompetition.champion, 'Clube A');
   assertEqual(archive.recopaCompetition.fixtures[0].homeGoals, 2);
   assertEqual(archive.worldCupCompetition.champion, 'Brasil');
   assertEqual(archive.worldCupCompetition.fixtures[0].phase, 'FINAL');
   assertEqual(archive.stateLeagueResults.MT[0].champion, 'Cuiabá');
+});
+
+check('arquivo da Copa do Mundo recupera grupos e mata-mata para o visual ao vivo', () => {
+  const view = worldCupViewModelFromArchive({
+    worldCupCompetition: {
+      complete: true,
+      fixtures: [
+        { home: 'Brasil', away: 'Haiti', group: 'C', round: 1, homeGoals: 2, awayGoals: 0 },
+        { home: 'Brasil', away: 'França', phase: 'FINAL', round: 9, homeGoals: 1, awayGoals: 0 },
+      ],
+    },
+  });
+  assertEqual(view.phase, 'complete');
+  assertEqual(view.groupFixtures.length, 1);
+  assertEqual(view.knockoutFixtures.length, 1);
+  assertEqual(computeGroupStandings('C', view.groupFixtures).length, 2);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

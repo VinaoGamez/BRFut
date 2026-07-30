@@ -19,6 +19,12 @@ import {
   weightedAverageTicketPrice,
   estimateGateReceiptSectors,
 } from '../js/engine/stadium-sectors.js';
+import {
+  creditHomeGate,
+  estimateGateReceipt,
+  estimateMatchdayOperationCost,
+  GATE_REVENUE_MODEL,
+} from '../js/engine/economy.js';
 
 let passed = 0;
 let failed = 0;
@@ -78,6 +84,42 @@ check('bilheteria = público × preço (sem escala oculta)', () => {
   const est = estimateGateReceiptSectors(club, { channel: 'national', division: 'D', gateScale: 1 });
   const scaled = Math.round(est.revenue * (attendance / Math.max(1, est.attendance)));
   assert(Math.abs(scaled - attendance * price) <= est.sectors.length + 1, `expected ~${attendance * price}, got ${scaled}`);
+});
+
+check('economia credita bruto e debita operação em lançamentos separados', () => {
+  const club = {
+    name: 'Teste FC',
+    division: 'D',
+    budget: 300_000,
+    environment: 70,
+    support: 70,
+    stadiumStructure: 0,
+    stadiumSectors: { popular: 1, stands: 0, seats: 0, boxes: 0, vip: 0 },
+    stadiumSectorModel: STADIUM_SECTOR_MODEL,
+    ticketPrices: normalizeTicketPrices({ national: 24, cups: 32 }),
+  };
+  ensureStadiumSectors(club, 'D');
+  const game = {
+    home: club.name,
+    away: 'Visitante',
+    competition: 'LEAGUE',
+    round: 1,
+  };
+  const before = club.budget;
+  const estimate = estimateGateReceipt(club, { division: 'D', game });
+  const result = creditHomeGate(club, game, { division: 'D' });
+  assert(result.ok, result.error);
+  assert(result.grossRevenue === estimate.revenue, 'crédito bruto divergente');
+  assert(result.operationCost === estimate.operationCost, 'operação divergente');
+  assert(club.budget === before + result.netRevenue, 'caixa não recebeu valor líquido');
+  assert(game.gateRevenueModel === GATE_REVENUE_MODEL, 'modelo não persistido');
+  assert(club.budgetLedger[0].reason === 'matchday_operations', 'despesa sem lançamento próprio');
+  assert(club.budgetLedger[1].reason === 'gate_receipt', 'receita sem lançamento próprio');
+});
+
+check('custo operacional tem teto de 70% para preservar jogos pequenos', () => {
+  const cost = estimateMatchdayOperationCost({ attendance: 500, revenue: 20_000 });
+  assert(cost === 14_000, String(cost));
 });
 
 check('novo jogo: estrutura 0, popular 1, capacidade inicial A na faixa', () => {

@@ -775,6 +775,9 @@ export function compactMatchResult(game, { keepData = false } = {}) {
     if (Number.isFinite(Number(game.fillRate))) compact.fillRate = Number(game.fillRate);
   }
   if (Number.isFinite(Number(game.gateRevenue))) compact.gateRevenue = Number(game.gateRevenue);
+  if (Number.isFinite(Number(game.gateRevenueModel))) compact.gateRevenueModel = Number(game.gateRevenueModel);
+  if (Number.isFinite(Number(game.gateOperationCost))) compact.gateOperationCost = Number(game.gateOperationCost);
+  if (game.gateOperationCostCharged) compact.gateOperationCostCharged = true;
   if (game.gateCredited) compact.gateCredited = true;
   return compact;
 }
@@ -962,6 +965,9 @@ export function compactCupFixture(game, userClub) {
     if (Number.isFinite(Number(game.fillRate))) compact.fillRate = Number(game.fillRate);
   }
   if (keepData && Number.isFinite(Number(game.gateRevenue))) compact.gateRevenue = Number(game.gateRevenue);
+  if (keepData && Number.isFinite(Number(game.gateRevenueModel))) compact.gateRevenueModel = Number(game.gateRevenueModel);
+  if (keepData && Number.isFinite(Number(game.gateOperationCost))) compact.gateOperationCost = Number(game.gateOperationCost);
+  if (keepData && game.gateOperationCostCharged) compact.gateOperationCostCharged = true;
   if (keepData && game.gateCredited) compact.gateCredited = true;
   return compact;
 }

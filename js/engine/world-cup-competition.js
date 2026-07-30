@@ -213,6 +213,16 @@ export function getWorldCupAllFixtures(competition) {
   return [...competition.groupFixtures, ...competition.knockoutFixtures];
 }
 
+export function worldCupGroupMatchdayEndDate(competition, matchday) {
+  const target = Number(matchday);
+  const timestamps = (competition?.groupFixtures || [])
+    .filter(game => Number(game.matchday || game.round || 1) === target)
+    .map(game => new Date(game.date).getTime())
+    .filter(Number.isFinite);
+  if (!timestamps.length) return null;
+  return new Date(Math.max(...timestamps));
+}
+
 /**
  * Resolve o campeão mesmo antes do próximo avanço de calendário promover
  * o resultado da final para `competition.champion`.

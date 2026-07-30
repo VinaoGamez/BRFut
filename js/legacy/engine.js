@@ -2461,7 +2461,11 @@ export async function bootEngine({
       lines.push(`Público: ${crowd.attendance.toLocaleString('pt-BR')} (${Math.round(crowd.fillRate*100)}% lotação)`);
     }
     if(userAtHome&&gateResult?.ok&&gateResult.entry?.amount>0){
-      lines.push(`Bilheteria (casa): +${formatBudget(gateResult.entry.amount)} · caixa ${formatBudget(gateResult.balance)}`);
+      lines.push(`Bilheteria bruta (casa): +${formatBudget(gateResult.grossRevenue??gateResult.entry.amount)}`);
+      if((gateResult.operationCost||0)>0){
+        lines.push(`Operação da partida: -${formatBudget(gateResult.operationCost)} · líquido ${formatBudget(gateResult.netRevenue)}`);
+      }
+      lines.push(`Caixa: ${formatBudget(gateResult.balance)}`);
     }
     if(userAtHome)recordUserHomeCrowd(game,gateResult);
     const resultMeta=matchdayMetaForGame(game);

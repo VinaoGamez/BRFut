@@ -6,6 +6,7 @@ import {
   createWorldCupCompetition,
   getWorldCupAllFixtures,
   advanceWorldCupThroughDate,
+  worldCupGroupMatchdayEndDate,
   advanceWorldCupSpectatorThroughWindow,
   simulateNationalTeamMatch,
   resolveWorldCupKnockoutIfDrawn,
@@ -122,6 +123,22 @@ check('mata-mata empatado resolve com prorrogação/pênaltis', () => {
   assert(winnerFromGame(game) != null, 'deve ter vencedor após desempate');
   assert(game.extraTimePlayed === true);
   assert(game.shootoutWinner || game.homeGoals !== game.awayGoals);
+});
+
+check('fim da rodada da Copa alcança jogos de todos os 12 grupos', () => {
+  const comp = createWorldCupCompetition({ year: 2026, random: () => 0.42 });
+  const end = worldCupGroupMatchdayEndDate(comp, 1);
+  assert(end instanceof Date && !Number.isNaN(end.getTime()), 'data final da rodada');
+  advanceWorldCupThroughDate(comp, end, {
+    random: () => 0.42,
+    isUserTeam: game => game.homeCode === 'BRA' || game.awayCode === 'BRA',
+    simulate: simulateNationalTeamMatch,
+  });
+  const cpuGames = comp.groupFixtures.filter(
+    game => Number(game.matchday) === 1 && game.homeCode !== 'BRA' && game.awayCode !== 'BRA',
+  );
+  assert(cpuGames.length === 23, `esperado 23 jogos CPU, recebido ${cpuGames.length}`);
+  assert(cpuGames.every(game => game.completed && game.homeGoals != null), 'todos os grupos simulados');
 });
 
 check('campeão da final ao vivo aparece antes do próximo avanço', () => {

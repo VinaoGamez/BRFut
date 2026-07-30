@@ -1310,7 +1310,11 @@ export function createEconomyFeature(deps) {
       label: 'Olheiros',
       match: reason => reason === 'scout_wages' || reason === 'scout_travel',
     },
-    { key: 'stadium', label: 'Manutenção do estádio', match: reason => reason === 'stadium_ops' },
+    {
+      key: 'stadium',
+      label: 'Estádio e operação de jogos',
+      match: reason => reason === 'stadium_ops' || reason === 'matchday_operations',
+    },
     { key: 'upgrades', label: 'Investimentos', match: reason => String(reason || '').startsWith('upgrade:') },
     {
       key: 'loan_service',

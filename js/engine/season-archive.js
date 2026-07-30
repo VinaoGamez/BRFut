@@ -3,7 +3,7 @@
  * Separado do brfut-season vivo — nunca se funde no boot do ano corrente.
  */
 
-const ARCHIVE_VERSION = 2;
+const ARCHIVE_VERSION = 3;
 const MAX_LEADERS = 10;
 const MAX_ROUND_GAMES = 12;
 
@@ -29,9 +29,13 @@ function slimGame(game) {
   return {
     home: game.home,
     away: game.away,
+    homeCode: game.homeCode || null,
+    awayCode: game.awayCode || null,
     homeGoals: game.homeGoals ?? game.hg ?? null,
     awayGoals: game.awayGoals ?? game.ag ?? null,
     round: game.round ?? null,
+    matchday: game.matchday ?? null,
+    gameNumber: game.gameNumber ?? null,
     date: game.date || null,
     competition: game.competition || null,
     phase: game.phase || game.stage || null,
@@ -152,11 +156,14 @@ export function buildSeasonArchive(input = {}) {
         }
       : null,
     worldCupCompetition: input.worldCupCompetition
-      ? slimTournament({
-          champion: input.worldCupChampion || input.worldCupCompetition.champion,
-          complete: input.worldCupCompetition.complete,
-          fixtures: input.worldCupFixtures,
-        })
+      ? {
+          ...slimTournament({
+            champion: input.worldCupChampion || input.worldCupCompetition.champion,
+            complete: input.worldCupCompetition.complete,
+            fixtures: input.worldCupFixtures,
+          }),
+          phase: input.worldCupCompetition.phase || null,
+        }
       : null,
     stateLeagueResults: input.stateLeagueResults && typeof input.stateLeagueResults === 'object'
       ? input.stateLeagueResults
