@@ -267,6 +267,9 @@ export function createOptionsFeature(deps) {
     if (syncStatusEl) {
       const authLabels = {
         connected: 'nuvem conectada',
+        syncing: 'enviando para a nuvem',
+        reconnecting: 'nuvem reconectando',
+        rate_limited: 'nuvem aguardando limite',
         offline: 'nuvem indisponível',
         expired: 'sessão expirada',
         signed_out: 'sem conta',

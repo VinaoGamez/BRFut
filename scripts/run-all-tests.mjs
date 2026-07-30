@@ -51,6 +51,7 @@ const SUITES = [
   { label: 'competition-rules', steps: [['scripts/competition-rules-tests.mjs']] },
   { label: 'serie-c-calendar', steps: [['scripts/serie-c-calendar-tests.mjs']] },
   { label: 'messages-stale', steps: [['scripts/messages-stale-tests.mjs']] },
+  { label: 'save-sync-controller', steps: [['scripts/save-sync-controller-tests.mjs']] },
   { label: 'club-solvency', steps: [['scripts/club-solvency-tests.mjs']] },
   { label: 'bank-loan', steps: [['scripts/bank-loan-tests.mjs']] },
   { label: 'season-objectives', steps: [['scripts/season-objectives-tests.mjs']] },

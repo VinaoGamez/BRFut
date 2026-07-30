@@ -9,6 +9,23 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.75',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T22:41:27-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Salvamento na nuvem',
+        items: [
+          'Os saves pendentes agora são enviados em ordem, sem sobrecarregar a conexão com várias tentativas simultâneas.',
+          'Após queda de rede ou limite temporário do servidor, o jogo aguarda e tenta novamente automaticamente.',
+          'A sincronização é retomada ao recuperar a internet ou voltar para a aba, sem precisar abrir as Opções.',
+          'O estado de salvamento agora informa quando a nuvem está enviando, reconectando ou aguardando o limite.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.70',
     date: '2026-07-29',
     publishedAt: '2026-07-29T20:58:59-04:00',

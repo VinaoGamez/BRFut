@@ -31,6 +31,8 @@ const AUTH_REMEMBER_KEY = 'brfut-auth-remember';
 const SYNCABLE_KEYS = ALL_SYNCABLE_SAVE_KEYS;
 const SYNC_DEBOUNCE_MS = 400;
 const SYNC_AUTH_BACKOFF_MS = 30_000;
+const SYNC_RETRY_DELAYS_MS = [2_000, 5_000, 15_000, 30_000, 60_000];
+const SYNC_RECOVERY_INTERVAL_MS = 60_000;
 const PRESENCE_INTERVAL_MS = 120_000;
 const PENDING_SYNC_KEYS_STORAGE = 'brfut-pending-cloud-keys';
 const PENDING_DELETE_KEYS_STORAGE = 'brfut-pending-cloud-deletes';
@@ -43,11 +45,51 @@ let currentUser = null;
 let remoteSavesCache = null;
 const syncQueue = new Map();
 let syncTimer = 0;
+let syncInFlight = false;
+let syncRetryCount = 0;
 let syncAuthBlockedUntil = 0;
 /** Último motivo de falha ao reativar nuvem (manual save / ensureCloudReady). */
 let lastCloudGateReason = null;
 let presenceTimer = 0;
+let syncRecoveryTimer = 0;
+let syncRecoveryBound = false;
+let lastSyncAttemptAt = 0;
+let lastSyncSuccessAt = 0;
+let lastSyncError = null;
+let nextSyncRetryAt = 0;
 const syncWarned = new Set();
+
+function syncErrorDetails(error) {
+  return {
+    status: Number(error?.status) || 0,
+    code: error?.code || (error?.status === 429 ? 'rate_limited' : 'sync_failed'),
+    message: error?.message || 'Falha ao sincronizar',
+    at: Date.now(),
+  };
+}
+
+function noteSyncSuccess() {
+  lastSyncSuccessAt = Date.now();
+  lastSyncError = null;
+  nextSyncRetryAt = 0;
+  syncRetryCount = 0;
+  lastCloudGateReason = null;
+}
+
+function retryDelayFor(error) {
+  const serverDelay = Number(error?.retryAfterMs) || 0;
+  const base = SYNC_RETRY_DELAYS_MS[Math.min(syncRetryCount, SYNC_RETRY_DELAYS_MS.length - 1)];
+  syncRetryCount += 1;
+  const jitter = Math.round(base * (0.85 + Math.random() * 0.3));
+  return Math.max(serverDelay, jitter);
+}
+
+function noteSyncFailure(error) {
+  lastSyncError = syncErrorDetails(error);
+  const delay = retryDelayFor(error);
+  nextSyncRetryAt = Date.now() + delay;
+  return delay;
+}
 
 function readPendingSyncState() {
   try {
@@ -177,6 +219,7 @@ function warnSyncOnce(id, message, ...args) {
 function pauseCloudSync({ reason = 'cloud_paused' } = {}) {
   // NÃO apaga o token — logout só via logoutAccount() / fechar aba (sessionStorage).
   cloudActive = false;
+  lastCloudGateReason = reason;
   syncCloudLocalTrimFlag();
   syncAuthBlockedUntil = Date.now() + SYNC_AUTH_BACKOFF_MS;
   if (syncTimer) {
@@ -198,6 +241,7 @@ function isSyncAuthBlocked() {
 
 function handleSyncAuthFailure(error) {
   if (error?.status !== 401) return false;
+  lastSyncError = syncErrorDetails(error);
   pauseCloudSync({ reason: 'auth_failed' });
   warnSyncOnce(
     'sync-auth',
@@ -322,6 +366,7 @@ export async function ensureCloudReady() {
   } catch (error) {
     // Nunca apaga o token aqui. Só pausa a nuvem.
     cloudActive = false;
+    lastSyncError = syncErrorDetails(error);
     syncCloudLocalTrimFlag();
     if (error?.status === 401) {
       lastCloudGateReason = 'auth_rejected';
@@ -345,13 +390,24 @@ export function getSaveSyncStatus() {
     cloudRevision: Number(remoteSeason?.saveRevision) || 0,
     pendingKeys: [...readPendingSyncKeys()],
     cloudActive: isCloudStorageActive(),
+    syncing: syncInFlight,
+    lastAttemptAt: lastSyncAttemptAt,
+    lastSuccessAt: lastSyncSuccessAt,
+    lastError: lastSyncError,
+    nextRetryAt: nextSyncRetryAt,
     authState: !getAuthToken()
       ? 'signed_out'
       : lastCloudGateReason === 'auth_rejected' || lastCloudGateReason === 'auth_failed'
         ? 'expired'
-        : isCloudStorageActive()
-          ? 'connected'
-          : 'offline',
+        : lastSyncError?.status === 429
+          ? 'rate_limited'
+          : lastSyncError
+            ? 'reconnecting'
+            : syncInFlight
+              ? 'syncing'
+              : isCloudStorageActive()
+                ? 'connected'
+                : 'offline',
   };
 }
 
@@ -406,6 +462,14 @@ async function authedFetch(path, options = {}) {
         const error = new Error(message);
         error.code = body?.code || 'request_failed';
         error.status = response.status;
+        const retryAfter = response.headers.get('Retry-After');
+        if (retryAfter) {
+          const seconds = Number(retryAfter);
+          const dateDelay = Date.parse(retryAfter) - Date.now();
+          error.retryAfterMs = Number.isFinite(seconds)
+            ? Math.max(0, seconds * 1000)
+            : Math.max(0, dateDelay);
+        }
         // Rate limit / indisponível: tenta de novo antes de desistir do SALVAR.
         if ((response.status === 429 || response.status === 503) && attempt < maxAttempts) {
           await sleep(400 * attempt * attempt);
@@ -557,11 +621,12 @@ function mirrorFullSaveToActiveSlot(key, fullValue) {
   }
 }
 
-async function putCloudSaveValue(key, value) {
+async function putCloudSaveValue(key, value, { retry = true } = {}) {
   const prepared = prepareCloudSavePayload(key, value);
   await authedFetch(`/api/saves/${encodeURIComponent(key)}`, {
     method: 'PUT',
     body: JSON.stringify({ value: prepared }),
+    retry,
   });
   rememberRemoteSave(key, prepared);
   return prepared;
@@ -833,7 +898,7 @@ function flushSyncQueueKeepalive() {
             }
           }
           syncQueue.set(key, value);
-          scheduleCloudSync();
+          scheduleCloudSync(noteSyncFailure({ status: response.status, code: `http_${response.status}` }));
           return;
         }
         rememberRemoteSave(key, prepareCloudSavePayload(key, value));
@@ -841,6 +906,7 @@ function flushSyncQueueKeepalive() {
         if (mirror) queueCloudSave(mirror.key, mirror.value);
         applyLocalCheckpointTrim(key, value);
         markSyncComplete(key);
+        noteSyncSuccess();
       })
       .catch(error => {
         if (handleSyncAuthFailure(error)) {
@@ -849,7 +915,7 @@ function flushSyncQueueKeepalive() {
         }
         warnSyncOnce(`keepalive-${key}`, '[brfut] falha ao sincronizar save (keepalive)', key, error);
         syncQueue.set(key, value);
-        scheduleCloudSync();
+        scheduleCloudSync(noteSyncFailure(error));
       });
   });
 
@@ -881,6 +947,7 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
       careerOk: false,
     };
   }
+  while (syncInFlight) await sleep(50);
   queueNewerLocalSavesToCloud();
   if (syncTimer) {
     window.clearTimeout(syncTimer);
@@ -929,17 +996,19 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
 
   const results = [];
   const mirroredSlotKeys = new Set();
-  for (const key of orderedKeys) {
+  for (let orderedIndex = 0; orderedIndex < orderedKeys.length; orderedIndex += 1) {
+    const key = orderedKeys[orderedIndex];
+    let stopAfterCurrent = false;
     const value = batch.get(key);
     if (value == null) continue;
     const bodyChars = estimateCloudBodyChars(key, value);
     try {
-      await putCloudSaveValue(key, value);
+      await putCloudSaveValue(key, value, { retry: false });
       const mirror = mirrorFullSaveToActiveSlot(key, value);
       if (mirror && !mirroredSlotKeys.has(mirror.key) && !batch.has(mirror.key)) {
         mirroredSlotKeys.add(mirror.key);
         try {
-          await putCloudSaveValue(mirror.key, mirror.value);
+          await putCloudSaveValue(mirror.key, mirror.value, { retry: false });
           results.push({
             key: mirror.key,
             ok: true,
@@ -948,7 +1017,7 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
           });
         } catch (mirrorError) {
           syncQueue.set(mirror.key, mirror.value);
-          scheduleCloudSync();
+          scheduleCloudSync(noteSyncFailure(mirrorError));
           results.push({
             key: mirror.key,
             ok: false,
@@ -958,18 +1027,30 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
             code: mirrorError?.code || 'sync_failed',
             message: mirrorError?.message || 'Falha ao espelhar slot',
           });
+          const transientMirrorFailure =
+            !mirrorError?.status || [401, 429, 503].includes(Number(mirrorError.status));
+          if (transientMirrorFailure) {
+            restoreBatchToQueue(
+              orderedKeys
+                .slice(orderedIndex + 1)
+                .map(pendingKey => [pendingKey, batch.get(pendingKey)]),
+            );
+            stopAfterCurrent = true;
+          }
         }
       }
       applyLocalCheckpointTrim(key, value);
       markSyncComplete(key);
+      if (!stopAfterCurrent) noteSyncSuccess();
       results.push({ key, ok: true, bodyChars, slimmed: bodyChars < rawPayloadChars(value) });
+      if (stopAfterCurrent) break;
     } catch (error) {
       if (handleSyncAuthFailure(error)) {
         syncQueue.set(key, value);
       } else if (!handleSyncInvalidKeyFailure(error, key)) {
         console.warn('[brfut] falha ao sincronizar save', key, error);
         syncQueue.set(key, value);
-        scheduleCloudSync();
+        scheduleCloudSync(noteSyncFailure(error));
       }
       results.push({
         key,
@@ -980,6 +1061,15 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
         code: error?.code || 'sync_failed',
         message: error?.message || 'Falha ao sincronizar',
       });
+      const transientFailure = !error?.status || [401, 429, 503].includes(Number(error.status));
+      if (transientFailure) {
+        restoreBatchToQueue(
+          orderedKeys
+            .slice(orderedIndex + 1)
+            .map(pendingKey => [pendingKey, batch.get(pendingKey)]),
+        );
+        break;
+      }
     }
   }
 
@@ -1029,36 +1119,66 @@ function localSavesSnapshot() {
   return out;
 }
 
-function flushSyncQueue() {
+function restoreBatchToQueue(entries) {
+  entries.forEach(([key, value]) => {
+    if (!syncQueue.has(key)) syncQueue.set(key, value);
+  });
+}
+
+async function flushSyncQueue() {
   syncTimer = 0;
-  if (!isCloudStorageActive() || !syncQueue.size) return;
+  nextSyncRetryAt = 0;
+  if (syncInFlight || !isCloudStorageActive() || !syncQueue.size) return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    lastSyncError = syncErrorDetails({ code: 'offline', message: 'Sem conexão com a internet' });
+    scheduleCloudSync(SYNC_RECOVERY_INTERVAL_MS);
+    return;
+  }
+  syncInFlight = true;
+  lastSyncAttemptAt = Date.now();
   const batch = new Map(syncQueue);
   syncQueue.clear();
-  batch.forEach((value, key) => {
-    putCloudSaveValue(key, value)
-      .then(() => {
+  const priority = [SAVE_KEYS.career, SAVE_KEYS.season, SAVE_KEYS.playerHistory, CAREER_INDEX_KEY];
+  const entries = [
+    ...priority.filter(key => batch.has(key)).map(key => [key, batch.get(key)]),
+    ...[...batch.entries()].filter(([key]) => !priority.includes(key)),
+  ];
+
+  try {
+    for (let index = 0; index < entries.length; index += 1) {
+      const [key, value] = entries[index];
+      try {
+        await putCloudSaveValue(key, value, { retry: false });
         const mirror = mirrorFullSaveToActiveSlot(key, value);
         if (mirror) queueCloudSave(mirror.key, mirror.value);
         applyLocalCheckpointTrim(key, value);
         markSyncComplete(key);
-      })
-      .catch(error => {
+        noteSyncSuccess();
+      } catch (error) {
+        restoreBatchToQueue(entries.slice(index));
         if (handleSyncAuthFailure(error)) {
-          syncQueue.set(key, value);
           return;
         }
         if (handleSyncInvalidKeyFailure(error, key)) return;
         warnSyncOnce(`sync-${key}`, '[brfut] falha ao sincronizar save', key, error);
-        syncQueue.set(key, value);
-        scheduleCloudSync();
-      });
-  });
+        scheduleCloudSync(noteSyncFailure(error));
+        return;
+      }
+    }
+  } finally {
+    syncInFlight = false;
+    if (syncQueue.size && isCloudStorageActive() && !syncTimer) scheduleCloudSync();
+  }
 }
 
-function scheduleCloudSync() {
+function scheduleCloudSync(delay = SYNC_DEBOUNCE_MS) {
   if (!isCloudStorageActive() || isSyncAuthBlocked()) return;
-  if (syncTimer) return;
-  syncTimer = window.setTimeout(flushSyncQueue, SYNC_DEBOUNCE_MS);
+  const safeDelay = Math.max(0, Number(delay) || 0);
+  const targetAt = Date.now() + safeDelay;
+  if (syncTimer && nextSyncRetryAt && nextSyncRetryAt <= targetAt) return;
+  if (syncTimer) window.clearTimeout(syncTimer);
+  nextSyncRetryAt = targetAt;
+  syncTimer = window.setTimeout(flushSyncQueue, safeDelay);
 }
 
 export function queueCloudSave(key, value) {
@@ -1214,7 +1334,13 @@ export function resetStorageBackendState() {
   remoteSavesCache = null;
   currentUser = null;
   syncQueue.clear();
+  syncInFlight = false;
+  syncRetryCount = 0;
   syncAuthBlockedUntil = 0;
+  lastSyncAttemptAt = 0;
+  lastSyncSuccessAt = 0;
+  lastSyncError = null;
+  nextSyncRetryAt = 0;
 }
 
 /** Alias — hidratação idempotente (mutex interno). */
@@ -1374,7 +1500,14 @@ export async function fetchPlayerStats() {
 
 function pingPresence() {
   if (!isCloudStorageActive()) return;
-  authedFetch('/api/auth/me').catch(() => {});
+  authedFetch('/api/auth/me', { retry: false })
+    .then(() => {
+      if (syncQueue.size || readPendingSyncKeys().size) scheduleCloudSync();
+    })
+    .catch(error => {
+      if (handleSyncAuthFailure(error)) return;
+      lastSyncError = syncErrorDetails(error);
+    });
 }
 
 /** Mantém lastSeenAt atualizado enquanto o jogador está com aba aberta. */
@@ -1383,12 +1516,40 @@ export function startPresenceHeartbeat() {
   if (!isCloudStorageActive()) return;
   pingPresence();
   presenceTimer = window.setInterval(pingPresence, PRESENCE_INTERVAL_MS);
+  bindSyncRecovery();
 }
 
 export function stopPresenceHeartbeat() {
   if (!presenceTimer || typeof window === 'undefined') return;
   window.clearInterval(presenceTimer);
   presenceTimer = 0;
+}
+
+function recoverCloudSync() {
+  if (!getAuthToken()) return;
+  const hasPending = syncQueue.size > 0 || readPendingSyncKeys().size > 0;
+  if (!hasPending) return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+  if (isCloudStorageActive()) {
+    scheduleCloudSync(0);
+    return;
+  }
+  if (isSyncAuthBlocked()) return;
+  void ensureCloudReady().then(ready => {
+    if (ready) scheduleCloudSync(0);
+  });
+}
+
+function bindSyncRecovery() {
+  if (syncRecoveryBound || typeof window === 'undefined') return;
+  syncRecoveryBound = true;
+  window.addEventListener('online', recoverCloudSync);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') recoverCloudSync();
+    });
+  }
+  syncRecoveryTimer = window.setInterval(recoverCloudSync, SYNC_RECOVERY_INTERVAL_MS);
 }
 
 export async function updateAccountProfile({ displayName, avatar } = {}) {
