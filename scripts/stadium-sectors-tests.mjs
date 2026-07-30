@@ -106,6 +106,18 @@ check('Série D: sem cadeiras', () => {
   assert(effectiveSectorMax(club, 'D', 'stands') === 4, 'stands D');
 });
 
+check('Série C: cadeiras numeradas permanecem bloqueadas', () => {
+  const club = {
+    stadiumStructure: 5,
+    stadiumSectors: { popular: 2, stands: 1, seats: 3 },
+    stadiumSectorModel: STADIUM_SECTOR_MODEL,
+  };
+  ensureStadiumSectors(club, 'C');
+  assert(effectiveSectorMax(club, 'C', 'seats') === 0, 'seats C');
+  assert(club.stadiumSectors.seats === 0, 'remove cadeiras inválidas do save');
+  assert(!computeSectorBreakdown(club, 'C').rows.some(row => row.id === 'seats'), 'não contabiliza cadeiras');
+});
+
 check('migração legado capacityLevel → setores', () => {
   const club = {
     stadiumCapacityLevel: 4,

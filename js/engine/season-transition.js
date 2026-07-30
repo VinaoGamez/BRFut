@@ -45,10 +45,11 @@ export function createSeasonTransitionEngine(deps) {
     return aScore >= bScore ? first : second;
   };
 
-  const finishRemainingNationalRounds = fromRound => {
+  const finishRemainingNationalRounds = (fromRound, throughRound = 38) => {
     const nationalCompetitions = deps.getNationalCompetitions();
     const competitionRoundHistory = deps.getCompetitionRoundHistory();
-    for (let round = fromRound; round <= 38; round++) {
+    const lastRound = Math.min(38, Math.max(fromRound, Number(throughRound) || 38));
+    for (let round = fromRound; round <= lastRound; round++) {
       ['A', 'B', 'C'].forEach(division => {
         const history = competitionRoundHistory[division] || [];
         // Idempotente: não reaplicar rodada já no histórico (evita J>38 / J=42).

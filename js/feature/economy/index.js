@@ -29,6 +29,19 @@ const NAMING_MODAL_HTML = `
   </div>
 </div>`;
 
+const STADIUM_ALERT_MODAL_HTML = `
+<div id="stadiumInvestmentAlertModal" class="modal hidden">
+  <div class="modal-card office-bank-loan-info-modal" role="dialog" aria-modal="true" aria-labelledby="stadiumInvestmentAlertTitle">
+    <button type="button" id="closeStadiumInvestmentAlert" class="close" aria-label="Fechar">×</button>
+    <label>INVESTIMENTOS DO ESTÁDIO</label>
+    <h2 id="stadiumInvestmentAlertTitle">Investimento indisponível</h2>
+    <p id="stadiumInvestmentAlertLead"></p>
+    <div class="office-bank-loan-info-actions">
+      <button type="button" id="confirmStadiumInvestmentAlert">ENTENDI</button>
+    </div>
+  </div>
+</div>`;
+
 /**
  * Escritório + Estádio — orçamento/investimentos e gestão da arena.
  */
@@ -111,6 +124,31 @@ export function createEconomyFeature(deps) {
   let namingOffers = [];
   let selectedNamingIndex = -1;
   let namingModalReady = false;
+  let stadiumAlertReady = false;
+
+  const ensureStadiumAlertModal = () => {
+    if (!$('#stadiumInvestmentAlertModal')) {
+      document.body.insertAdjacentHTML('beforeend', STADIUM_ALERT_MODAL_HTML);
+    }
+    if (stadiumAlertReady) return;
+    const close = () => $('#stadiumInvestmentAlertModal')?.classList.add('hidden');
+    onClick('#closeStadiumInvestmentAlert', close);
+    onClick('#confirmStadiumInvestmentAlert', close);
+    onClick('#stadiumInvestmentAlertModal', event => {
+      if (event.target?.id === 'stadiumInvestmentAlertModal') close();
+    });
+    stadiumAlertReady = true;
+  };
+
+  const showStadiumInvestmentAlert = ({ title, lead }) => {
+    ensureStadiumAlertModal();
+    const titleEl = $('#stadiumInvestmentAlertTitle');
+    const leadEl = $('#stadiumInvestmentAlertLead');
+    if (titleEl) titleEl.textContent = title;
+    if (leadEl) leadEl.textContent = lead;
+    $('#stadiumInvestmentAlertModal')?.classList.remove('hidden');
+  };
+
 
   const namingLogoHtml = name => {
     const slug = sponsorLogoSlug(name);
@@ -251,14 +289,16 @@ export function createEconomyFeature(deps) {
               : structureCapped
                 ? 'ESTRUTURA'
                 : row.costLabel;
-        const buyAttrHtml = locked || structureCapped || divisionLocked ? '' : `${buyAttr}="${row.id}"`;
+        const explainableBlock = structureCapped || divisionLocked || (!row.affordable && !locked && !row.maxed);
+        const buyAttrHtml = locked && !explainableBlock ? '' : `${buyAttr}="${row.id}"`;
+        const nativeDisabled = disabled && !explainableBlock;
         return `<div class="economy-invest-row${row.maxed ? ' maxed' : ''}${locked ? ' locked' : ''}${structureCapped ? ' structure-capped' : ''}${divisionLocked ? ' division-locked' : ''}" data-upgrade="${row.id}">
           <div>
             <b>${row.label}</b>
             <small>${row.description}</small>
           </div>
           <span class="economy-invest-level">${levelText}</span>
-          <button type="button" ${buyAttrHtml} ${disabled ? 'disabled' : ''} title="${title}">
+          <button type="button" ${buyAttrHtml} ${nativeDisabled ? 'disabled' : ''} ${explainableBlock ? 'aria-disabled="true"' : ''} title="${title}">
             ${actionLabel}
           </button>
         </div>`;
@@ -1900,31 +1940,19 @@ export function createEconomyFeature(deps) {
       const result = buyFn.length >= 3 ? buyFn(club, upgradeId, division) : buyFn(club, upgradeId);
       if (!result.ok) {
         if (result.error === 'insufficient_funds') {
-          pushMessage?.({
-            category: 'club',
-            type: 'budget',
+          showStadiumInvestmentAlert({
             title: 'Orçamento insuficiente',
-            body: 'Não há saldo para este investimento. Espere a premiação/bilheteria ou escolha um upgrade mais barato.',
-            round: getCurrentRound?.() ?? 1,
-            meta: { competition: 'Finanças' },
+            lead: 'Não há saldo para este investimento. Aguarde novas receitas ou escolha uma melhoria mais barata.',
           });
         } else if (result.error === 'structure_cap') {
-          pushMessage?.({
-            category: 'club',
-            type: 'budget',
+          showStadiumInvestmentAlert({
             title: 'Estrutura insuficiente',
-            body: 'Invista na estrutura do estádio para liberar este setor ou nível de gramado.',
-            round: getCurrentRound?.() ?? 1,
-            meta: { competition: 'Estádio' },
+            lead: 'Invista primeiro na Estrutura do estádio para liberar a construção deste setor ou nível.',
           });
         } else if (result.error === 'division_locked') {
-          pushMessage?.({
-            category: 'club',
-            type: 'budget',
-            title: 'Série inferior',
-            body: 'Este setor não está disponível na sua divisão atual.',
-            round: getCurrentRound?.() ?? 1,
-            meta: { competition: 'Estádio' },
+          showStadiumInvestmentAlert({
+            title: 'Setor indisponível',
+            lead: 'Este setor não pode ser construído na divisão atual. Conquiste o acesso a uma divisão que permita esta estrutura.',
           });
         }
         renderOffice();

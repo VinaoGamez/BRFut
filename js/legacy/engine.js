@@ -6873,7 +6873,15 @@ export async function bootEngine({
     recordGameLeaders,
     resolveMatchAttendance,
     applyClubStatusAfterRound,
-    orderAllClubFormations:()=>Object.values(clubs).forEach(club=>orderRosterForFormation(club.roster,club.formation)),
+    orderAllClubFormations:clubNames=>{
+      const names=clubNames&&typeof clubNames[Symbol.iterator]==='function'
+        ?[...new Set([...clubNames].filter(name=>clubs[name]))]
+        :Object.keys(clubs);
+      names.forEach(name=>{
+        const club=clubs[name];
+        orderRosterForFormation(club.roster,club.formation);
+      });
+    },
     renderRoster,
     drawBoard:draw,
     recoverPlayers,

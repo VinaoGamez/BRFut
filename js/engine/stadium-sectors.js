@@ -20,7 +20,7 @@ export const INITIAL_STADIUM_CAPACITY_RANGE = {
 export const DIVISION_SECTOR_ALLOW = {
   A: ['popular', 'stands', 'seats', 'boxes', 'vip'],
   B: ['popular', 'stands', 'seats', 'boxes'],
-  C: ['popular', 'stands', 'seats'],
+  C: ['popular', 'stands'],
   D: ['popular', 'stands'],
 };
 

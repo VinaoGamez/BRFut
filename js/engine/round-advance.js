@@ -187,6 +187,15 @@ function advanceStateLeagueThroughDateCore(deps, date) {
  * Avanço de rodada: estadual, nacional, pós-jogo e tick de calendário.
  */
 export function createRoundAdvanceEngine(deps) {
+  const syncNationalRoundsDuringSerieDKnockout = round => {
+    if (deps.getUserDivision() !== 'D' || round <= SERIE_D_GROUP_ROUNDS) return;
+    // Distribui as rodadas restantes das Séries A, B e C pelos 12 jogos do
+    // mata-mata da Série D, evitando centenas de simulações no clique da final.
+    const knockoutProgress = round - SERIE_D_GROUP_ROUNDS;
+    const targetRound = SERIE_D_GROUP_ROUNDS + Math.round((knockoutProgress * 28) / 12);
+    deps.finishRemainingNationalRounds(SERIE_D_GROUP_ROUNDS + 1, targetRound);
+  };
+
   const advanceStateLeagueThroughDate = date => advanceStateLeagueThroughDateCore(deps, date);
 
   const advancePostMatchDay = () => {
@@ -368,11 +377,6 @@ export function createRoundAdvanceEngine(deps) {
         if (deps.getUserDivision() !== 'D' || roundAtStart <= SERIE_D_GROUP_ROUNDS) {
           completedGames.forEach(deps.applyRoundToTable);
         }
-        try {
-          deps.persistPlayerHistory();
-        } catch (error) {
-          console.warn('[brfut] histórico de jogadores não gravou', error);
-        }
         deps.serveDisciplineSuspensionsForRound();
         deps.serveAvailability(restDays, roundParticipants);
         const fillRate = deps.resolveMatchAttendance(liveMatchGame)?.fillRate ?? liveMatchGame?.fillRate ?? null;
@@ -380,6 +384,7 @@ export function createRoundAdvanceEngine(deps) {
         deps.applyUserWageBillForRound(roundAtStart);
         deps.creditLeagueHomeTvForGames(completedGames, deps.getUserDivision());
         deps.simulateNationalRound();
+        syncNationalRoundsDuringSerieDKnockout(roundAtStart);
         const liveStats = deps.getLiveSideStats();
         const liveGoals = deps.getLiveSideGoals();
         seasonRoundHistory.push({
@@ -395,7 +400,7 @@ export function createRoundAdvanceEngine(deps) {
           seasonRoundHistory.splice(0, seasonRoundHistory.length - MEMORY_LIMITS.seasonRoundHistory);
         }
         deps.updateSeriesDKnockout(roundAtStart);
-        deps.orderAllClubFormations();
+        deps.orderAllClubFormations(roundParticipants);
         deps.renderRoster();
         deps.drawBoard();
         deps.recoverPlayers(Math.max(1, Math.round(restDays * deps.trainingRecoveryMultiplier('after'))));
@@ -411,7 +416,7 @@ export function createRoundAdvanceEngine(deps) {
       const userDivision = deps.getUserDivision();
       const careerSeason = deps.getCareerSeason();
       const completedSeason = roundAtStart === 38 || (userDivision === 'D' && roundAtStart === 22);
-      if (userDivision === 'D' && roundAtStart === 22) deps.finishRemainingNationalRounds(23);
+      if (userDivision === 'D' && roundAtStart === 22) deps.finishRemainingNationalRounds(11, 38);
       if (userDivision === 'D' && (deps.userLeaguePlayed?.() ?? 0) < SERIE_D_GROUP_ROUNDS) {
         deps.setCurrentRound((deps.userLeaguePlayed?.() ?? 0) + 1);
       } else if (!alreadyRecorded || liveMatchGame) {
@@ -482,7 +487,7 @@ export function createRoundAdvanceEngine(deps) {
       deps.serveCompetitionSuspensions(cupParticipants, 'COPA', deps.getCurrentRound());
     }
     advancePostMatchDay();
-    deps.orderAllClubFormations();
+    deps.orderAllClubFormations(new Set([liveMatchGame?.home, liveMatchGame?.away].filter(Boolean)));
     deps.renderRoster();
     deps.drawBoard();
     deps.advanceCupComputerTies(deps.getCupCompetition().stages.find(item => !item.completed));
@@ -549,7 +554,6 @@ export function createRoundAdvanceEngine(deps) {
           return result;
         });
       completedGames.forEach(deps.recordGameLeaders);
-      deps.persistPlayerHistory();
       if (userDivision !== 'D' || currentRound <= 10) completedGames.forEach(deps.applyRoundToTable);
       deps.serveDisciplineSuspensionsForRound();
       deps.serveAvailability(restDays, roundParticipants);
@@ -557,6 +561,7 @@ export function createRoundAdvanceEngine(deps) {
       deps.applyUserWageBillForRound(currentRound);
       deps.creditLeagueHomeTvForGames(completedGames, userDivision);
       deps.simulateNationalRound();
+      syncNationalRoundsDuringSerieDKnockout(currentRound);
       const userClub = deps.getUserClub();
       seasonRoundHistory.push({
         round: currentRound,
@@ -565,7 +570,7 @@ export function createRoundAdvanceEngine(deps) {
       });
       deps.updateSeriesDKnockout(currentRound);
       deps.recoverPlayers(Math.max(1, Math.round(restDays * recoveryMod)));
-      deps.orderAllClubFormations();
+      deps.orderAllClubFormations(roundParticipants);
       deps.advanceCareerCalendarTo(deps.fixtureDate(currentRound));
       deps.invalidateUserScheduleCache?.();
       if (deps.evaluateManagerJobRisk()) return { sacked: true };
@@ -580,7 +585,7 @@ export function createRoundAdvanceEngine(deps) {
       currentRound === 22 &&
       !(deps.getCompetitionRoundHistory().A || []).some(item => item.round >= 23)
     ) {
-      deps.finishRemainingNationalRounds(23);
+      deps.finishRemainingNationalRounds(11, 38);
     }
     deps.setCurrentRound(currentRound + 1);
     deps.reconcileCurrentRound();
