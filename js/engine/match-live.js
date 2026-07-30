@@ -1,5 +1,5 @@
 import { MODULE_VERSIONS } from '../core/constants.js';
-import { engineDominanceModifiers } from './match-tuning.js';
+import { conditionalGoalChanceFromXg, engineDominanceModifiers } from './match-tuning.js';
 import { ownGoalChance } from './match-clock.js';
 import { isFreeKickSpecialist, isPenaltySpecialist, penaltyGoalChanceRate, resolveShootoutKickOutcome, SPECIALIST_BONUS } from './player-generation.js';
 
@@ -164,11 +164,12 @@ export function createLiveMatchActions(deps) {
       writeLog(`${attacker} finaliza ${label}, mas ${goalkeeper} faz a defesa.`, 'shootout-miss', side);
       return false;
     }
+    const onTargetChance = options.penalty
+      ? clamp(.9 + ((options.penaltySkill || attackerData.penaltyTaking || 70) - 70) / 350, .8, .96)
+      : clamp(options.freeKick ? (freeKickSpecialist ? clamp(.50+(finishing-keeperData.positioning)/170+(current.attack-other.defense)/600,.42,.58) : clamp(.30+(finishing-keeperData.positioning)/220,.25,.42)) : options.corner ? clamp(.30+(attackerData.heading-keeperData.positioning)/165,.22,.57) : clamp(.37+(finishing-keeperData.positioning)/158+(current.attack-other.defense)/175,.25,.76),.18,.76);
     const onTarget = forcedOutcome
       ? forcedOutcome !== 'wide'
-      : options.penalty
-        ? random() < clamp(.9 + ((options.penaltySkill || attackerData.penaltyTaking || 70) - 70) / 350, .8, .96)
-        : random()<clamp(options.freeKick ? (freeKickSpecialist ? clamp(.50+(finishing-keeperData.positioning)/170+(current.attack-other.defense)/600,.42,.58) : clamp(.30+(finishing-keeperData.positioning)/220,.25,.42)) : options.corner ? clamp(.30+(attackerData.heading-keeperData.positioning)/165,.22,.57) : clamp(.37+(finishing-keeperData.positioning)/158+(current.attack-other.defense)/175,.25,.76),.18,.76);
+      : random() < onTargetChance;
     if(!onTarget){
       if(!options.shootout){s.off++;}
       if ((options.penalty && !options.shootout) || options.shootout) {
@@ -207,7 +208,7 @@ export function createLiveMatchActions(deps) {
       matchLiveAudio?.playGoal?.();
       return;
     }
-    let goalChance=options.penalty || options.shootout ? penaltyGoalChance(options.penaltySkill ?? attackerData.penaltyTaking, keeperData.penaltySaving, { ...attackerData, penaltyTaking: options.penaltySkill ?? attackerData.penaltyTaking }, keeperData) : options.freeKick ? (freeKickSpecialist ? clamp(.20+(attackerData.freeKick-60)/220+(attackerData.freeKick-keeperData.positioning)/500+(current.attack-other.defense)/900+SPECIALIST_BONUS.freeKick,.18,.34) : clamp(.11+(attackerData.freeKick-65)/600+(attackerData.freeKick-keeperData.positioning)/650,.115,.15)) : (()=>{const xgBase=engineTuning.xgOpenBase??.118,xgDiv=engineTuning.xgOpenDivisor??210,xgCeil=engineTuning.xgOpenCeil??.27,xgFloor=engineTuning.xgOpenFloor??.062,ovrDiv=engineTuning.xgOverallGapDivisor??720;const xg=clamp(xgBase+(finishing+current.attack-keeperData.reflexes-other.defense)/xgDiv+(current.overall-other.overall)/ovrDiv+rnd(-.028,.028),xgFloor,xgCeil);return clamp(xg/(onTarget?1:.45),.15,.55);})();
+    let goalChance=options.penalty || options.shootout ? penaltyGoalChance(options.penaltySkill ?? attackerData.penaltyTaking, keeperData.penaltySaving, { ...attackerData, penaltyTaking: options.penaltySkill ?? attackerData.penaltyTaking }, keeperData) : options.freeKick ? (freeKickSpecialist ? clamp(.20+(attackerData.freeKick-60)/220+(attackerData.freeKick-keeperData.positioning)/500+(current.attack-other.defense)/900+SPECIALIST_BONUS.freeKick,.18,.34) : clamp(.11+(attackerData.freeKick-65)/600+(attackerData.freeKick-keeperData.positioning)/650,.115,.15)) : (()=>{const xgBase=engineTuning.xgOpenBase??.118,xgDiv=engineTuning.xgOpenDivisor??210,xgCeil=engineTuning.xgOpenCeil??.27,xgFloor=engineTuning.xgOpenFloor??.062,ovrDiv=engineTuning.xgOverallGapDivisor??720;const xg=clamp(xgBase+(finishing+current.attack-keeperData.reflexes-other.defense)/xgDiv+(current.overall-other.overall)/ovrDiv+rnd(-.028,.028),xgFloor,xgCeil);return conditionalGoalChanceFromXg(xg,onTargetChance);})();
     if(!options.penalty&&!options.freeKick&&!options.corner&&!options.shootout){
       const gap=current.overall-other.overall;
       const hg=(getGoals()?.home||[]).length, ag=(getGoals()?.away||[]).length;

@@ -56,6 +56,7 @@ const SUITES = [
   { label: 'season-objectives', steps: [['scripts/season-objectives-tests.mjs']] },
   { label: 'player-history', steps: [['scripts/player-history-tests.mjs']] },
   { label: 'match-ratings', steps: [['scripts/match-ratings-tests.mjs']] },
+  { label: 'match-conversion', steps: [['scripts/match-conversion-tests.mjs']] },
   { label: 'finance-mood', steps: [['scripts/finance-mood-tests.mjs']] },
   { label: 'finances-impact', steps: [['scripts/finances-impact-tests.mjs']] },
   { label: 'transfer-division-fit', steps: [['scripts/transfer-division-fit-tests.mjs']] },

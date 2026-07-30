@@ -64,6 +64,20 @@ export const ENGINE_TUNING = {
 };
 
 /**
+ * Converte o xG total em chance de gol condicionada ao chute já estar no alvo.
+ * Isso evita aplicar a probabilidade de acerto e o xG total duas vezes.
+ */
+export const conditionalGoalChanceFromXg = (
+  xg,
+  onTargetChance,
+  { min = 0.15, max = 0.55 } = {},
+) => {
+  const totalXg = Math.max(0, Number(xg) || 0);
+  const targetRate = clamp(Number(onTargetChance) || 0, 0.01, 1);
+  return clamp(totalXg / targetRate, min, max);
+};
+
+/**
  * Disputa de pênaltis (mata-mata) — calibrada à parte do GPM e do pênalti in-game.
  * Alvo: ~76–78% de conversão por cobrança (inclui bolas fora), ~80% quando no gol.
  */
