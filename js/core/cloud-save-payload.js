@@ -3,6 +3,11 @@ import { SAVE_KEYS } from './constants.js';
 
 const CLOUD_PAYLOAD_TARGET = 400_000;
 
+const syncMetadata = value => ({
+  saveRevision: Number(value?.saveRevision) || 0,
+  updatedAt: value?.updatedAt,
+});
+
 function payloadChars(value) {
   try {
     return JSON.stringify(value).length;
@@ -74,6 +79,7 @@ function slimStateLeaguesForCloud(stateLeagues, { ultra = false } = {}) {
 export function slimCareerForCloudUpload(career) {
   if (!career || typeof career !== 'object') return career;
   const checkpoint = {
+    ...syncMetadata(career),
     seed: career.seed,
     clubName: career.clubName,
     managerName: career.managerName,
@@ -83,11 +89,11 @@ export function slimCareerForCloudUpload(career) {
     nationalTeamCode: career.nationalTeamCode,
     preferences: career.preferences,
     userRoster: Array.isArray(career.userRoster) ? career.userRoster.slice(0, 32) : [],
-    updatedAt: career.updatedAt,
   };
   if (payloadChars(checkpoint) <= CLOUD_PAYLOAD_TARGET) return checkpoint;
 
   return {
+    ...syncMetadata(career),
     seed: checkpoint.seed,
     clubName: checkpoint.clubName,
     managerName: checkpoint.managerName,
@@ -95,7 +101,6 @@ export function slimCareerForCloudUpload(career) {
     season: checkpoint.season,
     userUf: checkpoint.userUf,
     preferences: checkpoint.preferences,
-    updatedAt: checkpoint.updatedAt,
   };
 }
 
@@ -148,11 +153,11 @@ export function slimSeasonForCloudUpload(season) {
     : [];
 
   let checkpoint = {
+    ...syncMetadata(season),
     seed: season.seed,
     userClubName: season.userClubName,
     currentRound: season.currentRound,
     careerCalendarDate: season.careerCalendarDate,
-    updatedAt: season.updatedAt,
     stateLeagueProgressRound: season.stateLeagueProgressRound,
     userNationalTeamCode: season.userNationalTeamCode ?? null,
     nationalTeamOfferState: season.nationalTeamOfferState ?? null,
@@ -176,11 +181,11 @@ export function slimSeasonForCloudUpload(season) {
   if (payloadChars(checkpoint) <= CLOUD_PAYLOAD_TARGET) return checkpoint;
 
   checkpoint = {
+    ...syncMetadata(season),
     seed: season.seed,
     userClubName: season.userClubName,
     currentRound: season.currentRound,
     careerCalendarDate: season.careerCalendarDate,
-    updatedAt: season.updatedAt,
     stateLeagueProgressRound: season.stateLeagueProgressRound,
     userNationalTeamCode: season.userNationalTeamCode ?? null,
     nationalTeamOfferState: season.nationalTeamOfferState ?? null,
@@ -195,6 +200,7 @@ export function slimSeasonForCloudUpload(season) {
   if (payloadChars(checkpoint) <= CLOUD_PAYLOAD_TARGET) return checkpoint;
 
   return {
+    ...syncMetadata(season),
     seed: season.seed,
     userClubName: season.userClubName,
     currentRound: season.currentRound,
@@ -224,9 +230,9 @@ export function slimPlayerHistoryForCloudUpload(history) {
     slimPlayers[id] = record;
   }
   const slimmed = {
+    ...syncMetadata(history),
     version: history.version,
     season: history.season ?? null,
-    updatedAt: history.updatedAt,
     players: slimPlayers,
     matchLogs,
     seasonArchives: Array.isArray(history.seasonArchives) ? history.seasonArchives.slice(-2) : [],
@@ -234,9 +240,9 @@ export function slimPlayerHistoryForCloudUpload(history) {
   if (payloadChars(slimmed) <= CLOUD_PAYLOAD_TARGET) return slimmed;
 
   return {
+    ...syncMetadata(history),
     version: history.version,
     season: history.season ?? null,
-    updatedAt: history.updatedAt,
     players: slimPlayers,
     matchLogs: matchLogs.slice(-60),
     seasonArchives: [],

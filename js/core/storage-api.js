@@ -1064,8 +1064,10 @@ function scheduleCloudSync() {
 export function queueCloudSave(key, value) {
   if (!isSyncableSaveKey(key)) return;
   markSyncPending(key);
-  if (!isCloudStorageActive() || isSyncAuthBlocked()) return;
+  // Mantém o payload em memória mesmo durante queda temporária da nuvem.
+  // Ao revalidar a sessão, ensureCloudReady agenda exatamente o save que falhou.
   syncQueue.set(key, value);
+  if (!isCloudStorageActive() || isSyncAuthBlocked()) return;
   scheduleCloudSync();
 }
 
@@ -1143,11 +1145,11 @@ export async function registerAccount(username, password, displayName, { remembe
 }
 
 export async function logoutAccount() {
-  try {
-    if (getAuthToken()) await authedFetch('/api/auth/logout', { method: 'POST' });
-  } catch {
-    /* ignore */
-  }
+  // Inicia a revogação enquanto o token ainda está disponível, mas limpa a
+  // sessão local imediatamente. Logout nunca pode depender da rede/API.
+  const revokePromise = getAuthToken()
+    ? authedFetch('/api/auth/logout', { method: 'POST', retry: false }).catch(() => null)
+    : Promise.resolve(null);
   setAuthToken('');
   currentUser = null;
   cloudActive = false;
@@ -1169,6 +1171,11 @@ export async function logoutAccount() {
   } catch {
     /* ignore */
   }
+  // Dá uma janela curta para a revogação no servidor sem travar o botão Sair.
+  await Promise.race([
+    revokePromise,
+    new Promise(resolve => window.setTimeout(resolve, 1200)),
+  ]);
 }
 
 /** Encerra presença/fila ao sair da página. NÃO apaga o token aqui.

@@ -552,12 +552,15 @@ export function mountAccountPanel({
   });
 
   document.getElementById('accountLogout')?.addEventListener('click', async () => {
-    await logoutAccount();
-    clearSessionCareerData();
-    renderLoggedOut(true);
-    refreshCareerUi();
-    // Evita One Tap / estado residual: reload limpo após limpar token.
-    location.replace(location.pathname + location.search);
+    try {
+      await logoutAccount();
+    } finally {
+      clearSessionCareerData();
+      renderLoggedOut(true);
+      refreshCareerUi();
+      // Evita One Tap / estado residual: reload limpo após limpar token.
+      location.replace(location.pathname + location.search);
+    }
   });
 
   openProfileBtn?.addEventListener('click', () => {

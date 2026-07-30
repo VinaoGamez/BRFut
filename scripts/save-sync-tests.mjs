@@ -213,6 +213,21 @@ check('cloud ultra slim keeps World Cup and national fixtures', () => {
   assert(cloud.nationalFixtures?.length === 1, 'national fixtures must survive ultra slim');
 });
 
+check('cloud slim preserves revision used to confirm upload', () => {
+  const season = {
+    ...buildFullSeason(7),
+    saveRevision: 987654,
+    worldCupCompetition: {
+      phase: 'GROUP',
+      fixtures: [],
+      recoveryPadding: 'x'.repeat(450_000),
+    },
+  };
+  const cloud = slimSeasonForCloudUpload(season);
+  assert(cloud.saveRevision === 987654, `revision lost: ${cloud.saveRevision}`);
+  assert(cloud.updatedAt === season.updatedAt, 'updatedAt must survive cloud slimming');
+});
+
 check('mergeCareerSaves keeps full local over slim remote checkpoint', () => {
   const local = {
     seed: 999,

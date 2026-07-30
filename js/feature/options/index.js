@@ -556,15 +556,22 @@ export function createOptionsFeature(deps) {
   onClick('#optionsLogout', async () => {
     $('#optionsModal')?.classList.add('hidden');
     try {
-      await onManualSave?.();
+      // Save final é best-effort: rede indisponível não pode impedir o logout.
+      await Promise.race([
+        Promise.resolve(onManualSave?.()),
+        new Promise(resolve => window.setTimeout(resolve, 1500)),
+      ]);
     } catch {
       /* ignore */
     }
-    await logoutAccount();
-    clearSessionCareerData();
-    // Volta à home deslogado (reload no jogo revalidava o token antigo).
-    const home = new URL('home.html', location.href);
-    location.replace(`${home.pathname}${home.search}`);
+    try {
+      await logoutAccount();
+    } finally {
+      clearSessionCareerData();
+      // Volta à home deslogado mesmo se a API estiver fora do ar.
+      const home = new URL('home.html', location.href);
+      location.replace(`${home.pathname}${home.search}`);
+    }
   });
 
   return {
