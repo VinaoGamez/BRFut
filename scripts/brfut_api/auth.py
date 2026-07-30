@@ -97,8 +97,11 @@ def _touch_session_last_seen(root: Path, path: Path, session: dict[str, Any]) ->
     if now - last < SESSION_TOUCH_MIN_SEC:
         return
     session['lastSeenAt'] = now
+    session['expiresAt'] = now + SESSION_TTL_SEC
     try:
-        path.write_text(json.dumps(session), encoding='utf-8')
+        tmp = path.with_name(f'.{path.name}.{secrets.token_hex(6)}.tmp')
+        tmp.write_text(json.dumps(session), encoding='utf-8')
+        tmp.replace(path)
     except OSError:
         pass
 
@@ -284,7 +287,10 @@ def login_user(root: Path, username: str, password: str) -> tuple[str, dict[str,
         'createdAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
         'lastSeenAt': time.time(),
     }
-    _session_path(root, token).write_text(json.dumps(session), encoding='utf-8')
+    path = _session_path(root, token)
+    tmp = path.with_name(f'.{path.name}.{secrets.token_hex(6)}.tmp')
+    tmp.write_text(json.dumps(session), encoding='utf-8')
+    tmp.replace(path)
     _cleanup_expired_sessions(root)
     profile = _profile_from_user(root, user)
     return token, profile

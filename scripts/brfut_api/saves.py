@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import secrets
 import time
 from pathlib import Path
 from typing import Any
@@ -106,7 +107,9 @@ def put_save(root: Path, username: str, key: str, value: Any) -> dict[str, Any]:
         'updatedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
     }
     raw = json.dumps(envelope, ensure_ascii=False, separators=(',', ':'))
-    path.write_text(raw, encoding='utf-8')
+    tmp = path.with_name(f'.{path.name}.{secrets.token_hex(6)}.tmp')
+    tmp.write_text(raw, encoding='utf-8')
+    tmp.replace(path)
     return {'key': key, 'updatedAt': envelope['updatedAt'], 'bytes': len(raw.encode('utf-8'))}
 
 

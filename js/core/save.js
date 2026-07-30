@@ -152,7 +152,7 @@ export function reclaimLocalStorageSpace({ aggressive = false, preserveKeys = []
     }
 
     const keepSlotKeys = new Set();
-    if (pressure.level !== 'critical' && activeSlotId) {
+    if (activeSlotId) {
       Object.values(slotBundleKeys(activeSlotId)).forEach(key => keepSlotKeys.add(key));
     }
 
@@ -161,7 +161,7 @@ export function reclaimLocalStorageSpace({ aggressive = false, preserveKeys = []
       for (let i = 0; i < localStorage.length; i += 1) {
         const key = localStorage.key(i);
         if (!key || !isSlotBundleKey(key) || preserve.has(key)) continue;
-        if (pressure.level === 'critical' || !keepSlotKeys.has(key)) slotKeysToDrop.push(key);
+        if (!keepSlotKeys.has(key)) slotKeysToDrop.push(key);
       }
       slotKeysToDrop.forEach(removeKey);
     } catch {
@@ -228,12 +228,10 @@ export function writeJson(key, value, { scheduleSlotSync = true } = {}) {
   const tryWrite = () => {
     localStorage.setItem(key, raw);
     invalidateStoragePressureCache();
-    if (isCloudStorageActive()) {
-      try {
-        queueCloudSave(key, payload);
-      } catch {
-        /* ignore cloud queue */
-      }
+    try {
+      queueCloudSave(key, payload);
+    } catch {
+      /* ignore cloud queue */
     }
     if (
       scheduleSlotSync

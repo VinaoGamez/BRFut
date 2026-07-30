@@ -315,7 +315,9 @@ if (SITE_MAINTENANCE.enabled) {
 
   account.refresh().then(state => {
     // Token = logado na UI; nuvem pode estar pausada (rede) sem desconectar a conta.
-    const loggedIn = !!getAuthToken() || state.mode === 'cloud' || !!state.tokenPreserved;
+    const loggedIn =
+      state.mode === 'cloud' ||
+      (!state.authRejected && (!!getAuthToken() || !!state.tokenPreserved));
     syncHeroActions({
       loggedIn,
       hasBackend: !!state.backend || state.mode === 'cloud' || !!BRFUT_API_ORIGIN,

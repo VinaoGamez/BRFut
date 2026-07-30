@@ -121,10 +121,15 @@ export function createCareerPersistence({
 
   /** Grava temporada + carreira imediatamente após avanço de rodada (sempre — evita loop de rodada). */
   const persistAfterRoundAdvance = () => {
-    if (!getSavedNewGame?.()) return;
-    persistSeason(true);
-    syncCareerRosters();
-    flushCloudSync();
+    if (!getSavedNewGame?.()) return false;
+    const seasonOk = persistSeason(true, { flush: false });
+    const careerOk = syncCareerRosters();
+    const slotOk = syncActiveSlotFromCache();
+    flushCloudSync({ urgent: true });
+    if (!seasonOk || !careerOk || !slotOk) {
+      console.error('[brfut] autosave de rodada incompleto', { seasonOk, careerOk, slotOk });
+    }
+    return seasonOk && careerOk && slotOk;
   };
 
   /** Conta jogos do usuário para autosave "a cada 3 jogos". */
@@ -180,7 +185,7 @@ export function createCareerPersistence({
     const savedNewGame = getSavedNewGame?.();
     const clubs = getClubs?.();
     const userClub = getUserClub?.();
-    if (!savedNewGame || !clubs?.[userClub]) return;
+    if (!savedNewGame || !clubs?.[userClub]) return false;
     savedNewGame.userRoster = clubs[userClub].roster.map(player => ({
       ...player,
       injuryHistory: pruneInjuryHistory(player.injuryHistory),
@@ -189,7 +194,7 @@ export function createCareerPersistence({
       skipClub: userClub,
       merge: savedNewGame.worldRosters || {},
     }) || {};
-    persistCareer({ ...savedNewGame });
+    return persistCareer({ ...savedNewGame });
   };
 
   const bindWriteSeasonSave = fn => {

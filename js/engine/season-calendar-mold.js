@@ -326,8 +326,8 @@ export const CUP_CALENDAR_BANDS = Object.freeze({
   early: Object.freeze({ start: [1, 17], end: [2, 18] }),
   mid: Object.freeze({ start: [3, 21], end: [4, 14] }),
   knockout_16: Object.freeze({ start: [7, 1], end: [7, 31] }),
-  knockout_8: Object.freeze({ start: [7, 20], end: [8, 15] }),
-  semi: Object.freeze({ start: [10, 1], end: [10, 8] }),
+  knockout_8: Object.freeze({ start: [7, 20], end: [8, 16] }),
+  semi: Object.freeze({ start: [10, 1], end: [10, 11] }),
   final: Object.freeze({ start: [11, 6], end: [11, 6] }),
 });
 
@@ -338,8 +338,8 @@ export const CUP_PHASE_MOLD = Object.freeze([
   Object.freeze({ index: 4, slots: 1, twoLegged: false, band: 'early', idaSlot: 'midweek' }),
   Object.freeze({ index: 5, slots: 2, twoLegged: true, band: 'mid', idaSlot: 'midweek', voltaSlot: 'midweek' }),
   Object.freeze({ index: 6, slots: 2, twoLegged: true, band: 'knockout_16', idaSlot: 'knockout_ida', voltaSlot: 'midweek' }),
-  Object.freeze({ index: 7, slots: 2, twoLegged: true, band: 'knockout_8', idaSlot: 'midweek', voltaSlot: 'midweek' }),
-  Object.freeze({ index: 8, slots: 2, twoLegged: true, band: 'semi', idaSlot: 'knockout_ida', voltaSlot: 'knockout_ida' }),
+  Object.freeze({ index: 7, slots: 2, twoLegged: true, band: 'knockout_8', idaSlot: 'knockout_ida', voltaSlot: 'midweek' }),
+  Object.freeze({ index: 8, slots: 2, twoLegged: true, band: 'semi', idaSlot: 'knockout_ida', voltaSlot: 'midweek' }),
   Object.freeze({ index: 9, slots: 1, twoLegged: false, band: 'final', idaSlot: 'knockout_ida' }),
 ]);
 

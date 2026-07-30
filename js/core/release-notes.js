@@ -9,6 +9,23 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.65',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T20:37:58-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Salvamento e calendário',
+        items: [
+          'O save agora mantém uma fila de sincronização quando a conta ou a rede ficam indisponíveis.',
+          'Cópias de recuperação são criadas antes da combinação entre o progresso local e o da nuvem.',
+          'A versão mais avançada do save é protegida contra substituição por uma cópia antiga.',
+          'O calendário da temporada foi reorganizado para evitar bloqueios entre liga, Copa do Brasil e Copa do Mundo.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.60',
     date: '2026-07-29',
     publishedAt: '2026-07-29T19:40:00-04:00',

@@ -68,13 +68,16 @@ check('soft warn permite (zona amarela)', () => {
 });
 
 check('evaluateRosterPayroll marca warn na faixa 85–100%', () => {
-  // Folha atual baixa; receita fallback A = 180k; factor 1.15 (fin≥70) → limit ~207k
-  // 85% do limit ≈ 176k — wages + extra devem cair nessa faixa
   const club = makeClub({
     finances: 80,
     wages: [50_000, 50_000, 50_000], // 150k
   });
-  const payroll = evaluateRosterPayroll(club, { extraWage: 40_000, rosterDelta: 1 }); // 190k
+  const baseline = evaluateRosterPayroll(club);
+  const targetWage = Math.floor(baseline.limit * 0.9);
+  const payroll = evaluateRosterPayroll(club, {
+    extraWage: Math.max(0, targetWage - baseline.wageBefore),
+    rosterDelta: 1,
+  });
   assert(payroll.ok, `ok ${payroll.wageAfter}/${payroll.limit}`);
   assert(payroll.tone === 'warn', `tone=${payroll.tone} after=${payroll.wageAfter} limit=${payroll.limit}`);
 });

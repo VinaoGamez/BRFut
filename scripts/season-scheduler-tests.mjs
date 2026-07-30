@@ -18,6 +18,7 @@ import {
   slimNationalFixturesForSave,
   hydrateNationalFixtures,
 } from '../js/engine/competition-calendar.js';
+import { getCupLegWeekdays } from '../js/engine/season-week-slots.js';
 
 let passed = 0;
 let failed = 0;
@@ -80,7 +81,7 @@ check('Rebuild occupancy a partir de jogos materializados', () => {
   assert(countRestConflicts(occupancy, DEFAULT_MIN_REST_DAYS) === 0, 'no conflicts after rebuild');
 });
 
-check('Copa re-agenda respeitando ocupação da liga (slots Qua/Sáb)', () => {
+check('Copa re-agenda respeitando ocupação da liga (ida Dom / volta Qua)', () => {
   const fixtures = buildCompetitionRoundRobinFixtures(teams4, 'brasileirao');
   const national = { A: { fixtures } };
   const occupancy = scheduleAllLeagueCompetitions(2026, national);
@@ -92,8 +93,8 @@ check('Copa re-agenda respeitando ocupação da liga (slots Qua/Sáb)', () => {
   cupGames.forEach(game => {
     assert(game.date instanceof Date, 'cup dated');
     assert(game.date.getFullYear() === 2026, String(game.date));
-    const expectedDay = game.leg === 'VOLTA' ? 3 : 0;
-    assert(game.date.getDay() === expectedDay, `cup phase 6 ${game.leg} ${game.date}`);
+    const allowed = getCupLegWeekdays(game.phaseIndex, game.leg);
+    assert(allowed.includes(game.date.getDay()), `cup phase 6 ${game.leg} ${game.date}`);
   });
   assert(cupGames[1].date.getTime() >= cupGames[0].date.getTime() + 7 * 86400000, 'volta gap');
   assert(countRestConflicts(occupancy, DEFAULT_MIN_REST_DAYS) === 0, 'cup + league rest');

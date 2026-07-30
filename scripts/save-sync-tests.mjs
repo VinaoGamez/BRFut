@@ -7,6 +7,7 @@ import {
   mergeCareerSaves,
   isSlimCareerCheckpoint,
   careerPayloadWeight,
+  stampSyncableSave,
 } from '../js/core/save-sync.js';
 import { slimCareerForCloudUpload, slimSeasonForCloudUpload } from '../js/core/cloud-save-payload.js';
 import { slimSeasonPayloadLevel4 } from '../js/engine/season-save-quota.js';
@@ -114,6 +115,28 @@ check('pickNewerSave tie prefers local season on equal progress', () => {
   assert(winner === local, 'local should win tie');
 });
 
+check('slot season merge prefers real progress over newer remote timestamp', () => {
+  const local = {
+    ...buildFullSeason(7),
+    currentRound: 8,
+    careerCalendarDate: { day: 30, month: 4, year: 2026 },
+    updatedAt: '2026-04-30T12:00:00.000Z',
+  };
+  const remote = {
+    ...buildFullSeason(5),
+    currentRound: 5,
+    careerCalendarDate: { day: 9, month: 4, year: 2026 },
+    updatedAt: '2026-07-29T20:00:00.000Z',
+  };
+  const winner = pickNewerSave(
+    local,
+    remote,
+    'brfut-slot-save123-season',
+    Date.parse('2026-07-29T21:00:00.000Z'),
+  );
+  assert(winner === local, 'advanced local slot must survive hard refresh');
+});
+
 check('slimSeasonPayloadLevel4 no longer drops stateLeagues', () => {
   const season = buildFullSeason(7);
   const slim = slimSeasonPayloadLevel4(season, {});
@@ -174,6 +197,22 @@ check('cloud slim keeps scorers and assistants', () => {
   assert(cloud.assistants?.[0]?.assists === 3, 'assistants kept');
 });
 
+check('cloud ultra slim keeps World Cup and national fixtures', () => {
+  const season = {
+    ...buildFullSeason(7),
+    userNationalTeamCode: 'USA',
+    worldCupCompetition: {
+      phase: 'GROUP',
+      fixtures: [{ home: 'USA', away: 'PAR', completed: false }],
+      recoveryPadding: 'x'.repeat(450_000),
+    },
+    nationalFixtures: [{ home: 'USA', away: 'PAR', date: '2026-06-12' }],
+  };
+  const cloud = slimSeasonForCloudUpload(season);
+  assert(cloud.worldCupCompetition?.phase === 'GROUP', 'World Cup state must survive ultra slim');
+  assert(cloud.nationalFixtures?.length === 1, 'national fixtures must survive ultra slim');
+});
+
 check('mergeCareerSaves keeps full local over slim remote checkpoint', () => {
   const local = {
     seed: 999,
@@ -228,6 +267,26 @@ check('isSeasonValidForCareer rejects local checkpoint blob', () => {
   const checkpoint = { seed: 42, currentRound: 8, _localCheckpoint: true };
   assert(!isSeasonValidForCareer(career, checkpoint), 'checkpoint must hydrate before boot');
   assert(isSeasonValidForCareer(career, { seed: 42, standings: { A: [] } }), 'full season ok');
+});
+
+check('save revision grows monotonically for consecutive writes', () => {
+  const first = stampSyncableSave(SAVE_KEYS.season, { saveRevision: Date.now() + 10_000 });
+  const second = stampSyncableSave(SAVE_KEYS.season, first);
+  assert(second.saveRevision > first.saveRevision, 'second revision must be greater');
+});
+
+check('explicit revision wins even when timestamp is older', () => {
+  const local = {
+    saveRevision: 20,
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    careerCalendarDate: { day: 1, month: 1, year: 2026 },
+  };
+  const remote = {
+    saveRevision: 19,
+    updatedAt: '2026-12-01T00:00:00.000Z',
+    careerCalendarDate: { day: 1, month: 12, year: 2026 },
+  };
+  assert(pickNewerSave(local, remote, SAVE_KEYS.season) === local, 'higher revision must win');
 });
 
 console.log(`\nSave sync tests: ${passed} passed, ${failed} failed`);

@@ -6,6 +6,7 @@ import json
 import shutil
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -115,6 +116,20 @@ class BrfutApiTests(unittest.TestCase):
         register_user(self.root, 'user1', 'abcdef', None)
         with self.assertRaises(ApiError):
             login_user(self.root, 'user1', 'wrong')
+
+    def test_active_session_renews_expiration(self) -> None:
+        register_user(self.root, 'renew1', 'secret1', 'Renew')
+        token, _ = login_user(self.root, 'renew1', 'secret1')
+        path = self.root / 'sessions' / f'{token}.json'
+        session = json.loads(path.read_text(encoding='utf-8'))
+        session['lastSeenAt'] = 0
+        session['expiresAt'] = time.time() + 60
+        path.write_text(json.dumps(session), encoding='utf-8')
+
+        resolve_session(self.root, token)
+
+        renewed = json.loads(path.read_text(encoding='utf-8'))
+        self.assertGreater(renewed['expiresAt'], time.time() + 29 * 24 * 60 * 60)
 
 
 if __name__ == '__main__':

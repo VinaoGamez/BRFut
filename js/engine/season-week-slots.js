@@ -51,7 +51,7 @@ export const MATCH_WEEK_PROFILES = Object.freeze({
     cup_wed: Object.freeze({ weekdays: [WEEKDAY.WED], defaultTime: '21:30' }),
     continental_conmebol: Object.freeze({ weekdays: [WEEKDAY.WED, WEEKDAY.THU], defaultTime: '21:30' }),
     recopa_national: Object.freeze({ weekdays: [WEEKDAY.SUN], defaultTime: '18:00' }),
-    knockout_ida: Object.freeze({ weekdays: [WEEKDAY.WED], defaultTime: '21:30' }),
+    knockout_ida: Object.freeze({ weekdays: [WEEKDAY.SUN], defaultTime: '18:00' }),
     midweek: Object.freeze({ weekdays: [WEEKDAY.WED], defaultTime: '21:30' }),
     midweek_alt: Object.freeze({ weekdays: [WEEKDAY.THU], defaultTime: '21:30' }),
     weekend: Object.freeze({ weekdays: [WEEKDAY.SUN], defaultTime: '16:00' }),
@@ -112,7 +112,7 @@ export function getCompetitionWeekdays(competitionId, profile = MATCH_WEEK_SLOTS
   return getSlotWeekdays(slotKey, profile);
 }
 
-/** Weekdays de uma perna da Copa; mata-mata domingo inclui quarta como overflow (molde CBF). */
+/** Mata-mata prioriza domingo, com quarta como escape quando a liga ocupa o clube. */
 export function getCupLegWeekdays(phaseIndex, leg = 'IDA', profile = MATCH_WEEK_SLOTS) {
   const slotKey = cupPhaseLegSlot(phaseIndex, leg);
   const primary = getSlotWeekdays(slotKey, profile);

@@ -4,8 +4,21 @@ import { isLocalStorageCheckpoint } from './local-save-checkpoint.js';
 
 export { isLocalStorageCheckpoint };
 
+/** Maps slot bundles and archives to the logical key used by conflict rules. */
+export function logicalSaveKey(key = '') {
+  const value = String(key || '');
+  if (value === SAVE_KEYS.season || /-season(?:-archive-\d{4})?$/.test(value)) {
+    return SAVE_KEYS.season;
+  }
+  if (value === SAVE_KEYS.career || /-career$/.test(value)) {
+    return SAVE_KEYS.career;
+  }
+  return value;
+}
+
 /** Timestamp comparável para resolver conflito local vs nuvem. */
 export function saveFreshness(value, key = '') {
+  key = logicalSaveKey(key);
   if (!value || typeof value !== 'object') return 0;
   const ts = Date.parse(value.updatedAt || value.savedAt || value.createdAt || '');
   if (Number.isFinite(ts) && ts > 0) return ts;
@@ -125,8 +138,14 @@ function pickNewerSeasonSave(localValue, remoteValue) {
  * (rodada/calendário/peso — não só updatedAt da nuvem).
  */
 export function isSaveProgressAhead(candidate, baseline, key = '') {
+  key = logicalSaveKey(key);
   if (!candidate) return false;
   if (!baseline) return true;
+  const candidateRevision = Number(candidate.saveRevision) || 0;
+  const baselineRevision = Number(baseline.saveRevision) || 0;
+  if (candidateRevision && baselineRevision && candidateRevision !== baselineRevision) {
+    return candidateRevision > baselineRevision;
+  }
   if (key === SAVE_KEYS.season) {
     const winner = pickNewerSeasonSave(candidate, baseline);
     if (winner === candidate) return true;
@@ -275,8 +294,14 @@ export function mergeCareerSaves(localValue, remoteValue, remoteEnvelopeAt = 0) 
 }
 
 export function pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt = 0) {
+  key = logicalSaveKey(key);
   if (!localValue) return remoteValue ?? null;
   if (!remoteValue) return localValue;
+  const localRevision = Number(localValue.saveRevision) || 0;
+  const remoteRevision = Number(remoteValue.saveRevision) || 0;
+  if (localRevision && remoteRevision && localRevision !== remoteRevision) {
+    return localRevision > remoteRevision ? localValue : remoteValue;
+  }
   if (isLocalStorageCheckpoint(localValue) && remoteValue) {
     // Stub local: season usa progresso (rodada/calendário); career hidrata se remoto for completo.
     if (key === SAVE_KEYS.career && !isSlimCareerCheckpoint(remoteValue)) return remoteValue;
@@ -312,7 +337,11 @@ export function pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt = 0
 export function stampSyncableSave(key, value) {
   if (key !== SAVE_KEYS.career && key !== SAVE_KEYS.season) return value;
   if (!value || typeof value !== 'object') return value;
-  const next = { ...value, updatedAt: new Date().toISOString() };
+  const next = {
+    ...value,
+    updatedAt: new Date().toISOString(),
+    saveRevision: Math.max(Date.now(), (Number(value.saveRevision) || 0) + 1),
+  };
   if (key === SAVE_KEYS.season) {
     next.stateLeagueProgressRound = Math.max(
       Number(next.stateLeagueProgressRound) || 0,

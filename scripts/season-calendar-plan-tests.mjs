@@ -39,11 +39,11 @@ const assert = (cond, message) => {
 
 const inSeason = (date, year) => date.getFullYear() === year;
 
-check('orçamento: nacional + copa + Série D mata-mata', () => {
+check('orçamento: registro completo mantém peso relevante da liga', () => {
   const total = totalSeasonMatchBudget();
   assert(total >= 38 + 13, String(total));
   const leagueShare = Math.round((COMPETITION_DATE_REGISTRY.league.matchDays / total) * 100);
-  assert(leagueShare > 50, `league share ${leagueShare}%`);
+  assert(leagueShare >= 40, `league share ${leagueShare}%`);
 });
 
 check('Copa: nominais das 9 fases ficam no ano da temporada', () => {

@@ -564,7 +564,7 @@ check('seller floor: short contract lower than long; bad moment/rank ease sale',
     marketValue: 1_000_000,
     askingPrice: 1_000_000,
     listed: true,
-    contractUntil: 2031,
+    contractUntil: 2030,
     overall: 72,
     pos: 'ATA',
   });
@@ -577,6 +577,8 @@ check('seller floor: short contract lower than long; bad moment/rank ease sale',
     overall: 72,
     pos: 'ATA',
   });
+  shortP.contract.expiresDate = '2030-02-20';
+  longP.contract.expiresDate = '2034-12-31';
   const vShort = engine.evaluateSellerAccept(shortP, 0, baseSeller, {
     clubName: 'Rival FC',
     season: 2030,
@@ -847,7 +849,10 @@ check('incoming offer: expiresRound = created + 2; accept credits user', () => {
   assert(accepted.ok, accepted.reason || 'accept');
   assert(!clubs['Meu Clube'].roster.some(p => p.playerId === 'uo-target'), 'left user');
   assert(clubs['Interessado FC'].roster.some(p => p.playerId === 'uo-target'), 'joined AI');
-  assert(clubs['Meu Clube'].budget === budgetBefore + 1_000_000, 'user credited');
+  assert(
+    clubs['Meu Clube'].budget === budgetBefore + 1_000_000 - (accepted.deal.releaseFee || 0),
+    'user credited after release fee',
+  );
 });
 
 check('incoming offer expires on deadline round without moving player', () => {

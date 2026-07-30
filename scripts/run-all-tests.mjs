@@ -4,9 +4,40 @@
  */
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function resolvePythonCommand() {
+  const configured = String(process.env.BRFUT_PYTHON || '').trim();
+  const codexBundled = process.env.USERPROFILE
+    ? path.join(
+        process.env.USERPROFILE,
+        '.cache',
+        'codex-runtimes',
+        'codex-primary-runtime',
+        'dependencies',
+        'python',
+        'python.exe',
+      )
+    : '';
+  const candidates = [
+    configured,
+    process.platform === 'win32' ? 'py' : 'python3',
+    'python',
+    'python3',
+    codexBundled,
+  ].filter(Boolean);
+  for (const command of [...new Set(candidates)]) {
+    if (path.isAbsolute(command) && !fs.existsSync(command)) continue;
+    const probe = spawnSync(command, ['--version'], { cwd: root, stdio: 'ignore' });
+    if (!probe.error && probe.status === 0) return command;
+  }
+  return null;
+}
+
+const pythonCommand = resolvePythonCommand();
 
 /** @type {{ label: string, steps: string[][] }[]} */
 const SUITES = [
@@ -57,7 +88,11 @@ const SUITES = [
 const runStep = scriptArgs => {
   const [script, ...args] = scriptArgs;
   const isPython = script.endsWith('.py');
-  const command = isPython ? (process.platform === 'win32' ? 'py' : 'python3') : process.execPath;
+  const command = isPython ? pythonCommand : process.execPath;
+  if (!command) {
+    console.error('Python não encontrado. Defina BRFUT_PYTHON com o caminho do executável.');
+    return { status: 1 };
+  }
   const stepArgs = isPython ? [script, ...args] : [script, ...args];
   return spawnSync(command, stepArgs, {
     cwd: root,
