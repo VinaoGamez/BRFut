@@ -282,6 +282,36 @@ export function createSeasonTransitionEngine(deps) {
       budgetAfter = deps.getBalance(userClubState);
     }
 
+    const savedObjectives = deps.ensureSeasonObjectives();
+    const savedObjectivesResult = deps.getSeasonObjectivesResult();
+    if (
+      seasonTransitionPrepared &&
+      savedObjectives?.length &&
+      savedObjectivesResult?.items?.length &&
+      Number(savedObjectivesResult.rulesVersion) < 2
+    ) {
+      const correctedResult = deps.evaluateSeasonObjectives(
+        savedObjectives,
+        deps.buildSeasonObjectiveEvalContext(userClubState),
+        userClubState,
+      );
+      const boardDeltaAdjustment =
+        (Number(correctedResult?.boardDelta) || 0) - (Number(savedObjectivesResult.boardDelta) || 0);
+      deps.setSeasonObjectivesResult(correctedResult);
+      if (boardDeltaAdjustment) {
+        deps.applyClubStatusDeltas(clubs[userClub], { board: boardDeltaAdjustment });
+        deps.renderEnvironmentCard();
+      }
+      deps.pushMessage({
+        category: 'club',
+        type: 'season-objectives-correction',
+        title: 'METAS COMPLEMENTARES CORRIGIDAS',
+        body: correctedResult.body,
+        round: currentRound,
+        read: false,
+      });
+    }
+
     if (!seasonTransitionPrepared) {
       deps.runSeasonEndDevelopmentPulse();
 
@@ -311,15 +341,20 @@ export function createSeasonTransitionEngine(deps) {
 
       const seasonObjectives = deps.ensureSeasonObjectives();
       let seasonObjectivesResult = deps.getSeasonObjectivesResult();
-      if (seasonObjectives?.length && !seasonObjectivesResult?.items?.length) {
+      const objectivesNeedEvaluation =
+        seasonObjectives?.length &&
+        (!seasonObjectivesResult?.items?.length || Number(seasonObjectivesResult.rulesVersion) < 2);
+      if (objectivesNeedEvaluation) {
+        const previousBoardDelta = Number(seasonObjectivesResult?.boardDelta) || 0;
         seasonObjectivesResult = deps.evaluateSeasonObjectives(
           seasonObjectives,
           deps.buildSeasonObjectiveEvalContext(userClubState),
           userClubState,
         );
         deps.setSeasonObjectivesResult(seasonObjectivesResult);
-        if (seasonObjectivesResult?.boardDelta) {
-          deps.applyClubStatusDeltas(clubs[userClub], { board: seasonObjectivesResult.boardDelta });
+        const boardDeltaAdjustment = (Number(seasonObjectivesResult?.boardDelta) || 0) - previousBoardDelta;
+        if (boardDeltaAdjustment) {
+          deps.applyClubStatusDeltas(clubs[userClub], { board: boardDeltaAdjustment });
           deps.renderEnvironmentCard();
         }
         deps.pushMessage({

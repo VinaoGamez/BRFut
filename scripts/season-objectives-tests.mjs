@@ -89,5 +89,34 @@ check('seasonObjectiveLiveProgress — caixa positivo', () => {
   assert(live.status === 'met', `expected met, got ${live.status}`);
 });
 
+check('sequência invicta considera o recorde alcançado, não apenas o fim da temporada', () => {
+  const obj = objective('t_unbeaten_four', { type: 'unbeaten_streak', min: 4 });
+  const live = seasonObjectiveLiveProgress(obj, { form: ['W', 'D', 'W', 'W', 'L'] });
+  assert(live.status === 'met', `expected met, got ${live.status}`);
+  assert(live.hint === '4 invicto', `expected streak 4, got ${live.hint}`);
+});
+
+check('sequência de vitórias considera o recorde alcançado antes de uma derrota', () => {
+  const obj = objective('t_win_streak', { type: 'win_streak', min: 3 });
+  const live = seasonObjectiveLiveProgress(obj, { form: ['W', 'W', 'W', 'L', 'W'] });
+  assert(live.status === 'met', `expected met, got ${live.status}`);
+  assert(live.hint.includes('3 vit'), `expected streak 3, got ${live.hint}`);
+});
+
+check('derrota não conta como partida invicta', () => {
+  const obj = objective('t_unbeaten_four', { type: 'unbeaten_streak', min: 4 });
+  const live = seasonObjectiveLiveProgress(obj, { form: ['L', 'L', 'L', 'L'] });
+  assert(live.status === 'missed', `expected missed, got ${live.status}`);
+  assert(live.hint === '0 invicto', `expected streak 0, got ${live.hint}`);
+});
+
+check('pacote de metas registra a versão atual das regras', () => {
+  const pack = evaluateSeasonObjectives(
+    [objective('t_win_streak', { type: 'win_streak', min: 3 })],
+    { form: ['W', 'W', 'W'] },
+  );
+  assert(pack.rulesVersion === 2, `expected rulesVersion 2, got ${pack.rulesVersion}`);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

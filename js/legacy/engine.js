@@ -1817,7 +1817,7 @@ export async function bootEngine({
       }
     }
     const form=[];
-    for(let index=seasonRoundHistory.length-1;index>=0&&form.length<8;index--){
+    for(let index=seasonRoundHistory.length-1;index>=0;index--){
       const games=seasonRoundHistory[index]?.games||[];
       const game=games.find(item=>involvesClub(item,userClub));
       if(!game||game.homeGoals==null||game.awayGoals==null)continue;

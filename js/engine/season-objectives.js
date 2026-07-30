@@ -130,13 +130,18 @@ const statusFromScore = (score, thresholds = { met: 100, near: 72 }) => {
   return 'missed';
 };
 
-const streakFromForm = (form, predicate) => {
+const longestStreakFromForm = (form, predicate) => {
   let streak = 0;
-  for (let index = form.length - 1; index >= 0; index -= 1) {
-    if (!predicate(form[index])) break;
-    streak += 1;
+  let longest = 0;
+  for (const result of form) {
+    if (predicate(result)) {
+      streak += 1;
+      longest = Math.max(longest, streak);
+    } else {
+      streak = 0;
+    }
   }
-  return streak;
+  return longest;
 };
 
 /**
@@ -226,7 +231,7 @@ export function seasonObjectiveLiveProgress(objective, ctx = {}, club = null) {
   }
 
   if (ev.type === 'unbeaten_streak') {
-    const streak = streakFromForm(ctx.form || [], result => result !== 'L');
+    const streak = longestStreakFromForm(ctx.form || [], result => result === 'W' || result === 'D');
     const score = Math.min(100, Math.round((streak / ev.min) * 100));
     return {
       score,
@@ -236,7 +241,7 @@ export function seasonObjectiveLiveProgress(objective, ctx = {}, club = null) {
   }
 
   if (ev.type === 'win_streak') {
-    const streak = streakFromForm(ctx.form || [], result => result === 'W');
+    const streak = longestStreakFromForm(ctx.form || [], result => result === 'W');
     const score = Math.min(100, Math.round((streak / ev.min) * 100));
     return {
       score,
@@ -389,6 +394,7 @@ export function evaluateSeasonObjectives(objectives = [], ctx = {}, club = null)
   );
   const body = `${feeling}\n\n${lines.join('\n')}`;
   return {
+    rulesVersion: 2,
     items,
     metCount,
     nearCount,
