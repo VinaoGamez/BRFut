@@ -47,6 +47,49 @@ export function worldCupViewModelFromArchive(archive) {
   };
 }
 
+export function stateLeagueViewModelFromArchive(archive, competitionId) {
+  const parsed = parseStateCompetitionKey(competitionId);
+  if (!parsed) return null;
+  const divisions = archive?.stateLeagueSnapshot?.competitions?.[parsed.uf] || [];
+  return divisions.find(item => Number(item?.tier || 1) === Number(parsed.tier || 1)) || null;
+}
+
+const ARCHIVE_SERIE_D_PHASES = [
+  { index: 1, name: '2ª FASE', startRound: 11 },
+  { index: 2, name: '3ª FASE', startRound: 13 },
+  { index: 3, name: 'OITAVAS DE FINAL', startRound: 15 },
+  { index: 4, name: 'QUARTAS DE FINAL', startRound: 17 },
+  { index: 5, name: 'SEMIFINAL E REPESCAGEM', startRound: 19 },
+  { index: 6, name: 'FINAL', startRound: 21 },
+];
+
+export function serieDViewModelFromArchive(archive) {
+  const source = archive?.serieDCompetition;
+  if (!source) return null;
+  const standings = Array.isArray(source.standings) ? source.standings : [];
+  const groups = (Array.isArray(source.groups) ? source.groups : []).map((clubs, groupIndex) => ({
+    groupIndex,
+    clubs: [...(clubs || [])],
+    standings: (clubs || [])
+      .map(club => standings.find(row => row.club === club) || {
+        club, played: 0, wins: 0, draws: 0, losses: 0, goalDiff: 0, points: 0,
+      })
+      .sort((a, b) => b.points - a.points || b.wins - a.wins || b.goalDiff - a.goalDiff),
+    fixtures: (source.fixtures || [])
+      .slice(0, SERIE_D_GROUP_ROUNDS)
+      .flat()
+      .filter(game => Number(game.groupIndex) === groupIndex || (clubs || []).includes(game.home)),
+  }));
+  const phases = ARCHIVE_SERIE_D_PHASES.map(phase => ({
+    ...phase,
+    fixtures: [
+      ...((source.fixtures || [])[phase.startRound - 1] || []),
+      ...((source.fixtures || [])[phase.startRound] || []),
+    ],
+  })).filter(phase => phase.fixtures.length);
+  return { ...source, groups, phases };
+}
+
 export function createChampionshipPageFeature(deps) {
   const {
     $,
@@ -151,10 +194,15 @@ export function createChampionshipPageFeature(deps) {
     if (['A', 'B', 'C', 'D', 'CUP'].includes(competition)) return true;
     if (competition === 'RECOPA') return !!archive.recopaCompetition;
     if (competition === 'CMU') return !!archive.worldCupCompetition;
-    if (competition === 'ESTADUAIS') return Object.keys(archive.stateLeagueResults || {}).length > 0;
+    if (competition === 'ESTADUAIS') {
+      return Object.keys(archive.stateLeagueSnapshot?.competitions || archive.stateLeagueResults || {}).length > 0;
+    }
     if (isStateChampionshipPage(competition)) {
       const parsed = parseStateCompetitionKey(competition);
-      return !!parsed && Array.isArray(archive.stateLeagueResults?.[parsed.uf]);
+      return !!parsed && (
+        Array.isArray(archive.stateLeagueSnapshot?.competitions?.[parsed.uf])
+        || Array.isArray(archive.stateLeagueResults?.[parsed.uf])
+      );
     }
     return false;
   };
@@ -833,7 +881,9 @@ export function createChampionshipPageFeature(deps) {
     const nationalCompetitions = getNationalCompetitions();
     const cupCompetition = getCupCompetition();
     const cupPhaseDefinitions = getCupPhaseDefinitions();
-    const serieDGroups = getSerieDGroups();
+    const archive = getViewArchive();
+    const archiveSerieD = isArchiveView() ? serieDViewModelFromArchive(archive) : null;
+    const serieDGroups = archiveSerieD?.groups || getSerieDGroups();
     const currentRound = getCurrentRound();
 
     syncChampionshipSeasonSelect();
@@ -859,14 +909,20 @@ export function createChampionshipPageFeature(deps) {
     const isStateHub = pageCompetition === 'ESTADUAIS';
     const isStateComp = isStateChampionshipPage(pageCompetition);
     const stateParsed = isStateComp ? parseStateCompetitionKey(pageCompetition) : null;
-    const stateTiers = stateParsed ? stateLeagueEngine.getTiersForUf(stateParsed.uf) : [];
+    const stateTiers = stateParsed
+      ? (isArchiveView()
+          ? (archive?.stateLeagueSnapshot?.competitions?.[stateParsed.uf] || []).map(item => Number(item.tier || 1))
+          : stateLeagueEngine.getTiersForUf(stateParsed.uf))
+      : [];
     const showStateTierPicker = isStateComp && stateTiers.length > 1;
     stateTierPicker?.classList.toggle('hidden', !showStateTierPicker);
     if (stateTierMenu && showStateTierPicker) {
       stateTierMenu.innerHTML = stateTiers.map(tier => {
         const id = stateCompetitionKey(stateParsed.uf, tier);
         const active = id === pageCompetition;
-        const division = stateLeagueEngine.getDivisionForBrowse(id, userClub);
+        const division = isArchiveView()
+          ? stateLeagueViewModelFromArchive(archive, id)
+          : stateLeagueEngine.getDivisionForBrowse(id, userClub);
         const teamCount = division?.teams?.length || 0;
         const lotteryTag = division?.lottery ? ' · Sorteio' : '';
         return `<button type="button" role="option" data-page-state-tier="${tier}" class="${active ? 'is-active' : ''}" aria-selected="${active ? 'true' : 'false'}">Divisão ${tier}${teamCount ? ` · ${teamCount} clubes` : ''}${lotteryTag}</button>`;
@@ -875,7 +931,8 @@ export function createChampionshipPageFeature(deps) {
     if (!showStateTierPicker) setChampionshipPageStateTierPickerOpen(false);
 
     if (serieDModeTabs) {
-      const showSerieDModes = pageCompetition === 'D' && isSerieDKnockoutUiActive();
+      const showSerieDModes = pageCompetition === 'D'
+        && (isArchiveView() ? archiveSerieD?.phases?.length > 0 : isSerieDKnockoutUiActive());
       serieDModeTabs.classList.toggle('hidden', !showSerieDModes);
       if (showSerieDModes) {
         $$('#championshipPageSerieDMode [data-page-serie-d-mode]').forEach(button => {
@@ -887,12 +944,16 @@ export function createChampionshipPageFeature(deps) {
     }
 
     if (pageCompetition === 'D') {
-      const lastGroup = Math.max(0, serieDGroups.length - 1);
+      const effectiveGroups = isArchiveView() ? (archiveSerieD?.groups || []) : serieDGroups;
+      const lastGroup = Math.max(0, effectiveGroups.length - 1);
       pageSerieDGroup = clamp(pageSerieDGroup, 0, lastGroup);
       if (pageSerieDMode === 'knockout') {
-        if (!isSerieDKnockoutUiActive()) pageSerieDMode = 'groups';
+        if (isArchiveView() && !archiveSerieD?.phases?.length) pageSerieDMode = 'groups';
+        else if (!isArchiveView() && !isSerieDKnockoutUiActive()) pageSerieDMode = 'groups';
         else {
-          const maxPhase = Math.max(1, serieDMaxGeneratedPhaseIndex());
+          const maxPhase = isArchiveView()
+            ? Math.max(1, archiveSerieD.phases.at(-1)?.index || 1)
+            : Math.max(1, serieDMaxGeneratedPhaseIndex());
           pageSerieDPhase = clamp(pageSerieDPhase || 1, 1, maxPhase);
         }
       }
@@ -953,6 +1014,43 @@ export function createChampionshipPageFeature(deps) {
           canNext =
             pageWorldCupGroup < WORLD_CUP_GROUP_LETTERS.length - 1
             || (worldCupCompetition?.knockoutFixtures || []).length > 0;
+        }
+      } else if (pageCompetition === 'D' && archiveSerieD) {
+        if (pageSerieDMode === 'knockout' && archiveSerieD.phases.length) {
+          const phase = archiveSerieD.phases.find(item => item.index === pageSerieDPhase)
+            || archiveSerieD.phases[0];
+          pageSerieDPhase = phase.index;
+          titleText = phase.name;
+          canPrev = pageSerieDPhase > archiveSerieD.phases[0].index;
+          canNext = pageSerieDPhase < archiveSerieD.phases.at(-1).index;
+        } else {
+          const lastGroup = Math.max(0, archiveSerieD.groups.length - 1);
+          pageSerieDGroup = clamp(pageSerieDGroup, 0, lastGroup);
+          titleText = `BRASILEIRÃO SÉRIE D · GRUPO A${pageSerieDGroup + 1}`;
+          canPrev = pageSerieDGroup > 0;
+          canNext = pageSerieDGroup < lastGroup || archiveSerieD.phases.length > 0;
+        }
+      } else if (isStateComp) {
+        const division = stateLeagueViewModelFromArchive(archive, pageCompetition);
+        const leagueRounds = division?.leagueRoundCount ?? division?.groupRoundCount ?? 0;
+        const roundLimit = Math.max(1, division?.fixtures?.length || leagueRounds);
+        pageStateRound = clamp(pageStateRound || 1, 1, roundLimit);
+        stateInLeaguePhase = pageStateRound <= leagueRounds;
+        const paulista = isPaulistaFormat(division);
+        const stateName = stateParsed ? ufLabel(stateParsed.uf) : 'Estadual';
+        if (stateInLeaguePhase) {
+          titleText = paulista
+            ? `${stateName} · GRUPO ${String.fromCharCode(65 + (pageStateGroup || 0))}`
+            : `${stateName} · CLASSIFICAÇÃO`;
+          canPrev = paulista && pageStateGroup > 0;
+          canNext = (paulista && pageStateGroup < 1) || roundLimit > leagueRounds;
+        } else {
+          const games = division?.fixtures?.[pageStateRound - 1] || [];
+          titleText = games[0]?.phase
+            ? String(games[0].phase).toUpperCase()
+            : pageStateRound === roundLimit ? 'FINAL' : 'MATA-MATA';
+          canPrev = pageStateRound > leagueRounds;
+          canNext = pageStateRound < roundLimit;
         }
       }
     } else if (isStateHub) {
@@ -1166,23 +1264,65 @@ export function createChampionshipPageFeature(deps) {
           completed: fixtures.length > 0 && fixtures.every(game => game.completed || game.homeGoals != null),
           roundLabel: 'Final',
         });
-      } else if (pageCompetition === 'ESTADUAIS' || isStateChampionshipPage(pageCompetition)) {
+      } else if (pageCompetition === 'ESTADUAIS') {
         if (head) head.innerHTML = '';
-        const parsed = isStateChampionshipPage(pageCompetition)
-          ? parseStateCompetitionKey(pageCompetition)
-          : null;
-        const states = Object.entries(archive.stateLeagueResults || {})
-          .filter(([uf]) => !parsed || uf === parsed.uf)
+        const states = Object.entries(archive.stateLeagueSnapshot?.competitions || {})
+          .filter(([, divisions]) => Array.isArray(divisions) && divisions.length)
           .sort(([a], [b]) => a.localeCompare(b));
-        const cards = states.flatMap(([uf, divisions]) =>
-          (divisions || [])
-            .filter(item => !parsed || Number(item.tier || 1) === Number(parsed.tier || 1))
-            .map(item => `<section class="championship-page-archive-stage">
-              <header><strong>${uf} · DIVISÃO ${item.tier || 1}</strong><small>${item.complete ? 'Concluída' : 'Incompleta'}</small></header>
-              <div class="championship-page-archive-fixture"><strong>Campeão: ${item.champion || '—'}</strong>${item.runnerUp ? `<small>Vice: ${item.runnerUp}</small>` : ''}</div>
-            </section>`),
-        ).join('');
-        body.innerHTML = `<div class="championship-page-archive-banner">Temporada ${year} · arquivo · Estaduais · somente leitura</div>${cards || '<div class="championship-page-empty">Sem resultados estaduais neste arquivo.</div>'}`;
+        const cards = states.map(([uf, divisions]) => {
+          const top = divisions.find(item => Number(item.tier || 1) === 1) || divisions[0];
+          return `<button type="button" class="championship-page-archive-stage" data-estadual-uf="${uf}">
+            <header><strong>${ufLabel(uf)}</strong><small>${divisions.length} divisão(ões)</small></header>
+            <div class="championship-page-archive-fixture"><strong>${top?.teams?.length || 0} clubes na elite</strong><small>Abrir tabelas e resultados</small></div>
+          </button>`;
+        }).join('');
+        body.innerHTML = cards || '<div class="championship-page-empty">Este arquivo antigo não possui tabelas estaduais completas.</div>';
+      } else if (isStateChampionshipPage(pageCompetition)) {
+        const division = stateLeagueViewModelFromArchive(archive, pageCompetition);
+        if (!division) {
+          if (head) head.innerHTML = '';
+          body.innerHTML = '<div class="championship-page-empty">Este arquivo antigo possui apenas o campeão estadual, sem tabela e partidas completas.</div>';
+        } else {
+          const leagueRounds = division.leagueRoundCount ?? division.groupRoundCount ?? 0;
+          const paulista = isPaulistaFormat(division);
+          const groupIndex = paulista ? clamp(pageStateGroup || 0, 0, 1) : 0;
+          const standings = Array.isArray(division.standings?.[0])
+            ? (division.standings[groupIndex] || [])
+            : (division.standings || []);
+          const rows = [...standings].sort((a, b) => b.points - a.points || b.wins - a.wins || b.goalDiff - a.goalDiff);
+          const games = division.fixtures?.[pageStateRound - 1] || [];
+          const roundLimit = Math.max(1, division.fixtures?.length || leagueRounds);
+          if (pageStateRound <= leagueRounds) {
+            tableCard?.classList.remove('is-knockout');
+            if (head) head.innerHTML = '<span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
+            const rowsHtml = rows.map((row, index) => `<div class="league-row ${row.club === userClub ? 'highlight' : ''}" data-club="${row.club}" role="button" tabindex="0"><span>${index + 1}</span><span class="club-link">${row.club}</span><span>${row.played || 0}</span><span>${row.wins || 0}</span><span>${row.draws || 0}</span><span>${row.losses || 0}</span><span>${row.goalDiff >= 0 ? '+' : ''}${row.goalDiff || 0}</span><span>${row.points || 0}</span></div>`).join('');
+            const toolbar = renderChampionshipPageFixturesToolbar({ roundLimit, round: pageStateRound });
+            const fixtures = renderChampionshipPageRoundFixtures(games, { completed: true, toolbarHtml: toolbar });
+            body.innerHTML = `<div class="championship-page-league-body"><div class="championship-page-standings-block">${rowsHtml}</div>${fixtures}</div>`;
+          } else {
+            tableCard?.classList.add('is-knockout');
+            if (head) head.innerHTML = '';
+            const toolbar = renderChampionshipPageFixturesToolbar({ roundLimit, round: pageStateRound });
+            body.innerHTML = renderChampionshipPageRoundFixtures(games, { completed: true, toolbarHtml: toolbar });
+          }
+        }
+      } else if (pageCompetition === 'D' && archiveSerieD) {
+        if (pageSerieDMode === 'knockout' && archiveSerieD.phases.length) {
+          tableCard?.classList.add('is-knockout');
+          if (head) head.innerHTML = '';
+          const phase = archiveSerieD.phases.find(item => item.index === pageSerieDPhase) || archiveSerieD.phases[0];
+          body.innerHTML = renderChampionshipPageRoundFixtures(phase.fixtures, {
+            completed: true,
+            roundLabel: phase.name,
+          });
+        } else {
+          tableCard?.classList.remove('is-knockout');
+          const group = archiveSerieD.groups[pageSerieDGroup];
+          if (head) head.innerHTML = '<span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
+          const rowsHtml = (group?.standings || []).map((row, index) => `<div class="league-row ${index < 4 ? 'promotion' : ''} ${row.club === userClub ? 'highlight' : ''}" data-club="${row.club}" role="button" tabindex="0"><span>${index + 1}</span><span class="club-link">${row.club}</span><span>${row.played || 0}</span><span>${row.wins || 0}</span><span>${row.draws || 0}</span><span>${row.losses || 0}</span><span>${row.goalDiff >= 0 ? '+' : ''}${row.goalDiff || 0}</span><span>${row.points || 0}</span></div>`).join('');
+          const fixtures = renderChampionshipPageRoundFixtures(group?.fixtures || [], { completed: true });
+          body.innerHTML = `<div class="championship-page-league-body"><div class="championship-page-standings-block">${rowsHtml}</div>${fixtures}</div>`;
+        }
       } else {
         if (head) head.innerHTML = '<span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
         const rows = [...(archive.standings?.[pageCompetition] || [])]
@@ -1328,13 +1468,19 @@ export function createChampionshipPageFeature(deps) {
     const userClub = getUserClub();
     const currentRound = getCurrentRound();
     const cupPhaseDefinitions = getCupPhaseDefinitions();
-    const serieDGroups = getSerieDGroups();
+    const archive = getViewArchive();
+    const archiveSerieD = isArchiveView() ? serieDViewModelFromArchive(archive) : null;
+    const serieDGroups = archiveSerieD?.groups || getSerieDGroups();
     const userSerieDGroupIndex = getUserSerieDGroupIndex();
 
     if (isStateChampionshipPage(pageCompetition)) {
-      const division = stateLeagueEngine.getDivisionForBrowse(pageCompetition, userClub);
+      const division = isArchiveView()
+        ? stateLeagueViewModelFromArchive(archive, pageCompetition)
+        : stateLeagueEngine.getDivisionForBrowse(pageCompetition, userClub);
       const leagueRounds = division?.leagueRoundCount ?? division?.groupRoundCount ?? 0;
-      const limit = stateLeagueEngine.getRoundLimit(pageCompetition);
+      const limit = isArchiveView()
+        ? Math.max(1, division?.fixtures?.length || leagueRounds)
+        : stateLeagueEngine.getRoundLimit(pageCompetition);
       const inLeaguePhase = (pageStateRound || 1) <= leagueRounds;
       if (inLeaguePhase) {
         if (isPaulistaFormat(division)) {
@@ -1399,11 +1545,14 @@ export function createChampionshipPageFeature(deps) {
           }
         } else {
           const nextDef = serieDKnockoutPhaseDefs.find(item => item.index === pageSerieDPhase + 1);
-          if (nextDef && serieDKnockoutPhaseMeta(nextDef).generated) pageSerieDPhase += 1;
+          const nextAvailable = isArchiveView()
+            ? archiveSerieD?.phases?.some(item => item.index === pageSerieDPhase + 1)
+            : nextDef && serieDKnockoutPhaseMeta(nextDef).generated;
+          if (nextAvailable) pageSerieDPhase += 1;
         }
       } else if (step > 0) {
         if (pageSerieDGroup < lastGroup) pageSerieDGroup += 1;
-        else if (isSerieDKnockoutUiActive()) {
+        else if (isArchiveView() ? archiveSerieD?.phases?.length : isSerieDKnockoutUiActive()) {
           pageSerieDMode = 'knockout';
           pageSerieDPhase = 1;
         }
@@ -1464,11 +1613,19 @@ export function createChampionshipPageFeature(deps) {
     });
     onClick('#championshipPageSerieDMode', event => {
       const button = event.target.closest('[data-page-serie-d-mode]');
-      if (!button || pageCompetition !== 'D' || !isSerieDKnockoutUiActive()) return;
+      const archiveSerieD = isArchiveView() ? serieDViewModelFromArchive(getViewArchive()) : null;
+      const knockoutAvailable = isArchiveView()
+        ? archiveSerieD?.phases?.length > 0
+        : isSerieDKnockoutUiActive();
+      if (!button || pageCompetition !== 'D' || !knockoutAvailable) return;
       const mode = button.dataset.pageSerieDMode === 'groups' ? 'groups' : 'knockout';
       if (mode === pageSerieDMode) return;
       pageSerieDMode = mode;
-      if (mode === 'knockout') pageSerieDPhase = serieDPhaseIndexForRound(getCurrentRound());
+      if (mode === 'knockout') {
+        pageSerieDPhase = isArchiveView()
+          ? (archiveSerieD?.phases?.[0]?.index || 1)
+          : serieDPhaseIndexForRound(getCurrentRound());
+      }
       else pageSerieDGroup = Math.max(0, getUserSerieDGroupIndex());
       renderChampionshipPage();
     });
@@ -1479,11 +1636,20 @@ export function createChampionshipPageFeature(deps) {
         return;
       }
       if (!isStateChampionshipPage(pageCompetition)) return;
-      const roundLimit = stateLeagueEngine.getRoundLimit(pageCompetition);
+      const archiveDivision = isArchiveView()
+        ? stateLeagueViewModelFromArchive(getViewArchive(), pageCompetition)
+        : null;
+      const roundLimit = isArchiveView()
+        ? Math.max(1, archiveDivision?.fixtures?.length || archiveDivision?.leagueRoundCount || 1)
+        : stateLeagueEngine.getRoundLimit(pageCompetition);
       if (event.target.closest('[data-state-fixtures-open]')) {
         pageStateFixturesOpen = true;
         pageStateFixturesMode = 'round';
-        pageStateRound = clamp(pageStateRound || stateLeagueEngine.getCurrentRound(pageCompetition, getUserClub()), 1, roundLimit);
+        pageStateRound = clamp(
+          pageStateRound || (isArchiveView() ? 1 : stateLeagueEngine.getCurrentRound(pageCompetition, getUserClub())),
+          1,
+          roundLimit,
+        );
         renderChampionshipPage();
         return;
       }

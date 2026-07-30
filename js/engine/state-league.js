@@ -294,11 +294,11 @@ export function createStateLeagueEngine() {
     return true;
   };
 
-  const serialize = () => ({
+  const serialize = ({ all = false } = {}) => ({
     seasonYear,
     userUf,
-    competitions: byUf[userUf]?.length ? { [userUf]: byUf[userUf] } : {},
-    historyByUf: historyByUf[userUf]?.length ? { [userUf]: historyByUf[userUf] } : {},
+    competitions: all ? byUf : (byUf[userUf]?.length ? { [userUf]: byUf[userUf] } : {}),
+    historyByUf: all ? historyByUf : (historyByUf[userUf]?.length ? { [userUf]: historyByUf[userUf] } : {}),
     results: exportSeasonResults(),
   });
 

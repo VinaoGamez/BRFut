@@ -9,6 +9,29 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.90',
+    date: '2026-07-30',
+    publishedAt: '2026-07-30T12:00:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Histórico dos campeonatos',
+        items: [
+          'Temporadas arquivadas agora exibem tabelas e partidas dos Estaduais no mesmo formato do campeonato atual.',
+          'Grupos e todas as fases do mata-mata da Série D passam a permanecer disponíveis no arquivo da temporada.',
+          'Copa do Brasil, Recopa Nacional e Copa do Mundo continuam com navegação por fases no modo arquivo.',
+        ],
+      },
+      {
+        label: 'Promoção de divisão',
+        items: [
+          'O clube promovido não permanece mais duplicado na divisão anterior ao carregar a nova temporada.',
+          'A identificação abaixo dos escudos mostra somente a divisão ou grupo, sem repetir a rodada.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.85',
     date: '2026-07-30',
     publishedAt: '2026-07-30T02:00:00-04:00',

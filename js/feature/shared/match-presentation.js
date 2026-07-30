@@ -122,8 +122,7 @@ export const clubStandingContext = (
     const stateName = game.stateUf ? ufLabel(game.stateUf) : '';
     return joinMatchMeta(`Estadual · ${stateName}${tierSuffix}`, stateLeaguePhaseLabel(game));
   }
-  const roundLabel = matchCompetitionRoundLabel(game, userDivision, currentRound, serieDGroupRounds);
-  return roundLabel ? joinMatchMeta(label, roundLabel) : label;
+  return label;
 };
 
 export const matchCompetitionPhaseLabel = (

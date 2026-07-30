@@ -62,6 +62,7 @@ export function bootstrapCareerClubs({
 }) {
   let careerWorldNeedsPersist = false;
   let serieDLayoutRepaired = false;
+  let userDivisionMembershipRepaired = false;
 
   const generatedPlayer = (role, index, clubPower, division = 'A', starterBoost = true) =>
     generatePlayerCore({
@@ -110,6 +111,32 @@ export function bootstrapCareerClubs({
   const clubs = {};
 
   if (savedNewGame) {
+    Object.keys(divisionRules).forEach(division => {
+      const names = Array.isArray(divisionTeams[division]) ? divisionTeams[division] : [];
+      if (division === userDivision) {
+        let seenUser = false;
+        const normalized = names.filter(name => {
+          if (name !== userClub) return true;
+          if (seenUser) return false;
+          seenUser = true;
+          return true;
+        });
+        if (!seenUser) normalized.unshift(userClub);
+        if (normalized.length !== names.length || !seenUser) userDivisionMembershipRepaired = true;
+        divisionTeams[division] = normalized;
+        return;
+      }
+      const normalized = names.filter(name => name !== userClub);
+      if (normalized.length !== names.length) userDivisionMembershipRepaired = true;
+      divisionTeams[division] = normalized;
+    });
+    if (userDivisionMembershipRepaired) {
+      savedNewGame.divisionTeams = Object.fromEntries(
+        Object.keys(divisionRules).map(division => [division, [...divisionTeams[division]]]),
+      );
+      careerWorldNeedsPersist = true;
+    }
+
     Object.entries(divisionTeams).forEach(([division, names]) =>
       names.forEach((club, index) => {
         clubs[club] = createClub(club, division, index);
@@ -293,6 +320,8 @@ export function bootstrapCareerClubs({
     if (!savedNewGame.worldRosters || worldFat || setPieceRepaired > 0) {
       savedNewGame.worldRosters = collectWorldRosters(clubs, { skipClub: userClub, merge: savedNewGame.worldRosters || {} });
       if (Array.isArray(clubs[userClub]?.roster)) savedNewGame.userRoster = clubs[userClub].roster;
+      persistCareer({ ...savedNewGame });
+    } else if (userDivisionMembershipRepaired) {
       persistCareer({ ...savedNewGame });
     }
   }

@@ -3,7 +3,7 @@
  * Separado do brfut-season vivo — nunca se funde no boot do ano corrente.
  */
 
-const ARCHIVE_VERSION = 3;
+const ARCHIVE_VERSION = 4;
 const MAX_LEADERS = 10;
 const MAX_ROUND_GAMES = 12;
 
@@ -41,10 +41,35 @@ function slimGame(game) {
     phase: game.phase || game.stage || null,
     leg: game.leg || null,
     group: game.group || null,
+    groupIndex: game.groupIndex ?? null,
+    tieId: game.tieId || null,
     shootoutHome: game.shootoutHome ?? null,
     shootoutAway: game.shootoutAway ?? null,
     shootoutWinner: game.shootoutWinner || null,
     completed: !!(game.completed || game.homeGoals != null || game.hg != null),
+  };
+}
+
+function slimSerieD(competition) {
+  if (!competition || typeof competition !== 'object') return null;
+  const stages = {};
+  Object.entries(competition.knockout?.stages || {}).forEach(([key, fixtures]) => {
+    stages[key] = (Array.isArray(fixtures) ? fixtures : [])
+      .flat()
+      .map(slimGame)
+      .filter(Boolean);
+  });
+  return {
+    groups: (Array.isArray(competition.groups) ? competition.groups : [])
+      .map(group => (Array.isArray(group) ? [...group] : [])),
+    standings: slimStandings(competition.standings),
+    fixtures: (Array.isArray(competition.fixtures) ? competition.fixtures : [])
+      .map(round => (Array.isArray(round) ? round.map(slimGame).filter(Boolean) : [])),
+    knockout: {
+      champion: competition.knockout?.champion || competition.champion || null,
+      promoted: [...(competition.knockout?.promoted || [])],
+      stages,
+    },
   };
 }
 
@@ -141,6 +166,7 @@ export function buildSeasonArchive(input = {}) {
     closedAt: input.closedAt || new Date().toISOString(),
     champions: input.champions ? { ...input.champions } : null,
     standings,
+    serieDCompetition: slimSerieD(national.D),
     competitionRoundHistory: slimRoundHistory(input.competitionRoundHistory),
     cupCompetition: slimCup(input.cupCompetition),
     recopaCompetition: input.recopaCompetition

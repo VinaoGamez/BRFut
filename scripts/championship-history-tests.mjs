@@ -4,6 +4,8 @@
  */
 import {
   resolveChampionshipPageRenderMode,
+  serieDViewModelFromArchive,
+  stateLeagueViewModelFromArchive,
   worldCupViewModelFromArchive,
 } from '../js/feature/championship-page/index.js';
 import { buildSeasonArchive } from '../js/engine/season-archive.js';
@@ -71,12 +73,66 @@ check('arquivo preserva Recopa Nacional, Copa do Mundo e Estaduais', () => {
       MT: [{ tier: 1, champion: 'Cuiabá', runnerUp: 'Operário', complete: true }],
     },
   });
-  assertEqual(archive.version, 3);
+  assertEqual(archive.version, 4);
   assertEqual(archive.recopaCompetition.champion, 'Clube A');
   assertEqual(archive.recopaCompetition.fixtures[0].homeGoals, 2);
   assertEqual(archive.worldCupCompetition.champion, 'Brasil');
   assertEqual(archive.worldCupCompetition.fixtures[0].phase, 'FINAL');
   assertEqual(archive.stateLeagueResults.MT[0].champion, 'Cuiabá');
+});
+
+check('arquivo preserva tabela, rodadas e mata-mata dos Estaduais', () => {
+  const archive = buildSeasonArchive({
+    careerSeason: 2030,
+    nationalCompetitions: { A: {}, B: {}, C: {}, D: {} },
+    stateLeagueSnapshot: {
+      competitions: {
+        MT: [{
+          tier: 1,
+          leagueRoundCount: 1,
+          teams: ['Cuiabá', 'Operário'],
+          standings: [[
+            { club: 'Cuiabá', played: 1, wins: 1, draws: 0, losses: 0, goalDiff: 1, points: 3 },
+            { club: 'Operário', played: 1, wins: 0, draws: 0, losses: 1, goalDiff: -1, points: 0 },
+          ]],
+          fixtures: [
+            [{ home: 'Cuiabá', away: 'Operário', homeGoals: 1, awayGoals: 0, completed: true }],
+            [{ home: 'Cuiabá', away: 'Mixto', homeGoals: 2, awayGoals: 1, phase: 'final', completed: true }],
+          ],
+        }],
+      },
+    },
+  });
+  const view = stateLeagueViewModelFromArchive(archive, 'EST:MT:1');
+  assertEqual(view.standings[0][0].points, 3);
+  assertEqual(view.fixtures[1][0].phase, 'final');
+});
+
+check('arquivo preserva grupos e todas as fases da Série D', () => {
+  const rounds = Array.from({ length: 22 }, () => []);
+  rounds[0] = [{ home: 'Clube A', away: 'Clube B', groupIndex: 0, homeGoals: 1, awayGoals: 0, completed: true }];
+  rounds[10] = [{ home: 'Clube A', away: 'Clube C', tieId: 'd-1', homeGoals: 2, awayGoals: 0, completed: true }];
+  rounds[11] = [{ home: 'Clube C', away: 'Clube A', tieId: 'd-1', homeGoals: 1, awayGoals: 0, completed: true }];
+  const archive = buildSeasonArchive({
+    careerSeason: 2030,
+    nationalCompetitions: {
+      A: {}, B: {}, C: {},
+      D: {
+        groups: [['Clube A', 'Clube B']],
+        standings: [
+          { club: 'Clube A', played: 1, wins: 1, draws: 0, losses: 0, goalDiff: 1, points: 3 },
+          { club: 'Clube B', played: 1, wins: 0, draws: 0, losses: 1, goalDiff: -1, points: 0 },
+        ],
+        fixtures: rounds,
+        knockout: { promoted: ['Clube A'] },
+      },
+    },
+  });
+  const view = serieDViewModelFromArchive(archive);
+  assertEqual(view.groups[0].standings[0].club, 'Clube A');
+  assertEqual(view.groups[0].fixtures.length, 1);
+  assertEqual(view.phases[0].fixtures.length, 2);
+  assertEqual(view.phases[0].fixtures[0].tieId, 'd-1');
 });
 
 check('arquivo da Copa do Mundo recupera grupos e mata-mata para o visual ao vivo', () => {

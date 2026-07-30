@@ -7139,7 +7139,7 @@ export async function bootEngine({
         return nationalTeamByCode(championCode)?.name||championCode;
       },
       getStateLeagueResults:()=>stateLeagueEngine.exportSeasonResults(),
-      getStateLeagueSnapshot:()=>stateLeagueEngine.serialize(),
+      getStateLeagueSnapshot:()=>stateLeagueEngine.serialize({all:true}),
       getAllScorers:()=>allScorers,
       getAllAssistants:()=>allAssistants,
     }, meta),
