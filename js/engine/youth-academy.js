@@ -9,6 +9,7 @@ import { ensurePlayerId } from './player-identity.js';
 import { ensurePlayerContract, buildPlayerContract, syncPlayerWageFromContract, addCalendarMonths } from './player-contracts.js';
 import { getRealClub } from './brazilian-clubs-by-uf.js';
 import { bumpLegacyMeta, maybeRollLegacyYouthPlayer } from './youth-legacy-regen.js';
+import { estimatePlayerValue } from './player-value.js';
 
 export const YOUTH_STRUCTURE_UNLOCK = 3;
 export const YOUTH_ROSTER_MAX = 15;
@@ -51,7 +52,15 @@ export const ACADEMY_UPGRADE = Object.freeze({
 
 export const SCOUTING_UPGRADE = Object.freeze({
   baseCost: 800_000,
-  costPerLevel: [400_000, 600_000],
+  costPerLevel: [1_400_000, 2_200_000],
+});
+
+export const YOUTH_SIGNING_SHARE = 0.06;
+export const YOUTH_SIGNING_MIN_BY_DIVISION = Object.freeze({
+  A: 60_000,
+  B: 40_000,
+  C: 25_000,
+  D: 15_000,
 });
 
 export const SCOUT_LOCK_MONTHS = 6;
@@ -938,10 +947,29 @@ export function signScoutReport(club, reportId, context = {}) {
   const report = club.scoutReports[idx];
   const player = hydrateYouthPlayer(report.player, context);
   if (!player) return { ok: false, error: 'invalid_player' };
-  applyYouthContract(player, context.division || club.division || 'A', context.careerDate);
+  const division = context.division || club.division || 'A';
+  const formationCompensation = Math.max(
+    YOUTH_SIGNING_MIN_BY_DIVISION[division] ?? YOUTH_SIGNING_MIN_BY_DIVISION.D,
+    Math.round(estimatePlayerValue(player, division) * YOUTH_SIGNING_SHARE),
+  );
+  const payment = spend(club, formationCompensation, {
+    reason: 'youth_signing',
+    label: `Formação e assinatura · ${player.name || 'talento'}`,
+    meta: { reportId, playerId: player.playerId, formationCompensation },
+  });
+  if (!payment.ok) {
+    return {
+      ok: false,
+      error: 'insufficient_funds',
+      cost: formationCompensation,
+      balance: getBalance(club),
+    };
+  }
+  applyYouthContract(player, division, context.careerDate);
+  player.youthSignedDate = toDateKey(context.careerDate || new Date());
   club.youthRoster.push(player);
   club.scoutReports.splice(idx, 1);
-  return { ok: true, player };
+  return { ok: true, player, cost: formationCompensation, balance: payment.balance };
 }
 
 export function dismissScoutReport(club, reportId) {
@@ -1028,6 +1056,8 @@ export function promoteYouthPlayer(club, playerId, context = {}) {
   club.youthRoster.splice(idx, 1);
   delete player.isYouth;
   delete player.youthCategory;
+  player.homegrown = true;
+  player.promotedDate = toDateKey(context.careerDate || new Date());
   const fullWage = estimatePlayerWage(player, context.division || club.division || 'A');
   player.wage = fullWage;
   ensurePlayerContract(player, {

@@ -5,10 +5,10 @@
 
 import { estimatePlayerWage } from './economy.js';
 
-export const CONTRACT_TERM = 'semester';
-export const SEMESTER_MONTHS = 6;
-export const RELEASE_FEE_FACTOR = 0.35;
-export const RELEASE_FEE_ROUND_CAP_MONTHS = 6;
+export const CONTRACT_TERM = 'annual';
+export const SEMESTER_MONTHS = 12;
+export const RELEASE_FEE_FACTOR = 0.8;
+export const RELEASE_FEE_ROUND_CAP_MONTHS = 12;
 
 export const CONTRACT_ALERT_DAYS = Object.freeze([30, 7]);
 export const RENEWAL_WINDOW_DAYS_BEFORE = 15;
@@ -212,8 +212,12 @@ export function computeRenewalWageAsk(player, division = 'A', ctx = {}) {
   const expired = ctx.expired ?? isContractExpired(player, ctx.careerDate);
   const ovr = Number(player?.overall) || 60;
   const signedOvr = Number(ctx.signedOverall ?? ovr);
-  let factor = expired ? 0.92 : 1.08;
-  if (!expired && ovr >= signedOvr + 4) factor += 0.06;
+  const form = Number(player?.form);
+  const appearances = Math.max(0, Number(player?.appearances ?? player?.games) || 0);
+  let factor = expired ? 0.94 : 1.1;
+  if (!expired && ovr >= signedOvr + 4) factor += 0.1;
+  if (!expired && Number.isFinite(form) && form >= 72) factor += 0.05;
+  if (!expired && appearances >= 20) factor += 0.04;
   if (expired) factor = Math.min(factor, 1.0);
   const ask = Math.round(Math.max(base * 0.75, current * factor));
   return Math.max(estimatePlayerWage(player, division) * 0.7, ask);

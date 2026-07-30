@@ -103,11 +103,11 @@ export function financePressureDelta({
   if (Number.isFinite(Number(runwayRounds)) && Number(runwayRounds) < BOARD_RUNWAY_PRESSURE_ROUNDS) {
     delta -= Number(runwayRounds) < 1 ? 0.55 : Number(runwayRounds) < 2 ? 0.4 : 0.25;
   }
-  if (shortfall) delta -= 0.45;
-  if (streak > 0) delta -= 0.35 * Math.min(streak, 6);
+  if (shortfall) delta -= 0.75;
+  if (streak > 0) delta -= 0.6 * Math.min(streak, 6);
   if (!(delta < 0)) return 0;
   const factor = Number.isFinite(Number(campaignFactor)) ? Number(campaignFactor) : 1;
-  const floor = streak > 0 ? -2.0 : -1.2;
+  const floor = streak > 0 ? -3.5 : -1.5;
   return clamp(delta * factor, floor * factor, 0);
 }
 

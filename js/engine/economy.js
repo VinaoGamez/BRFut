@@ -77,21 +77,22 @@ export const TICKET_PRICE_RANGE = {
 };
 
 /**
- * Multiplicador da bilheteria (público × preço × escala).
- * 1.0 = crédito igual ao preço de ingresso exibido na UI (sem desconto oculto).
+ * Receita líquida da bilheteria após segurança, operação, impostos e taxas.
+ * O preço mostrado na UI continua sendo o valor bruto pago pelo torcedor.
  */
-export const GATE_REVENUE_SCALE = 1;
+export const GATE_REVENUE_SCALE = 0.3;
 
 /**
  * Premiação de fim de temporada — calibrada vs INITIAL_BUDGET:
  * campanha boa (G8) ≈ 25–40% do caixa inicial; título/Copa como pico sem inflar o multi-ano.
  * (Ops de rodada já geram superávit — prêmio de meio de tabela não pode empilhar demais.)
  */
-export const PARTICIPATION_PRIZE = { A: 1_500_000, B: 1_100_000, C: 700_000, D: 500_000 };
+export const PARTICIPATION_PRIZE = { A: 975_000, B: 715_000, C: 455_000, D: 325_000 };
 /** Pool de classificação para A/B/C (liga corrida). Série D usa SERIE_D_PHASE_*. */
-export const POSITION_POOL = { A: 5_500_000, B: 3_700_000, C: 2_300_000, D: 1_600_000 };
-export const TITLE_BONUS = { A: 7_000_000, B: 5_000_000, C: 3_000_000, D: 2_000_000 };
-export const PROMOTION_BONUS = 1_200_000;
+export const POSITION_POOL = { A: 4_100_000, B: 2_200_000, C: 1_700_000, D: 1_150_000 };
+export const TITLE_BONUS = { A: 3_800_000, B: 3_000_000, C: 1_700_000, D: 1_075_000 };
+export const PROMOTION_BONUS_BY_DIVISION = { A: 0, B: 900_000, C: 750_000, D: 650_000 };
+export const PROMOTION_BONUS = PROMOTION_BONUS_BY_DIVISION.D;
 
 /** Premiação Série D por fase mais avançada (% do POSITION_POOL.D). */
 export const SERIE_D_PHASE_POOL = POSITION_POOL.D;
@@ -108,7 +109,7 @@ export const SERIE_D_PHASE_SHARE = {
 };
 
 /** Premiação Copa do Brasil por fase mais avançada (% do pool). */
-export const CUP_PHASE_POOL = 3_600_000;
+export const CUP_PHASE_POOL = 2_200_000;
 export const CUP_PHASE_SHARE = {
   1: { pct: 0.06, label: 'Copa do Brasil · 1ª fase' },
   2: { pct: 0.12, label: 'Copa do Brasil · 2ª fase' },
@@ -298,7 +299,20 @@ export function estimatePlayerWage(player, division = 'A') {
   const base = WAGE_BASE_BY_DIVISION[division] ?? WAGE_BASE_BY_DIVISION.D;
   const overall = Math.max(40, Math.min(99, Number(player?.overall) || 60));
   const scale = (overall / 75) ** 1.35;
-  return Math.round(base * scale * wageAgeFactor(player?.age));
+  const reputation = Math.max(0, Math.min(100, Number(player?.reputation) || 50));
+  const form = Number(player?.form);
+  const status = String(player?.squadRole || player?.roleStatus || '').toLowerCase();
+  const roleFactor =
+    /star|key|indiscutível|titular/.test(status)
+      ? 1.1
+      : /rotation|rotação/.test(status)
+        ? 0.96
+        : /reserve|reserva/.test(status)
+          ? 0.88
+          : 1;
+  const reputationFactor = 0.94 + reputation / 850;
+  const formFactor = Number.isFinite(form) ? Math.max(0.94, Math.min(1.08, 1 + (form - 60) / 300)) : 1;
+  return Math.round(base * scale * wageAgeFactor(player?.age) * roleFactor * reputationFactor * formFactor);
 }
 
 import {
@@ -634,7 +648,6 @@ export function estimateStadiumOpsBill(club, division = club?.division || 'A') {
   }
   const base = STADIUM_OPS_BASE_BY_DIVISION[division] ?? STADIUM_OPS_BASE_BY_DIVISION.D;
   const perThousand = STADIUM_OPS_PER_THOUSAND_SEATS[division] ?? STADIUM_OPS_PER_THOUSAND_SEATS.D;
-  const cap = STADIUM_OPS_SOFT_CAP[division] ?? STADIUM_OPS_SOFT_CAP.D;
   const seats = Math.max(0, Number(club.stadiumCapacity) || 0);
   const structure = getStructureLevel(club);
   const pitch = getPitchLevel(club);
@@ -644,7 +657,7 @@ export function estimateStadiumOpsBill(club, division = club?.division || 'A') {
       structure * STADIUM_OPS_STRUCTURE_COST +
       pitch * STADIUM_OPS_PITCH_COST,
   );
-  return Math.min(raw, cap);
+  return raw;
 }
 
 /** Custo total da rodada (jogadores + comissão + estádio). */
@@ -1206,8 +1219,12 @@ export function computeSeasonPrize({
   }
 
   if (promoted) {
-    total += PROMOTION_BONUS;
-    lines.push({ label: 'Bônus de acesso', amount: PROMOTION_BONUS });
+    const promotionBonus =
+      PROMOTION_BONUS_BY_DIVISION[division] ?? PROMOTION_BONUS_BY_DIVISION.D;
+    total += promotionBonus;
+    if (promotionBonus > 0) {
+      lines.push({ label: 'Bônus de acesso', amount: promotionBonus });
+    }
   }
 
   return { total, lines };
@@ -2020,7 +2037,7 @@ export function titleRaceAttendanceBoost(game, context = {}) {
 export function applyHighStakesFillFloor(fillRate, game, club, context = {}) {
   const environment = Math.max(0, Math.min(100, Number(club?.environment) || 60));
   if (environment < 55 || !isHighStakesHomeMatch(game, context)) return fillRate;
-  return Math.max(fillRate, 0.85);
+  return Math.max(fillRate, 0.7);
 }
 
 /**
@@ -2033,7 +2050,7 @@ export function estimateFillRate(club, channel = 'national', options = {}) {
   const price = weightedAverageTicketPrice(club, ch);
   const range = TICKET_PRICE_RANGE[ch] || TICKET_PRICE_RANGE.national;
   const priceSpan = Math.max(1, range.max - range.min);
-  const priceFactor = 1 - ((price - range.min) / priceSpan) * 0.46;
+  const priceFactor = 1 - ((price - range.min) / priceSpan) * 0.7;
   const environment = Math.max(0, Math.min(100, Number(options.environment ?? club.environment) || 60));
   const support = Math.max(0, Math.min(100, Number(options.support ?? club.support) || 60));
   // Ambiente alto enche; crise no vestiário afasta o público.
@@ -2046,7 +2063,7 @@ export function estimateFillRate(club, channel = 'national', options = {}) {
   const channelBias = !options.game && channel === 'cups' ? 0.05 : 0;
   const fill = 0.55 * priceFactor + envBoost + supportBoost + attraction.boost + titleBoost + noise + channelBias;
   const floored = applyHighStakesFillFloor(fill, options.game, club, options.attendanceContext || {});
-  return Math.max(0.28, Math.min(0.96, floored));
+  return Math.max(0.16, Math.min(0.94, floored));
 }
 
 /** Estimativa de bilheteria — com ou sem jogo concreto. */

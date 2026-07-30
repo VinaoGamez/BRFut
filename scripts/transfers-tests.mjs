@@ -207,8 +207,8 @@ check('buy filters: age, ovr range, max price and sort', () => {
   assert(!young.some(r => r.player.name === 'Veterano'), 'veteran excluded');
   const midOvr = engine.listBuyCandidates({ minOvr: 70, maxOvr: 72, listedOnly: true });
   assert(midOvr.every(r => r.overall >= 70 && r.overall <= 72), 'ovr band');
-  const cheap = engine.listBuyCandidates({ maxPrice: 500_000, listedOnly: true, sortBy: 'price' });
-  assert(cheap.every(r => r.price <= 500_000), 'max price');
+  const cheap = engine.listBuyCandidates({ maxPrice: 800_000, listedOnly: true, sortBy: 'price' });
+  assert(cheap.every(r => r.price <= 800_000), 'max price');
   assert(cheap[0].price <= cheap[cheap.length - 1].price, 'price asc');
   const byOvr = engine.listBuyCandidates({ listedOnly: true, sortBy: 'ovr' });
   assert(byOvr[0].overall >= byOvr[1].overall, 'ovr desc');

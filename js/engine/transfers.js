@@ -1019,10 +1019,8 @@ export function createTransfersEngine(deps) {
     player.listed = !!listed;
     if (listed) {
       const value = Number(player.marketValue) || estimatePlayerValue(player, club.division);
-      player.askingPrice = Math.max(
-        Math.round(value * 0.7),
-        Number(askingPrice) > 0 ? Math.round(Number(askingPrice)) : value,
-      );
+      player.askingPrice =
+        Number(askingPrice) > 0 ? Math.round(Number(askingPrice)) : value;
     } else {
       player.askingPrice = null;
     }
@@ -1290,6 +1288,23 @@ export function createTransfersEngine(deps) {
     if (!verdict.accept) {
       const hardDiv = (verdict.reasons || []).includes('division_gap');
       if (hardDiv) {
+        if (verdict.divisionFit?.phase === 'no_window') {
+          return {
+            ok: false,
+            reason: 'division_gap',
+            fee,
+            floor: verdict.floor,
+            value: verdict.value,
+            reasons: verdict.reasons,
+            ratio: verdict.ratio,
+            playerPull: false,
+            payroll,
+            from: sellerName,
+            playerName: player.name,
+            clubName: sellerName,
+            divisionFit: verdict.divisionFit,
+          };
+        }
         // Atalho caro: oferta extrema pode abrir chance rara (sem contra-proposta).
         const buyout = resolveSellDownBuyout({
           player,

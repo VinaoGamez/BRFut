@@ -207,8 +207,14 @@ const charged = chargeRoundCosts(broke, { division: 'A', round: 1, managerReputa
 console.log(
   `due=${charged.due} paid=${charged.paid} wages=${charged.wages.paid}/${charged.wages.due} staff=${charged.staff.paid}/${charged.staff.due} stadium=${charged.stadium.paid}/${charged.stadium.due}`,
 );
-if (charged.shortfall > 0 && broke.budget === 0 && broke.wageShortfall) ok('shortfall zera caixa e marca flag');
-else fail('shortfall zera caixa e marca flag', JSON.stringify(charged));
+if (
+  charged.shortfall > 0 &&
+  charged.overdraft === charged.shortfall &&
+  broke.budget < 0 &&
+  broke.wageShortfall
+) {
+  ok('obrigação integral abre cheque especial e marca flag');
+} else fail('obrigação integral abre cheque especial e marca flag', JSON.stringify(charged));
 if (charged.wages.paid > 0 && charged.staff.paid > 0 && charged.stadium.paid > 0) {
   ok('rateio paga jogadores, comissão e estádio');
 } else fail('rateio paga jogadores, comissão e estádio', JSON.stringify(charged));

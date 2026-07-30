@@ -237,7 +237,7 @@ export const PITCH_SECTOR_UPGRADE = {
 const OPS_BASE = { A: 18_000, B: 12_000, C: 8_000, D: 5_000 };
 const OPS_STRUCTURE = 2_500;
 const OPS_PITCH = 2_000;
-const OPS_CAP = { A: 75_000, B: 50_000, C: 35_000, D: 22_000 };
+const SUSTAINABLE_CAPACITY = { A: 48_000, B: 32_000, C: 22_000, D: 14_000 };
 
 export function structureLevelLabel(level) {
   const n = Math.max(0, Math.min(5, Math.round(Number(level) || 0)));
@@ -477,7 +477,6 @@ export function stadiumInvestmentCost(def, currentLevel, division = 'A') {
 export function estimateStadiumOpsFromSectors(club, division = 'A') {
   if (!club) return 0;
   const base = OPS_BASE[division] ?? OPS_BASE.D;
-  const cap = OPS_CAP[division] ?? OPS_CAP.D;
   const structure = getSectorStructureLevel(club);
   const pitch = Math.max(0, Math.min(5, Math.round(Number(club.pitchLevel) || 0)));
   let seatOps = 0;
@@ -487,7 +486,7 @@ export function estimateStadiumOpsFromSectors(club, division = 'A') {
     seatOps += (seats / 1000) * (STADIUM_SECTOR_DEFS[sectorId].opsPerThousand || 200);
   }
   const raw = Math.round(base + seatOps + structure * OPS_STRUCTURE + pitch * OPS_PITCH);
-  return Math.min(raw, cap);
+  return raw;
 }
 
 export function estimateGateReceiptSectors(
@@ -508,10 +507,14 @@ export function estimateGateReceiptSectors(
   const sup = Math.max(0, Math.min(100, Number(support ?? club?.support) || 60));
   const envBoost = (env - 55) / 160;
   const supportBoost = (sup - 50) / 200;
-  const fillBase = Math.max(0.28, Math.min(0.96, 0.55 + envBoost + supportBoost));
-
   const { total, rows } = computeSectorBreakdown(club, division);
   const cap = Math.max(1000, total || 1000);
+  const sustainable =
+    (SUSTAINABLE_CAPACITY[division] ?? SUSTAINABLE_CAPACITY.D) *
+    (0.7 + sup / 200);
+  const capacityPressure = Math.min(1, Math.sqrt(sustainable / cap));
+  const fillBase =
+    Math.max(0.14, Math.min(0.94, 0.55 + envBoost + supportBoost)) * capacityPressure;
 
   let knockoutBoost = 0;
   if (game) {
@@ -532,10 +535,12 @@ export function estimateGateReceiptSectors(
     const range = TICKET_SECTOR_PRICE_RANGE[row.id]?.[resolvedChannel];
     const mid = range ? (range.min + range.max) / 2 : sectorBase;
     const priceSpan = range ? Math.max(1, range.max - range.min) : 1;
-    const priceFactor = 1 - ((sectorBase - mid) / priceSpan) * (1 - (SECTOR_PRICE_ELASTICITY[row.id] ?? 0.7));
+    const relativePrice = (sectorBase - mid) / priceSpan;
+    const elasticity = 0.75 + (SECTOR_PRICE_ELASTICITY[row.id] ?? 0.7) * 0.35;
+    const priceFactor = Math.max(0.2, 1 - relativePrice * elasticity);
     let fill = fillBase * priceFactor * (def?.fillBias ?? 1);
     if (row.id === 'vip' || row.id === 'boxes') fill *= 1 + knockoutBoost;
-    fill = Math.max(0.22, Math.min(0.98, fill));
+    fill = Math.max(0.08, Math.min(0.96, fill));
     const sectorAttendance = Math.round(row.seats * fill);
     const sectorRevenue = Math.round(sectorAttendance * sectorBase * gateScale);
     attendance += sectorAttendance;
