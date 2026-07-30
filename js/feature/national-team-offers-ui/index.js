@@ -10,12 +10,14 @@ const MODAL_HTML = `
 <div id="nationalTeamOfferModal" class="nto-modal hidden" role="dialog" aria-modal="true" aria-labelledby="ntOfferTitle">
   <div class="nto-modal-card">
     <div class="nto-layout-stage">
-      <p class="nto-hero-kicker">COPA DO MUNDO</p>
-      <div class="nto-trophy-wrap">
-        <img id="ntOfferTrophy" class="nto-trophy competition-trophy-art--world-cup" data-trophy-key="world-cup" src="" alt="" width="120" height="120">
+      <div class="nto-hero-column">
+        <p class="nto-hero-kicker">COPA DO MUNDO</p>
+        <div class="nto-trophy-wrap">
+          <img id="ntOfferTrophy" class="nto-trophy competition-trophy-art--world-cup" data-trophy-key="world-cup" src="" alt="" width="120" height="120">
+        </div>
+        <p class="nto-hero-dates" id="ntOfferHeroDates">11 JUN — 19 JUL · 2026</p>
+        <p class="nto-hero-meta">Fase de grupos + mata-mata · Paralelo ao seu clube</p>
       </div>
-      <p class="nto-hero-dates" id="ntOfferHeroDates">11 JUN — 19 JUL · 2026</p>
-      <p class="nto-hero-meta">Fase de grupos + mata-mata · Paralelo ao seu clube</p>
       <h2 id="ntOfferTitle" class="nto-offers-title">Convites para Seleções</h2>
       <p class="nto-offers-sub" id="ntOfferOffersSub">Escolha uma seleção para comandar na CMU.</p>
       <div class="nto-table-wrap">
