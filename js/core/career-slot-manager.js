@@ -10,7 +10,12 @@ import {
   slotBundleKeys,
 } from './constants.js';
 import { readJson, writeJson, getStoragePressure } from './save.js';
-import { isCloudStorageActive, queueCloudSave } from './storage-api.js';
+import {
+  flushCloudDeletesAsync,
+  isCloudStorageActive,
+  queueCloudDelete,
+  queueCloudSave,
+} from './storage-api.js';
 import { isLocalStorageCheckpoint } from './local-save-checkpoint.js';
 import { pickNewerSave } from './save-sync.js';
 
@@ -291,6 +296,66 @@ export function createNewSlot({ name } = {}) {
   writeCareerIndex(index);
   setActiveSlotId(slotId);
   return slotId;
+}
+
+function localKeysForSlot(slotId) {
+  const prefix = `brfut-slot-${String(slotId || '').trim()}-`;
+  const keys = new Set(Object.values(slotBundleKeys(slotId)));
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key?.startsWith(prefix)) keys.add(key);
+    }
+  } catch {
+    /* best effort */
+  }
+  return [...keys];
+}
+
+/** Exclui uma carreira do índice, armazenamento local e nuvem. */
+export async function deleteCareerSlot(slotId) {
+  const id = String(slotId || '').trim();
+  if (!id) return { ok: false, reason: 'invalid_slot' };
+  const index = readCareerIndex();
+  const slot = index.slots.find(entry => entry.id === id);
+  if (!slot) return { ok: false, reason: 'slot_not_found' };
+
+  const wasActive = getActiveSlotId() === id || index.activeSlotId === id;
+  if (wasActive) cancelPendingSlotSync();
+  const slotKeys = localKeysForSlot(id);
+  const activeKeys = wasActive
+    ? [SAVE_KEYS.career, SAVE_KEYS.season, SAVE_KEYS.playerHistory, SAVE_KEYS.liveMatch]
+    : [];
+  const deleteKeys = [...new Set([...slotKeys, ...activeKeys])];
+
+  deleteKeys.forEach(key => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* best effort */
+    }
+  });
+
+  index.slots = index.slots.filter(entry => entry.id !== id);
+  if (wasActive) {
+    const next = [...index.slots].sort(
+      (a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime(),
+    )[0];
+    index.activeSlotId = next?.id || null;
+    try {
+      sessionStorage.removeItem(ACTIVE_SLOT_SESSION_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+  writeCareerIndex(index);
+
+  if (isCloudStorageActive()) {
+    const cloudResult = await flushCloudDeletesAsync(deleteKeys);
+    return { ok: cloudResult.ok, slot, cloud: cloudResult.ok };
+  }
+  deleteKeys.forEach(key => queueCloudDelete(key));
+  return { ok: true, slot, cloud: false };
 }
 
 /** Save único legado → primeiro slot (boot). */

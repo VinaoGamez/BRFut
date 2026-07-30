@@ -38,6 +38,7 @@ const {
   defaultSlotName,
   canCreateSlot,
   getActiveSlotId,
+  deleteCareerSlot,
 } = await import('../js/core/career-slot-manager.js');
 
 let passed = 0;
@@ -105,6 +106,28 @@ check('getActiveSlotId follows index activeSlotId', () => {
   const id = createNewSlot();
   assert(getActiveSlotId() === id);
 });
+
+try {
+  store.clear();
+  const firstId = createNewSlot();
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ clubName: 'Delete FC' }));
+  syncActiveSlotFromCache();
+  const firstBundle = slotBundleKeys(firstId);
+  localStorage.setItem(`brfut-slot-${firstId}-season-archive-2026`, JSON.stringify({ year: 2026 }));
+  const secondId = createNewSlot();
+  const result = await deleteCareerSlot(firstId);
+  assert(result.ok, 'delete should succeed locally');
+  assert(!readCareerIndex().slots.some(slot => slot.id === firstId), 'manifest must be removed');
+  assert(!localStorage.getItem(firstBundle.career), 'career bundle must be removed');
+  assert(!localStorage.getItem(`brfut-slot-${firstId}-season-archive-2026`), 'archives must be removed');
+  assert(readCareerIndex().slots.some(slot => slot.id === secondId), 'other slot must remain');
+  passed += 1;
+  console.log('✓ deleteCareerSlot removes only the selected slot and its archives');
+} catch (error) {
+  failed += 1;
+  console.error('✗ deleteCareerSlot removes only the selected slot and its archives');
+  console.error(`  ${error.message}`);
+}
 
 console.log(`\ncareer-slot-tests: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

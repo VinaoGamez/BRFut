@@ -4,6 +4,7 @@
 import {
   canCreateSlot,
   createNewSlot,
+  deleteCareerSlot,
   formatSlotDivision,
   formatSlotUpdatedAt,
   getLastPlayedSlot,
@@ -49,6 +50,11 @@ function slotCardMarkup(slot, { isLast = false } = {}) {
       <div class="career-slots-item-head">
         <strong>${slot.name || 'Carreira'}</strong>
         ${badge}
+        <button type="button" class="career-slots-delete" data-delete-slot="${slot.id}" aria-label="Excluir ${slot.name || 'carreira'}" title="Excluir save">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/>
+          </svg>
+        </button>
       </div>
       <p class="career-slots-item-meta">${slot.clubName} · ${division} · ${year}${round}</p>
       <p class="career-slots-item-date">Atualizado: ${formatSlotUpdatedAt(slot.updatedAt)}</p>
@@ -122,12 +128,33 @@ export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } 
     await onNewCareer?.(slotId);
   };
 
+  const removeSlot = async slotId => {
+    const slot = readCareerIndex().slots.find(entry => entry.id === slotId);
+    if (!slot) return;
+    const confirmed = window.confirm(
+      `Excluir o save "${slot.name || 'Carreira'}"?\n\nEsta ação removerá a carreira deste navegador e da nuvem.`,
+    );
+    if (!confirmed) return;
+    const button = listEl?.querySelector(`[data-delete-slot="${slotId}"]`);
+    if (button) button.disabled = true;
+    const result = await deleteCareerSlot(slotId);
+    if (!result.ok) {
+      window.alert('Não foi possível confirmar a exclusão na nuvem. Verifique sua conexão e tente novamente.');
+    }
+    renderList();
+  };
+
   document.getElementById('closeLoadCareer')?.addEventListener('click', close);
   modal?.addEventListener('click', event => {
     if (event.target === modal) close();
   });
   newBtn?.addEventListener('click', () => void startNewCareer());
   listEl?.addEventListener('click', event => {
+    const deleteBtn = event.target.closest('[data-delete-slot]');
+    if (deleteBtn) {
+      void removeSlot(deleteBtn.getAttribute('data-delete-slot'));
+      return;
+    }
     const btn = event.target.closest('[data-play-slot]');
     if (!btn) return;
     void startSlot(btn.getAttribute('data-play-slot'));

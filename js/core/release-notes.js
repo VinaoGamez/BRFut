@@ -9,6 +9,22 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.70',
+    date: '2026-07-29',
+    publishedAt: '2026-07-29T20:58:59-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Gerenciamento de carreiras',
+        items: [
+          'Cada save agora possui um botão de lixeira para excluir a carreira com confirmação.',
+          'A exclusão remove o save do navegador e da nuvem, incluindo temporadas arquivadas.',
+          'Se a conexão estiver indisponível, a exclusão fica pendente e é concluída ao reconectar.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.65',
     date: '2026-07-29',
     publishedAt: '2026-07-29T20:37:58-04:00',

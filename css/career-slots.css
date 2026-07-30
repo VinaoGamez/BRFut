@@ -85,6 +85,38 @@
   color: #edf8f5;
 }
 
+.career-slots-delete {
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ff667744;
+  border-radius: 8px;
+  color: #ff7d8b;
+  background: #ff334411;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.career-slots-delete:hover,
+.career-slots-delete:focus-visible {
+  border-color: #ff7d8b;
+  background: #ff334426;
+  transform: translateY(-1px);
+}
+
+.career-slots-delete:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+
+.career-slots-delete svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
 .career-slots-badge {
   font: 600 0.65rem 'Barlow Condensed', sans-serif;
   letter-spacing: 0.08em;

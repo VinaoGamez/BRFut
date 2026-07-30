@@ -53,6 +53,13 @@ class BrfutApiTests(unittest.TestCase):
         self.assertEqual(data['clubName'], 'Flamengo')
         self.assertEqual(get_all_saves(self.root, 'tester')['brfut-career']['value']['clubName'], 'Flamengo')
 
+    def test_season_archives_are_allowed_for_base_and_slot(self) -> None:
+        put_save(self.root, 'tester', 'brfut-season-archive-2026', {'year': 2026})
+        put_save(self.root, 'tester', 'brfut-slot-abc-season-archive-2026', {'year': 2026})
+        saves = get_all_saves(self.root, 'tester')
+        self.assertIn('brfut-season-archive-2026', saves)
+        self.assertIn('brfut-slot-abc-season-archive-2026', saves)
+
     def test_http_health_and_auth_flow(self) -> None:
         status, body = self._route('GET', '/api/health')
         self.assertEqual(status, 200)

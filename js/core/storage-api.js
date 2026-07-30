@@ -33,6 +33,7 @@ const SYNC_DEBOUNCE_MS = 400;
 const SYNC_AUTH_BACKOFF_MS = 30_000;
 const PRESENCE_INTERVAL_MS = 120_000;
 const PENDING_SYNC_KEYS_STORAGE = 'brfut-pending-cloud-keys';
+const PENDING_DELETE_KEYS_STORAGE = 'brfut-pending-cloud-deletes';
 
 let backendAvailable = null;
 let backendProbeAt = 0;
@@ -93,6 +94,48 @@ function markSyncComplete(key) {
   const state = readPendingSyncState();
   state.keys.delete(key);
   writePendingSyncState(state);
+}
+
+function readPendingDeleteState() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PENDING_DELETE_KEYS_STORAGE) || '{}');
+    return {
+      owner: typeof parsed?.owner === 'string' ? parsed.owner : null,
+      keys: new Set(Array.isArray(parsed?.keys) ? parsed.keys.filter(isSyncableSaveKey) : []),
+    };
+  } catch {
+    return { owner: null, keys: new Set() };
+  }
+}
+
+function writePendingDeleteState({ owner = null, keys }) {
+  try {
+    const values = [...keys].filter(isSyncableSaveKey);
+    if (values.length) {
+      localStorage.setItem(PENDING_DELETE_KEYS_STORAGE, JSON.stringify({ owner, keys: values }));
+    } else {
+      localStorage.removeItem(PENDING_DELETE_KEYS_STORAGE);
+    }
+  } catch {
+    /* best effort */
+  }
+}
+
+function markDeletePending(key) {
+  const state = readPendingDeleteState();
+  const activeOwner = currentUser?.username || null;
+  if (activeOwner && state.owner && activeOwner !== state.owner) state.keys.clear();
+  state.keys.add(key);
+  writePendingDeleteState({ owner: activeOwner || state.owner, keys: state.keys });
+  const syncState = readPendingSyncState();
+  syncState.keys.delete(key);
+  writePendingSyncState(syncState);
+}
+
+function markDeleteComplete(key) {
+  const state = readPendingDeleteState();
+  state.keys.delete(key);
+  writePendingDeleteState(state);
 }
 
 /** Testers locais (5081) usam API embutida — evita CORS com api.brfut.com.br em build de produção. */
@@ -249,6 +292,7 @@ export async function ensureCloudReady() {
     lastCloudGateReason = null;
     queueNewerLocalSavesToCloud();
     restorePendingSyncQueue();
+    restorePendingCloudDeletes();
     if (syncQueue.size) scheduleCloudSync();
     return true;
   }
@@ -272,6 +316,7 @@ export async function ensureCloudReady() {
     }
     queueNewerLocalSavesToCloud();
     restorePendingSyncQueue();
+    restorePendingCloudDeletes();
     if (syncQueue.size) scheduleCloudSync();
     return true;
   } catch (error) {
@@ -580,6 +625,14 @@ function restorePendingSyncQueue() {
     restored += 1;
   });
   return restored;
+}
+
+function restorePendingCloudDeletes() {
+  const state = readPendingDeleteState();
+  const activeOwner = currentUser?.username || null;
+  if (state.owner && activeOwner && state.owner !== activeOwner) return 0;
+  state.keys.forEach(key => queueCloudDelete(key));
+  return state.keys.size;
 }
 
 function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
@@ -1017,22 +1070,30 @@ export function queueCloudSave(key, value) {
 }
 
 export function queueCloudDelete(key) {
-  if (!isCloudStorageActive() || !isSyncableSaveKey(key)) return;
+  if (!isSyncableSaveKey(key)) return;
+  markDeletePending(key);
   syncQueue.delete(key);
-  authedFetch(`/api/saves/${encodeURIComponent(key)}`, { method: 'DELETE' }).catch(error => {
-    console.warn('[brfut] falha ao apagar save na nuvem local', key, error);
-  });
+  if (!isCloudStorageActive() || isSyncAuthBlocked()) return;
+  authedFetch(`/api/saves/${encodeURIComponent(key)}`, { method: 'DELETE' })
+    .then(() => markDeleteComplete(key))
+    .catch(error => {
+      console.warn('[brfut] falha ao apagar save na nuvem local', key, error);
+    });
 }
 
 /** Aguarda DELETE na nuvem (Novo Jogo — evita merge do save antigo no reload). */
 export async function flushCloudDeletesAsync(keys = [SAVE_KEYS.career, SAVE_KEYS.season]) {
-  if (!isCloudStorageActive() || !getAuthToken()) return { ok: true, deleted: [] };
   const expanded = [...new Set(keys.flatMap(k => saveKeyVariants(k)))];
+  expanded.forEach(markDeletePending);
+  if (!isCloudStorageActive() || !getAuthToken()) {
+    return { ok: true, deleted: [], queued: expanded };
+  }
   const results = await Promise.all(
     expanded.map(async key => {
       if (!isSyncableSaveKey(key)) return { key, ok: false };
       try {
         await authedFetch(`/api/saves/${encodeURIComponent(key)}`, { method: 'DELETE' });
+        markDeleteComplete(key);
         return { key, ok: true };
       } catch (error) {
         console.warn('[brfut] falha ao apagar save na nuvem', key, error);
@@ -1251,6 +1312,7 @@ async function initStorageBackendImpl({ skipProbe = false, preferMigrate = false
     startPresenceHeartbeat();
     queueNewerLocalSavesToCloud();
     restorePendingSyncQueue();
+    restorePendingCloudDeletes();
     if (syncQueue.size) scheduleCloudSync();
   }
 

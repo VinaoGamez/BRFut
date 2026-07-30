@@ -29,14 +29,15 @@ ALLOWED_SAVE_KEYS = frozenset({
 })
 
 SLOT_KEY_RE = re.compile(
-    r'^brfut-slot-[a-zA-Z0-9-]+-(career|season|player-history|live-match)$'
+    r'^brfut-slot-[a-zA-Z0-9-]+-(career|season|player-history|live-match|season-archive-\d{4})$'
 )
+ARCHIVE_KEY_RE = re.compile(r'^brfut-season-archive-\d{4}$')
 
 
 def _is_allowed_save_key(key: str) -> bool:
     if key in ALLOWED_SAVE_KEYS:
         return True
-    return bool(SLOT_KEY_RE.match(key))
+    return bool(SLOT_KEY_RE.match(key) or ARCHIVE_KEY_RE.match(key))
 
 KEY_FILE_RE = re.compile(r'^[a-zA-Z0-9._-]+$')
 
