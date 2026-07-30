@@ -7197,6 +7197,65 @@ export async function bootEngine({
       });
       return out.sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
     },
+    finalizeManagerSeason:({season,champions,championEstaduais})=>{
+      const summariesByClub={};
+      Object.values(nationalCompetitions||{}).forEach(competition=>{
+        (competition?.standings||[]).forEach(row=>{
+          if(!row?.club)return;
+          summariesByClub[row.club]={
+            club:row.club,
+            clubs:[row.club],
+            games:Number(row.played)||0,
+            wins:Number(row.wins)||0,
+            draws:Number(row.draws)||0,
+            losses:Number(row.losses)||0,
+            teamAverage:null,
+          };
+        });
+      });
+      const logs=(playerHistory?.getStore?.()?.matchLogs||[]).filter(log=>
+        Number(log?.season)===Number(season)&&(log.home===userClub||log.away===userClub)
+      );
+      const userSummary={club:userClub,clubs:[userClub],games:logs.length,wins:0,draws:0,losses:0,teamAverage:null};
+      logs.forEach(log=>{
+        const gf=log.home===userClub?Number(log.homeGoals):Number(log.awayGoals);
+        const ga=log.home===userClub?Number(log.awayGoals):Number(log.homeGoals);
+        if(gf>ga)userSummary.wins++;
+        else if(gf<ga)userSummary.losses++;
+        else userSummary.draws++;
+      });
+      const rating=computeClubSeasonRatingSummary(playerHistory?.getStore?.(),userClub,season,{getClub:resolveClubForStats});
+      userSummary.teamAverage=rating?.average??null;
+      const labels={
+        A:'Brasileirão Série A',B:'Brasileirão Série B',C:'Brasileirão Série C',D:'Brasileirão Série D',
+        CUP:'Copa do Brasil',RECOPA:'Recopa Nacional',LIBERTADORES:'Libertadores',
+        SUDAMERICANA:'Copa Sul-Americana',WORLD_CUP:'Copa do Mundo',
+      };
+      const titles=Object.entries(champions||{}).filter(([,club])=>club).map(([key,club])=>({
+        id:`${season}:${key}:${club}`,
+        competition:labels[key]||key,
+        club,
+        managerId:key==='WORLD_CUP'&&club===userNationalTeamName
+          ?(managerRanking.byClub(userClub)||managerRanking.byName(careerProfile.managerName))?.id
+          :null,
+      }));
+      (championEstaduais||[]).forEach(item=>{
+        if(!item?.clubName)return;
+        titles.push({
+          id:`${season}:${item.key||item.label}:${item.clubName}`,
+          competition:item.label||'Campeonato Estadual',
+          club:item.clubName,
+        });
+      });
+      const userManager=managerRanking.byClub(userClub)||managerRanking.byName(careerProfile.managerName);
+      managerRanking.finalizeSeason({
+        season,
+        summariesByClub,
+        titles,
+        userManagerId:userManager?.id||null,
+        userSummary,
+      });
+    },
     getUserStateLeagueDivision:()=>{
       if(!FEATURES.stateLeague)return null;
       const uf=String(savedNewGame?.userUf||getRealClub(userClub)?.uf||'SP').toUpperCase();

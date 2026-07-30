@@ -423,7 +423,7 @@
 
 .manager-ranking-head,
 .manager-ranking-row {
-  grid-template-columns: 48px minmax(0, 1.05fr) minmax(0, 0.95fr) 52px 0 minmax(56px, 0.18fr) minmax(84px, 0.28fr) minmax(84px, 0.26fr);
+  grid-template-columns: 48px minmax(0, 1.05fr) minmax(0, 0.85fr) 52px 0 minmax(56px, 0.18fr) minmax(84px, 0.25fr) minmax(70px, 0.2fr) 142px;
 }
 
 .manager-ranking-row.manager-free .manager-ranking-club {
@@ -443,15 +443,72 @@
   white-space: nowrap;
 }
 
+.manager-ranking-actions { display: flex; justify-content: center; }
+.manager-trophy-room-btn {
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid #356b78;
+  border-radius: 5px;
+  background: #102a34;
+  color: #dff9ff;
+  font: 800 9px 'DM Sans', sans-serif;
+  letter-spacing: .35px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.manager-trophy-room-btn:hover,
+.manager-trophy-room-btn:focus-visible { border-color: #9cff2f; color: #9cff2f; outline: 0; }
+
+.manager-trophy-modal[hidden] { display: none; }
+.manager-trophy-modal { position: fixed; inset: 0; z-index: 10020; display: flex; justify-content: flex-end; }
+.manager-trophy-backdrop { position: absolute; inset: 0; border: 0; background: rgba(1, 8, 12, .78); cursor: default; }
+.manager-trophy-panel {
+  position: relative;
+  width: min(520px, 94vw);
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #3b7785;
+  background: #0a1b23;
+  box-shadow: -18px 0 50px rgba(0, 0, 0, .45);
+}
+.manager-trophy-header { padding: 26px 28px 20px; display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px solid #234b56; }
+.manager-trophy-header small { color: #5edbff; font: 800 9px 'DM Sans', sans-serif; letter-spacing: 1.2px; }
+.manager-trophy-header h2 { margin: 5px 0 2px; color: #fff; font: 800 32px 'Barlow Condensed', sans-serif; }
+.manager-trophy-header p { margin: 0; color: #91afb4; font-size: 12px; }
+.manager-trophy-close { width: 36px; height: 36px; border: 0; background: transparent; color: #9bb4b8; font-size: 30px; cursor: pointer; }
+.manager-trophy-body { overflow-y: auto; padding: 20px 24px 32px; }
+.manager-career-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+.manager-career-summary span { padding: 12px 8px; border: 1px solid #285361; border-radius: 7px; text-align: center; color: #7da5ad; font: 800 9px 'DM Sans', sans-serif; }
+.manager-career-summary strong { display: block; color: #9cff2f; font: 800 25px 'Barlow Condensed', sans-serif; }
+.manager-season-card { margin-bottom: 10px; border: 1px solid #285361; border-radius: 7px; background: #0d2630; overflow: hidden; }
+.manager-season-card summary { padding: 15px 17px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: #fff; }
+.manager-season-card summary span { font: 800 24px 'Barlow Condensed', sans-serif; }
+.manager-season-card summary small { color: #8fb4ba; font-size: 11px; }
+.manager-season-content { padding: 0 16px 16px; border-top: 1px solid #234b56; }
+.manager-season-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 14px 0 10px; }
+.manager-season-stats span { padding: 8px 4px; border-radius: 5px; background: #091b23; text-align: center; color: #759da4; font: 800 9px 'DM Sans', sans-serif; }
+.manager-season-stats strong { display: block; color: #eafbfa; font-size: 17px; }
+.manager-season-clubs { margin: 0 0 11px; color: #77dfff; font-size: 11px; }
+.manager-season-trophies { display: grid; gap: 7px; }
+.manager-season-trophies article { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid #806715; border-radius: 6px; background: rgba(125, 92, 5, .12); }
+.manager-season-trophies article > span { font-size: 25px; }
+.manager-season-trophies strong, .manager-season-trophies small { display: block; }
+.manager-season-trophies strong { color: #ffd84f; font-size: 12px; }
+.manager-season-trophies small { margin-top: 2px; color: #9bb6ba; font-size: 10px; }
+.manager-season-trophies p, .manager-trophy-empty { color: #789da3; text-align: center; padding: 24px 8px; }
+
 @media (max-width: 760px) {
   .manager-ranking-head,
   .manager-ranking-row {
-    grid-template-columns: 36px minmax(100px, 1fr) minmax(80px, 0.9fr) 40px 0 48px 72px 60px;
+    grid-template-columns: 36px minmax(100px, 1fr) minmax(80px, 0.9fr) 40px 0 48px 72px 60px 46px;
     padding: 0 12px;
   }
   .manager-ranking-row .manager-ranking-salary {
     font-size: 11px;
   }
+  .manager-trophy-room-btn span { display: none; }
 }
 
 .championship-page-table {

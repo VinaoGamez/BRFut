@@ -217,6 +217,11 @@ export function createSeasonTransitionEngine(deps) {
     if (worldCupChampion) champions.WORLD_CUP = worldCupChampion;
     const championEstaduais = deps.getStateLeagueChampions?.() || [];
     const recopaSubtitle = deps.getRecopaSubtitle?.() || null;
+    deps.finalizeManagerSeason?.({
+      season: careerSeason,
+      champions,
+      championEstaduais,
+    });
     deps.setPriorSeasonChampions?.({
       season: careerSeason,
       A: champions.A,

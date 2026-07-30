@@ -9,6 +9,22 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.5.95',
+    date: '2026-07-30',
+    publishedAt: '2026-07-30T16:00:00-04:00',
+    title: 'BR Fut foi atualizado',
+    topics: [
+      {
+        label: 'Sala de Troféus',
+        items: [
+          'O Ranking de Técnicos agora possui um botão para consultar a Sala de Troféus de cada treinador.',
+          'O histórico é organizado por temporada e mostra títulos, clube, jogos, vitórias, empates, derrotas e média do time.',
+          'Brasileiros, Copa do Brasil, Recopa Nacional, Estaduais e Copa do Mundo entram no histórico permanente do treinador.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.90',
     date: '2026-07-30',
     publishedAt: '2026-07-30T12:00:00-04:00',

@@ -5,6 +5,9 @@ import {
 } from '../../engine/national-ranking.js';
 
 const STAFF_ROUNDS_PER_MONTH = 4;
+const escapeHtml = value => String(value ?? '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
 const normalizeClubSearch = value => String(value || '')
   .normalize('NFD')
@@ -34,6 +37,7 @@ export function createRankingViewsFeature(deps) {
   } = deps;
 
   let nationalRankingSearchQuery = '';
+  let openTrophyManagerId = null;
 
   const currentNationalRanking = () => {
     const entries = Object.values(getNationalRankingEntries())
@@ -121,7 +125,65 @@ export function createRankingViewsFeature(deps) {
     const salary = managerMonthlySalary(entry);
     const salaryLabel = formatBudget(salary);
     const scoreHint = `Base ${entry.base.toFixed(1)} + Temporada ${entry.seasonPoints.toFixed(1)} + Títulos ${entry.titlePoints.toFixed(1)} · Salário ${salaryLabel}/mês`;
-    return `<div class="national-ranking-row manager-ranking-row${pinned ? ' national-ranking-user-row user-ranking' : isUser ? ' user-ranking' : ''}${entry.status === 'free' ? ' manager-free' : ''}" data-manager="${entry.id}" ${entry.club ? `data-club="${entry.club}"` : ''} role="button" tabindex="0" aria-label="${entry.name} · ${scoreHint} · Total ${entry.total.toFixed(1)}"><span>${position}</span>${nameCell}<span class="manager-ranking-club">${entry.clubLabel}</span><span>${entry.division}</span><span class="national-ranking-col-hidden" aria-hidden="true">${entry.base.toFixed(1)}</span><span class="manager-ranking-season">${entry.seasonPoints.toFixed(1)}</span><span class="manager-ranking-salary" title="Salário mensal estimado">${salaryLabel}</span><span class="national-ranking-total" title="${scoreHint}">${entry.total.toFixed(1)}</span></div>`;
+    return `<div class="national-ranking-row manager-ranking-row${pinned ? ' national-ranking-user-row user-ranking' : isUser ? ' user-ranking' : ''}${entry.status === 'free' ? ' manager-free' : ''}" data-manager="${entry.id}" ${entry.club ? `data-club="${entry.club}"` : ''} role="button" tabindex="0" aria-label="${entry.name} · ${scoreHint} · Total ${entry.total.toFixed(1)}"><span>${position}</span>${nameCell}<span class="manager-ranking-club">${entry.clubLabel}</span><span>${entry.division}</span><span class="national-ranking-col-hidden" aria-hidden="true">${entry.base.toFixed(1)}</span><span class="manager-ranking-season">${entry.seasonPoints.toFixed(1)}</span><span class="manager-ranking-salary" title="Salário mensal estimado">${salaryLabel}</span><span class="national-ranking-total" title="${scoreHint}">${entry.total.toFixed(1)}</span><span class="manager-ranking-actions"><button type="button" class="manager-trophy-room-btn" data-manager-trophies="${entry.id}" aria-label="Abrir Sala de Troféus de ${escapeHtml(entry.name)}">🏆 <span>SALA DE TROFÉUS</span></button></span></div>`;
+  };
+
+  const ensureTrophyRoom = () => {
+    let modal = $('#managerTrophyRoomModal');
+    if (modal) return modal;
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="managerTrophyRoomModal" class="manager-trophy-modal" hidden>
+        <button type="button" class="manager-trophy-backdrop" data-close-manager-trophies aria-label="Fechar"></button>
+        <section class="manager-trophy-panel" role="dialog" aria-modal="true" aria-labelledby="managerTrophyRoomTitle">
+          <header class="manager-trophy-header">
+            <div><small>SALA DE TROFÉUS</small><h2 id="managerTrophyRoomTitle">Técnico</h2><p id="managerTrophyRoomSubtitle"></p></div>
+            <button type="button" class="manager-trophy-close" data-close-manager-trophies aria-label="Fechar">×</button>
+          </header>
+          <div id="managerTrophyRoomBody" class="manager-trophy-body"></div>
+        </section>
+      </div>`);
+    return $('#managerTrophyRoomModal');
+  };
+
+  const renderManagerTrophyRoom = managerId => {
+    const manager = getManagerRanking().byId(managerId);
+    if (!manager) return;
+    openTrophyManagerId = manager.id;
+    const modal = ensureTrophyRoom();
+    $('#managerTrophyRoomTitle').textContent = manager.name;
+    $('#managerTrophyRoomSubtitle').textContent = manager.club ? `${manager.club} · Técnico em atividade` : 'Técnico livre';
+    const seasons = manager.careerHistory?.seasons || [];
+    const totalTitles = seasons.reduce((sum, season) => sum + (season.titles?.length || 0), 0);
+    $('#managerTrophyRoomBody').innerHTML = `
+      <div class="manager-career-summary">
+        <span><strong>${totalTitles}</strong>TÍTULOS</span>
+        <span><strong>${seasons.reduce((sum, item) => sum + item.games, 0)}</strong>JOGOS</span>
+        <span><strong>${seasons.length}</strong>TEMPORADAS</span>
+      </div>
+      ${seasons.length ? seasons.map((season, index) => `
+        <details class="manager-season-card" ${index === 0 ? 'open' : ''}>
+          <summary><span>${season.season}</span><small>${season.titles.length} título(s) · ${season.games} jogos</small></summary>
+          <div class="manager-season-content">
+            <div class="manager-season-stats">
+              <span><strong>${season.games}</strong>J</span><span><strong>${season.wins}</strong>V</span>
+              <span><strong>${season.draws}</strong>E</span><span><strong>${season.losses}</strong>D</span>
+              <span><strong>${season.teamAverage == null ? '—' : season.teamAverage.toFixed(1)}</strong>MÉDIA</span>
+            </div>
+            <p class="manager-season-clubs">${escapeHtml(season.clubs.join(' · ') || 'Sem clube registrado')}</p>
+            <div class="manager-season-trophies">
+              ${season.titles.length ? season.titles.map(title => `<article><span aria-hidden="true">🏆</span><div><strong>${escapeHtml(title.competition)}</strong><small>${escapeHtml(title.club || season.clubs[0] || '')}</small></div></article>`).join('') : '<p>Nenhum título nesta temporada.</p>'}
+            </div>
+          </div>
+        </details>`).join('') : '<div class="manager-trophy-empty">O histórico anual será consolidado no encerramento da temporada atual.</div>'}`;
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+  };
+
+  const closeManagerTrophyRoom = () => {
+    const modal = $('#managerTrophyRoomModal');
+    if (modal) modal.hidden = true;
+    openTrophyManagerId = null;
+    document.body.classList.remove('modal-open');
   };
 
   const renderManagerRanking = () => {
@@ -155,6 +217,19 @@ export function createRankingViewsFeature(deps) {
         event.preventDefault();
         runNationalRankingClubSearch();
       }
+    });
+    on(document, 'click', event => {
+      const button = event.target.closest?.('[data-manager-trophies]');
+      if (button) {
+        event.preventDefault();
+        event.stopPropagation();
+        renderManagerTrophyRoom(button.dataset.managerTrophies);
+        return;
+      }
+      if (event.target.closest?.('[data-close-manager-trophies]')) closeManagerTrophyRoom();
+    });
+    on(document, 'keydown', event => {
+      if (event.key === 'Escape' && openTrophyManagerId) closeManagerTrophyRoom();
     });
   };
 

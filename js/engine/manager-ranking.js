@@ -1,6 +1,6 @@
 import { MODULE_VERSIONS } from '../core/constants.js';
 
-export const MANAGER_RANKING_VERSION = 1;
+export const MANAGER_RANKING_VERSION = 2;
 export const FREE_MANAGER_EXTRA = 55;
 
 const FIRST_NAMES = [
@@ -55,7 +55,33 @@ const uniqueName = (rng, used) => {
   return fallback;
 };
 
-const createManager = ({ id, name, club, reputation, preferredDivision, style, mentality, seasonPoints = 0, titlePoints = 0, titles = [] }) => ({
+const normalizeCareerHistory = history => {
+  const seasons = Array.isArray(history?.seasons) ? history.seasons : [];
+  return {
+    version: 1,
+    seasons: seasons
+      .map(item => ({
+        season: Math.round(Number(item?.season) || 0),
+        clubs: [...new Set((Array.isArray(item?.clubs) ? item.clubs : [item?.club]).filter(Boolean))],
+        games: Math.max(0, Math.round(Number(item?.games) || 0)),
+        wins: Math.max(0, Math.round(Number(item?.wins) || 0)),
+        draws: Math.max(0, Math.round(Number(item?.draws) || 0)),
+        losses: Math.max(0, Math.round(Number(item?.losses) || 0)),
+        teamAverage: Number.isFinite(Number(item?.teamAverage))
+          ? Math.max(1, Math.min(10, Math.round(Number(item.teamAverage) * 10) / 10))
+          : null,
+        titles: (Array.isArray(item?.titles) ? item.titles : []).map(title => ({
+          id: String(title?.id || `${item?.season || 0}:${title?.competition || title?.label || 'title'}`),
+          competition: String(title?.competition || title?.label || 'Título'),
+          club: title?.club || null,
+        })),
+      }))
+      .filter(item => item.season > 0)
+      .sort((a, b) => b.season - a.season),
+  };
+};
+
+const createManager = ({ id, name, club, reputation, preferredDivision, style, mentality, seasonPoints = 0, titlePoints = 0, titles = [], careerHistory = null }) => ({
   id,
   name,
   club: club || null,
@@ -67,6 +93,7 @@ const createManager = ({ id, name, club, reputation, preferredDivision, style, m
   seasonPoints: roundScore(seasonPoints),
   titlePoints: roundScore(titlePoints),
   titles: Array.isArray(titles) ? titles.slice(-12) : [],
+  careerHistory: normalizeCareerHistory(careerHistory),
 });
 
 const computeBase = (manager, seed = 0) => {
@@ -230,8 +257,80 @@ export function createManagerRankingEngine(deps = {}) {
       seasonPoints: roundScore(manager.seasonPoints),
       titlePoints: roundScore(manager.titlePoints),
       titles: Array.isArray(manager.titles) ? manager.titles.slice(-12) : [],
+      careerHistory: normalizeCareerHistory(manager.careerHistory),
     })),
   });
+
+  const finalizeSeason = ({
+    season,
+    summariesByClub = {},
+    titles = [],
+    userManagerId = null,
+    userSummary = null,
+  } = {}) => {
+    const year = Math.round(Number(season) || 0);
+    if (!year) return false;
+    const titlesByManager = new Map();
+    (titles || []).forEach(title => {
+      const manager = title?.managerId
+        ? byId(title.managerId)
+        : byClub(title?.club);
+      if (!manager) return;
+      const list = titlesByManager.get(manager.id) || [];
+      const id = String(title.id || `${year}:${title.competition || title.label || 'title'}:${title.club || ''}`);
+      if (!list.some(item => item.id === id)) {
+        list.push({
+          id,
+          competition: String(title.competition || title.label || 'Título'),
+          club: title.club || manager.club || null,
+        });
+      }
+      titlesByManager.set(manager.id, list);
+    });
+
+    managers.forEach(manager => {
+      const raw = manager.id === userManagerId && userSummary
+        ? userSummary
+        : summariesByClub[manager.club];
+      const managerTitles = titlesByManager.get(manager.id) || [];
+      if (!raw && !managerTitles.length) return;
+      const history = normalizeCareerHistory(manager.careerHistory);
+      const existing = history.seasons.find(item => item.season === year);
+      const clubs = [...new Set([
+        ...(existing?.clubs || []),
+        ...(Array.isArray(raw?.clubs) ? raw.clubs : []),
+        raw?.club,
+        manager.club,
+        ...managerTitles.map(item => item.club),
+      ].filter(Boolean))];
+      const next = {
+        season: year,
+        clubs,
+        games: Math.max(0, Math.round(Number(raw?.games ?? existing?.games) || 0)),
+        wins: Math.max(0, Math.round(Number(raw?.wins ?? existing?.wins) || 0)),
+        draws: Math.max(0, Math.round(Number(raw?.draws ?? existing?.draws) || 0)),
+        losses: Math.max(0, Math.round(Number(raw?.losses ?? existing?.losses) || 0)),
+        teamAverage: Number.isFinite(Number(raw?.teamAverage))
+          ? Math.max(1, Math.min(10, Math.round(Number(raw.teamAverage) * 10) / 10))
+          : (existing?.teamAverage ?? null),
+        titles: [...(existing?.titles || [])],
+      };
+      managerTitles.forEach(title => {
+        if (!next.titles.some(item => item.id === title.id)) {
+          next.titles.push(title);
+          if (!manager.titles.some(item => item?.token === title.id)) {
+            manager.titles.push({ token: title.id, season: year, competition: title.competition, club: title.club });
+            manager.titlePoints = roundScore(manager.titlePoints + 4);
+          }
+        }
+      });
+      manager.titles = manager.titles.slice(-12);
+      history.seasons = [next, ...history.seasons.filter(item => item.season !== year)]
+        .sort((a, b) => b.season - a.season);
+      manager.careerHistory = history;
+    });
+    return true;
+  };
 
   const syncSeasonPointsFromClubs = getClubSeasonPoints => {
     managers.forEach(manager => {
@@ -302,6 +401,7 @@ export function createManagerRankingEngine(deps = {}) {
     resolveEntry,
     currentRanking,
     snapshot,
+    finalizeSeason,
     syncSeasonPointsFromClubs,
     sack,
     hire,
