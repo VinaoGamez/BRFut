@@ -17,8 +17,7 @@
     "test:knockout-shootout": "node scripts/knockout-shootout-tests.mjs",
     "test:season-goal-live": "node scripts/season-goal-live-tests.mjs",
     "test:player-history": "node scripts/player-history-tests.mjs",
-    "test:own-goal-report": "node scripts/own-goal-report-tests.mjs",
-    "deploy:testers": "npm run build && npx wrangler pages deploy dist --project-name brfut-alpha --branch main"
+    "test:own-goal-report": "node scripts/own-goal-report-tests.mjs"
   },
   "devDependencies": {
     "vite": "^6.3.5"

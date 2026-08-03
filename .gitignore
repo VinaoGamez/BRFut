@@ -6,7 +6,6 @@ dist/
 .env.*
 scripts/brfut-local.env
 .cursor/
-tools/cloudflared.exe
 agent-transcripts/
 __pycache__/
 *.py[cod]
