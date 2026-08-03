@@ -8,9 +8,9 @@ import {
 let layout = loadTransferHistoryLayout();
 const fields = { width: 'Largura', radius: 'Raio', frontArtSize: 'Arte frontal', backPadX: 'Margem horizontal', backPadY: 'Margem vertical', seasonGap: 'Espaço temporadas' };
 const sample = { seasons: [
-  { year: 2028, transfers: [{ playerName: 'Fábio Neves', direction: 'in', club: 'Santa Cruz' }, { playerName: 'Victor Reis', direction: 'out', club: 'Coritiba' }] },
+  { year: 2028, transfers: [{ playerName: 'Fábio Neves', direction: 'in', club: 'Santa Cruz' }, { playerName: 'Victor Reis', direction: 'out', club: 'Coritiba' }, { playerName: 'Lucas Moura', direction: 'market', from: 'Bahia', to: 'Fluminense' }] },
   { year: 2027, transfers: [{ playerName: 'Marcos Almeida', direction: 'in', club: 'Floresta' }] },
-  { year: 2026, transfers: [] },
+  { year: 2026, transfers: [], available: false },
 ] };
 const controls = document.querySelector('#labControls');
 const preview = document.querySelector('#labPreview');

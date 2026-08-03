@@ -79,6 +79,7 @@ const SUITES = [
   { label: 'youth-academy', steps: [['scripts/youth-academy-tests.mjs']] },
   { label: 'brfut-api', steps: [['scripts/brfut_api_tests.py']] },
   { label: 'transfers', steps: [['scripts/transfers-tests.mjs']] },
+  { label: 'transfer-history-data', steps: [['scripts/transfer-history-data-tests.mjs']] },
   {
     label: 'match-view-all',
     steps: [['scripts/match-view-world-tests.mjs'], ['scripts/match-view-play-tests.mjs']],

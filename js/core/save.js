@@ -27,7 +27,7 @@ export const MEMORY_LIMITS = {
   /** Mensagens gravadas no save da temporada (inbox já tem teto próprio). */
   seasonMessages: 80,
   /** Deals de mercado mantidos no save. */
-  seasonTransferDeals: 40,
+  seasonTransferDeals: 160,
   /** Autosave periódico enquanto a carreira está ativa (ms). */
   autosaveIntervalMs: 45_000,
   /** HTML da timeline ao vivo — cap no snapshot. */

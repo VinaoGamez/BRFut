@@ -53,6 +53,10 @@ import {
   ensureStateLeagueRosters,
 } from '../engine/regional-club-roster.js';
 import { createTransfersEngine } from '../engine/transfers.js';
+import {
+  mergeTransferDeals,
+  recoverTransferDealsFromLedger,
+} from '../engine/transfer-history-data.js';
 import { createLazyFeature } from '../engine/lazy-feature-loader.js';
 import {
   takeBankLoan,
@@ -3667,6 +3671,21 @@ export async function bootEngine({
       .filter(Boolean);
     return sortNationalRankingEntries(entries);
   };
+  const savedTransferDeals=validSavedSeason&&Array.isArray(savedSeason.seasonTransferDeals)
+    ?savedSeason.seasonTransferDeals.map(item=>({...item}))
+    :[];
+  const recoveredTransferDeals=recoverTransferDealsFromLedger(clubs[userClub]?.budgetLedger,{
+    userClub,
+    findPlayerName:playerId=>{
+      if(!playerId)return null;
+      for(const club of Object.values(clubs)){
+        const found=club?.roster?.find?.(player=>playerKey(player)===playerId||player.playerId===playerId);
+        if(found?.name)return found.name;
+      }
+      return null;
+    },
+  });
+  const initialTransferDeals=mergeTransferDeals(savedTransferDeals,recoveredTransferDeals);
   transfersEngine=FEATURES.transfers?createTransfersEngine({
     getClubs:()=>clubs,
     getUserClub:()=>userClub,
@@ -3681,9 +3700,7 @@ export async function bootEngine({
     initialPendingOffers:validSavedSeason&&Array.isArray(savedSeason.pendingTransferOffers)
       ?savedSeason.pendingTransferOffers.map(item=>({...item}))
       :[],
-    initialSeasonDeals:validSavedSeason&&Array.isArray(savedSeason.seasonTransferDeals)
-      ?savedSeason.seasonTransferDeals.map(item=>({...item}))
-      :[],
+    initialSeasonDeals:initialTransferDeals,
     resolveOfferMessage:messageId=>messages.resolveMessageById?.(messageId),
     getNationalRank:clubName=>{
       const ranking=currentNationalRanking();
@@ -3751,13 +3768,16 @@ export async function bootEngine({
     if(modal)modal.hidden=true;
     document.body.classList.remove('transfer-history-open');
   };
-  const transferHistorySeason=(year,deals=[])=>({
+  const transferHistorySeason=(year,deals=[],{available=true}={})=>({
     year,
+    available,
     transfers:(Array.isArray(deals)?deals:[])
-      .filter(deal=>deal&&deal.type!=='watch'&&(deal.from===userClub||deal.to===userClub))
-      .map(deal=>deal.to===userClub
-        ?{playerName:deal.playerName||'—',direction:'in',club:deal.from||'Livre'}
-        :{playerName:deal.playerName||'—',direction:'out',club:deal.to||'Livre'})
+      .filter(deal=>deal&&deal.type!=='watch'&&deal.from&&deal.to)
+      .map(deal=>{
+        if(deal.to===userClub)return {playerName:deal.playerName||'—',direction:'in',club:deal.from||'Livre'};
+        if(deal.from===userClub)return {playerName:deal.playerName||'—',direction:'out',club:deal.to||'Livre'};
+        return {playerName:deal.playerName||'—',direction:'market',from:deal.from,to:deal.to};
+      })
       .reverse(),
   });
   const openTransferHistory=()=>{
@@ -3767,7 +3787,9 @@ export async function bootEngine({
     const archived=years
       .map(year=>loadSeasonArchive(year,{seed:savedNewGame?.seed}))
       .filter(Boolean)
-      .map(archive=>transferHistorySeason(archive.careerSeason,archive.transferDeals));
+      .map(archive=>transferHistorySeason(archive.careerSeason,archive.transferDeals,{
+        available:Array.isArray(archive.transferDeals),
+      }));
     const seasons=[current,...archived]
       .filter((season,index,all)=>all.findIndex(item=>Number(item.year)===Number(season.year))===index)
       .sort((a,b)=>Number(b.year)-Number(a.year));

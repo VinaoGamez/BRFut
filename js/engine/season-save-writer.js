@@ -21,6 +21,7 @@ import { maxStateLeagueRound } from '../core/save-sync.js';
 import { serializeCompetitionWindows } from './season-scheduler.js';
 import { serializeUserStadium } from './stadium-sectors.js';
 import { serializeWorldCupCompetition } from './world-cup-competition.js';
+import { compactTransferDeals } from './transfer-history-data.js';
 
 function slimCareerMessages(messages = []) {
   return messages
@@ -354,9 +355,10 @@ export function createSeasonSaveWriter({
       userLineupOrder: clubs[activeUserClub]?.roster?.map(player => player.name) || [],
       careerMessages: savedMessages,
       pendingTransferOffers: transferOffersRaw,
-      seasonTransferDeals: Array.isArray(transferDealsRaw)
-        ? transferDealsRaw.slice(-MEMORY_LIMITS.seasonTransferDeals)
-        : [],
+      seasonTransferDeals: compactTransferDeals(transferDealsRaw, {
+        userClub: activeUserClub,
+        limit: MEMORY_LIMITS.seasonTransferDeals,
+      }),
       scorers: slimLeaderboard(getAllScorers(), 'goals'),
       assistants: slimLeaderboard(getAllAssistants(), 'assists'),
       serieDGroups,

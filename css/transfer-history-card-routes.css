@@ -1,0 +1,30 @@
+.transfer-history-move.is-market {
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+}
+
+.transfer-history-route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  text-align: right;
+}
+
+.transfer-history-route span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transfer-history-route i {
+  color: #27dcef;
+  font: 900 18px/1 'Barlow Condensed';
+  font-style: normal;
+  text-align: center;
+}
+
+.transfer-history-season.is-unavailable {
+  border-style: dashed;
+  opacity: .78;
+}

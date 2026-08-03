@@ -30,6 +30,9 @@ export function transferHistoryLayoutStyle(layout = loadTransferHistoryLayout())
 }
 
 function transferRowHtml(item) {
+  if (item.direction === 'market') {
+    return `<li class="transfer-history-move is-market"><strong>${esc(item.playerName || '—')}</strong><span class="transfer-history-route"><span>${esc(item.from || 'Livre')}</span><i aria-hidden="true">→</i><span>${esc(item.to || 'Livre')}</span></span></li>`;
+  }
   const incoming = item.direction === 'in';
   return `<li class="transfer-history-move ${incoming ? 'is-in' : 'is-out'}"><strong>${esc(item.playerName || '—')}</strong><span class="transfer-history-arrow" aria-label="${incoming ? 'Chegando' : 'Saindo'}">${incoming ? '←' : '→'}</span><span>${esc(item.club || 'Livre')}</span></li>`;
 }
@@ -37,7 +40,14 @@ function transferRowHtml(item) {
 function seasonHtml(season, index) {
   const expanded = index === 0;
   const transfers = Array.isArray(season.transfers) ? season.transfers : [];
-  return `<article class="transfer-history-season${expanded ? ' is-expanded' : ''}"><button class="transfer-history-season-toggle" type="button" aria-expanded="${expanded}"><strong>TEMPORADA ${esc(season.year)}</strong><span>${transfers.length} movimenta${transfers.length === 1 ? 'ção' : 'ções'}</span><i aria-hidden="true">⌄</i></button><div class="transfer-history-season-content"${expanded ? '' : ' hidden'}>${transfers.length ? `<ul>${transfers.map(transferRowHtml).join('')}</ul>` : '<p class="transfer-history-empty">Sem transferências na Temporada</p>'}</div></article>`;
+  const unavailable = season.available === false;
+  const countLabel = unavailable ? 'histórico legado' : `${transfers.length} movimenta${transfers.length === 1 ? 'ção' : 'ções'}`;
+  const content = unavailable
+    ? '<p class="transfer-history-empty">Dados de transferências indisponíveis nesta temporada antiga.</p>'
+    : transfers.length
+      ? `<ul>${transfers.map(transferRowHtml).join('')}</ul>`
+      : '<p class="transfer-history-empty">Sem transferências na Temporada</p>';
+  return `<article class="transfer-history-season${expanded ? ' is-expanded' : ''}${unavailable ? ' is-unavailable' : ''}"><button class="transfer-history-season-toggle" type="button" aria-expanded="${expanded}"><strong>TEMPORADA ${esc(season.year)}</strong><span>${countLabel}</span><i aria-hidden="true">⌄</i></button><div class="transfer-history-season-content"${expanded ? '' : ' hidden'}>${content}</div></article>`;
 }
 
 export function renderTransferHistoryCard({ seasons = [], layout } = {}) {
