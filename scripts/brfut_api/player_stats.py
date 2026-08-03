@@ -152,19 +152,25 @@ def _competition_clause(competition: str | None) -> tuple[str, list[Any]]:
     return (' AND competition_id=?', [competition]) if competition else ('', [])
 
 
-def get_player(root: Path, username: str, career_id: str, player_id: str, season: int) -> dict[str, Any]:
+def get_player(
+    root: Path, username: str, career_id: str, player_id: str, season: int,
+    club_id: str | None = None,
+) -> dict[str, Any]:
+    club_clause = ' AND club_id=?' if club_id else ''
+    args: tuple[Any, ...] = (username, career_id, season, player_id, *([club_id] if club_id else []))
     with _db(root) as conn:
         rows = conn.execute(
-            _AGG_SQL + ' AND player_id=? GROUP BY competition_id ORDER BY competition_id',
-            (username, career_id, season, player_id),
+            _AGG_SQL + ' AND player_id=?' + club_clause + ' GROUP BY competition_id ORDER BY competition_id',
+            args,
         ).fetchall()
         total = conn.execute(
-            _AGG_SQL + ' AND player_id=? GROUP BY player_id',
-            (username, career_id, season, player_id),
+            _AGG_SQL + ' AND player_id=?' + club_clause + ' GROUP BY player_id',
+            args,
         ).fetchone()
     return {
         'playerId': player_id,
         'season': season,
+        'clubId': club_id,
         'total': dict(total) if total else None,
         'competitions': [dict(row) for row in rows],
     }

@@ -225,11 +225,12 @@ export async function deleteCareerStats(careerId) {
   }
 }
 
-export async function fetchPlayerSeasonStats(playerId, season) {
+export async function fetchPlayerSeasonStats(playerId, season, clubId = null) {
   const careerId = activeCareerId();
   if (!careerId || !playerId || !season) return null;
+  const club = clubId ? `&club=${encodeURIComponent(clubId)}` : '';
   return statsGet(
-    `/api/careers/${encodeURIComponent(careerId)}/stats/players/${encodeURIComponent(playerId)}?season=${encodeURIComponent(season)}`,
+    `/api/careers/${encodeURIComponent(careerId)}/stats/players/${encodeURIComponent(playerId)}?season=${encodeURIComponent(season)}${club}`,
   );
 }
 

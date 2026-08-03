@@ -66,6 +66,16 @@ export const resolveClubDivision = (clubName, clubs, serieDGroups) => {
   return division;
 };
 
+export const resolveFixtureDivision = (game, fallbackDivision = null) => {
+  if (!game || game.competition === 'COPA DO BRASIL' || isStateLeagueGame(game)) return null;
+  const explicit = String(game._liveDivision || game.division || game.leagueDivision || '').toUpperCase();
+  if (['A', 'B', 'C', 'D'].includes(explicit)) return explicit;
+  const competition = String(game.competition || '').toUpperCase();
+  const match = competition.match(/S(?:É|E|Ã‰)RIE\s*([ABCD])/);
+  if (match) return match[1];
+  return ['A', 'B', 'C', 'D'].includes(fallbackDivision) ? fallbackDivision : null;
+};
+
 export const clubDivisionLabel = (clubName, clubs, serieDGroups) => {
   const division = resolveClubDivision(clubName, clubs, serieDGroups);
   return division ? divisionDisplayName(division) : '—';
@@ -107,7 +117,9 @@ export const clubStandingContext = (
     if (nt) return `Copa do Mundo · FIFA ${nt.fifaRank}º`;
     return '';
   }
-  const division = resolveClubDivision(clubName, clubs, serieDGroups) || 'A';
+  const division = resolveFixtureDivision(game, userDivision)
+    || resolveClubDivision(clubName, clubs, serieDGroups)
+    || 'A';
   const base = divisionDisplayName(division);
   let label = base;
   if (division === 'D') {

@@ -193,6 +193,12 @@ class BrfutApiTests(unittest.TestCase):
         self.assertEqual(body['total']['avg_rating'], 7.5)
 
         status, body = self._route(
+            'GET', '/api/careers/slot-1/stats/players/p-1?season=2027&club=Beta', token=token,
+        )
+        self.assertEqual(status, 200)
+        self.assertIsNone(body['total'])
+
+        status, body = self._route(
             'GET',
             '/api/careers/slot-1/stats/leaders?season=2027&competition=LEAGUE%3AD&metric=goals',
             token=token,

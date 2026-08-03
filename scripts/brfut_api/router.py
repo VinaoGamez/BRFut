@@ -148,7 +148,8 @@ def handle_api(
 
         if len(parts) == 5 and parts[0] == 'careers' and parts[2:4] == ['stats', 'players'] and method == 'GET':
             season = int((query.get('season') or [0])[0])
-            return _json_response(200, get_player(root, username, parts[1], parts[4], season))
+            club_id = (query.get('club') or [None])[0]
+            return _json_response(200, get_player(root, username, parts[1], parts[4], season, club_id))
 
         if len(parts) == 6 and parts[0] == 'careers' and parts[2:4] == ['stats', 'clubs'] and parts[5] == 'squad' and method == 'GET':
             season = int((query.get('season') or [0])[0])

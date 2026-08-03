@@ -5501,7 +5501,7 @@ export async function bootEngine({
   };
   const recordPlayerHistoryMatch=(game,meta={})=>{
     const enriched=enrichGameForHistory(game);
-    return playerHistory.recordMatch(enriched,{
+    const log=playerHistory.recordMatch(enriched,{
       season:careerSeason,
       round:meta.round??game.round??currentRound,
       competition:meta.competition||game.competition||`LEAGUE:${clubs[game.home]?.division||userDivision}`,
@@ -5510,6 +5510,14 @@ export async function bootEngine({
       id:meta.id,
       persist:meta.persist!==false,
     });
+    if(log){
+      syncLeaderboardFromPlayerHistory(game.home);
+      syncLeaderboardFromPlayerHistory(game.away);
+      renderTeamStatsCard?.();
+      renderLeaders?.();
+      if(tableViewActive)renderChampionshipLeaders?.();
+    }
+    return log;
   };
   const beginPauseLineupEdit=()=>{
     if(preMatchPreparation){pauseLineupBaseline=null;return;}

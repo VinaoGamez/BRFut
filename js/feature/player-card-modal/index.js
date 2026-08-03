@@ -84,7 +84,7 @@ export function createPlayerCardModal(deps = {}) {
       clubName: ownerClub,
       clubDivision: ownerClub ? deps.getClubs?.()?.[ownerClub]?.division : null,
       remoteStats: await import('../../core/player-stats-sync.js')
-        .then(module => module.fetchPlayerSeasonStats(resolvePlayerId(player), deps.getCareerSeason?.()))
+        .then(module => module.fetchPlayerSeasonStats(resolvePlayerId(player), deps.getCareerSeason?.(), ownerClub))
         .catch(() => null),
     });
 
@@ -157,6 +157,11 @@ export function createPlayerCardModal(deps = {}) {
 
     modal()?.addEventListener('click', event => {
       if (event.target === modal()) close();
+    });
+
+    window.addEventListener('brfut:player-stats-updated', () => {
+      if (!openCtx || modal()?.classList.contains('hidden')) return;
+      void open({ playerId: openCtx.playerId, clubName: openCtx.ownerClub });
     });
   };
 

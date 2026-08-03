@@ -6,6 +6,17 @@ import { cardDisplayPos, resolveCardRoleKey } from '../../engine/player-card-var
 import { playerKey } from '../../engine/player-match-stats.js';
 import { resolvePlayerSeasonStats } from '../../engine/player-history.js';
 
+export function resolveCardStatsBucket(localBucket, remoteTotal) {
+  if (!localBucket) return remoteTotal || null;
+  if (!remoteTotal) return localBucket;
+  const localApps = Number(localBucket.apps) || 0;
+  const remoteApps = Number(remoteTotal.apps) || 0;
+  // A API é eventual: nunca deixa uma resposta atrasada apagar o jogo que
+  // acabou de ser consolidado no histórico local.
+  if (remoteApps > localApps) return remoteTotal;
+  return localBucket;
+}
+
 export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSeason, clubName, clubDivision, remoteStats = null } = {}) {
   if (!player) return null;
 
@@ -18,8 +29,7 @@ export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSe
     null,
     { clubId: resolvedClub },
   ) || resolvePlayerSeasonStats(playerHistory, key, careerSeason);
-  const remote = remoteStats?.total;
-  const bucket = remote
+  const remote = remoteStats?.total
     ? {
         apps: remote.apps,
         goals: remote.goals,
@@ -28,7 +38,8 @@ export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSe
         red: remote.red,
         avgRating: remote.avg_rating,
       }
-    : localBucket;
+    : null;
+  const bucket = resolveCardStatsBucket(localBucket, remote);
 
   const cardPlayer = {
     ...player,

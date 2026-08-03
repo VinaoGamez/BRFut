@@ -17,6 +17,11 @@ function seasonPrizeCreditedTotal(club) {
     .reduce((sum, entry) => sum + Math.abs(Number(entry?.amount) || 0), 0);
 }
 
+export const resolveSerieDChampion = dKnockout => {
+  const champion = String(dKnockout?.champion || '').trim();
+  return champion || null;
+};
+
 /**
  * Fim de temporada — promoções/rebaixamentos, prêmios, balanço e simulação idle.
  * Sem DOM direto; callbacks do engine legado.
@@ -205,7 +210,9 @@ export function createSeasonTransitionEngine(deps) {
       A: ranked('A')[0],
       B: ranked('B')[0],
       C: ranked('C')[0],
-      D: dKnockout.champion || ranked('D')[0],
+      // A Série D é decidida no mata-mata. O líder da fase de grupos nunca
+      // pode ser promovido a campeão como fallback quando a final está incompleta.
+      D: resolveSerieDChampion(dKnockout),
       CUP: cupCompetition.champion,
     };
     const recopaChampion = deps.getRecopaChampion?.() || null;

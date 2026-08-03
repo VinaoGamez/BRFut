@@ -41,6 +41,8 @@ const pythonCommand = resolvePythonCommand();
 
 /** @type {{ label: string, steps: string[][] }[]} */
 const SUITES = [
+  { label: 'division-information-flow', steps: [['scripts/division-information-flow-tests.mjs']] },
+  { label: 'player-card-stats-source', steps: [['scripts/player-card-stats-source-tests.mjs']] },
   { label: 'league-fixtures', steps: [['scripts/league-fixtures-tests.mjs']] },
   { label: 'season-scheduler', steps: [['scripts/season-scheduler-tests.mjs']] },
   { label: 'season-calendar-plan', steps: [['scripts/season-calendar-plan-tests.mjs']] },

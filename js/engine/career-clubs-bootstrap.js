@@ -328,6 +328,12 @@ export function bootstrapCareerClubs({
 
   const continuingCareer = !!(validSavedSeason || (savedNewGame && Array.isArray(savedNewGame.userRoster) && savedNewGame.userRoster.length >= 18));
 
+  // A divisão do perfil da carreira é a fonte de verdade apó acessos e rebaixamentos.
+  // Saves antigos podiam restaurar o clube com a divisão da temporada anterior.
+  if (clubs[userClub] && ['A', 'B', 'C', 'D'].includes(userDivision)) {
+    clubs[userClub].division = userDivision;
+  }
+
   Object.values(clubs).forEach(club => {
     const attackers = club.roster
       .filter(p => ['ATA', 'PE', 'PD', 'MEI', 'MC'].includes(p.pos))
