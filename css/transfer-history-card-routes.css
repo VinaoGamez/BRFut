@@ -28,3 +28,14 @@
   border-style: dashed;
   opacity: .78;
 }
+
+.transfer-history-season-list { min-height: 0; }
+.transfer-history-season.is-expanded { display: flex; min-height: 0; flex-direction: column; }
+.transfer-history-season.is-expanded .transfer-history-season-content {
+  min-height: 0;
+  max-height: min(470px, calc(100vh - 330px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #1acbe0 #06141c;
+}

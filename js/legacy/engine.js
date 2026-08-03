@@ -3772,12 +3772,13 @@ export async function bootEngine({
     year,
     available,
     transfers:(Array.isArray(deals)?deals:[])
-      .filter(deal=>deal&&deal.type!=='watch'&&deal.from&&deal.to)
+      .filter(deal=>deal&&deal.type!=='watch'&&deal.from&&deal.to&&(deal.from===userClub||deal.to===userClub))
       .map(deal=>{
         if(deal.to===userClub)return {playerName:deal.playerName||'—',direction:'in',club:deal.from||'Livre'};
         if(deal.from===userClub)return {playerName:deal.playerName||'—',direction:'out',club:deal.to||'Livre'};
         return {playerName:deal.playerName||'—',direction:'market',from:deal.from,to:deal.to};
       })
+      .filter(Boolean)
       .reverse(),
   });
   const openTransferHistory=()=>{

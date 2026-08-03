@@ -66,6 +66,7 @@ export function buildSeasonLocalCheckpoint(season) {
     stateLeagueProgressRound: season.stateLeagueProgressRound,
     nationalTeamOfferState: season.nationalTeamOfferState ?? null,
     nationalTeamOffersSentYear: season.nationalTeamOffersSentYear ?? null,
+    managerRanking: season.managerRanking ?? null,
     userNationalTeamCode: season.userNationalTeamCode ?? null,
     // Artilheiros/assistências cabem no checkpoint — sem isso o card zera após sync.
     scorers: Array.isArray(season.scorers)

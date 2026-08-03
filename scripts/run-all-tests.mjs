@@ -80,6 +80,7 @@ const SUITES = [
   { label: 'brfut-api', steps: [['scripts/brfut_api_tests.py']] },
   { label: 'transfers', steps: [['scripts/transfers-tests.mjs']] },
   { label: 'transfer-history-data', steps: [['scripts/transfer-history-data-tests.mjs']] },
+  { label: 'manager-ranking-history', steps: [['scripts/manager-ranking-history-tests.mjs']] },
   {
     label: 'match-view-all',
     steps: [['scripts/match-view-world-tests.mjs'], ['scripts/match-view-play-tests.mjs']],

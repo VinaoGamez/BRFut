@@ -60,14 +60,13 @@ export function recoverTransferDealsFromLedger(
 export function compactTransferDeals(deals, { userClub, limit = 160 } = {}) {
   const merged = mergeTransferDeals(deals);
   const cap = Math.max(1, Number(limit) || 160);
-  if (merged.length <= cap) return merged;
   const club = clean(userClub);
   const relevant = club
     ? merged.filter(deal => deal.from === club || deal.to === club)
     : [];
   const relevantKeys = new Set(relevant.map(dealKey));
   const market = merged.filter(deal => !relevantKeys.has(dealKey(deal)));
-  const keepRelevant = relevant.slice(-cap);
-  const remaining = Math.max(0, cap - keepRelevant.length);
-  return mergeTransferDeals(market.slice(-remaining), keepRelevant);
+  // O histórico do clube do usuário é oficial e nunca deve ser truncado.
+  // O limite controla apenas a memória usada pelas negociações entre clubes da IA.
+  return mergeTransferDeals(market.slice(-cap), relevant);
 }

@@ -175,6 +175,7 @@ export function slimSeasonForCloudUpload(season) {
     availability: season.availability,
     careerMessages: Array.isArray(season.careerMessages) ? season.careerMessages.slice(-60) : [],
     competitionRoundHistory: season.competitionRoundHistory,
+    managerRanking: season.managerRanking ?? null,
     seasonRoundHistory: Array.isArray(season.seasonRoundHistory)
       ? season.seasonRoundHistory.slice(-6)
       : [],
@@ -197,6 +198,7 @@ export function slimSeasonForCloudUpload(season) {
     assistants: assistants.slice(0, 80),
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues, { ultra: true }),
     standings: season.standings,
+    managerRanking: season.managerRanking ?? null,
   };
   if (payloadChars(checkpoint) <= CLOUD_PAYLOAD_TARGET) return checkpoint;
 
@@ -216,6 +218,7 @@ export function slimSeasonForCloudUpload(season) {
     scorers: scorers.slice(0, 40),
     assistants: assistants.slice(0, 40),
     stateLeagues: slimStateLeaguesForCloud(season.stateLeagues, { ultra: true }),
+    managerRanking: season.managerRanking ?? null,
   };
 }
 

@@ -81,20 +81,33 @@ const normalizeCareerHistory = history => {
   };
 };
 
-const createManager = ({ id, name, club, reputation, preferredDivision, style, mentality, seasonPoints = 0, titlePoints = 0, titles = [], careerHistory = null }) => ({
-  id,
-  name,
-  club: club || null,
-  status: club ? 'employed' : 'free',
-  reputation: Math.round(reputation),
-  preferredDivision: preferredDivision || 'FREE',
-  style: style || 'Equilibrada',
-  mentality: mentality || 'Equilibrada',
-  seasonPoints: roundScore(seasonPoints),
-  titlePoints: roundScore(titlePoints),
-  titles: Array.isArray(titles) ? titles.slice(-12) : [],
-  careerHistory: normalizeCareerHistory(careerHistory),
-});
+const createManager = ({ id, name, club, reputation, preferredDivision, style, mentality, seasonPoints = 0, titlePoints = 0, titles = [], careerHistory = null }) => {
+  const savedTitles = Array.isArray(titles) ? titles.map(item => ({ ...item })) : [];
+  const history = normalizeCareerHistory(careerHistory);
+  // Migra saves antigos que possuíam conquistas somente na lista auxiliar.
+  savedTitles.forEach((title, index) => {
+    const season = Math.round(Number(title?.season) || 0);
+    if (!season) return;
+    let row = history.seasons.find(item => item.season === season);
+    if (!row) {
+      row = { season, clubs: [], games: 0, wins: 0, draws: 0, losses: 0, teamAverage: null, titles: [] };
+      history.seasons.push(row);
+    }
+    const token = String(title?.token || title?.id || `${season}:${title?.competition || 'title'}:${title?.club || index}`);
+    if (!row.titles.some(item => item.id === token)) {
+      row.titles.push({ id: token, competition: String(title?.competition || 'Título'), club: title?.club || null });
+    }
+    if (title?.club && !row.clubs.includes(title.club)) row.clubs.push(title.club);
+  });
+  history.seasons.sort((a, b) => b.season - a.season);
+  return {
+    id, name, club: club || null, status: club ? 'employed' : 'free',
+    reputation: Math.round(reputation), preferredDivision: preferredDivision || 'FREE',
+    style: style || 'Equilibrada', mentality: mentality || 'Equilibrada',
+    seasonPoints: roundScore(seasonPoints), titlePoints: roundScore(titlePoints),
+    titles: savedTitles, careerHistory: history,
+  };
+};
 
 const computeBase = (manager, seed = 0) => {
   const prestige = DIVISION_PRESTIGE[manager.preferredDivision] ?? DIVISION_PRESTIGE.FREE;
@@ -256,7 +269,7 @@ export function createManagerRankingEngine(deps = {}) {
       mentality: manager.mentality,
       seasonPoints: roundScore(manager.seasonPoints),
       titlePoints: roundScore(manager.titlePoints),
-      titles: Array.isArray(manager.titles) ? manager.titles.slice(-12) : [],
+      titles: Array.isArray(manager.titles) ? manager.titles.map(item => ({ ...item })) : [],
       careerHistory: normalizeCareerHistory(manager.careerHistory),
     })),
   });
@@ -324,7 +337,6 @@ export function createManagerRankingEngine(deps = {}) {
           }
         }
       });
-      manager.titles = manager.titles.slice(-12);
       history.seasons = [next, ...history.seasons.filter(item => item.season !== year)]
         .sort((a, b) => b.season - a.season);
       manager.careerHistory = history;

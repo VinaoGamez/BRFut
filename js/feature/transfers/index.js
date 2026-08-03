@@ -631,6 +631,11 @@ export function createTransfersFeature(deps) {
     sortDir: filters.sortDir || 'desc',
   });
 
+  const nationalityFlag = nationality => ({
+    Brasil: '🇧🇷', Argentina: '🇦🇷', Uruguai: '🇺🇾', Paraguai: '🇵🇾',
+    Colombia: '🇨🇴', Venezuela: '🇻🇪', Equador: '🇪🇨', Chile: '🇨🇱',
+  }[nationality] || '🏳️');
+
   const renderFilters = () => {
     const pos = $('#transfersFilterPos');
     const div = $('#transfersFilterDivision');
@@ -657,7 +662,7 @@ export function createTransfersFeature(deps) {
     if (nationality && !nationality.dataset.ready) {
       nationality.innerHTML =
         `<option value="">Qualquer</option>` +
-        NATIONALITIES.map(item => `<option value="${item}">${item}</option>`).join('');
+        NATIONALITIES.map(item => `<option value="${item}">${nationalityFlag(item)} ${item}</option>`).join('');
       nationality.dataset.ready = '1';
     }
     if (pos) pos.value = filters.pos || '';

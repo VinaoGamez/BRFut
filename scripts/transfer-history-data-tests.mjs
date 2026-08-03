@@ -36,8 +36,18 @@ const aiDeals = Array.from({ length: 10 }, (_, index) => ({
   round: index + 1,
 }));
 const compacted = compactTransferDeals([...recovered, ...aiDeals], { userClub: 'Vinaz', limit: 5 });
-check(compacted.length === 5, 'respeita limite do save');
+check(compacted.length === 7, 'aplica o limite somente às negociações da IA');
 check(compacted.some(deal => deal.playerId === 'p1') && compacted.some(deal => deal.playerId === 'p2'), 'preserva negociações do usuário antes das negociações da IA');
+
+const manyUserDeals = Array.from({ length: 180 }, (_, index) => ({
+  playerName: `Jogador ${index}`,
+  playerId: `user-${index}`,
+  from: index % 2 ? 'Vinaz' : `Clube ${index}`,
+  to: index % 2 ? `Clube ${index}` : 'Vinaz',
+  fee: index + 1,
+}));
+const completeHistory = compactTransferDeals(manyUserDeals, { userClub: 'Vinaz', limit: 10 });
+check(completeHistory.length === 180, 'mantém todas as transferências do clube acima do limite da IA');
 
 if (failed) process.exit(1);
 console.log('\nTransfer history data tests passed.');
