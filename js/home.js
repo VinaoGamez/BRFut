@@ -1,6 +1,6 @@
 import './security/https-upgrade.js';
 import './security/tester-hardening.js';
-import { BUILD_VERSION, SAVE_KEYS, BRFUT_API_ORIGIN, SITE_MAINTENANCE } from './core/constants.js';
+import { AUTH_REQUIRED, BUILD_VERSION, SAVE_KEYS, BRFUT_API_ORIGIN, SITE_MAINTENANCE } from './core/constants.js';
 import { SPONSOR_EXTERNAL_LINKS } from './core/sponsor-links.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
 import { createTesterHubFeature } from './feature/tester-hub/index.js';
@@ -314,10 +314,11 @@ if (SITE_MAINTENANCE.enabled) {
   });
 
   account.refresh().then(state => {
-    // Token = logado na UI; nuvem pode estar pausada (rede) sem desconectar a conta.
-    const loggedIn =
-      state.mode === 'cloud' ||
-      (!state.authRejected && (!!getAuthToken() || !!state.tokenPreserved));
+    // Produção exige sessão confirmada; desenvolvimento ainda pode preservar login local.
+    const loggedIn = AUTH_REQUIRED
+      ? state.mode === 'cloud'
+      : state.mode === 'cloud' ||
+        (!state.authRejected && (!!getAuthToken() || !!state.tokenPreserved));
     syncHeroActions({
       loggedIn,
       hasBackend: !!state.backend || state.mode === 'cloud' || !!BRFUT_API_ORIGIN,

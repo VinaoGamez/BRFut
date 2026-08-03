@@ -382,6 +382,34 @@ export function getCloudUser() {
   return currentUser;
 }
 
+/** Remove credenciais locais rejeitadas sem depender de uma chamada de logout. */
+export function clearAuthSession() {
+  setAuthToken(null);
+  currentUser = null;
+  cloudActive = false;
+  syncCloudLocalTrimFlag();
+}
+
+/** Confirma a identidade diretamente na API; token armazenado sozinho não autentica. */
+export async function validateAuthenticatedSession() {
+  const token = getAuthToken();
+  if (!token) return { authenticated: false, reason: 'missing_token', user: null };
+  try {
+    const body = await authedFetch('/api/auth/me', { retry: false });
+    if (!body?.user) return { authenticated: false, reason: 'invalid_response', user: null };
+    currentUser = body.user;
+    cloudActive = true;
+    return { authenticated: true, reason: null, user: currentUser };
+  } catch (error) {
+    if (error?.status === 401) clearAuthSession();
+    return {
+      authenticated: false,
+      reason: error?.status === 401 ? 'rejected' : 'unavailable',
+      user: null,
+    };
+  }
+}
+
 export function getSaveSyncStatus() {
   const localSeason = readLocalSave(SAVE_KEYS.season);
   const remoteSeason = normalizeRemoteSaveEntry(remoteSavesCache?.[SAVE_KEYS.season]).value;

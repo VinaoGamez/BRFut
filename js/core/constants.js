@@ -172,6 +172,10 @@ export const SITE_MAINTENANCE = {
 export const BRFUT_API_ORIGIN =
   typeof __BRFUT_API_ORIGIN__ !== 'undefined' && __BRFUT_API_ORIGIN__ ? __BRFUT_API_ORIGIN__ : '';
 
+/** Produção falha fechada: somente uma sessão confirmada pela API pode iniciar o jogo. */
+export const AUTH_REQUIRED =
+  typeof __BRFUT_AUTH_REQUIRED__ !== 'undefined' && Boolean(__BRFUT_AUTH_REQUIRED__);
+
 /** Flags para builds de testers — evoluir sem quebrar fluxo congelado. */
 export const FEATURES = {
   messagesHub: true,

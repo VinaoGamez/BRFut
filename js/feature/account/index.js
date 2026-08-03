@@ -13,7 +13,7 @@ import {
   registerAccount,
   updateAccountProfile,
 } from '../../core/storage-api.js';
-import { SAVE_KEYS, BRFUT_API_ORIGIN } from '../../core/constants.js';
+import { AUTH_REQUIRED, SAVE_KEYS, BRFUT_API_ORIGIN } from '../../core/constants.js';
 import { clearSessionCareerData } from '../../core/save.js';
 import { ensureAccountModals } from './inject-modals.js';
 
@@ -444,10 +444,11 @@ export function mountAccountPanel({
   const setBackendUnavailableUi = () => {
     backendHintEl?.classList.remove('hidden');
     if (backendHintEl) {
-      backendHintEl.textContent =
-        'Servidor de contas indisponível neste link. Você pode jogar com save local neste navegador.';
+      backendHintEl.textContent = AUTH_REQUIRED
+        ? 'Servidor de contas indisponível. O jogo será liberado quando a autenticação voltar.'
+        : 'Servidor de contas indisponível neste link. Você pode jogar com save local neste navegador.';
     }
-    playLocalBtn?.classList.remove('hidden');
+    playLocalBtn?.classList.toggle('hidden', AUTH_REQUIRED);
     formEl?.classList.add('hidden');
     googleSection?.classList.add('hidden');
   };
@@ -493,8 +494,14 @@ export function mountAccountPanel({
       return { mode: 'local', backend: !!health };
     }
 
-    // Com token, a UI permanece logada mesmo se a API estiver fora (nuvem pausada).
+    // Em produção, token armazenado sozinho nunca representa uma sessão válida.
     const state = await ensureStorageHydrated().catch(() => ({ mode: 'local', tokenPreserved: true }));
+    if (AUTH_REQUIRED && state.mode !== 'cloud') {
+      renderLoggedOut(true);
+      if (!health) setBackendUnavailableUi();
+      refreshCareerUi();
+      return state;
+    }
     const user = getCloudUser() || state?.user || { displayName: 'Conta', username: 'online' };
     renderLoggedIn(user);
     refreshCareerUi();

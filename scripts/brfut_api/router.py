@@ -20,6 +20,16 @@ from .saves import (
 from .player_stats import delete_career_stats, get_club_squad, get_leaders, get_player, put_match_batch
 
 
+PUBLIC_ROUTES = {
+    ('GET', 'health'),
+    ('GET', 'stats'),
+    ('GET', 'auth/google/config'),
+    ('POST', 'auth/login'),
+    ('POST', 'auth/register'),
+    ('POST', 'auth/google'),
+}
+
+
 def _json_response(status: int, payload: dict[str, Any]) -> tuple[int, dict[str, str], bytes]:
     body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {
@@ -63,6 +73,11 @@ def handle_api(
     parts = [p for p in rel.split('/') if p]
 
     try:
+        # Falha fechada: qualquer rota não declarada pública exige uma sessão válida.
+        user = None
+        if (method, rel) not in PUBLIC_ROUTES:
+            user = resolve_session(root, _bearer_token(headers))
+
         if method == 'GET' and rel == 'health':
             return _json_response(
                 200,
@@ -106,11 +121,9 @@ def handle_api(
             return _json_response(200, {'ok': True})
 
         if method == 'GET' and rel == 'auth/me':
-            user = resolve_session(root, _bearer_token(headers))
             return _json_response(200, {'user': user})
 
         if method == 'PUT' and rel == 'auth/profile':
-            user = resolve_session(root, _bearer_token(headers))
             data = _parse_json(body) or {}
             updated = update_user_profile(
                 root,
@@ -121,15 +134,12 @@ def handle_api(
             return _json_response(200, {'user': updated})
 
         if method == 'GET' and rel == 'auth/avatar':
-            user = resolve_session(root, _bearer_token(headers))
             avatar = get_user_avatar(root, user['id'])
             if not avatar:
                 raise ApiError(404, 'no_avatar', 'Sem foto de perfil.')
             body_bytes, mime = avatar
             return 200, {'Content-Type': mime, 'Content-Length': str(len(body_bytes)), 'Cache-Control': 'no-store'}, body_bytes
 
-        token = _bearer_token(headers)
-        user = resolve_session(root, token)
         username = user['username']
 
         if len(parts) == 4 and parts[0] == 'careers' and parts[2:] == ['stats', 'matches'] and method == 'POST':

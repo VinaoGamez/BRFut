@@ -13,7 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from brfut_api.auth import ApiError, login_user, register_user, resolve_session  # noqa: E402
+from brfut_api.auth import ApiError, _session_path, login_user, register_user, resolve_session  # noqa: E402
+from brfut_api.cors import cors_headers  # noqa: E402
 from brfut_api.router import handle_api  # noqa: E402
 from brfut_api.saves import get_all_saves, get_save, put_save  # noqa: E402
 
@@ -43,8 +44,8 @@ class BrfutApiTests(unittest.TestCase):
             router_mod.default_data_root = old
 
     def test_register_login_and_save_roundtrip(self) -> None:
-        register_user(self.root, 'tester', 'secret1', 'Tester')
-        token, profile = login_user(self.root, 'tester', 'secret1')
+        register_user(self.root, 'tester', 'secretpass1', 'Tester')
+        token, profile = login_user(self.root, 'tester', 'secretpass1')
         self.assertEqual(profile['username'], 'tester')
         resolve_session(self.root, token)
 
@@ -65,7 +66,7 @@ class BrfutApiTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(body['ok'])
 
-        status, body = self._route('POST', '/api/auth/register', {'username': 'alpha', 'password': 'pass12'})
+        status, body = self._route('POST', '/api/auth/register', {'username': 'alpha', 'password': 'passphrase12'})
         self.assertEqual(status, 201)
         token = body['token']
 
@@ -85,9 +86,48 @@ class BrfutApiTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(body['saves']['brfut-career']['value']['clubName'], 'Santos')
 
+    def test_private_routes_fail_closed_without_session(self) -> None:
+        private_routes = [
+            ('GET', '/api/auth/me'),
+            ('POST', '/api/auth/logout'),
+            ('GET', '/api/saves'),
+            ('GET', '/api/unknown-future-route'),
+        ]
+        for method, path in private_routes:
+            with self.subTest(method=method, path=path):
+                status, body = self._route(method, path)
+                self.assertEqual(status, 401)
+                self.assertIn(body['code'], {'missing_token', 'invalid_session'})
+
+    def test_session_file_does_not_contain_raw_token(self) -> None:
+        register_user(self.root, 'opaque1', 'secretpass1', 'Opaque')
+        token, _ = login_user(self.root, 'opaque1', 'secretpass1')
+        path = _session_path(self.root, token)
+        self.assertTrue(path.is_file())
+        self.assertNotIn(token, path.name)
+        self.assertNotIn(token, path.read_text(encoding='utf-8'))
+
+    def test_pages_preview_requires_explicit_cors_wildcard(self) -> None:
+        import os
+
+        previous = os.environ.get('BRFUT_CORS_ORIGINS')
+        try:
+            os.environ['BRFUT_CORS_ORIGINS'] = 'https://brfut.com.br'
+            self.assertEqual(cors_headers('https://preview.pages.dev'), {})
+            os.environ['BRFUT_CORS_ORIGINS'] += ',https://*.pages.dev'
+            self.assertEqual(
+                cors_headers('https://preview.pages.dev').get('Access-Control-Allow-Origin'),
+                'https://preview.pages.dev',
+            )
+        finally:
+            if previous is None:
+                os.environ.pop('BRFUT_CORS_ORIGINS', None)
+            else:
+                os.environ['BRFUT_CORS_ORIGINS'] = previous
+
     def test_profile_update(self) -> None:
-        register_user(self.root, 'profile1', 'secret1', 'Profile One')
-        token, _ = login_user(self.root, 'profile1', 'secret1')
+        register_user(self.root, 'profile1', 'secretpass1', 'Profile One')
+        token, _ = login_user(self.root, 'profile1', 'secretpass1')
 
         status, body = self._route(
             'PUT',
@@ -101,8 +141,8 @@ class BrfutApiTests(unittest.TestCase):
         self.assertEqual(body['user']['displayName'], 'Novo Nome')
 
     def test_player_stats_api_is_idempotent_and_scoped(self) -> None:
-        register_user(self.root, 'stats1', 'secret1', 'Stats')
-        token, _ = login_user(self.root, 'stats1', 'secret1')
+        register_user(self.root, 'stats1', 'secretpass1', 'Stats')
+        token, _ = login_user(self.root, 'stats1', 'secretpass1')
         match = {
             'fixtureId': '2027-BSD-1-alpha-beta',
             'season': 2027,
@@ -150,9 +190,9 @@ class BrfutApiTests(unittest.TestCase):
         self.assertEqual(body['leaders'][0]['player_name'], 'Nascimento')
 
     def test_player_stats(self) -> None:
-        register_user(self.root, 'online1', 'secret1', 'One')
-        register_user(self.root, 'online2', 'secret2', 'Two')
-        token, _ = login_user(self.root, 'online1', 'secret1')
+        register_user(self.root, 'online1', 'secretpass1', 'One')
+        register_user(self.root, 'online2', 'secretpass2', 'Two')
+        token, _ = login_user(self.root, 'online1', 'secretpass1')
         resolve_session(self.root, token)
 
         status, body = self._route('GET', '/api/health')
@@ -168,14 +208,14 @@ class BrfutApiTests(unittest.TestCase):
         self.assertEqual(body['onlineWindowSec'], 300)
 
     def test_invalid_credentials(self) -> None:
-        register_user(self.root, 'user1', 'abcdef', None)
+        register_user(self.root, 'user1', 'abcdefghij', None)
         with self.assertRaises(ApiError):
             login_user(self.root, 'user1', 'wrong')
 
     def test_active_session_renews_expiration(self) -> None:
-        register_user(self.root, 'renew1', 'secret1', 'Renew')
-        token, _ = login_user(self.root, 'renew1', 'secret1')
-        path = self.root / 'sessions' / f'{token}.json'
+        register_user(self.root, 'renew1', 'secretpass1', 'Renew')
+        token, _ = login_user(self.root, 'renew1', 'secretpass1')
+        path = _session_path(self.root, token)
         session = json.loads(path.read_text(encoding='utf-8'))
         session['lastSeenAt'] = 0
         session['expiresAt'] = time.time() + 60

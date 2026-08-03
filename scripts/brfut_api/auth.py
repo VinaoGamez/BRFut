@@ -14,6 +14,8 @@ from .paths import ensure_layout
 
 USERNAME_RE = re.compile(r'^[a-zA-Z0-9_]{3,24}$')
 SESSION_TTL_SEC = 60 * 60 * 24 * 30  # 30 dias
+SESSION_ABSOLUTE_TTL_SEC = 60 * 60 * 24 * 90  # novo login obrigatório em 90 dias
+MAX_SESSIONS_PER_USER = 5
 ONLINE_WINDOW_SEC = 300  # 5 min — jogador "ON" se teve atividade recente
 SESSION_TOUCH_MIN_SEC = 60  # throttle de gravação lastSeenAt
 PBKDF2_ITERS = 260_000
@@ -57,14 +59,48 @@ def _hash_password(password: str, salt: bytes | None = None) -> tuple[str, str]:
 
 
 def _verify_password(password: str, salt_hex: str, hash_hex: str) -> bool:
-    salt = bytes.fromhex(salt_hex)
-    _, candidate = _hash_password(password, salt)
-    return secrets.compare_digest(candidate, hash_hex)
+    try:
+        salt = bytes.fromhex(salt_hex)
+        _, candidate = _hash_password(password, salt)
+        return secrets.compare_digest(candidate, hash_hex)
+    except (TypeError, ValueError):
+        return False
 
 
 def _session_path(root: Path, token: str) -> Path:
-    safe = re.sub(r'[^a-zA-Z0-9_-]', '', token)
-    return root / 'sessions' / f'{safe}.json'
+    session_id = hashlib.sha256(token.encode('utf-8')).hexdigest()
+    return root / 'sessions' / f'{session_id}.json'
+
+
+def create_session(root: Path, user: dict[str, Any], provider: str = 'password') -> str:
+    """Cria uma sessão opaca; o token secreto nunca é persistido em disco."""
+    token = secrets.token_urlsafe(32)
+    now = time.time()
+    session = {
+        'userId': user['id'],
+        'username': user['username'],
+        'expiresAt': now + SESSION_TTL_SEC,
+        'absoluteExpiresAt': now + SESSION_ABSOLUTE_TTL_SEC,
+        'createdAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        'lastSeenAt': now,
+        'provider': provider,
+    }
+    path = _session_path(root, token)
+    tmp = path.with_name(f'.{path.name}.{secrets.token_hex(6)}.tmp')
+    tmp.write_text(json.dumps(session), encoding='utf-8')
+    tmp.replace(path)
+    _cleanup_expired_sessions(root)
+    sessions = []
+    for candidate in (root / 'sessions').glob('*.json'):
+        try:
+            data = json.loads(candidate.read_text(encoding='utf-8'))
+            if data.get('userId') == user['id']:
+                sessions.append((float(data.get('lastSeenAt', 0)), candidate))
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            continue
+    for _, stale_path in sorted(sessions, reverse=True)[MAX_SESSIONS_PER_USER:]:
+        stale_path.unlink(missing_ok=True)
+    return token
 
 
 def _session_last_seen(session: dict[str, Any]) -> float:
@@ -143,7 +179,10 @@ def _cleanup_expired_sessions(root: Path) -> None:
     for file in sessions_dir.glob('*.json'):
         try:
             data = json.loads(file.read_text(encoding='utf-8'))
-            if float(data.get('expiresAt', 0)) <= now:
+            if (
+                float(data.get('expiresAt', 0)) <= now
+                or float(data.get('absoluteExpiresAt', data.get('expiresAt', 0))) <= now
+            ):
                 file.unlink(missing_ok=True)
         except (OSError, json.JSONDecodeError, TypeError, ValueError):
             file.unlink(missing_ok=True)
@@ -247,8 +286,8 @@ def register_user(root: Path, username: str, password: str, display_name: str | 
     username = (username or '').strip().lower()
     if not USERNAME_RE.match(username):
         raise ApiError(400, 'invalid_username', 'Usuário: 3–24 caracteres (letras, números, _).')
-    if len(password or '') < 6:
-        raise ApiError(400, 'weak_password', 'Senha deve ter pelo menos 6 caracteres.')
+    if len(password or '') < 10 or len(password or '') > 256:
+        raise ApiError(400, 'weak_password', 'Senha deve ter entre 10 e 256 caracteres.')
 
     data = _load_profiles(root)
     users: list[dict[str, Any]] = data['users']
@@ -274,24 +313,10 @@ def login_user(root: Path, username: str, password: str) -> tuple[str, dict[str,
     username = (username or '').strip().lower()
     data = _load_profiles(root)
     user = next((u for u in data['users'] if u.get('username') == username), None)
-    if not user or not _verify_password(password, user.get('salt', ''), user.get('passwordHash', '')):
+    if len(password or '') > 256 or not user or not _verify_password(password, user.get('salt', ''), user.get('passwordHash', '')):
         raise ApiError(401, 'invalid_credentials', 'Usuário ou senha inválidos.')
 
-    token = secrets.token_urlsafe(32)
-    expires_at = time.time() + SESSION_TTL_SEC
-    session = {
-        'token': token,
-        'userId': user['id'],
-        'username': user['username'],
-        'expiresAt': expires_at,
-        'createdAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-        'lastSeenAt': time.time(),
-    }
-    path = _session_path(root, token)
-    tmp = path.with_name(f'.{path.name}.{secrets.token_hex(6)}.tmp')
-    tmp.write_text(json.dumps(session), encoding='utf-8')
-    tmp.replace(path)
-    _cleanup_expired_sessions(root)
+    token = create_session(root, user)
     profile = _profile_from_user(root, user)
     return token, profile
 
@@ -306,7 +331,11 @@ def resolve_session(root: Path, token: str | None) -> dict[str, Any]:
         session = json.loads(path.read_text(encoding='utf-8'))
     except (OSError, json.JSONDecodeError):
         raise ApiError(401, 'invalid_session', 'Sessão inválida.') from None
-    if float(session.get('expiresAt', 0)) <= time.time():
+    now = time.time()
+    if (
+        float(session.get('expiresAt', 0)) <= now
+        or float(session.get('absoluteExpiresAt', session.get('expiresAt', 0))) <= now
+    ):
         path.unlink(missing_ok=True)
         raise ApiError(401, 'session_expired', 'Sessão expirada.')
     _touch_session_last_seen(root, path, session)

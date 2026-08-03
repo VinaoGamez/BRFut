@@ -2,7 +2,7 @@ import './security/https-upgrade.js';
 import './security/tester-hardening.js';
 import '../css/release-notes-viewer.css';
 import '../css/live-volume.css';
-import { BUILD_VERSION, FEATURES, SITE_MAINTENANCE } from './core/constants.js';
+import { AUTH_REQUIRED, BUILD_VERSION, FEATURES, SITE_MAINTENANCE } from './core/constants.js';
 import { registerChunkLoadRecovery } from './core/chunk-load.js';
 import { createEventBus } from './core/event-bus.js';
 import { bootEngine } from './legacy/engine.js';
@@ -12,6 +12,7 @@ import {
   endBrowserSession,
   getAuthToken,
   probeBackend,
+  validateAuthenticatedSession,
 } from './core/storage-api.js';
 import {
   clearSessionCareerData,
@@ -118,6 +119,19 @@ if (SITE_MAINTENANCE.enabled) {
       if (isNewCareerBoot) markFreshCareerBoot();
 
       const token = getAuthToken();
+
+      if (AUTH_REQUIRED) {
+        if (!token) {
+          redirectToHomeLanding();
+          return;
+        }
+        const auth = await validateAuthenticatedSession();
+        if (!auth.authenticated) {
+          console.warn('[brfut] boot bloqueado: sessão não confirmada', auth.reason);
+          redirectToHomeLanding();
+          return;
+        }
+      }
 
       if (!token) {
         const reloadPending = consumeCareerReloadPending();

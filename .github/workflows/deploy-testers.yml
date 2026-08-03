@@ -30,6 +30,7 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           BRFUT_API_ORIGIN: 'https://api.brfut.com.br'
+          BRFUT_AUTH_REQUIRED: 'true'
 
       - uses: actions/upload-pages-artifact@v3
         with:

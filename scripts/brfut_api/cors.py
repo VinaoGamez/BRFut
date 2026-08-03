@@ -19,10 +19,7 @@ def _origin_allowed(origin: str, allowed: list[str]) -> bool:
             return True
     # Cloudflare Pages preview: https://*.pages.dev
     if origin.endswith('.pages.dev') and origin.startswith('https://'):
-        if any(item == 'https://*.pages.dev' or item.endswith('.pages.dev') for item in allowed):
-            return True
-        # Sem wildcard na env: ainda libera *.pages.dev em produção BR Fut.
-        return True
+        return 'https://*.pages.dev' in allowed
     return False
 
 

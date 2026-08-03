@@ -10,7 +10,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from .auth import ApiError, _cleanup_expired_sessions, _profile_from_user, _load_profiles, _save_profiles, _session_path
+from .auth import ApiError, _profile_from_user, _load_profiles, _save_profiles, create_session
 
 USERNAME_RE = re.compile(r'^[a-zA-Z0-9_]{3,24}$')
 SESSION_TTL_SEC = 60 * 60 * 24 * 30
@@ -107,17 +107,5 @@ def login_with_google_id_token(root, id_token: str) -> tuple[str, dict[str, Any]
     payload = _verify_id_token((id_token or '').strip(), client_id)
     user = _find_or_create_google_user(root, payload)
 
-    token = secrets.token_urlsafe(32)
-    expires_at = time.time() + SESSION_TTL_SEC
-    session = {
-        'token': token,
-        'userId': user['id'],
-        'username': user['username'],
-        'expiresAt': expires_at,
-        'createdAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-        'lastSeenAt': time.time(),
-        'provider': 'google',
-    }
-    _session_path(root, token).write_text(json.dumps(session), encoding='utf-8')
-    _cleanup_expired_sessions(root)
+    token = create_session(root, user, provider='google')
     return token, _profile_from_user(root, user)
