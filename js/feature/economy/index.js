@@ -13,6 +13,9 @@ import { maxAchievableStadiumCapacity, STADIUM_SECTOR_DEFS, TICKET_SECTOR_PRICE_
 import { seasonGoalGauge } from '../season-summary/goal-gauge.js';
 import { mountStadiumVisual } from './stadium-visual.js';
 import { sponsorLogoUrl } from '../../assets/sponsor-logos.js';
+import { listSeasonArchiveYears, loadSeasonArchive } from '../../core/season-archive-storage.js';
+import { buildClubHistory } from '../../engine/club-history.js';
+import { renderClubHistoryCard, hydrateClubHistoryCard } from '../../ui/club-history-card.js';
 
 const NAMING_MODAL_HTML = `
 <div id="namingPickerModal" class="modal hidden">
@@ -101,6 +104,11 @@ export function createEconomyFeature(deps) {
     getClubs,
     getUserDivision,
     getCareerSeason,
+    getSavedNewGame,
+    getPlayerHistory,
+    getCurrentClubMatches,
+    getCurrentClubStanding,
+    getNationalRankingEntries,
     getSeasonGoal,
     getSeasonGoalResult,
     getSeasonObjectives,
@@ -125,6 +133,47 @@ export function createEconomyFeature(deps) {
   let selectedNamingIndex = -1;
   let namingModalReady = false;
   let stadiumAlertReady = false;
+  let clubHistoryReady = false;
+
+  const closeClubHistory = () => {
+    const modal = $('#clubHistoryCardModal');
+    if (!modal) return;
+    modal.hidden = true;
+    document.body.classList.remove('club-history-open');
+  };
+
+  const ensureClubHistoryModal = () => {
+    if (!$('#clubHistoryCardModal')) document.body.insertAdjacentHTML('beforeend', '<div id="clubHistoryCardModal" class="club-history-modal" role="dialog" aria-modal="true" aria-label="Histórico do clube" hidden><div id="clubHistoryCardBody" class="club-history-modal-body"></div></div>');
+    if (clubHistoryReady) return;
+    onClick('#clubHistoryCardModal', event => { if (event.target?.id === 'clubHistoryCardModal') closeClubHistory(); });
+    onClick('#clubHistoryCardBody', event => {
+      const card = event.target.closest('.club-history-card');
+      if (card) card.classList.toggle('is-flipped');
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !$('#clubHistoryCardModal')?.hidden) closeClubHistory();
+      if ((event.key === 'Enter' || event.key === ' ') && event.target?.classList?.contains('club-history-card')) { event.preventDefault(); event.target.classList.toggle('is-flipped'); }
+    });
+    clubHistoryReady = true;
+  };
+
+  const openClubHistory = () => {
+    ensureClubHistoryModal();
+    const clubName = getUserClub?.();
+    const career = getSavedNewGame?.() || {};
+    const years = listSeasonArchiveYears({ seasonIndex: career.seasonIndex });
+    const archives = years.map(year => loadSeasonArchive(year, { seed: career.seed })).filter(Boolean);
+    const historyStore = getPlayerHistory?.()?.getStore?.() || {};
+    const rankingTitles = getNationalRankingEntries?.()?.[clubName]?.titles || [];
+    const currentLogs = [...(getCurrentClubMatches?.() || []), ...(historyStore.matchLogs || [])];
+    const seasons = buildClubHistory({ clubName, currentSeason: getCareerSeason?.(), currentLogs, currentStanding: getCurrentClubStanding?.(), archives, rankingTitles });
+    const body = $('#clubHistoryCardBody');
+    body.innerHTML = renderClubHistoryCard({ clubName, seasons });
+    hydrateClubHistoryCard(body);
+    $('#clubHistoryCardModal').hidden = false;
+    document.body.classList.add('club-history-open');
+    body.querySelector('.club-history-card')?.focus();
+  };
 
   const ensureStadiumAlertModal = () => {
     if (!$('#stadiumInvestmentAlertModal')) {
@@ -1999,6 +2048,7 @@ export function createEconomyFeature(deps) {
 
     onClick('#openOfficeFromDashboard', () => openView?.('office'));
     onClick('#openStadiumFromDashboard', () => openView?.('stadium'));
+    onClick('#openClubHistoryCard', openClubHistory);
     document.addEventListener('keydown', event => {
       const targetId = event.target?.id;
       if (targetId !== 'openOfficeFromDashboard' && targetId !== 'openStadiumFromDashboard') return;
