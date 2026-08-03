@@ -1,5 +1,5 @@
 import { resolveRoundAlreadyRecorded, resolveRoundForLiveCommit } from '../js/engine/round-advance.js';
-import { findLeagueFixtureByPair } from '../js/engine/competition-calendar.js';
+import { findLeagueFixtureByPair, gameMatchesRecordedCompat } from '../js/engine/competition-calendar.js';
 
 let passed = 0;
 let failed = 0;
@@ -82,6 +82,35 @@ check('findLeagueFixtureByPair resolves round without game.round', () => {
   ];
   const hit = findLeagueFixtureByPair({ home: 'Usuário FC', away: 'Rival' }, fixtures);
   assert(hit?.round === 5, 'must locate pair in calendar');
+});
+
+check('turno e returno não são confundidos pelo mesmo par de clubes', () => {
+  const fixtures = [
+    [{ home: 'Usuário FC', away: 'Rival', round: 1, fixtureId: 'ida' }],
+    [{ home: 'Rival', away: 'Usuário FC', round: 2, fixtureId: 'volta' }],
+  ];
+  const returnLeg = findLeagueFixtureByPair(
+    { home: 'Rival', away: 'Usuário FC', round: 2 },
+    fixtures,
+  );
+  assert(returnLeg?.game?.fixtureId === 'volta', 'deve selecionar o jogo da rodada e mando corretos');
+  assert(
+    !gameMatchesRecordedCompat(
+      { home: 'Rival', away: 'Usuário FC', round: 2 },
+      { home: 'Usuário FC', away: 'Rival', round: 1 },
+    ),
+    'resultado da ida não pode concluir a volta',
+  );
+});
+
+check('save legado sem rodada ainda usa correspondência pelo par', () => {
+  assert(
+    gameMatchesRecordedCompat(
+      { home: 'Usuário FC', away: 'Rival', round: 5 },
+      { home: 'Rival', away: 'Usuário FC' },
+    ),
+    'registro antigo sem rodada deve continuar recuperável',
+  );
 });
 
 console.log(`\nround-advance-tests: ${passed} passed, ${failed} failed`);

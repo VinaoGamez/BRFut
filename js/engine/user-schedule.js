@@ -1,6 +1,6 @@
 import { FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { clamp } from '../ui/dom.js';
-import { findRecordedGame, findRecordedGameByPair, gameMatchesRecorded, resolveLeagueFixtureRound } from './competition-calendar.js';
+import { findRecordedGame, gameMatchesRecordedCompat, resolveLeagueFixtureRound } from './competition-calendar.js';
 import { isKnockoutShootoutCompetition, formatKnockoutFixtureScore } from './knockout-shootout.js';
 import { parseCalendarDate } from './season-scheduler.js';
 import { isRecopaNationalGame } from './recopa-national.js';
@@ -56,11 +56,12 @@ export function createUserScheduleEngine({
       resolvedRound != null
         ? seasonRoundHistory.find(item => item.round === resolvedRound)
         : game.round && seasonRoundHistory.find(item => item.round === game.round);
-    if (byRound?.games?.some(entry => gameMatchesRecorded(game, entry) || findRecordedGameByPair(game, entry))) {
+    if (byRound?.games?.some(entry => gameMatchesRecordedCompat(game, entry))) {
       return true;
     }
+    if (resolvedRound != null || (Number.isFinite(Number(game.round)) && Number(game.round) > 0)) return false;
     return seasonRoundHistory.some(item =>
-      item.games?.some(entry => gameMatchesRecorded(game, entry) || findRecordedGameByPair(game, entry)),
+      item.games?.some(entry => gameMatchesRecordedCompat(game, entry)),
     );
   };
 

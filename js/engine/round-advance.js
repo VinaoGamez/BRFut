@@ -4,8 +4,7 @@ import { compactMatchResult, involvesClub, MEMORY_LIMITS } from '../core/save.js
 import {
   findLeagueFixtureByPair,
   findRecordedGame,
-  findRecordedGameByPair,
-  gameMatchesRecorded,
+  gameMatchesRecordedCompat,
   resolveLeagueFixtureRound,
 } from './competition-calendar.js';
 import { recordKnockoutResult, winnerFromGame, loserFromGame } from './world-cup-bracket.js';
@@ -115,7 +114,7 @@ function ensureLiveNationalRoundCommitted(deps, { liveMatchGame, roundForCommit,
   const historyHasResult =
     seasonRoundHistory.some(item =>
       findRecordedGame(userGame, item.games || [])
-      || findRecordedGameByPair(userGame, item.games || []),
+      || (item.games || []).some(entry => gameMatchesRecordedCompat(userGame, entry)),
     );
   if (userDivision !== 'D' || effectiveRound <= SERIE_D_GROUP_ROUNDS) {
     if (!historyHasResult) deps.applyRoundToTable(userResult);
@@ -128,7 +127,7 @@ function ensureLiveNationalRoundCommitted(deps, { liveMatchGame, roundForCommit,
   }
   if (
     !findRecordedGame(userGame, entry.games || [])
-    && !findRecordedGameByPair(userGame, entry.games || [])
+    && !(entry.games || []).some(recorded => gameMatchesRecordedCompat(userGame, recorded))
   ) {
     entry.games = [
       ...(entry.games || []),

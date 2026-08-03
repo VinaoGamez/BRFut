@@ -65,25 +65,55 @@ export function findRecordedGameByPair(game, games = []) {
   return games.find(entry => entry && fixturePairKey(entry.home, entry.away) === key) || null;
 }
 
+/**
+ * Compatibilidade para saves antigos: só ignora a rodada quando um dos lados
+ * realmente não a possui. Em turno e returno, rodadas distintas são jogos distintos.
+ */
+export function gameMatchesRecordedCompat(game, recorded) {
+  if (gameMatchesRecorded(game, recorded)) return true;
+  const gameRound = Number(game?.round);
+  const recordedRound = Number(recorded?.round);
+  if (Number.isFinite(gameRound) && gameRound > 0 && Number.isFinite(recordedRound) && recordedRound > 0) {
+    return false;
+  }
+  return !!findRecordedGameByPair(game, [recorded]);
+}
+
 /** Localiza confronto no calendário nacional pela dupla (home/away). */
 export function findLeagueFixtureByPair(game, fixtures) {
   if (!game?.home || !game?.away || !Array.isArray(fixtures)) return null;
   const key = fixturePairKey(game.home, game.away);
+  const wantedRound = Number(game.round);
+  const wantedId = String(game.fixtureId || game.id || '').trim();
+  const matches = [];
   for (let index = 0; index < fixtures.length; index++) {
     const roundGames = fixtures[index];
     if (!Array.isArray(roundGames)) continue;
-    const match = roundGames.find(
-      candidate => candidate && fixturePairKey(candidate.home, candidate.away) === key,
-    );
-    if (match) {
-      const matchRound = Number(match.round);
-      return {
-        game: match,
+    roundGames.forEach(candidate => {
+      if (!candidate || fixturePairKey(candidate.home, candidate.away) !== key) return;
+      const matchRound = Number(candidate.round);
+      matches.push({
+        game: candidate,
         round: Number.isFinite(matchRound) && matchRound > 0 ? matchRound : index + 1,
-      };
-    }
+      });
+    });
   }
-  return null;
+  if (!matches.length) return null;
+  if (wantedId) {
+    const byId = matches.find(item => String(item.game.fixtureId || item.game.id || '').trim() === wantedId);
+    if (byId) return byId;
+  }
+  if (Number.isFinite(wantedRound) && wantedRound > 0) {
+    const byRound = matches.find(item => item.round === wantedRound);
+    if (byRound) return byRound;
+  }
+  const byVenue = matches.filter(item => item.game.home === game.home && item.game.away === game.away);
+  if (byVenue.length === 1) return byVenue[0];
+  if (matches.length === 1) return matches[0];
+  // Ambíguo sem id/rodada/mando: preserva compatibilidade, mas nunca escolhe
+  // silenciosamente o primeiro turno quando há um candidato pendente inequívoco.
+  const pending = matches.filter(item => !item.game.completed && item.game.homeGoals == null);
+  return pending.length === 1 ? pending[0] : matches[0];
 }
 
 /** Rodada do confronto — usa `game.round` ou posição no calendário nacional. */
