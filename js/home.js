@@ -198,7 +198,8 @@ if (SITE_MAINTENANCE.enabled) {
     const last = careerSlots.getLastPlayedSlot();
     const lastPlayable = last ? hasPlayableCareerSave(last.id) : false;
     const hasSlot = careerSlots.hasAnySlot();
-    const requiresLogin = hasBackend === true;
+    // No build público, indisponibilidade da API nunca libera os saves locais.
+    const requiresLogin = AUTH_REQUIRED || hasBackend === true;
     const showCareer = hasSlot && (!requiresLogin || loggedIn === true);
 
     continueBtn?.classList.toggle('hidden', !showCareer || !last || !lastPlayable);
@@ -293,7 +294,7 @@ if (SITE_MAINTENANCE.enabled) {
   };
 
   const syncHeroActions = ({ loggedIn, hasBackend }) => {
-    const wantsLogin = hasBackend || !!BRFUT_API_ORIGIN;
+    const wantsLogin = AUTH_REQUIRED || hasBackend || !!BRFUT_API_ORIGIN;
     if (wantsLogin) {
       loginBtn?.classList.toggle('hidden', loggedIn);
       newGameBtn?.classList.toggle('hidden', !loggedIn);
@@ -311,6 +312,12 @@ if (SITE_MAINTENANCE.enabled) {
     modal: document.getElementById('accountModal'),
     hasCareer,
     onAuthChange: syncHeroActions,
+  });
+
+  // Estado inicial fechado enquanto /api/auth/me ainda está sendo validado.
+  syncHeroActions({
+    loggedIn: false,
+    hasBackend: AUTH_REQUIRED || !!BRFUT_API_ORIGIN,
   });
 
   account.refresh().then(state => {
