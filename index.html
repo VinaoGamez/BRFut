@@ -455,8 +455,10 @@
             <label class="transfers-field"><span>Nome</span><input id="transfersFilterQuery" type="search" placeholder="Jogador ou clube" /></label>
             <label class="transfers-field"><span>Posição</span><select id="transfersFilterPos"></select></label>
             <label class="transfers-field"><span>Divisão</span><select id="transfersFilterDivision"></select></label>
-            <label class="transfers-field"><span>Força mín.</span><input id="transfersFilterOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
-            <label class="transfers-field"><span>Força máx.</span><input id="transfersFilterMaxOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>Pé dominante</span><select id="transfersFilterFoot"></select></label>
+            <label class="transfers-field"><span>Nacionalidade</span><select id="transfersFilterNationality"></select></label>
+            <label class="transfers-field"><span>OVR mín.</span><input id="transfersFilterOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>OVR máx.</span><input id="transfersFilterMaxOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
             <label class="transfers-field"><span>Idade mín.</span><input id="transfersFilterMinAge" type="number" min="15" max="45" placeholder="Qualquer" /></label>
             <label class="transfers-field"><span>Idade máx.</span><input id="transfersFilterMaxAge" type="number" min="15" max="45" placeholder="Qualquer" /></label>
             <label class="transfers-field"><span>Passe máx.</span><input id="transfersFilterMaxPrice" type="number" min="0" step="1000" placeholder="R$" /></label>
@@ -491,6 +493,7 @@
             <tbody id="transfersBuyBody"></tbody>
           </table>
         </div>
+        <nav id="transfersPagination" class="transfers-pagination" aria-label="Paginação dos jogadores"></nav>
       </div>
 
       <div id="transfersSellPanel" class="card transfers-panel hidden">
@@ -499,8 +502,8 @@
           <div class="transfers-search-grid">
             <label class="transfers-field"><span>Nome</span><input id="transfersSellFilterQuery" type="search" placeholder="Jogador" /></label>
             <label class="transfers-field"><span>Posição</span><select id="transfersSellFilterPos"></select></label>
-            <label class="transfers-field"><span>Força mín.</span><input id="transfersSellFilterOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
-            <label class="transfers-field"><span>Força máx.</span><input id="transfersSellFilterMaxOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>OVR mín.</span><input id="transfersSellFilterOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>OVR máx.</span><input id="transfersSellFilterMaxOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
             <label class="transfers-field"><span>Idade mín.</span><input id="transfersSellFilterMinAge" type="number" min="15" max="45" placeholder="Qualquer" /></label>
             <label class="transfers-field"><span>Idade máx.</span><input id="transfersSellFilterMaxAge" type="number" min="15" max="45" placeholder="Qualquer" /></label>
             <label class="transfers-field"><span>Valor máx.</span><input id="transfersSellFilterMaxPrice" type="number" min="0" step="1000" placeholder="R$" /></label>

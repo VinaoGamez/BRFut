@@ -175,7 +175,7 @@ main > .view.active.transfers-view {
 
 .transfers-search-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
   gap: 8px 10px;
 }
 
@@ -337,6 +337,45 @@ main > .view.active.transfers-view {
 .transfers-table-wrap::-webkit-scrollbar-thumb {
   background: #315b68;
   border-radius: 99px;
+}
+
+.transfers-pagination {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 7px 14px;
+  border-top: 1px solid #2a5560;
+  background: #0c212a;
+  flex: 0 0 auto;
+}
+
+.transfers-pagination[hidden] {
+  display: none !important;
+}
+
+.transfers-pagination button {
+  min-width: 94px;
+  padding: 7px 13px !important;
+  border: 1px solid #315d69 !important;
+  border-radius: 5px !important;
+  background: #102b35 !important;
+  color: #75dfff !important;
+  font: 800 11px 'DM Sans', sans-serif !important;
+  box-shadow: none !important;
+}
+
+.transfers-pagination button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+.transfers-pagination span {
+  min-width: 160px;
+  color: #b6ff38;
+  font: 700 12px 'DM Sans', sans-serif;
+  text-align: center;
 }
 
 .transfers-table {

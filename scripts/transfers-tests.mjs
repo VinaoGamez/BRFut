@@ -181,8 +181,8 @@ check('buy filters: age, ovr range, max price and sort', () => {
       name: 'Rival FC',
       division: 'C',
       roster: [
-        makePlayer({ name: 'Jovem Forte', playerId: 'flt-yf', age: 20, overall: 72, marketValue: 800_000, wage: 12_000 }),
-        makePlayer({ name: 'Veterano', playerId: 'flt-vet', age: 33, overall: 74, marketValue: 400_000, wage: 18_000 }),
+        makePlayer({ name: 'Jovem Forte', playerId: 'flt-yf', age: 20, overall: 72, marketValue: 800_000, wage: 12_000, preferredFoot: 'Esquerdo', nationality: 'Uruguai' }),
+        makePlayer({ name: 'Veterano', playerId: 'flt-vet', age: 33, overall: 74, marketValue: 400_000, wage: 18_000, preferredFoot: 'Direito', nationality: 'Brasil' }),
         makePlayer({ name: 'Barato', playerId: 'flt-bar', age: 24, overall: 68, marketValue: 200_000, wage: 6_000 }),
         makePlayer({ name: 'Caro', playerId: 'flt-car', age: 25, overall: 70, marketValue: 2_000_000, wage: 40_000 }),
       ],
@@ -212,6 +212,10 @@ check('buy filters: age, ovr range, max price and sort', () => {
   assert(cheap[0].price <= cheap[cheap.length - 1].price, 'price asc');
   const byOvr = engine.listBuyCandidates({ listedOnly: true, sortBy: 'ovr' });
   assert(byOvr[0].overall >= byOvr[1].overall, 'ovr desc');
+  const leftFooted = engine.listBuyCandidates({ foot: 'Esquerdo', listedOnly: true });
+  assert(leftFooted.length === 1 && leftFooted[0].player.name === 'Jovem Forte', 'dominant foot filter');
+  const uruguayans = engine.listBuyCandidates({ nationality: 'Uruguai', listedOnly: true });
+  assert(uruguayans.length === 1 && uruguayans[0].player.name === 'Jovem Forte', 'nationality filter');
 });
 
 check('setListed stores asking price; seedAiListings fills market', () => {

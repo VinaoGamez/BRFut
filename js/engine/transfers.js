@@ -814,6 +814,8 @@ export function createTransfersEngine(deps) {
     const clubs = getClubs() || {};
     const pos = filters.pos || null;
     const division = filters.division || null;
+    const foot = String(filters.foot || '').trim().toLocaleLowerCase('pt-BR');
+    const nationality = String(filters.nationality || '').trim().toLocaleLowerCase('pt-BR');
     const minOvr = Number(filters.minOvr);
     const maxOvr = Number(filters.maxOvr);
     const minAge = Number(filters.minAge);
@@ -856,6 +858,18 @@ export function createTransfersEngine(deps) {
         if (loanOnly && !player.loanListed) return;
         if (specialistOnly && !isPlayerSpecialist(player)) return;
         if (pos && player.pos !== pos) return;
+        if (
+          foot &&
+          String(player.preferredFoot || player.foot || '')
+            .trim()
+            .toLocaleLowerCase('pt-BR') !== foot
+        ) return;
+        if (
+          nationality &&
+          String(player.nationality || 'Brasil')
+            .trim()
+            .toLocaleLowerCase('pt-BR') !== nationality
+        ) return;
         const ovr = Number(player.overall) || 0;
         const age = Number(player.age) || 0;
         if (Number.isFinite(minOvr) && minOvr > 0 && ovr < minOvr) return;

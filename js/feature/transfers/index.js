@@ -5,6 +5,7 @@ import {
   softCashEnvelope,
 } from '../../engine/economy.js';
 import { wageMonthlyFromRound } from '../../engine/player-contracts.js';
+import { BRAZIL_NATION, FOREIGN_NATIONS } from '../../engine/player-nationality.js';
 import {
   formatSellerRejectLetter,
   formatLoanLevelPlayerReply,
@@ -13,6 +14,9 @@ import {
 
 const POSITIONS = ['GOL', 'ZAG', 'LAT', 'VOL', 'MC', 'MEI', 'PE', 'PD', 'ATA'];
 const DIVISIONS = ['A', 'B', 'C', 'D'];
+const DOMINANT_FEET = ['Direito', 'Esquerdo', 'Ambidestro'];
+const NATIONALITIES = [BRAZIL_NATION, ...FOREIGN_NATIONS];
+const BUY_PAGE_SIZE = 30;
 
 const escapeHtml = value =>
   String(value ?? '')
@@ -144,6 +148,8 @@ export function createTransfersFeature(deps) {
   let filters = {
     pos: '',
     division: '',
+    foot: '',
+    nationality: '',
     query: '',
     minOvr: 0,
     maxOvr: 0,
@@ -157,6 +163,7 @@ export function createTransfersFeature(deps) {
     sortBy: 'ovr',
     sortDir: 'desc',
   };
+  let buyPage = 1;
   let sellFilters = {
     pos: '',
     query: '',
@@ -608,6 +615,8 @@ export function createTransfersFeature(deps) {
   const readFiltersFromDom = () => ({
     pos: $('#transfersFilterPos')?.value || '',
     division: $('#transfersFilterDivision')?.value || '',
+    foot: $('#transfersFilterFoot')?.value || '',
+    nationality: $('#transfersFilterNationality')?.value || '',
     query: String($('#transfersFilterQuery')?.value || '').trim(),
     minOvr: Number($('#transfersFilterOvr')?.value) || 0,
     maxOvr: Number($('#transfersFilterMaxOvr')?.value) || 0,
@@ -625,6 +634,8 @@ export function createTransfersFeature(deps) {
   const renderFilters = () => {
     const pos = $('#transfersFilterPos');
     const div = $('#transfersFilterDivision');
+    const foot = $('#transfersFilterFoot');
+    const nationality = $('#transfersFilterNationality');
     if (pos && !pos.dataset.ready) {
       pos.innerHTML =
         `<option value="">Qualquer</option>` +
@@ -637,8 +648,22 @@ export function createTransfersFeature(deps) {
         DIVISIONS.map(item => `<option value="${item}">Série ${item}</option>`).join('');
       div.dataset.ready = '1';
     }
+    if (foot && !foot.dataset.ready) {
+      foot.innerHTML =
+        `<option value="">Qualquer</option>` +
+        DOMINANT_FEET.map(item => `<option value="${item}">${item}</option>`).join('');
+      foot.dataset.ready = '1';
+    }
+    if (nationality && !nationality.dataset.ready) {
+      nationality.innerHTML =
+        `<option value="">Qualquer</option>` +
+        NATIONALITIES.map(item => `<option value="${item}">${item}</option>`).join('');
+      nationality.dataset.ready = '1';
+    }
     if (pos) pos.value = filters.pos || '';
     if (div) div.value = filters.division || '';
+    if (foot) foot.value = filters.foot || '';
+    if (nationality) nationality.value = filters.nationality || '';
     const query = $('#transfersFilterQuery');
     if (query) query.value = filters.query || '';
     const ovr = $('#transfersFilterOvr');
@@ -677,6 +702,16 @@ export function createTransfersFeature(deps) {
     if (!el) return;
     const count = Number(n) || 0;
     el.textContent = count === 1 ? '1 jogador encontrado' : `${count} jogadores encontrados`;
+  };
+
+  const renderBuyPagination = total => {
+    const pagination = $('#transfersPagination');
+    if (!pagination) return;
+    const count = Math.max(0, Number(total) || 0);
+    const pages = Math.max(1, Math.ceil(count / BUY_PAGE_SIZE));
+    buyPage = Math.min(Math.max(1, buyPage), pages);
+    pagination.hidden = count <= BUY_PAGE_SIZE;
+    pagination.innerHTML = `<button type="button" data-transfers-page="prev"${buyPage <= 1 ? ' disabled' : ''}>ANTERIOR</button><span>PÁGINA ${buyPage} DE ${pages}</span><button type="button" data-transfers-page="next"${buyPage >= pages ? ' disabled' : ''}>PRÓXIMA</button>`;
   };
 
   const setSellResultCount = (shown, total) => {
@@ -929,12 +964,15 @@ export function createTransfersFeature(deps) {
       body.innerHTML =
         '<tr><td class="transfers-empty" colspan="11">Motor de transferências indisponível.</td></tr>';
       setResultCount(0);
+      renderBuyPagination(0);
       return;
     }
     ensureSeedListings();
     const rows = api.listBuyCandidates({
       pos: filters.pos || null,
       division: filters.division || null,
+      foot: filters.foot || null,
+      nationality: filters.nationality || null,
       query: filters.query || '',
       minOvr: Number(filters.minOvr) || 0,
       maxOvr: Number(filters.maxOvr) || 0,
@@ -949,6 +987,7 @@ export function createTransfersFeature(deps) {
       sortDir: filters.sortDir || 'desc',
     });
     setResultCount(rows.length);
+    renderBuyPagination(rows.length);
     markSortedHeader('#transfersBuyPanel', filters.sortBy, filters.sortDir);
     renderLoanSlots();
     if (!rows.length) {
@@ -959,8 +998,9 @@ export function createTransfersFeature(deps) {
       const blockTitle = buyBlocked
         ? ' title="Restrição financeira — compras e empréstimos suspensos"'
         : '';
+      const pageStart = (buyPage - 1) * BUY_PAGE_SIZE;
       body.innerHTML = rows
-        .slice(0, 200)
+        .slice(pageStart, pageStart + BUY_PAGE_SIZE)
         .map(row => {
           const p = row.player;
           const wage = Number(p.wage || row.wage) || 0;
@@ -1961,6 +2001,7 @@ export function createTransfersFeature(deps) {
 
   const applySearch = () => {
     filters = readFiltersFromDom();
+    buyPage = 1;
     render();
   };
 
@@ -2036,6 +2077,14 @@ export function createTransfersFeature(deps) {
       render();
     });
     onClick('#transfersApplyFilters', () => applySearch());
+    onClick('#transfersPagination', event => {
+      const button = event.target.closest('[data-transfers-page]');
+      if (!button || button.disabled) return;
+      const direction = button.getAttribute('data-transfers-page');
+      buyPage = Math.max(1, buyPage + (direction === 'prev' ? -1 : 1));
+      renderBuyTable();
+      $('#transfersBuyPanel .transfers-table-wrap')?.scrollTo({ top: 0, behavior: 'smooth' });
+    });
     onClick('#transfersSellApplyFilters', () => applySellSearch());
     const queryInput = $('#transfersFilterQuery');
     queryInput?.addEventListener('keydown', event => {
