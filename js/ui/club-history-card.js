@@ -14,9 +14,10 @@ export function clubHistoryLayoutStyle(layout = loadClubHistoryLayout()) {
   return `--ch-width:${Number(layout.width) || 560}px;--ch-radius:${Number(layout.radius) || 28}px;--ch-crest:${Number(layout.frontCrestSize) || 190}px;--ch-name:${Number(layout.frontNameSize) || 42}px;--ch-pad-x:${Number(layout.backPadX) || 28}px;--ch-pad-y:${Number(layout.backPadY) || 26}px;--ch-season-gap:${Number(layout.seasonGap) || 14}px;--ch-trophy:${Number(layout.trophySize) || 42}px`;
 }
 
-function seasonHtml(season) {
+function seasonHtml(season, index) {
   const titles = Array.isArray(season.titles) ? season.titles : [];
-  return `<article class="club-history-season"><header><strong>TEMPORADA ${esc(season.year)}</strong><span>${esc((season.competitions || []).join(' · ') || 'Sem competições registradas')}</span></header><div class="club-history-stats"><span><b>${season.played || 0}</b>JOGOS</span><span><b>${season.wins || 0}</b>VITÓRIAS</span><span><b>${season.draws || 0}</b>EMPATES</span><span><b>${season.losses || 0}</b>DERROTAS</span></div><div class="club-history-titles"><small>TÍTULOS</small>${titles.length ? `<div class="club-history-trophy-list">${titles.map(title => `<div class="club-history-trophy"><span data-trophy-key="${esc(resolveChampionshipTrophyKey(title.key))}"></span><b>${esc(title.label)}</b></div>`).join('')}</div>` : '<p>Sem títulos no Ano</p>'}</div></article>`;
+  const expanded = index === 0;
+  return `<article class="club-history-season${expanded ? ' is-expanded' : ''}"><button class="club-history-season-toggle" type="button" aria-expanded="${expanded}"><strong>TEMPORADA ${esc(season.year)}</strong><span>${esc((season.competitions || []).join(' · ') || 'Sem competições registradas')}</span><i aria-hidden="true">⌄</i></button><div class="club-history-season-content"${expanded ? '' : ' hidden'}><div class="club-history-stats"><span><b>${season.played || 0}</b>JOGOS</span><span><b>${season.wins || 0}</b>VITÓRIAS</span><span><b>${season.draws || 0}</b>EMPATES</span><span><b>${season.losses || 0}</b>DERROTAS</span></div><div class="club-history-titles"><small>TÍTULOS</small>${titles.length ? `<div class="club-history-trophy-list">${titles.map(title => `<div class="club-history-trophy"><span data-trophy-key="${esc(resolveChampionshipTrophyKey(title.key))}"></span><b>${esc(title.label)}</b></div>`).join('')}</div>` : '<p>Sem títulos no Ano</p>'}</div></div></article>`;
 }
 
 export function renderClubHistoryCard({ clubName, seasons = [], layout } = {}) {

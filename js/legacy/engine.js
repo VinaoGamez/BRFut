@@ -3566,10 +3566,14 @@ export async function bootEngine({
       ...recopaFixtures,
       ...(FEATURES.stateLeague?stateLeagueEngine.allFixturesFlat():[]),
     ],
-    getCurrentClubStanding:()=>({
-      ...(nationalCompetitions[userDivision]?.standings?.find(row=>row.club===userClub)||{}),
-      division:userDivision,
-    }),
+    getCurrentClubStanding:clubName=>{
+      const name=clubName||userClub;
+      for(const [division,competition] of Object.entries(nationalCompetitions)){
+        const row=competition?.standings?.find(item=>item.club===name);
+        if(row)return {...row,division};
+      }
+      return null;
+    },
     getNationalRankingEntries:()=>nationalRankingEntries,
     getSeasonGoal:()=>ensureSeasonGoal(),
     getSeasonGoalResult:()=>seasonGoalResult,
@@ -4508,7 +4512,8 @@ export async function bootEngine({
   
   
   
-  document.body.insertAdjacentHTML('beforeend',`<div id="teamScoutModal" class="modal hidden"><div class="modal-card scout-modal"><button id="closeTeamScout" class="close">×</button><h2 id="scoutClubName"></h2><div id="scoutClubMeta"></div><div class="scout-layout"><div class="scout-roster"><h3>Titulares</h3><div id="scoutStarters"></div><h3>Reservas</h3><div id="scoutBench"></div></div><div class="scout-side"><div class="pause-pitch tactical-board scout-pitch">${fieldMarkup}<div id="scoutPitchPlayers"></div></div><p class="scout-manager" id="scoutManager"><small>TÉCNICO</small><strong>—</strong></p><section id="scoutSummary" class="club-summary"><div class="summary-top"><div class="overall-box"><small>OVERALL</small><strong id="scoutOverall"></strong></div><div id="scoutEnvironment" class="environment-gauge"><div><strong></strong><small>AMBIENTE</small></div></div></div><div class="leader-table"><small>DESTAQUES DA TEMPORADA</small><div><span>ARTILHEIRO</span><b id="scoutScorer"></b><em id="scoutGoals"></em></div><div><span>ASSISTÊNCIAS</span><b id="scoutAssistant"></b><em id="scoutAssists"></em></div></div></section></div></div></div></div>`);
+  document.body.insertAdjacentHTML('beforeend',`<div id="teamScoutModal" class="modal hidden"><div class="modal-card scout-modal"><button id="closeTeamScout" class="close">×</button><div class="scout-title-row"><h2 id="scoutClubName"></h2><button id="openScoutedClubHistory" class="scout-history-btn" type="button">HISTÓRICO</button></div><div id="scoutClubMeta"></div><div class="scout-layout"><div class="scout-roster"><h3>Titulares</h3><div id="scoutStarters"></div><h3>Reservas</h3><div id="scoutBench"></div></div><div class="scout-side"><div class="pause-pitch tactical-board scout-pitch">${fieldMarkup}<div id="scoutPitchPlayers"></div></div><p class="scout-manager" id="scoutManager"><small>TÉCNICO</small><strong>—</strong></p><section id="scoutSummary" class="club-summary"><div class="summary-top"><div class="overall-box"><small>OVERALL</small><strong id="scoutOverall"></strong></div><div id="scoutEnvironment" class="environment-gauge"><div><strong></strong><small>AMBIENTE</small></div></div></div><div class="leader-table"><small>DESTAQUES DA TEMPORADA</small><div><span>ARTILHEIRO</span><b id="scoutScorer"></b><em id="scoutGoals"></em></div><div><span>ASSISTÊNCIAS</span><b id="scoutAssistant"></b><em id="scoutAssists"></em></div></div></section></div></div></div></div>`);
+  onClick('#openScoutedClubHistory',event=>{const clubName=event.currentTarget?.dataset?.clubName;if(clubName)document.dispatchEvent(new CustomEvent('brfut:open-club-history',{detail:{clubName}}));});
   
   
   
@@ -4563,6 +4568,7 @@ export async function bootEngine({
     const coords=formations[club.formation]||formations['4-3-3'];
     const overall=Math.round(roster.slice(0,11).reduce((sum,p)=>sum+p.overall,0)/11);
     $('#scoutClubName').innerHTML=clubCrestTitleHtml(club.name,{initialsFn:clubCrestInitials});
+    $('#openScoutedClubHistory').dataset.clubName=name;
     $('#scoutClubMeta').innerHTML=`<div class="scout-club-meta"><span class="scout-meta-chip"><small>FORMAÇÃO</small><b>${club.formation||'—'}</b></span><span class="scout-meta-chip"><small>ESTILO</small><b>${club.style||'—'}</b></span><span class="scout-meta-chip"><small>MENTALIDADE</small><b>${club.mentality||'—'}</b></span><span class="scout-meta-chip"><small>CLASSIFICAÇÃO</small><b>${club.position!=null?`${club.position}º na tabela`:'—'}</b></span></div>`;
     const managerEl=$('#scoutManager strong');
     if(managerEl)managerEl.textContent=clubManagerName(name);

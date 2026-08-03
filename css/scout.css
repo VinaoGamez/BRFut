@@ -1,5 +1,6 @@
 /* from engine.js scoutScaleCss */
 #teamScoutModal{z-index:50}
+.scout-title-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-right:34px}.scout-title-row h2{margin-right:auto!important}.scout-history-btn{flex:0 0 auto;padding:10px 18px;border:1px solid #24d8ef;border-radius:6px;background:#0b2631;color:#effcff;font:800 10px "DM Sans",sans-serif;letter-spacing:.11em;cursor:pointer}.scout-history-btn:hover{background:#123b48;box-shadow:0 0 16px #21d8ef33}
 #teamScoutModal .environment-gauge{width:82px!important}#teamScoutModal .environment-gauge strong{font-size:26px!important}#teamScoutModal .overall-box{width:82px!important;height:82px!important}.mood .dashboard-overall strong{font-size:30px}.mood .dashboard-overall small{color:#64786b}.dark-mode .mood .dashboard-overall small{color:#b9ccbe}
 /* from engine.js scoutSummaryCss */
 .scout-side{width:270px}.scout-pitch{margin-bottom:6px}

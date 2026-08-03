@@ -147,6 +147,18 @@ export function createEconomyFeature(deps) {
     if (clubHistoryReady) return;
     onClick('#clubHistoryCardModal', event => { if (event.target?.id === 'clubHistoryCardModal') closeClubHistory(); });
     onClick('#clubHistoryCardBody', event => {
+      const seasonToggle = event.target.closest('.club-history-season-toggle');
+      if (seasonToggle) {
+        const selected = seasonToggle.closest('.club-history-season');
+        selected.parentElement.querySelectorAll('.club-history-season').forEach(season => {
+          const active = season === selected;
+          season.classList.toggle('is-expanded', active);
+          season.querySelector('.club-history-season-toggle')?.setAttribute('aria-expanded', String(active));
+          const content = season.querySelector('.club-history-season-content');
+          if (content) content.hidden = !active;
+        });
+        return;
+      }
       const card = event.target.closest('.club-history-card');
       if (card) card.classList.toggle('is-flipped');
     });
@@ -157,16 +169,16 @@ export function createEconomyFeature(deps) {
     clubHistoryReady = true;
   };
 
-  const openClubHistory = () => {
+  const openClubHistory = requestedClubName => {
     ensureClubHistoryModal();
-    const clubName = getUserClub?.();
+    const clubName = typeof requestedClubName === 'string' && requestedClubName.trim() ? requestedClubName.trim() : getUserClub?.();
     const career = getSavedNewGame?.() || {};
     const years = listSeasonArchiveYears({ seasonIndex: career.seasonIndex });
     const archives = years.map(year => loadSeasonArchive(year, { seed: career.seed })).filter(Boolean);
     const historyStore = getPlayerHistory?.()?.getStore?.() || {};
     const rankingTitles = getNationalRankingEntries?.()?.[clubName]?.titles || [];
     const currentLogs = [...(getCurrentClubMatches?.() || []), ...(historyStore.matchLogs || [])];
-    const seasons = buildClubHistory({ clubName, currentSeason: getCareerSeason?.(), currentLogs, currentStanding: getCurrentClubStanding?.(), archives, rankingTitles });
+    const seasons = buildClubHistory({ clubName, currentSeason: getCareerSeason?.(), currentLogs, currentStanding: getCurrentClubStanding?.(clubName), archives, rankingTitles });
     const body = $('#clubHistoryCardBody');
     body.innerHTML = renderClubHistoryCard({ clubName, seasons });
     hydrateClubHistoryCard(body);
@@ -2049,6 +2061,7 @@ export function createEconomyFeature(deps) {
     onClick('#openOfficeFromDashboard', () => openView?.('office'));
     onClick('#openStadiumFromDashboard', () => openView?.('stadium'));
     onClick('#openClubHistoryCard', openClubHistory);
+    document.addEventListener('brfut:open-club-history', event => openClubHistory(event.detail?.clubName));
     document.addEventListener('keydown', event => {
       const targetId = event.target?.id;
       if (targetId !== 'openOfficeFromDashboard' && targetId !== 'openStadiumFromDashboard') return;
