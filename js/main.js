@@ -32,6 +32,8 @@ import {
 import { ensureSlotPlayable } from './core/career-storage-health.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
+import { mountSupportProject } from './feature/support-project/index.js';
+import '../css/support-project.css';
 
 /** Ponto de entrada modular — Alpha 02 */
 if (SITE_MAINTENANCE.enabled) {
@@ -55,6 +57,7 @@ if (SITE_MAINTENANCE.enabled) {
   const bus = createEventBus();
 
   ensureAccountModals();
+  mountSupportProject();
 
   let syncCareerWelcomeAuth = null;
   let openCareerCreatorRef = null;

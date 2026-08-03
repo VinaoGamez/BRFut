@@ -395,10 +395,14 @@ export async function validateAuthenticatedSession() {
   const token = getAuthToken();
   if (!token) return { authenticated: false, reason: 'missing_token', user: null };
   try {
-    const body = await authedFetch('/api/auth/me', { retry: false });
+    // O boot depende desta confirmação. Tolera uma indisponibilidade curta da
+    // API para não devolver ao login uma sessão que acabou de ser criada.
+    const body = await authedFetch('/api/auth/me');
     if (!body?.user) return { authenticated: false, reason: 'invalid_response', user: null };
     currentUser = body.user;
     cloudActive = true;
+    syncAuthBlockedUntil = 0;
+    syncCloudLocalTrimFlag();
     return { authenticated: true, reason: null, user: currentUser };
   } catch (error) {
     if (error?.status === 401) clearAuthSession();
@@ -1412,10 +1416,15 @@ async function initStorageBackendImpl({ skipProbe = false, preferMigrate = false
   }
 
   try {
-    const me = await authedFetch('/api/auth/me');
-    currentUser = me.user;
-    cloudActive = true;
-    syncAuthBlockedUntil = 0;
+    // main.js já confirmou /auth/me antes de preparar o jogo. Repetir a
+    // validação durante a hidratação consumia o rate limit e podia rebaixar a
+    // sessão recém-validada para modo local antes de baixar o slot.
+    if (!cloudActive || !currentUser) {
+      const me = await authedFetch('/api/auth/me');
+      currentUser = me.user;
+      cloudActive = true;
+      syncAuthBlockedUntil = 0;
+    }
   } catch (error) {
     // Falha de rede/429/401: NÃO desloga. Token permanece até Sair explícito.
     cloudActive = false;
@@ -1613,7 +1622,9 @@ export async function fetchRemoteSaveKey(key) {
   if (!isCloudStorageActive()) return null;
   if (remoteSavesCache) {
     const cached = readCachedRemoteSave(key);
-    return cached === undefined ? null : cached;
+    // A listagem pode omitir bundles grandes. Cache miss não significa que a
+    // chave inexiste; consulta o endpoint individual antes de desistir.
+    if (cached !== undefined) return cached;
   }
   try {
     const body = await authedFetch(`/api/saves/${encodeURIComponent(key)}`);

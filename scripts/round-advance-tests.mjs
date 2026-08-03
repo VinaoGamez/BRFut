@@ -1,4 +1,5 @@
-import { resolveRoundAlreadyRecorded, resolveRoundForLiveCommit } from '../js/engine/round-advance.js';
+import { nationalSeasonLastRound, resolveRoundAlreadyRecorded, resolveRoundForLiveCommit } from '../js/engine/round-advance.js';
+import { reconcileLinkedFixtureWithLiveSnapshot } from '../js/feature/match-live-entry/index.js';
 import { findLeagueFixtureByPair, gameMatchesRecordedCompat } from '../js/engine/competition-calendar.js';
 
 let passed = 0;
@@ -19,6 +20,22 @@ const check = (label, fn) => {
 const assert = (cond, message) => {
   if (!cond) throw new Error(message || 'assertion failed');
 };
+
+check('partida ao vivo incompleta reabre fixture marcado incorretamente como concluído', () => {
+  const linked = { completed: true, homeGoals: 0, awayGoals: 0 };
+  reconcileLinkedFixtureWithLiveSnapshot(linked, {
+    matchFinished: false,
+    fixture: { completed: true, homeGoals: 2, awayGoals: 0 },
+  });
+  assert(linked.completed === false, 'fixture precisa permanecer pendente');
+  assert(linked.homeGoals === 2 && linked.awayGoals === 0, 'placar ao vivo precisa ser preservado');
+});
+
+check('fim da temporada usa o total real de rodadas da divisão', () => {
+  assert(nationalSeasonLastRound({ getChampionshipFixtures: () => Array.from({ length: 54 }) }, 'C') === 54);
+  assert(nationalSeasonLastRound({ getChampionshipFixtures: () => Array.from({ length: 38 }) }, 'A') === 38);
+  assert(nationalSeasonLastRound({ getChampionshipFixtures: () => [] }, 'D') === 22);
+});
 
 check('history without standings update is discarded', () => {
   const history = [{ round: 5, games: [{ home: 'A', away: 'B', homeGoals: 2, awayGoals: 1 }] }];

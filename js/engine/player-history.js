@@ -904,6 +904,7 @@ export function createPlayerHistoryEngine(deps = {}) {
       away: game.away,
       homeGoals: Number(game.homeGoals) || 0,
       awayGoals: Number(game.awayGoals) || 0,
+      data: game.data && typeof game.data === 'object' ? { ...game.data } : null,
       players: allSheets.map(slimLogPlayer),
     };
     store.matchLogs.push(log);

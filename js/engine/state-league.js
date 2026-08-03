@@ -408,6 +408,13 @@ export function createStateLeagueEngine() {
             } else {
               recordGame(competition, target, userLiveGame.homeGoals, userLiveGame.awayGoals, true);
             }
+            if (userLiveGame.data) target.data = { ...userLiveGame.data };
+            if (userLiveGame.goals) {
+              target.goals = {
+                home: [...(userLiveGame.goals.home || [])],
+                away: [...(userLiveGame.goals.away || [])],
+              };
+            }
           }
         }
         const results = simulateDivisionRound(competition, round, simulateMatch, { skipUserClub: userClub });
@@ -431,8 +438,10 @@ export function createStateLeagueEngine() {
                   shootoutWinner: game.shootoutWinner,
                   shootoutPenalties: game.shootoutPenalties,
                   completed: game.completed,
+                  data: game.data,
+                  goals: game.goals,
                 },
-                { keepData: false },
+                { keepData: game.home === userClub || game.away === userClub },
               ),
             ),
           };

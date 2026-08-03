@@ -151,6 +151,12 @@ function ensureLiveNationalRoundCommitted(deps, { liveMatchGame, roundForCommit,
   return true;
 }
 
+export function nationalSeasonLastRound(deps, division) {
+  if (division === 'D') return 22;
+  const fixtures = deps.getChampionshipFixtures?.();
+  return Math.max(1, Array.isArray(fixtures) ? fixtures.length : 38);
+}
+
 function resetLiveMatchSession(deps) {
   deps.closeRoundResultsModal();
   deps.closeMatchModal();
@@ -420,7 +426,7 @@ export function createRoundAdvanceEngine(deps) {
 
       const userDivision = deps.getUserDivision();
       const careerSeason = deps.getCareerSeason();
-      const completedSeason = roundAtStart === 38 || (userDivision === 'D' && roundAtStart === 22);
+      const completedSeason = roundAtStart >= nationalSeasonLastRound(deps, userDivision);
       if (userDivision === 'D' && roundAtStart === 22) deps.finishRemainingNationalRounds(11, 38);
       if (userDivision === 'D' && (deps.userLeaguePlayed?.() ?? 0) < SERIE_D_GROUP_ROUNDS) {
         deps.setCurrentRound((deps.userLeaguePlayed?.() ?? 0) + 1);
@@ -584,7 +590,7 @@ export function createRoundAdvanceEngine(deps) {
       deps.invalidateUserScheduleCache?.();
     }
     const userDivision = deps.getUserDivision();
-    const completedSeasonNow = currentRound === 38 || (userDivision === 'D' && currentRound === 22);
+    const completedSeasonNow = currentRound >= nationalSeasonLastRound(deps, userDivision);
     if (
       userDivision === 'D' &&
       currentRound === 22 &&

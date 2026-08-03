@@ -97,6 +97,29 @@ checkSync('home keeps authenticated state when slots render again', () => {
   assert(src.includes('recoverCareerSlotsAfterHydration();'), 'recovery runs after cloud hydrate');
 });
 
+checkSync('boot reutiliza sessão validada e não trata cache parcial como save ausente', () => {
+  const storage = readFileSync(join(ROOT, 'js/core/storage-api.js'), 'utf8');
+  const validateStart = storage.indexOf('export async function validateAuthenticatedSession');
+  const validateEnd = storage.indexOf('export function getSaveSyncStatus', validateStart);
+  const validate = storage.slice(validateStart, validateEnd);
+  assert(
+    validate.includes("authedFetch('/api/auth/me')") && !validate.includes('retry: false'),
+    'validação de boot tolera falha transitória',
+  );
+  assert(
+    storage.includes('if (!cloudActive || !currentUser) {'),
+    'hidratação não repete /auth/me depois de sessão confirmada',
+  );
+  const fetchKeyStart = storage.indexOf('export async function fetchRemoteSaveKey');
+  const fetchKeyEnd = storage.indexOf('export async function mergeSlotBundleFromCloud', fetchKeyStart);
+  const fetchKey = storage.slice(fetchKeyStart, fetchKeyEnd);
+  assert(
+    fetchKey.includes('if (cached !== undefined) return cached;'),
+    'cache miss consulta endpoint individual do bundle',
+  );
+  assert(fetchKey.includes('authedFetch(`/api/saves/'), 'fallback remoto continua disponível');
+});
+
 await checkAsync(`GET ${BASE}/home.html responde`, async () => {
   const res = await fetch(`${BASE}/home.html`, { cache: 'no-store' });
   assert(res.ok, `HTTP ${res.status}`);

@@ -1,5 +1,20 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
 
+export function reconcileLinkedFixtureWithLiveSnapshot(linked, snap) {
+  if (!linked || !snap?.fixture) return linked;
+  const fixture = snap.fixture;
+  if (fixture.penalties != null) linked.penalties = fixture.penalties;
+  if (fixture.shootoutWinner != null) linked.shootoutWinner = fixture.shootoutWinner;
+  if (fixture.shootoutPenalties != null) linked.shootoutPenalties = fixture.shootoutPenalties;
+  if (fixture.homeGoals != null) linked.homeGoals = fixture.homeGoals;
+  if (fixture.awayGoals != null) linked.awayGoals = fixture.awayGoals;
+  // O snapshot ao vivo é a fonte de verdade enquanto a partida não terminou.
+  // Saves interrompidos podiam carregar `fixture.completed=true` do calendário e
+  // descartar a sessão válida na restauração, prendendo o usuário no mesmo jogo.
+  linked.completed = snap.matchFinished ? !!fixture.completed : false;
+  return linked;
+}
+
 /**
  * Entrada e restauração da partida ao vivo — handlers de clique (#playMatch, etc.)
  * e hidratação de snapshot persistido.
@@ -311,14 +326,7 @@ export function createMatchLiveEntryFeature(deps) {
     const snap = hydrateLiveMatchSnapshot(raw);
     const linked = findFixtureForLiveSnapshot(snap.fixture);
     const game = linked || { ...snap.fixture };
-    if (linked) {
-      if (snap.fixture.penalties != null) linked.penalties = snap.fixture.penalties;
-      if (snap.fixture.shootoutWinner != null) linked.shootoutWinner = snap.fixture.shootoutWinner;
-      if (snap.fixture.shootoutPenalties != null) linked.shootoutPenalties = snap.fixture.shootoutPenalties;
-      if (snap.fixture.homeGoals != null) linked.homeGoals = snap.fixture.homeGoals;
-      if (snap.fixture.awayGoals != null) linked.awayGoals = snap.fixture.awayGoals;
-      if (snap.fixture.completed) linked.completed = true;
-    }
+    if (linked) reconcileLinkedFixtureWithLiveSnapshot(linked, snap);
     if (isFixtureCompleted(game) && !snap.matchFinished) {
       clearLiveMatchPersist();
       return false;

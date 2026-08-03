@@ -506,6 +506,7 @@ export function createCalendarViewFeature(deps) {
     if (!game?.home || !game?.away || !result) return;
     const competition = resolveCompetitionBadge(game, { userDivision });
     const historyLog = resolveMatchHistoryLog(game);
+    const matchData = entry.data || result.data || historyLog?.data || null;
     const liveSheets = Array.isArray(entry.ratingPlayers) ? entry.ratingPlayers : null;
     const details = typeof fixtureDetails === 'function' ? fixtureDetails(game) : { display: '—', time: '' };
     const venueLine =
@@ -578,6 +579,29 @@ export function createCalendarViewFeature(deps) {
       if (!sheet.side) sheet.side = 'away';
     });
     const tipIndex = buildPlayerTipIndex(goals, incidents, playedNames);
+    const statValue = (key, fallback = 0) => {
+      const value = Number(matchData?.[key]);
+      return Number.isFinite(value) ? value : fallback;
+    };
+    const statRows = matchData
+      ? [
+          ['Posse de bola', `${statValue('homePossession', 50)}%`, `${statValue('awayPossession', 50)}%`],
+          ['Finalizações', statValue('homeShots'), statValue('awayShots')],
+          ['No gol', statValue('homeOnTarget'), statValue('awayOnTarget')],
+          ['Passes', statValue('homePasses'), statValue('awayPasses')],
+          ['Passes certos', statValue('homeAccurate'), statValue('awayAccurate')],
+          ['Escanteios', statValue('homeCorners'), statValue('awayCorners')],
+          ['Impedimentos', statValue('homeOffsides'), statValue('awayOffsides')],
+          ['Desarmes', statValue('homeTackles'), statValue('awayTackles')],
+          ['Faltas', statValue('homeFouls'), statValue('awayFouls')],
+          ['Cartões', statValue('homeYellow') + statValue('homeRed'), statValue('awayYellow') + statValue('awayRed')],
+        ]
+      : [];
+    const statisticsHtml = statRows.length
+      ? `<div class="match-report-statistics"><h3>ESTATÍSTICAS</h3><div class="match-report-statistics-head"><b>${game.home}</b><b>${game.away}</b></div>${statRows
+          .map(([label, home, away]) => `<div class="match-report-stat-row"><strong>${home}</strong><span>${label}</span><strong>${away}</strong></div>`)
+          .join('')}</div>`
+      : '<div class="match-report-empty">Estatísticas detalhadas não foram registradas nesta partida.</div>';
     const ratingsHtml =
       homeSheets.length || awaySheets.length
         ? `<div class="match-report-ratings"><h3>NOTAS</h3><div class="match-report-ratings-grid">${ratingsBlock(game.home, homeSheets, motmKey, tipIndex)}${ratingsBlock(game.away, awaySheets, motmKey, tipIndex)}</div></div>`
@@ -586,7 +610,7 @@ export function createCalendarViewFeature(deps) {
     const content = $('#matchReportContent');
     if (!reportModal || !content) return;
     reportModal.style.zIndex = '80';
-    content.innerHTML = header + ratingsHtml;
+    content.innerHTML = header + statisticsHtml + ratingsHtml;
     reportModal.classList.remove('hidden');
   };
 

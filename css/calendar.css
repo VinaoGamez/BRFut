@@ -808,6 +808,12 @@ body.dark-mode .calendar-view .training-rules button:focus-visible {
 .match-report-modal .live-match-clock-time{font-size:16px}
 .match-report-modal .live-match-clock-phase{font-size:9px}
 .match-report-empty{padding:16px;border:1px solid #28505b;border-radius:7px;color:#9eb6b8;text-align:center;font-size:12px}
+.match-report-statistics{margin:10px 0 0;border:1px solid #28505b;border-radius:7px;overflow:hidden;text-align:center}
+.match-report-statistics>h3{margin:0;padding:9px 10px;background:#123843;color:#b6ff38;font:700 18px Barlow Condensed}
+.match-report-statistics-head{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:8px 12px;border-top:1px solid #234650;color:#63d9ff;font:700 10px DM Sans;text-transform:uppercase}
+.match-report-statistics-head b:first-child{text-align:left}.match-report-statistics-head b:last-child{text-align:right}
+.match-report-stat-row{display:grid;grid-template-columns:55px minmax(0,1fr) 55px;align-items:center;min-height:29px;padding:0 12px;border-top:1px solid #173943}
+.match-report-stat-row span{color:#9eb6b8;font:500 11px DM Sans}.match-report-stat-row strong{color:#edf8f5;font:700 15px Barlow Condensed}.match-report-stat-row strong:first-child{text-align:left}.match-report-stat-row strong:last-child{text-align:right}
 .match-report-ratings{margin:10px 0 0;border:1px solid #28505b;border-radius:7px;overflow:hidden;text-align:left}
 .match-report-ratings>h3{margin:0;padding:9px 10px;background:#123843;color:#b6ff38;text-align:center;font:700 18px Barlow Condensed}
 .match-report-ratings-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
