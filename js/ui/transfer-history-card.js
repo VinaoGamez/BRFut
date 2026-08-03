@@ -1,3 +1,5 @@
+import mercadoDaBolaUrl from '../../brand/transfer-history/mercado-da-bola.png?url';
+
 export const TRANSFER_HISTORY_LAYOUT_KEY = 'brfut-transfer-history-card-layout-v1';
 export const TRANSFER_HISTORY_LAYOUT_DEFAULTS = Object.freeze({
   width: 560,
@@ -39,5 +41,5 @@ function seasonHtml(season, index) {
 }
 
 export function renderTransferHistoryCard({ seasons = [], layout } = {}) {
-  return `<div class="transfer-history-card" tabindex="0" role="button" aria-label="Virar card do histórico de transferências" style="${transferHistoryLayoutStyle(layout)}"><div class="transfer-history-card-inner"><section class="transfer-history-face transfer-history-front"><img src="./brand/transfer-history/mercado-da-bola.png" alt="Mercado da Bola"></section><section class="transfer-history-face transfer-history-back"><header><h2>MERCADO DA BOLA</h2><p>HISTÓRICO DE TRANSFERÊNCIAS</p></header><div class="transfer-history-season-list">${seasons.length ? seasons.map(seasonHtml).join('') : '<p class="transfer-history-empty">Nenhuma transferência registrada.</p>'}</div></section></div></div>`;
+  return `<div class="transfer-history-card" tabindex="0" role="button" aria-label="Virar card do histórico de transferências" style="${transferHistoryLayoutStyle(layout)}"><div class="transfer-history-card-inner"><section class="transfer-history-face transfer-history-front"><img src="${mercadoDaBolaUrl}" alt="Mercado da Bola"></section><section class="transfer-history-face transfer-history-back"><header><h2>MERCADO DA BOLA</h2><p>HISTÓRICO DE TRANSFERÊNCIAS</p></header><div class="transfer-history-season-list">${seasons.length ? seasons.map(seasonHtml).join('') : '<p class="transfer-history-empty">Nenhuma transferência registrada.</p>'}</div></section></div></div>`;
 }
