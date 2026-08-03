@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>BR Fut · Cards de Técnicos — Calibrador</title>
+  <link rel="icon" type="image/png" href="./brand/mark-favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/club-crest.css">
+  <link rel="stylesheet" href="css/championship.css?v=20260803-manager-cards">
+  <link rel="stylesheet" href="css/manager-card-lab.css">
+</head>
+<body>
+  <main class="mcl-shell">
+    <header class="mcl-header">
+      <div><p>LAB ISOLADO</p><h1>Calibrador · Cards de Técnicos</h1><span>Ajuste frente e verso, salve para visualizar no jogo ou copie o JSON para padronizar no código.</span></div>
+      <nav><a href="card-lab.html">Lab de jogadores</a><button id="managerLabFlip" type="button">Virar card</button><a href="home.html">← Hub</a></nav>
+    </header>
+    <div class="mcl-grid">
+      <aside class="mcl-panel">
+        <h2>Modelo do técnico</h2>
+        <div id="managerLabGallery" class="mcl-gallery"></div>
+        <div class="mcl-face-tabs"><button type="button" data-face="front" class="is-active">Frente</button><button type="button" data-face="back">Verso</button></div>
+        <div class="mcl-toolbar"><button id="managerLabSave" type="button">Salvar</button><button id="managerLabReset" type="button">Reset</button><button id="managerLabCopy" type="button">Copiar JSON</button></div>
+        <form id="managerLabForm" class="mcl-form"></form>
+        <textarea id="managerLabJson" readonly rows="12" aria-label="JSON exportado"></textarea>
+      </aside>
+      <section class="mcl-stage-wrap">
+        <p id="managerLabStageLabel">FRENTE · PRÉ-VISUALIZAÇÃO</p>
+        <div id="managerLabStage" class="mcl-stage"></div>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="./js/lab/manager-card-lab.js"></script>
+</body>
+</html>
