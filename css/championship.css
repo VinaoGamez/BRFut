@@ -460,19 +460,16 @@
 .manager-trophy-room-btn:focus-visible { border-color: #9cff2f; color: #9cff2f; outline: 0; }
 
 .manager-trophy-modal[hidden] { display: none; }
-.manager-trophy-modal { position: fixed; inset: 0; z-index: 10020; display: grid; place-items: center; padding: 24px; }
-.manager-trophy-backdrop { position: absolute; inset: 0; border: 0; background: radial-gradient(circle at 50% 42%, rgba(8, 61, 78, .34), transparent 42%), rgba(1, 7, 12, .92); backdrop-filter: blur(7px); cursor: default; }
+.manager-trophy-modal { position: fixed; inset: 0; z-index: 10020; display: grid; place-items: center; padding: 20px; background: rgba(2, 8, 14, .86); backdrop-filter: blur(6px); }
 .manager-trophy-panel {
   position: relative;
   width: min(510px, calc(75vh - 36px), calc(100vw - 48px));
   aspect-ratio: 3 / 4;
 }
 .manager-trophy-sr-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-.manager-trophy-close { position: absolute; z-index: 8; top: 10px; right: -50px; width: 40px; height: 40px; border: 1px solid #3d7480; border-radius: 50%; background: rgba(7, 24, 31, .9); color: #d8f7fb; font-size: 27px; line-height: 1; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
-.manager-trophy-close:hover, .manager-trophy-close:focus-visible { border-color: #1ce9f4; color: #1ce9f4; outline: 0; }
 .manager-trophy-body, .manager-card-scene { width: 100%; height: 100%; }
 .manager-card-scene { perspective: 1500px; filter: drop-shadow(0 24px 35px rgba(0, 0, 0, .55)); }
-.manager-card-flipper { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .72s cubic-bezier(.2, .72, .15, 1); outline: 0; }
+.manager-card-flipper { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .72s cubic-bezier(.2, .72, .15, 1); outline: 0; cursor: pointer; }
 .manager-card-flipper.is-flipped { transform: rotateY(180deg); }
 .manager-card-face { position: absolute; inset: 0; overflow: hidden; border: 2px solid #0edce8; border-radius: var(--manager-card-radius, 28px); background: #071721; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), inset 0 -120px 100px rgba(0,0,0,.25); }
 .manager-card-front { transform: rotateY(0); }
@@ -488,9 +485,6 @@
 .manager-card-club-crest { height: 58px; display: grid; place-items: center; }
 .manager-card-team-crest { width: var(--manager-crest-size, 54px) !important; height: var(--manager-crest-size, 54px) !important; font-size: 16px !important; }
 .manager-card-free-label { color: #9cff2f; font: 800 27px 'Barlow Condensed', sans-serif; letter-spacing: 1px; }
-.manager-card-flip-button { position: absolute; z-index: 3; border: 0; background: transparent; color: #80c4ce; cursor: pointer; font: 800 8px 'DM Sans', sans-serif; letter-spacing: .9px; }
-.manager-card-flip-button b { color: #18e5ef; font-size: 15px; }
-.manager-card-front-button { right: 24px; bottom: 18px; display: flex; align-items: center; gap: 7px; }
 .manager-card-back { padding: var(--manager-back-pad-y, 32px) var(--manager-back-pad-x, 32px) 27px; display: flex; flex-direction: column; transform: rotateY(180deg); background: radial-gradient(circle at 72% 13%, rgba(22, 161, 184, .15), transparent 30%), repeating-linear-gradient(135deg, rgba(255,255,255,.018) 0 1px, transparent 1px 18px), #071720; }
 .manager-card-back::before { content: ''; position: absolute; inset: 0; opacity: .12; background: linear-gradient(115deg, transparent 30%, #20d9e8 30.3%, transparent 30.7%, transparent 68%, #20d9e8 68.3%, transparent 68.7%); pointer-events: none; }
 .manager-card-back > * { position: relative; z-index: 1; }
@@ -519,9 +513,8 @@
 .manager-card-empty b { margin-bottom: 8px; opacity: .5; font-size: 30px; filter: grayscale(1); }
 .manager-card-empty span { color: #b2cdd1; font: 800 11px 'DM Sans', sans-serif; text-transform: uppercase; }
 .manager-card-empty small { max-width: 230px; margin-top: 5px; font-size: 8px; line-height: 1.4; }
-.manager-card-back-footer { display: flex; justify-content: space-between; padding: 10px 90px 0 0; border-top: 1px solid #234c57; color: #1ddce8; font: 800 8px 'DM Sans', sans-serif; letter-spacing: 1px; }
+.manager-card-back-footer { display: flex; justify-content: space-between; padding: 10px 0 0; border-top: 1px solid #234c57; color: #1ddce8; font: 800 8px 'DM Sans', sans-serif; letter-spacing: 1px; }
 .manager-card-back-footer small { color: #809fa5; }
-.manager-card-back-button { right: 27px; bottom: 18px; display: flex; align-items: center; gap: 7px; }
 
 @media (max-width: 760px) {
   .manager-ranking-head,
@@ -535,7 +528,6 @@
   .manager-trophy-room-btn span { display: none; }
   .manager-trophy-modal { padding: 12px; }
   .manager-trophy-panel { width: min(calc(75vh - 18px), calc(100vw - 24px)); }
-  .manager-trophy-close { top: 10px; right: 10px; width: 34px; height: 34px; border-color: rgba(136, 210, 221, .72); }
   .manager-card-face { border-radius: 22px; }
   .manager-card-front-info { left: 23px; right: 23px; bottom: 48px; grid-template-columns: minmax(0, 1fr) 82px; gap: 13px; }
   .manager-card-name-block { padding-right: 12px; }

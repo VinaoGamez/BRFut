@@ -46,7 +46,6 @@ function cardMarkup() {
           <div class="manager-card-name-block"><small>TÉCNICO</small><strong>Alexandre Menezes</strong><span>POSSE DE BOLA</span></div>
           <div class="manager-card-club-block"><div class="manager-card-club-crest"><i class="crest manager-card-team-crest">BR</i></div><small>BR FUTEBOL CLUBE</small></div>
         </div>
-        <button type="button" class="manager-card-flip-button manager-card-front-button"><span>VER SALA DE TROFÉUS</span><b>↻</b></button>
       </article>
       <article class="manager-card-face manager-card-back">
         <header class="manager-card-back-header"><div><small>SALA DE TROFÉUS</small><h3>Alexandre Menezes</h3><p>BR FUTEBOL CLUBE</p></div><div class="manager-card-back-rank"><small>RANKING</small><strong>#12</strong></div></header>
@@ -58,7 +57,6 @@ function cardMarkup() {
           <article><span class="manager-card-trophy-icon">🏆</span><div><strong>Campeonato Estadual</strong><small>BR Futebol Clube · 2028</small></div></article>
         </section>
         <footer class="manager-card-back-footer"><span>BR FOOTBALL</span><small>118.4 PONTOS</small></footer>
-        <button type="button" class="manager-card-flip-button manager-card-back-button"><b>↺</b><span>VER CARD</span></button>
       </article>
     </div>
   </div>`;

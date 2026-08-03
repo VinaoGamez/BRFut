@@ -145,11 +145,9 @@ export function createRankingViewsFeature(deps) {
     let modal = $('#managerTrophyRoomModal');
     if (modal) return modal;
     document.body.insertAdjacentHTML('beforeend', `
-      <div id="managerTrophyRoomModal" class="manager-trophy-modal" hidden>
-        <button type="button" class="manager-trophy-backdrop" data-close-manager-trophies aria-label="Fechar"></button>
-        <section class="manager-trophy-panel" role="dialog" aria-modal="true" aria-labelledby="managerTrophyRoomTitle">
+      <div id="managerTrophyRoomModal" class="manager-trophy-modal" role="dialog" aria-modal="true" aria-labelledby="managerTrophyRoomTitle" hidden>
+        <section class="manager-trophy-panel">
           <h2 id="managerTrophyRoomTitle" class="manager-trophy-sr-title">Sala de Troféus</h2>
-          <button type="button" class="manager-trophy-close" data-close-manager-trophies aria-label="Fechar">×</button>
           <div id="managerTrophyRoomBody" class="manager-trophy-body"></div>
         </section>
       </div>`);
@@ -186,7 +184,6 @@ export function createRankingViewsFeature(deps) {
               <div class="manager-card-name-block"><small>TÉCNICO</small><strong>${escapeHtml(manager.name)}</strong><span>${escapeHtml(manager.style || 'Treinador profissional')}</span></div>
               <div class="manager-card-club-block">${clubIdentity}</div>
             </div>
-            <button type="button" class="manager-card-flip-button manager-card-front-button" data-flip-manager-card aria-label="Ver estatísticas de ${escapeHtml(manager.name)}"><span>VER SALA DE TROFÉUS</span><b aria-hidden="true">↻</b></button>
           </article>
           <article class="manager-card-face manager-card-back" aria-label="Estatísticas de ${escapeHtml(manager.name)}">
             <header class="manager-card-back-header">
@@ -204,13 +201,12 @@ export function createRankingViewsFeature(deps) {
               ${trophyRows.length ? trophyRows.map(title => `<article><span class="manager-card-trophy-icon" aria-hidden="true">🏆</span><div><strong>${escapeHtml(title.competition)}</strong><small>${escapeHtml(title.club || '')} · ${escapeHtml(title.season)}</small></div></article>`).join('') : '<div class="manager-card-empty"><b aria-hidden="true">🏆</b><span>Nenhum título consolidado</span><small>O histórico é atualizado ao fim de cada temporada.</small></div>'}
             </section>
             <footer class="manager-card-back-footer"><span>BR FOOTBALL</span><small>${rankingEntry ? `${rankingEntry.total.toFixed(1)} PONTOS` : 'CARREIRA'}</small></footer>
-            <button type="button" class="manager-card-flip-button manager-card-back-button" data-flip-manager-card aria-label="Voltar para a frente do card"><b aria-hidden="true">↺</b><span>VER CARD</span></button>
           </article>
         </div>
       </div>`;
     modal.hidden = false;
     document.body.classList.add('modal-open');
-    modal.querySelector('.manager-trophy-close')?.focus();
+    modal.querySelector('[data-manager-card]')?.focus();
   };
 
   const closeManagerTrophyRoom = () => {
@@ -260,12 +256,13 @@ export function createRankingViewsFeature(deps) {
         renderManagerTrophyRoom(button.dataset.managerTrophies);
         return;
       }
-      if (event.target.closest?.('[data-flip-manager-card]')) {
+      const managerCard = event.target.closest?.('[data-manager-card]');
+      if (managerCard) {
         event.preventDefault();
-        event.target.closest('[data-manager-card]')?.classList.toggle('is-flipped');
+        managerCard.classList.toggle('is-flipped');
         return;
       }
-      if (event.target.closest?.('[data-close-manager-trophies]')) closeManagerTrophyRoom();
+      if (event.target.id === 'managerTrophyRoomModal') closeManagerTrophyRoom();
     });
     on(document, 'keydown', event => {
       if (event.key === 'Escape' && openTrophyManagerId) closeManagerTrophyRoom();
