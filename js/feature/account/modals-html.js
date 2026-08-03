@@ -27,7 +27,7 @@ export const ACCOUNT_MODALS_HTML = `
         </div>
         <label id="accountRememberRow" class="home-account-remember">
           <input id="accountRemember" type="checkbox">
-          <span>SALVAR</span>
+          <span>MANTER CONECTADO NESTE DISPOSITIVO</span>
         </label>
         <p id="accountError" class="home-account-error hidden"></p>
         <button id="accountSubmit" type="button" class="home-account-btn primary">CONTINUAR</button>
@@ -70,8 +70,7 @@ export const ACCOUNT_MODALS_HTML = `
       </label>
       <section class="home-profile-storage" aria-label="Armazenamento">
         <small>SAVES NA NUVEM</small>
-        <p>Sua carreira sincroniza com a conta neste servidor.</p>
-        <p id="accountProfileDataRoot" class="home-profile-path">—</p>
+        <p>Sua carreira é sincronizada com segurança na sua conta.</p>
       </section>
       <p id="accountProfileError" class="home-account-error hidden"></p>
       <div class="home-profile-actions">

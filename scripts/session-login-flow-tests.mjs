@@ -97,6 +97,32 @@ checkSync('home keeps authenticated state when slots render again', () => {
   assert(src.includes('recoverCareerSlotsAfterHydration();'), 'recovery runs after cloud hydrate');
 });
 
+checkSync('identificador interno da carreira não aparece na URL', () => {
+  const home = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  assert(!home.includes("url.searchParams.set('slot'"), 'home não adiciona slot na URL');
+  assert(!home.includes('index.html?slot='), 'continuar usa URL limpa');
+  assert(home.includes("continueBtn.href = 'index.html'"), 'link público não contém identificador');
+});
+
+checkSync('sessão persistente exige escolha explícita', () => {
+  const account = readFileSync(join(ROOT, 'js/feature/account/index.js'), 'utf8');
+  const modal = readFileSync(join(ROOT, 'js/feature/account/modals-html.js'), 'utf8');
+  assert(account.includes('rememberEl.checked = isAuthRememberEnabled();'), 'checkbox não inicia marcado');
+  assert(account.includes('remember: authRememberChoice()'), 'Google respeita a mesma escolha');
+  assert(modal.includes('MANTER CONECTADO NESTE DISPOSITIVO'), 'decisão é clara para o usuário');
+});
+
+checkSync('páginas públicas aplicam CSP e não exibem diagnóstico interno', () => {
+  const homeHtml = readFileSync(join(ROOT, 'home.html'), 'utf8');
+  const indexHtml = readFileSync(join(ROOT, 'index.html'), 'utf8');
+  const home = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  const accountModal = readFileSync(join(ROOT, 'js/feature/account/modals-html.js'), 'utf8');
+  assert(homeHtml.includes('Content-Security-Policy'), 'CSP na Home');
+  assert(indexHtml.includes('Content-Security-Policy'), 'CSP no jogo');
+  assert(!home.includes('storage-diag.html'), 'diagnóstico não é sugerido ao usuário');
+  assert(!accountModal.includes('accountProfileDataRoot'), 'caminho do servidor não aparece no perfil');
+});
+
 checkSync('boot reutiliza sessão validada e não trata cache parcial como save ausente', () => {
   const storage = readFileSync(join(ROOT, 'js/core/storage-api.js'), 'utf8');
   const validateStart = storage.indexOf('export async function validateAuthenticatedSession');

@@ -65,6 +65,9 @@ class BrfutApiTests(unittest.TestCase):
         status, body = self._route('GET', '/api/health')
         self.assertEqual(status, 200)
         self.assertTrue(body['ok'])
+        self.assertNotIn('dataRoot', body)
+        self.assertNotIn('allowedKeys', body)
+        self.assertNotIn('googleClientId', body)
 
         status, body = self._route('POST', '/api/auth/register', {'username': 'alpha', 'password': 'passphrase12'})
         self.assertEqual(status, 201)

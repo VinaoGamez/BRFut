@@ -181,9 +181,8 @@ if (SITE_MAINTENANCE.enabled) {
     }
   };
 
-  const goToGame = ({ slotId, novo = false } = {}) => {
+  const goToGame = ({ novo = false } = {}) => {
     const url = new URL('index.html', location.href);
-    if (slotId) url.searchParams.set('slot', slotId);
     if (novo) url.searchParams.set('novo', '1');
     markSkipSessionEndOnce();
     location.href = `${url.pathname}${url.search}`;
@@ -196,8 +195,8 @@ if (SITE_MAINTENANCE.enabled) {
 
   const careerSlots = mountCareerSlotsUi({
     onSlotsChanged: () => syncCareerActions(authUiState),
-    onStartSlot: slotId => goToGame({ slotId }),
-    onNewCareer: slotId => goToGame({ slotId, novo: true }),
+    onStartSlot: () => goToGame(),
+    onNewCareer: () => goToGame({ novo: true }),
   });
 
   const syncCareerActions = (state = authUiState) => {
@@ -216,7 +215,7 @@ if (SITE_MAINTENANCE.enabled) {
     }
 
     if (continueBtn && last) {
-      continueBtn.href = `index.html?slot=${encodeURIComponent(last.id)}`;
+      continueBtn.href = 'index.html';
     }
     if (lastSaveHint) {
       if (last && showCareer && lastPlayable) {
@@ -224,7 +223,7 @@ if (SITE_MAINTENANCE.enabled) {
         lastSaveHint.classList.remove('hidden');
       } else if (last && showCareer && !lastPlayable) {
         lastSaveHint.textContent =
-          'Save incompleto — só restou o índice do slot. Abra storage-diag.html ou inicie nova carreira.';
+          'Não foi possível restaurar esta carreira. Tente novamente ou inicie uma nova carreira.';
         lastSaveHint.classList.remove('hidden');
       } else {
         lastSaveHint.textContent = '';
@@ -361,7 +360,7 @@ if (SITE_MAINTENANCE.enabled) {
     } catch {
       /* local */
     }
-    goToGame({ slotId: last.id });
+    goToGame();
   });
 
   initSponsorRail();

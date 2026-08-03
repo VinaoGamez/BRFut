@@ -9,7 +9,6 @@ from .auth import ApiError, get_user_avatar, get_player_stats, login_user, logou
 from .google_auth import google_auth_enabled, google_client_id, login_with_google_id_token
 from .paths import default_data_root, ensure_layout
 from .saves import (
-    ALLOWED_SAVE_KEYS,
     delete_all_saves,
     delete_save,
     get_all_saves,
@@ -85,10 +84,7 @@ def handle_api(
                     'ok': True,
                     'service': 'brfut-api',
                     'version': 1,
-                    'dataRoot': str(root),
-                    'allowedKeys': sorted(ALLOWED_SAVE_KEYS),
                     'googleAuthEnabled': google_auth_enabled(),
-                    'googleClientId': google_client_id() or '',
                     **get_player_stats(root),
                 },
             )

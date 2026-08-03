@@ -106,7 +106,6 @@ export function mountAccountPanel({
   const profileModal = document.getElementById('accountProfileModal');
   const profileDisplayEl = document.getElementById('accountProfileDisplayName');
   const profileUsernameEl = document.getElementById('accountProfileUsername');
-  const profileDataRootEl = document.getElementById('accountProfileDataRoot');
   const profileErrorEl = document.getElementById('accountProfileError');
   const photoBtn = document.getElementById('accountPhotoBtn');
   const photoInput = document.getElementById('accountPhotoInput');
@@ -141,7 +140,6 @@ export function mountAccountPanel({
   let photoNeedsExport = false;
   let photoDragActive = false;
   let photoDragStart = { x: 0, y: 0, panX: 0, panY: 0 };
-  let profileDataRoot = '';
 
   const notifyAuth = (nextLoggedIn, nextHasBackend) => {
     loggedIn = nextLoggedIn;
@@ -327,11 +325,6 @@ export function mountAccountPanel({
     setError('', profileErrorEl);
     resetPhotoEditor();
 
-    const health = await fetchBackendHealth();
-    profileDataRoot = health?.dataRoot || '';
-    if (profileDataRootEl) {
-      profileDataRootEl.textContent = profileDataRoot ? `Pasta: ${profileDataRoot}` : '—';
-    }
     if (profileDisplayEl) profileDisplayEl.value = user.displayName || user.username || '';
     if (profileUsernameEl) profileUsernameEl.textContent = `@${user.username || '—'}`;
 
@@ -372,8 +365,8 @@ export function mountAccountPanel({
 
   const syncRememberCheckbox = () => {
     if (rememberEl) {
-      // Padrão: lembrar ligado (nuvem exige sessão após home→jogo).
-      rememberEl.checked = isAuthRememberEnabled() || !localStorage.getItem('brfut-auth-remember-seen');
+      // Mais seguro: a sessão fica somente nesta aba, salvo escolha explícita.
+      rememberEl.checked = isAuthRememberEnabled();
     }
   };
 
@@ -404,13 +397,8 @@ export function mountAccountPanel({
           setError('');
           try {
             await loginWithGoogleIdToken(response.credential, {
-              remember: true,
+              remember: authRememberChoice(),
             });
-            try {
-              localStorage.setItem('brfut-auth-remember-seen', '1');
-            } catch {
-              /* ignore */
-            }
             renderLoggedIn(getCloudUser());
             await onLoginSuccess?.();
           } catch (error) {
@@ -530,11 +518,6 @@ export function mountAccountPanel({
     const username = usernameEl?.value?.trim() || '';
     const password = passwordEl?.value || '';
     const remember = authRememberChoice();
-    try {
-      localStorage.setItem('brfut-auth-remember-seen', '1');
-    } catch {
-      /* ignore */
-    }
     if (!username || !password) {
       setError('Informe usuário e senha.');
       return;
