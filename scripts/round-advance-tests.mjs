@@ -1,4 +1,9 @@
-import { nationalSeasonLastRound, resolveRoundAlreadyRecorded, resolveRoundForLiveCommit } from '../js/engine/round-advance.js';
+import {
+  ensureLiveNationalRoundCommitted,
+  nationalSeasonLastRound,
+  resolveRoundAlreadyRecorded,
+  resolveRoundForLiveCommit,
+} from '../js/engine/round-advance.js';
 import { reconcileLinkedFixtureWithLiveSnapshot } from '../js/feature/match-live-entry/index.js';
 import { findLeagueFixtureByPair, gameMatchesRecordedCompat } from '../js/engine/competition-calendar.js';
 
@@ -29,6 +34,33 @@ check('partida ao vivo incompleta reabre fixture marcado incorretamente como con
   });
   assert(linked.completed === false, 'fixture precisa permanecer pendente');
   assert(linked.homeGoals === 2 && linked.awayGoals === 0, 'placar ao vivo precisa ser preservado');
+});
+
+check('fim de jogo sincroniza fixture canônico mesmo quando snapshot já está concluído', () => {
+  const canonical = { home: 'Usuário FC', away: 'Rival', round: 5 };
+  const live = { home: 'Usuário FC', away: 'Rival', round: 5, completed: true };
+  const history = [];
+  let tableCommits = 0;
+  const committed = ensureLiveNationalRoundCommitted(
+    {
+      getUserClub: () => 'Usuário FC',
+      getChampionshipFixtures: () => [[], [], [], [], [canonical]],
+      getLiveSideGoals: () => ({ home: [], away: [] }),
+      getHomeGoals: () => 2,
+      getAwayGoals: () => 1,
+      getUserDivision: () => 'C',
+      getNationalCompetitions: () => ({ C: { fixtures: [[], [], [], [], [canonical]] } }),
+      leagueUserGameForRound: () => canonical,
+      applyRoundToTable: () => { tableCommits += 1; },
+      invalidateUserScheduleCache: () => {},
+    },
+    { liveMatchGame: live, roundForCommit: 5, seasonRoundHistory: history },
+  );
+  assert(committed, 'commit deve concluir');
+  assert(canonical.completed === true, 'fixture do calendário precisa ser concluído');
+  assert(canonical.homeGoals === 2 && canonical.awayGoals === 1, 'placar precisa chegar ao calendário');
+  assert(history[0]?.games?.length === 1, 'resultado precisa entrar no histórico');
+  assert(tableCommits === 1, 'tabela precisa receber o resultado uma vez');
 });
 
 check('fim da temporada usa o total real de rodadas da divisão', () => {

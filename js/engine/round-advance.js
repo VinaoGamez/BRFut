@@ -87,7 +87,7 @@ function buildUserLiveLeagueResult(deps, liveMatchGame) {
 }
 
 /** Garante placar/tabela/histórico do jogo ao vivo — evita loop quando currentRound ≠ game.round. */
-function ensureLiveNationalRoundCommitted(deps, { liveMatchGame, roundForCommit, seasonRoundHistory }) {
+export function ensureLiveNationalRoundCommitted(deps, { liveMatchGame, roundForCommit, seasonRoundHistory }) {
   if (!liveMatchGame) return false;
   const userClub = deps.getUserClub();
   if (liveMatchGame.home !== userClub && liveMatchGame.away !== userClub) return false;
@@ -99,8 +99,6 @@ function ensureLiveNationalRoundCommitted(deps, { liveMatchGame, roundForCommit,
     ?? pairMatch?.round
     ?? roundForCommit;
   const effectiveRound = resolvedRound || roundForCommit;
-
-  if (typeof deps.isFixtureCompleted === 'function' && deps.isFixtureCompleted(liveMatchGame)) return true;
 
   if (!Number.isFinite(Number(liveMatchGame.round)) || Number(liveMatchGame.round) <= 0) {
     liveMatchGame.round = effectiveRound;
@@ -144,7 +142,10 @@ function ensureLiveNationalRoundCommitted(deps, { liveMatchGame, roundForCommit,
     if (!Number.isFinite(Number(canon.round)) || Number(canon.round) <= 0) canon.round = effectiveRound;
     canon.homeGoals = userResult.homeGoals;
     canon.awayGoals = userResult.awayGoals;
-    if (isKnockoutShootoutCompetition(canon)) canon.completed = true;
+    // O snapshot ao vivo pode ser um objeto separado do fixture salvo no
+    // calendário. Sempre conclui o canônico antes de limpar a sessão; caso
+    // contrário ele reaparece como próximo jogo e prende o avanço em loop.
+    canon.completed = true;
   }
 
   deps.invalidateUserScheduleCache?.();
