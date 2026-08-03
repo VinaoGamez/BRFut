@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from brfut_api.auth import ApiError, _session_path, login_user, register_user, resolve_session  # noqa: E402
+from brfut_api.auth import ApiError, _legacy_session_path, _session_path, login_user, register_user, resolve_session  # noqa: E402
 from brfut_api.cors import cors_headers  # noqa: E402
 from brfut_api.router import handle_api  # noqa: E402
 from brfut_api.saves import get_all_saves, get_save, put_save  # noqa: E402
@@ -106,6 +106,17 @@ class BrfutApiTests(unittest.TestCase):
         self.assertTrue(path.is_file())
         self.assertNotIn(token, path.name)
         self.assertNotIn(token, path.read_text(encoding='utf-8'))
+
+    def test_legacy_session_filename_is_migrated_without_logout(self) -> None:
+        register_user(self.root, 'legacy1', 'secretpass1', 'Legacy')
+        token, _ = login_user(self.root, 'legacy1', 'secretpass1')
+        hashed = _session_path(self.root, token)
+        legacy = _legacy_session_path(self.root, token)
+        hashed.replace(legacy)
+        profile = resolve_session(self.root, token)
+        self.assertEqual(profile['username'], 'legacy1')
+        self.assertTrue(hashed.is_file())
+        self.assertFalse(legacy.is_file())
 
     def test_pages_preview_requires_explicit_cors_wildcard(self) -> None:
         import os

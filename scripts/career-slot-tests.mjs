@@ -40,6 +40,7 @@ const {
   getActiveSlotId,
   deleteCareerSlot,
 } = await import('../js/core/career-slot-manager.js');
+const { recoverCareerSlotsAfterHydration } = await import('../js/core/career-activate.js');
 
 let passed = 0;
 let failed = 0;
@@ -105,6 +106,21 @@ check('getActiveSlotId follows index activeSlotId', () => {
   store.clear();
   const id = createNewSlot();
   assert(getActiveSlotId() === id);
+});
+
+check('late cloud career rebuilds a playable slot after authentication', () => {
+  store.clear();
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({
+    clubName: 'Recuperado FC',
+    division: 'C',
+    season: 2029,
+  }));
+  localStorage.setItem(SAVE_KEYS.season, JSON.stringify({ year: 2029, currentRound: 12 }));
+  const result = recoverCareerSlotsAfterHydration();
+  const index = readCareerIndex();
+  assert(result.recovered, 'career should be recovered');
+  assert(index.slots.length === 1, 'slot manifest should be reconstructed');
+  assert(localStorage.getItem(slotBundleKeys(index.slots[0].id).career), 'slot bundle should be restored');
 });
 
 try {

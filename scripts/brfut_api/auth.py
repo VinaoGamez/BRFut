@@ -72,6 +72,26 @@ def _session_path(root: Path, token: str) -> Path:
     return root / 'sessions' / f'{session_id}.json'
 
 
+def _legacy_session_path(root: Path, token: str) -> Path:
+    """Formato usado antes de os nomes das sessões passarem a ser hashes."""
+    safe = re.sub(r'[^a-zA-Z0-9_-]', '', token)
+    return root / 'sessions' / f'{safe}.json'
+
+
+def _resolve_session_path(root: Path, token: str) -> Path:
+    path = _session_path(root, token)
+    if path.is_file():
+        return path
+    legacy = _legacy_session_path(root, token)
+    if not legacy.is_file():
+        return path
+    try:
+        legacy.replace(path)
+        return path
+    except OSError:
+        return legacy
+
+
 def create_session(root: Path, user: dict[str, Any], provider: str = 'password') -> str:
     """Cria uma sessão opaca; o token secreto nunca é persistido em disco."""
     token = secrets.token_urlsafe(32)
@@ -324,7 +344,7 @@ def login_user(root: Path, username: str, password: str) -> tuple[str, dict[str,
 def resolve_session(root: Path, token: str | None) -> dict[str, Any]:
     if not token:
         raise ApiError(401, 'missing_token', 'Sessão não informada.')
-    path = _session_path(root, token)
+    path = _resolve_session_path(root, token)
     if not path.is_file():
         raise ApiError(401, 'invalid_session', 'Sessão expirada ou inválida.')
     try:
@@ -351,3 +371,4 @@ def logout_user(root: Path, token: str | None) -> None:
     if not token:
         return
     _session_path(root, token).unlink(missing_ok=True)
+    _legacy_session_path(root, token).unlink(missing_ok=True)

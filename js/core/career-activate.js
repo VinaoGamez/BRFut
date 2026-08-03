@@ -32,6 +32,27 @@ export function runCareerBootMigration() {
 }
 
 /**
+ * Reexecuta a descoberta de carreira depois que os saves da nuvem chegam.
+ * A migração inicial roda antes do login; por isso um save existente apenas
+ * na nuvem podia ser hidratado tarde demais para reconstruir o índice/slot.
+ */
+export function recoverCareerSlotsAfterHydration() {
+  migrateLegacyStorageKeys();
+  const index = migrateLegacySingleSaveToSlots();
+  const active = index.activeSlotId
+    ? index.slots.find(slot => slot.id === index.activeSlotId)
+    : null;
+  const slot = active || [...index.slots].sort(
+    (a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime(),
+  )[0];
+  if (!slot?.id || !repairSlotFromLocalStorage(slot.id)) {
+    return { recovered: false, slotId: slot?.id || null };
+  }
+  syncActiveSlotFromCache({ slotId: slot.id });
+  return { recovered: true, slotId: slot.id };
+}
+
+/**
  * Ativa um slot: hidrata storage, merge remoto do bundle, flush slot anterior, copia bundle → ativo.
  * @param {string} slotId
  * @param {{ skipProbe?: boolean, reason?: string }} [options]

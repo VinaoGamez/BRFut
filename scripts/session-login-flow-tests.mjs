@@ -68,14 +68,14 @@ checkSync('navegação interna preserva sessão (skip session end)', () => {
   assert(save.includes('markSkipSessionEndOnce'), 'helper mark skip session');
   assert(save.includes('consumeSkipSessionEndOnce'), 'helper consume skip session');
   assert(dom.includes('markSkipSessionEndOnce'), 'redirectGame marca skip');
-  assert(persist.includes('consumeSkipSessionEndOnce'), 'persistência respeita skip');
+  assert(persist.includes('shouldPreserveAuthOnPageHide'), 'persistência respeita preservação da sessão');
   assert(
     persist.includes('hasLocalCareerSave') && persist.includes('markCareerReloadPending'),
     'pagehide usa localStorage e marca reload pendente',
   );
   assert(home.includes('markSkipSessionEndOnce'), 'home marca skip ao ir para o jogo');
   assert(
-    home.includes('Hard refresh nem sempre dispara beforeunload'),
+    home.includes('hasCareer() || hasLocalCareerSave() || getAuthToken()'),
     'home pagehide marca skip com save local',
   );
 });
@@ -85,6 +85,16 @@ checkSync('home e index encerram sessão ao fechar aba', () => {
   const main = readFileSync(join(ROOT, 'js/main.js'), 'utf8');
   assert(home.includes('endBrowserSession'), 'home pagehide logout');
   assert(main.includes('endBrowserSession'), 'index pagehide logout');
+});
+
+checkSync('home keeps authenticated state when slots render again', () => {
+  const src = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  assert(src.includes('let authUiState = {'), 'persistent auth state on Home');
+  assert(
+    src.includes('onSlotsChanged: () => syncCareerActions(authUiState)'),
+    'slot render reuses authenticated state',
+  );
+  assert(src.includes('recoverCareerSlotsAfterHydration();'), 'recovery runs after cloud hydrate');
 });
 
 await checkAsync(`GET ${BASE}/home.html responde`, async () => {

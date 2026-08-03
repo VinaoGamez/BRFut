@@ -20,6 +20,7 @@ import { SPONSOR_LOGO_URLS } from './assets/sponsor-logos.js';
 import {
   runCareerBootMigration,
   activateSlot,
+  recoverCareerSlotsAfterHydration,
 } from './core/career-activate.js';
 import { hasPlayableCareerSave } from './core/career-storage-health.js';
 
@@ -188,13 +189,19 @@ if (SITE_MAINTENANCE.enabled) {
     location.href = `${url.pathname}${url.search}`;
   };
 
+  let authUiState = {
+    loggedIn: false,
+    hasBackend: AUTH_REQUIRED || !!BRFUT_API_ORIGIN,
+  };
+
   const careerSlots = mountCareerSlotsUi({
-    onSlotsChanged: () => syncCareerActions(),
+    onSlotsChanged: () => syncCareerActions(authUiState),
     onStartSlot: slotId => goToGame({ slotId }),
     onNewCareer: slotId => goToGame({ slotId, novo: true }),
   });
 
-  const syncCareerActions = ({ loggedIn = null, hasBackend = null } = {}) => {
+  const syncCareerActions = (state = authUiState) => {
+    const { loggedIn = null, hasBackend = null } = state || {};
     const last = careerSlots.getLastPlayedSlot();
     const lastPlayable = last ? hasPlayableCareerSave(last.id) : false;
     const hasSlot = careerSlots.hasAnySlot();
@@ -294,6 +301,7 @@ if (SITE_MAINTENANCE.enabled) {
   };
 
   const syncHeroActions = ({ loggedIn, hasBackend }) => {
+    authUiState = { loggedIn: loggedIn === true, hasBackend: hasBackend === true };
     const wantsLogin = AUTH_REQUIRED || hasBackend || !!BRFUT_API_ORIGIN;
     if (wantsLogin) {
       loginBtn?.classList.toggle('hidden', loggedIn);
@@ -312,6 +320,10 @@ if (SITE_MAINTENANCE.enabled) {
     modal: document.getElementById('accountModal'),
     hasCareer,
     onAuthChange: syncHeroActions,
+    onLoginSuccess: async () => {
+      recoverCareerSlotsAfterHydration();
+      careerSlots.renderList();
+    },
   });
 
   // Estado inicial fechado enquanto /api/auth/me ainda está sendo validado.
@@ -326,6 +338,7 @@ if (SITE_MAINTENANCE.enabled) {
       ? state.mode === 'cloud'
       : state.mode === 'cloud' ||
         (!state.authRejected && (!!getAuthToken() || !!state.tokenPreserved));
+    recoverCareerSlotsAfterHydration();
     syncHeroActions({
       loggedIn,
       hasBackend: !!state.backend || state.mode === 'cloud' || !!BRFUT_API_ORIGIN,
