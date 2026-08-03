@@ -499,7 +499,7 @@ export function createCalendarViewFeature(deps) {
     return reportModal;
   };
 
-  const openCalendarMatchReport = entry => {
+  const openCalendarMatchReport = (entry, { showStatistics = true } = {}) => {
     const userClub = getUserClub();
     const userDivision = getUserDivision();
     const { game, result, goals, incidents = [] } = entry;
@@ -610,7 +610,7 @@ export function createCalendarViewFeature(deps) {
     const content = $('#matchReportContent');
     if (!reportModal || !content) return;
     reportModal.style.zIndex = '80';
-    content.innerHTML = header + statisticsHtml + ratingsHtml;
+    content.innerHTML = header + (showStatistics ? statisticsHtml : '') + ratingsHtml;
     reportModal.classList.remove('hidden');
   };
 

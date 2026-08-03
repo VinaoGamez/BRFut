@@ -38,8 +38,10 @@ const {
   defaultSlotName,
   canCreateSlot,
   getActiveSlotId,
+  setActiveSlotId,
   deleteCareerSlot,
 } = await import('../js/core/career-slot-manager.js');
+const { readJson } = await import('../js/core/save.js');
 const { recoverCareerSlotsAfterHydration } = await import('../js/core/career-activate.js');
 
 let passed = 0;
@@ -93,6 +95,25 @@ check('hydrateSlot copies bundle to active keys', () => {
   hydrateSlot(slotId);
   const active = JSON.parse(localStorage.getItem(SAVE_KEYS.career) || 'null');
   assert(active?.clubName === 'Test FC');
+});
+
+check('hydrateSlot never overwrites a selected slot with another active career', () => {
+  localStorage.clear();
+  const firstId = createNewSlot({ name: 'Carreira A' });
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ clubName: 'Clube A', saveRevision: 99 }));
+  localStorage.setItem(SAVE_KEYS.season, JSON.stringify({ year: 2032, currentRound: 30, saveRevision: 99 }));
+  syncActiveSlotFromCache({ slotId: firstId });
+
+  const secondId = createNewSlot({ name: 'Carreira B' });
+  const secondBundle = slotBundleKeys(secondId);
+  localStorage.setItem(secondBundle.career, JSON.stringify({ clubName: 'Clube B', saveRevision: 10 }));
+  localStorage.setItem(secondBundle.season, JSON.stringify({ year: 2029, currentRound: 8, saveRevision: 10 }));
+
+  setActiveSlotId(firstId);
+  hydrateSlot(secondId, { allowSeedFromActive: false });
+
+  assert(readJson(SAVE_KEYS.career)?.clubName === 'Clube B', 'selected career must win');
+  assert(readJson(secondBundle.career)?.clubName === 'Clube B', 'selected bundle must stay intact');
 });
 
 check('canCreateSlot respects limit of 5', () => {

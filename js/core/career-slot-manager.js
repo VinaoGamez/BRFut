@@ -271,7 +271,11 @@ export function hydrateSlot(slotId, { allowSeedFromActive = true } = {}) {
   } else if (!hasBundleCareer) {
     /* leave empty — nova carreira */
   }
-  preferActiveOverStaleBundle(slotId);
+  // O cache ativo só pode disputar frescor com o bundle quando já pertence ao
+  // mesmo slot. Ao abrir outra carreira (ou numa nova aba), o cache ativo pode
+  // ser de outro save; copiá-lo para o bundle selecionado mistura ou substitui
+  // carreiras e faz o carregamento aparentar ter voltado/sumido.
+  if (currentId === slotId) preferActiveOverStaleBundle(slotId);
   copyBundleToActiveKeys(slotId);
   return true;
 }

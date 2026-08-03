@@ -120,6 +120,23 @@ checkSync('boot reutiliza sessão validada e não trata cache parcial como save 
   assert(fetchKey.includes('authedFetch(`/api/saves/'), 'fallback remoto continua disponível');
 });
 
+checkSync('tela de notas pós-jogo oculta estatísticas e preserva relatórios históricos', () => {
+  const calendar = readFileSync(join(ROOT, 'js/feature/calendar-view/index.js'), 'utf8');
+  const engine = readFileSync(join(ROOT, 'js/legacy/engine.js'), 'utf8');
+  assert(
+    calendar.includes('(entry, { showStatistics = true } = {})'),
+    'relatórios históricos continuam exibindo estatísticas por padrão',
+  );
+  assert(
+    calendar.includes("header + (showStatistics ? statisticsHtml : '') + ratingsHtml"),
+    'renderização permite ocultar somente as estatísticas',
+  );
+  assert(
+    engine.includes('}, { showStatistics: false });'),
+    'botão NOTAS do pós-jogo solicita relatório sem estatísticas',
+  );
+});
+
 await checkAsync(`GET ${BASE}/home.html responde`, async () => {
   const res = await fetch(`${BASE}/home.html`, { cache: 'no-store' });
   assert(res.ok, `HTTP ${res.status}`);

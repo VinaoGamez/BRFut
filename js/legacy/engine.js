@@ -5832,7 +5832,7 @@ export async function bootEngine({
       goals:{home:[...sideGoals.home],away:[...sideGoals.away]},
       ratingPlayers,
       incidents:calendarLiveVolumeIncidents(),
-    });
+    }, { showStatistics: false });
   };
   const matchLiveSession=createMatchLiveSessionFeature({
     $,
