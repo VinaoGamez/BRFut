@@ -177,6 +177,7 @@ export function commitSeasonArchiveFromLive(deps, meta = {}) {
     stateLeagueSnapshot: deps.getStateLeagueSnapshot?.() || null,
     scorers: deps.getAllScorers?.() || meta.scorers,
     assistants: deps.getAllAssistants?.() || meta.assistants,
+    transferDeals: deps.getTransferDeals?.() || [],
     movements: meta.movements || [],
     closedAt: meta.closedAt,
   });

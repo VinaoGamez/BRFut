@@ -32,6 +32,7 @@ import { createPlayerCells, outfield, fatigueCell, rosterFatigueCell } from '../
 import { renderTableFootIcon } from '../lab/card-back.js';
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
+import { renderTransferHistoryCard } from '../ui/transfer-history-card.js';
 import { SAVE_KEYS, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { getAuthToken, isCloudStorageActive, probeBackend } from '../core/storage-api.js';
 import { collectWorldRosters, applyWorldRosters, stampWorldPlayers } from '../engine/world-rosters.js';
@@ -143,7 +144,7 @@ import { hasUsableStateLeagueSave } from '../core/save-sync.js';
 import { applyCareerPreferences, mergePreferencesIntoCareer } from '../core/save-preferences.js';
 import { createMatchRatingsEngine, DEFAULT_USER_TACTICS, blankMatchStats } from '../engine/match-ratings.js';
 import { createSeasonTransitionEngine } from '../engine/season-transition.js';
-import { commitSeasonArchiveFromLive } from '../core/season-archive-storage.js';
+import { commitSeasonArchiveFromLive, listSeasonArchiveYears, loadSeasonArchive } from '../core/season-archive-storage.js';
 import { createSeasonSaveWriter } from '../engine/season-save-writer.js';
 import { serializeUserStadium, applySavedUserStadium } from '../engine/stadium-sectors.js';
 import { createInjuryEngine } from '../engine/injury.js';
@@ -2650,6 +2651,8 @@ export async function bootEngine({
       case 'penaltySaving':return Number(p.penaltySaving)||0;
       case 'reflexes':return Number(p.reflexes)||0;
       case 'fatigue':return Number(p.fatigue)||0;
+      case 'wage':return Number(p.contract?.wagePerRound??p.wage)||0;
+      case 'marketValue':return Number(p.marketValue)||0;
       case 'trainingXp':{
         const id=resolvePlayerId(p)||playerKey(p)||historyPlayerKey(p);
         return Number(getTrainingProgressForPlayer(playerDevelopment,id)?.xpSeason)||0;
@@ -2699,6 +2702,12 @@ export async function bootEngine({
   let rosterOvrMarkHtml=()=> '';
   /** HTML da coluna XP de treino — preenchido após init de playerDevelopment. */
   let rosterTrainingXpHtml=()=> '';
+  const rosterMoneyLabel=value=>{
+    const amount=Math.max(0,Math.round(Number(value)||0));
+    if(amount>=1_000_000)return `R$ ${(amount/1_000_000).toFixed(amount>=10_000_000?0:1).replace('.',',')} mi`;
+    if(amount>=1_000)return `R$ ${Math.round(amount/1_000)} mil`;
+    return `R$ ${amount}`;
+  };
   const rosterContracts=createRosterContractsFeature({
     $,
     $$,
@@ -2756,6 +2765,8 @@ export async function bootEngine({
       ${rosterAttrCell(p,'reflexes','roster-group-gk',outfield(p.reflexes),top)}
       ${rosterTrainingXpHtml(p)}
       <span>${rosterFatigueCell(p)}</span>
+      <span title="Salário mensal">${rosterMoneyLabel(wageMonthlyFromRound(p.contract?.wagePerRound??p.wage,userDivision))}</span>
+      <span title="Valor do passe">${rosterMoneyLabel(p.marketValue)}</span>
     </div>`;
     }).join('');
     playerRename.focusActiveInput();
@@ -3715,6 +3726,62 @@ export async function bootEngine({
       try{renderEnvironmentCard();}catch{/* boot */}
     },
   }):null;
+  const ensureTransferHistoryModal=()=>{
+    if($('#transferHistoryCardModal'))return;
+    document.body.insertAdjacentHTML('beforeend','<div id="transferHistoryCardModal" class="transfer-history-modal" role="dialog" aria-modal="true" aria-label="Histórico de transferências" hidden><div id="transferHistoryCardBody" class="transfer-history-modal-body"></div></div>');
+    onClick('#transferHistoryCardModal',event=>{if(event.target?.id==='transferHistoryCardModal')closeTransferHistory();});
+    onClick('#transferHistoryCardBody',event=>{
+      const toggle=event.target.closest('.transfer-history-season-toggle');
+      if(toggle){
+        const selected=toggle.closest('.transfer-history-season');
+        selected.parentElement.querySelectorAll('.transfer-history-season').forEach(season=>{
+          const active=season===selected;
+          season.classList.toggle('is-expanded',active);
+          season.querySelector('.transfer-history-season-toggle')?.setAttribute('aria-expanded',String(active));
+          const content=season.querySelector('.transfer-history-season-content');
+          if(content)content.hidden=!active;
+        });
+        return;
+      }
+      event.target.closest('.transfer-history-card')?.classList.toggle('is-flipped');
+    });
+  };
+  const closeTransferHistory=()=>{
+    const modal=$('#transferHistoryCardModal');
+    if(modal)modal.hidden=true;
+    document.body.classList.remove('transfer-history-open');
+  };
+  const transferHistorySeason=(year,deals=[])=>({
+    year,
+    transfers:(Array.isArray(deals)?deals:[])
+      .filter(deal=>deal&&deal.type!=='watch'&&(deal.from===userClub||deal.to===userClub))
+      .map(deal=>deal.to===userClub
+        ?{playerName:deal.playerName||'—',direction:'in',club:deal.from||'Livre'}
+        :{playerName:deal.playerName||'—',direction:'out',club:deal.to||'Livre'})
+      .reverse(),
+  });
+  const openTransferHistory=()=>{
+    ensureTransferHistoryModal();
+    const current=transferHistorySeason(careerSeason,transfersEngine?.snapshotSeasonDeals?.()||[]);
+    const years=listSeasonArchiveYears({seasonIndex:savedNewGame?.seasonIndex});
+    const archived=years
+      .map(year=>loadSeasonArchive(year,{seed:savedNewGame?.seed}))
+      .filter(Boolean)
+      .map(archive=>transferHistorySeason(archive.careerSeason,archive.transferDeals));
+    const seasons=[current,...archived]
+      .filter((season,index,all)=>all.findIndex(item=>Number(item.year)===Number(season.year))===index)
+      .sort((a,b)=>Number(b.year)-Number(a.year));
+    const body=$('#transferHistoryCardBody');
+    body.innerHTML=renderTransferHistoryCard({seasons});
+    $('#transferHistoryCardModal').hidden=false;
+    document.body.classList.add('transfer-history-open');
+    body.querySelector('.transfer-history-card')?.focus();
+  };
+  onClick('#openTransferHistoryCard',openTransferHistory);
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&!$('#transferHistoryCardModal')?.hidden)closeTransferHistory();
+    if((event.key==='Enter'||event.key===' ')&&event.target?.classList?.contains('transfer-history-card')){event.preventDefault();event.target.classList.toggle('is-flipped');}
+  });
   const notifyIncomingTransferOffers=offers=>{
     (offers||[]).forEach(offer=>{
       const isLoan=offer.type==='loan';
@@ -7161,6 +7228,7 @@ export async function bootEngine({
       getStateLeagueSnapshot:()=>stateLeagueEngine.serialize({all:true}),
       getAllScorers:()=>allScorers,
       getAllAssistants:()=>allAssistants,
+      getTransferDeals:()=>transfersEngine?.snapshotSeasonDeals?.()||[],
     }, meta),
     persistSeason,
     renderClubBudget,

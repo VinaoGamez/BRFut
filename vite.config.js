@@ -68,6 +68,7 @@ export default defineConfig({
               teamLab: resolve(__dirname, 'team-lab.html'),
               nationalTeamOffersLab: resolve(__dirname, 'national-team-offers-lab.html'),
               seasonSummaryLab: resolve(__dirname, 'season-summary-lab.html'),
+              transferHistoryCardLab: resolve(__dirname, 'transfer-history-card-lab.html'),
               storageDiag: resolve(__dirname, 'storage-diag.html'),
             }),
       },

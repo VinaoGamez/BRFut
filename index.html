@@ -87,6 +87,7 @@
   <link rel="stylesheet" href="css/tactical-confrontation.css?v=20260718-css-feat">
   <link rel="stylesheet" href="css/economy-office.css?v=20260720-overdraft">
   <link rel="stylesheet" href="css/club-history-card.css?v=20260803-v3">
+  <link rel="stylesheet" href="css/transfer-history-card.css?v=20260803-v1">
   <link rel="stylesheet" href="css/season-summary.css?v=20260719-goal-gauge">
   <link rel="stylesheet" href="css/manager-sack.css?v=20260718-sack-ui">
   <link rel="stylesheet" href="css/sponsor-picker.css?v=20260718-picker-stable">
@@ -162,7 +163,7 @@
           <label>POS<select data-roster-filter="pos" aria-label="Filtrar posição"><option value="">Todas</option></select></label>
           <label>PÉ<select data-roster-filter="foot" aria-label="Filtrar pé"><option value="">Todos</option></select></label>
           <label>PERFIL<select data-roster-filter="personality" aria-label="Filtrar perfil"><option value="">Todos</option></select></label>
-          <button type="button" id="rosterContractBtn" aria-expanded="false" aria-controls="rosterContractPanel">CONTRATO<span class="roster-contract-btn-badge hidden" aria-hidden="true">0</span></button>
+          <div class="roster-filter-actions"><button type="button" id="rosterContractBtn" aria-expanded="false" aria-controls="rosterContractPanel">CONTRATO<span class="roster-contract-btn-badge hidden" aria-hidden="true">0</span></button><button type="button" id="openTransferHistoryCard">HISTÓRICO DE TRANSFERÊNCIAS</button></div>
         </div>
         <div class="roster-scroll">
           <div class="roster-head roster-expanded" id="rosterHead" role="row">
@@ -188,6 +189,8 @@
             <button type="button" data-roster-sort="reflexes" class="roster-group-gk">REF</button>
             <button type="button" data-roster-sort="trainingXp">XP TREINO</button>
             <button type="button" data-roster-sort="fatigue">CANSAÇO</button>
+            <button type="button" data-roster-sort="wage">SALÁRIO</button>
+            <button type="button" data-roster-sort="marketValue">PASSE</button>
           </div>
           <div id="playerList"></div>
         </div>
@@ -852,8 +855,10 @@
   #squad .roster-filters{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:end;gap:10px;padding:10px 12px;border-bottom:1px solid #234650;background:#0d222b}
   #squad .roster-filters label{display:grid;gap:4px;min-width:120px;color:#75cde3;font:700 10px 'DM Sans',sans-serif;letter-spacing:.45px}
   #squad .roster-filters select{min-width:120px;padding:6px 8px;border:1px solid #315d69;border-radius:4px;background:#0c1e28;color:#edf8f5;font:600 12px 'DM Sans',sans-serif}
-  #squad .roster-filters #rosterContractBtn{margin-left:auto;align-self:center}
-  .roster-head.roster-expanded,.player-row.roster-expanded{width:max-content;min-width:100%;grid-template-columns:minmax(240px,1.65fr) 52px 52px 52px 72px 38px 110px 48px 48px 48px 48px 48px 48px 48px 48px 56px 64px 64px 64px 48px 72px 80px;gap:6px}
+  #squad .roster-filter-actions{margin-left:auto;align-self:center;display:flex;align-items:center;gap:8px}
+  #squad #openTransferHistoryCard{min-height:36px;padding:0 13px;border:1px solid #397487;border-radius:5px;background:#102833;color:#dff7fa;font:800 9px 'DM Sans',sans-serif;letter-spacing:.45px;cursor:pointer}
+  #squad #openTransferHistoryCard:hover,#squad #openTransferHistoryCard:focus-visible{border-color:#63d9ff;background:#163845;color:#fff}
+  .roster-head.roster-expanded,.player-row.roster-expanded{width:max-content;min-width:100%;grid-template-columns:minmax(240px,1.65fr) 52px 52px 52px 72px 38px 110px 48px 48px 48px 48px 48px 48px 48px 48px 56px 64px 64px 64px 48px 72px 80px 82px 92px;gap:6px}
   #squad .roster-head>button[data-roster-sort="ovr"],#squad .player-row>.roster-col-ovr{min-width:0;padding-inline:2px}
   #squad .roster-ovr{display:inline-flex;align-items:center;justify-content:center;gap:4px;font-weight:700}
   #squad .roster-ovr-mark{display:inline-block;font:800 13px/1 'DM Sans',sans-serif;font-style:normal;letter-spacing:0}

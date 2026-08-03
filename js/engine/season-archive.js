@@ -199,6 +199,18 @@ export function buildSeasonArchive(input = {}) {
       : null,
     scorers: slimLeaders(input.scorers, 'goals'),
     assistants: slimLeaders(input.assistants, 'assists'),
+    transferDeals: Array.isArray(input.transferDeals)
+      ? input.transferDeals.slice(-80).map(item => ({
+          playerName: item.playerName || '—',
+          playerId: item.playerId || null,
+          from: item.from || null,
+          to: item.to || null,
+          fee: Math.round(Number(item.fee) || 0),
+          type: item.type || 'buy',
+          at: item.at || null,
+          round: Number(item.round) || 0,
+        }))
+      : [],
     movements: Array.isArray(input.movements)
       ? input.movements.map(row => ({
           title: row.title,

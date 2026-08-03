@@ -49,6 +49,10 @@ const archive = buildSeasonArchive({
   },
   scorers: [{ club: 'Internacional', name: 'João', goals: 22 }],
   assistants: [],
+  transferDeals: [
+    { playerName: 'Fábio Neves', playerId: 'p-1', from: 'Santa Cruz', to: 'Vinaz Athletic Futebol', fee: 850000, type: 'buy', round: 12 },
+    { playerName: 'Victor Reis', playerId: 'p-2', from: 'Vinaz Athletic Futebol', to: 'Coritiba', fee: 1200000, type: 'sell', round: 18 },
+  ],
   movements: [{ title: 'Série B → Série A', type: 'promote', clubs: ['X'] }],
 });
 
@@ -56,6 +60,8 @@ assert(!!archive, 'build archive');
 assert(archive.careerSeason === 2027, 'year stamped');
 assert(archive.standings.A[0].club === 'Internacional', 'standings slim');
 assert(archive.cupCompetition.champion === 'Fluminense', 'cup champion');
+assert(archive.transferDeals.length === 2, 'transfer deals archived');
+assert(archive.transferDeals[0].from === 'Santa Cruz' && archive.transferDeals[1].to === 'Coritiba', 'transfer routes preserved');
 assert(!!archive.checksum && archive.checksum === seasonArchiveChecksum({ ...archive, checksum: undefined }) || !!archive.checksum, 'checksum present');
 assert(isValidSeasonArchive(archive, { seed: 99, year: 2027 }), 'valid archive');
 assert(!isValidSeasonArchive(archive, { year: 2028 }), 'reject wrong year');
