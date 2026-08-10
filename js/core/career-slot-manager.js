@@ -8,6 +8,7 @@ import {
   CAREER_SLOT_LIMIT,
   ACTIVE_SLOT_SESSION_KEY,
   slotBundleKeys,
+  SAVE_RESET_EPOCH,
 } from './constants.js';
 import { readJson, writeJson, getStoragePressure } from './save.js';
 import {
@@ -18,11 +19,13 @@ import {
 } from './storage-api.js';
 import { isLocalStorageCheckpoint } from './local-save-checkpoint.js';
 import { pickNewerSave } from './save-sync.js';
+import { isCompatibleCareerPayload } from './save-compatibility.js';
 
-const INDEX_VERSION = 1;
+const INDEX_VERSION = 2;
 
 const emptyIndex = () => ({
   version: INDEX_VERSION,
+  saveEpoch: SAVE_RESET_EPOCH,
   activeSlotId: null,
   updatedAt: null,
   slots: [],
@@ -31,13 +34,27 @@ const emptyIndex = () => ({
 export function readCareerIndex() {
   const raw = readJson(CAREER_INDEX_KEY, null);
   if (!raw || !Array.isArray(raw.slots)) return emptyIndex();
-  return { ...emptyIndex(), ...raw, slots: [...raw.slots] };
+  const slots = raw.slots.filter(slot => {
+    if (slot?.pendingCreation === true && raw.saveEpoch === SAVE_RESET_EPOCH) return true;
+    const bundle = slotBundleKeys(slot?.id);
+    return isCompatibleCareerPayload(readJson(bundle.career, null));
+  });
+  const activeSlotId = slots.some(slot => slot.id === raw.activeSlotId) ? raw.activeSlotId : null;
+  return {
+    ...emptyIndex(),
+    ...raw,
+    version: INDEX_VERSION,
+    saveEpoch: SAVE_RESET_EPOCH,
+    activeSlotId,
+    slots,
+  };
 }
 
 export function writeCareerIndex(index) {
   const next = {
     ...index,
     version: INDEX_VERSION,
+    saveEpoch: SAVE_RESET_EPOCH,
     updatedAt: new Date().toISOString(),
     slots: Array.isArray(index.slots) ? index.slots : [],
   };
@@ -110,6 +127,7 @@ export function buildSlotManifest(slotId, { name, career, season } = {}) {
     seasonYear: s?.year ?? c?.season ?? existing?.seasonYear ?? null,
     managerName: c?.managerName || existing?.managerName || '',
     currentRound: s?.currentRound ?? s?.round ?? existing?.currentRound ?? null,
+    pendingCreation: false,
     createdAt: existing?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -291,6 +309,7 @@ export function createNewSlot({ name } = {}) {
     seasonYear: null,
     managerName: '',
     currentRound: null,
+    pendingCreation: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

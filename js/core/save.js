@@ -1,4 +1,5 @@
-import { SAVE_KEYS, LEGACY_SAVE_KEYS, CAREER_INDEX_KEY, ACTIVE_SLOT_SESSION_KEY, isSlotBundleKey, slotBundleKeys } from './constants.js';
+import { SAVE_KEYS, LEGACY_SAVE_KEYS, SAVE_VERSION, CAREER_INDEX_KEY, ACTIVE_SLOT_SESSION_KEY, isSlotBundleKey, slotBundleKeys } from './constants.js';
+import { isCareerSaveKey, isCompatibleCareerPayload } from './save-compatibility.js';
 import { normalizeWorldCupHistory } from '../engine/world-cup-history.js';
 import { stampSyncableSave, isLocalStorageCheckpoint } from './save-sync.js';
 import { isCloudStorageActive, queueCloudDelete, queueCloudSave } from './storage-api.js';
@@ -672,7 +673,7 @@ export function clearSessionCareerData() {
  * Apaga todos os saves de carreira no navegador (ativo, slots, legado, índice).
  * Usado em manutenção / reset operacional.
  */
-export function purgeAllCareerStorage() {
+export function purgeAllCareerStorage({ preserveLastSeenBuild = false } = {}) {
   const keysToDrop = new Set([
     ...Object.values(SAVE_KEYS),
     ...Object.values(LEGACY_SAVE_KEYS),
@@ -690,6 +691,10 @@ export function purgeAllCareerStorage() {
     'brfut-active-slot-id',
     'matchday-active-slot-id',
   ]);
+  if (preserveLastSeenBuild) {
+    keysToDrop.delete(SAVE_KEYS.lastSeenBuild);
+    keysToDrop.delete(LEGACY_SAVE_KEYS.lastSeenBuild);
+  }
 
   try {
     for (let i = localStorage.length - 1; i >= 0; i -= 1) {
@@ -709,8 +714,8 @@ export function purgeAllCareerStorage() {
       if (!key) continue;
       if (
         keysToDrop.has(key)
-        || key.startsWith('brfut-')
-        || key.startsWith('matchday-')
+        || isSlotBundleKey(key)
+        || /^matchday-slot-/.test(key)
       ) {
         sessionStorage.removeItem(key);
       }
@@ -720,6 +725,26 @@ export function purgeAllCareerStorage() {
   }
 
   invalidateStoragePressureCache();
+}
+
+/** Remove todo o conjunto dependente se qualquer carreira local for incompatível. */
+export function purgeObsoleteCareerStorage(minVersion = SAVE_VERSION.career) {
+  let obsolete = false;
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || !isCareerSaveKey(key)) continue;
+      if (!isCompatibleCareerPayload(readJson(key, null), minVersion)) {
+        obsolete = true;
+        break;
+      }
+    }
+  } catch {
+    return false;
+  }
+  if (!obsolete) return false;
+  purgeAllCareerStorage({ preserveLastSeenBuild: true });
+  return true;
 }
 
 /**

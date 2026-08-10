@@ -102,7 +102,7 @@ await checkAsync('activateSlot copia bundle → chaves ativas', async () => {
   resetAll();
   runCareerBootMigration();
   const slotId = createNewSlot();
-  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ clubName: 'Bundle FC', division: 'B' }));
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: 7, clubName: 'Bundle FC', division: 'B' }));
   syncActiveSlotFromCache();
   localStorage.removeItem(SAVE_KEYS.career);
   await activateSlot(slotId, { skipProbe: true });
@@ -114,13 +114,13 @@ await checkAsync('activateSlot flush slot anterior ao trocar', async () => {
   resetAll();
   runCareerBootMigration();
   const slotA = createNewSlot();
-  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ clubName: 'Slot A' }));
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: 7, clubName: 'Slot A' }));
   syncActiveSlotFromCache();
   const slotB = createNewSlot();
-  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ clubName: 'Slot B saved' }));
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: 7, clubName: 'Slot B saved' }));
   syncActiveSlotFromCache();
   setActiveSlotId(slotA);
-  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ clubName: 'Slot A active' }));
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: 7, clubName: 'Slot A active' }));
   await activateSlot(slotB, { skipProbe: true });
   const bundleA = slotBundleKeys(slotA);
   const savedA = JSON.parse(localStorage.getItem(bundleA.career) || 'null');
@@ -134,7 +134,7 @@ await checkAsync('prepareGameSession restaura slot ativo sem expor id na URL', a
   runCareerBootMigration();
   const slotId = createNewSlot();
   const bundle = slotBundleKeys(slotId);
-  localStorage.setItem(bundle.career, JSON.stringify({ clubName: 'Hidden Slot FC', division: 'C' }));
+  localStorage.setItem(bundle.career, JSON.stringify({ version: 7, clubName: 'Hidden Slot FC', division: 'C' }));
   localStorage.removeItem(SAVE_KEYS.career);
   const session = await prepareGameSession({ skipProbe: true });
   const active = JSON.parse(localStorage.getItem(SAVE_KEYS.career) || 'null');

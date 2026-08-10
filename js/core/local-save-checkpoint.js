@@ -3,7 +3,7 @@
  * O estado completo permanece na API; o browser guarda apenas identidade e
  * progresso suficiente para localizar/hidratar a carreira na proxima abertura.
  */
-import { SAVE_KEYS } from './constants.js';
+import { SAVE_KEYS, SAVE_VERSION } from './constants.js';
 import { invalidateStoragePressureCache } from './save.js';
 
 export const LOCAL_CHECKPOINT_FLAG = '_localCheckpoint';
@@ -39,6 +39,7 @@ function stampCheckpoint(value) {
 export function buildCareerLocalCheckpoint(career) {
   if (!career || typeof career !== 'object') return career;
   return stampCheckpoint({
+    version: Number.isInteger(career.version) ? career.version : SAVE_VERSION.career,
     seed: career.seed,
     clubName: career.clubName,
     managerName: career.managerName,
@@ -112,6 +113,9 @@ export function writeLocalCheckpoint(key, checkpoint) {
 /** So deve ser chamado depois de a API confirmar o mesmo payload integral. */
 export function applyLocalCheckpointTrim(key, fullValue) {
   if (!isCloudLocalTrimEnabled()) return false;
+  // Bundles de slot são a cópia local jogável. Apenas as chaves canônicas
+  // podem virar checkpoint depois que a API confirma o payload integral.
+  if (!CLOUD_OFFLOAD_KEYS.has(key)) return false;
   const checkpoint = buildLocalCheckpointForKey(key, fullValue);
   if (checkpoint === undefined) return false;
   try {

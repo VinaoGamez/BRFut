@@ -98,6 +98,52 @@ class BrfutApiTests(unittest.TestCase):
         put_save(self.root, 'tester', 'brfut-season', {'version': 1, 'year': 2028})
         self.assertEqual(get_save(self.root, 'tester', 'brfut-season')['year'], 2028)
 
+    def test_obsolete_saved_account_is_purged_on_read_without_affecting_others(self) -> None:
+        register_user(self.root, 'legacy7', 'secretpass1', 'Legacy')
+        legacy_token, _ = login_user(self.root, 'legacy7', 'secretpass1')
+        legacy_dir = self.root / 'saves' / 'legacy7'
+        legacy_dir.mkdir(parents=True, exist_ok=True)
+        (legacy_dir / 'brfut-career.json').write_text(json.dumps({
+            'key': 'brfut-career',
+            'value': {'version': 6, 'clubName': 'Antigo'},
+            'updatedAt': '2026-08-01T00:00:00Z',
+        }), encoding='utf-8')
+        (legacy_dir / 'brfut-career-index.json').write_text(json.dumps({
+            'key': 'brfut-career-index',
+            'value': {'version': 1, 'slots': [{'id': 'old'}]},
+            'updatedAt': '2026-08-01T00:00:00Z',
+        }), encoding='utf-8')
+
+        register_user(self.root, 'modern7', 'secretpass1', 'Modern')
+        modern_token, _ = login_user(self.root, 'modern7', 'secretpass1')
+        put_save(self.root, 'modern7', 'brfut-career', {'version': 7, 'clubName': 'Atual'})
+        put_save(self.root, 'modern7', 'brfut-slot-new-career', {
+            'version': 7,
+            'clubName': 'Atual',
+            'season': 2026,
+        })
+        put_save(self.root, 'modern7', 'brfut-career-index', {
+            'version': 2,
+            'slots': [{'id': 'new', 'name': 'Atual 2026'}],
+        })
+
+        status, body = self._route('GET', '/api/saves', token=legacy_token)
+        self.assertEqual(status, 200)
+        self.assertEqual(body['saves'], {})
+        self.assertFalse(any(legacy_dir.glob('*.json')))
+
+        status, body = self._route('GET', '/api/saves', token=modern_token)
+        self.assertEqual(status, 200)
+        self.assertEqual(body['saves']['brfut-career']['value']['clubName'], 'Atual')
+
+        # Simula sair e entrar novamente: a nova sessão precisa recuperar todo
+        # o conjunto atual, sem acionar a limpeza reservada aos saves antigos.
+        relogin_token, _ = login_user(self.root, 'modern7', 'secretpass1')
+        status, body = self._route('GET', '/api/saves', token=relogin_token)
+        self.assertEqual(status, 200)
+        self.assertEqual(body['saves']['brfut-slot-new-career']['value']['version'], 7)
+        self.assertEqual(len(body['saves']['brfut-career-index']['value']['slots']), 1)
+
     def test_private_routes_fail_closed_without_session(self) -> None:
         private_routes = [
             ('GET', '/api/auth/me'),

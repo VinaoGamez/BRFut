@@ -3,6 +3,7 @@ import './security/tester-hardening.js';
 import { AUTH_REQUIRED, BUILD_VERSION, SAVE_KEYS, SAVE_RESET_EPOCH, SAVE_RESET_MARKER_KEY, BRFUT_API_ORIGIN, SITE_MAINTENANCE } from './core/constants.js';
 import { SPONSOR_EXTERNAL_LINKS } from './core/sponsor-links.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
+import { showSaveResetLoginAlert } from './ui/save-reset-login-alert.js';
 import { createTesterHubFeature } from './feature/tester-hub/index.js';
 import { fetchPlayerStats, probeBackend } from './core/storage-api.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
@@ -324,6 +325,7 @@ if (SITE_MAINTENANCE.enabled) {
     onLoginSuccess: async () => {
       recoverCareerSlotsAfterHydration();
       careerSlots.renderList();
+      await showSaveResetLoginAlert();
     },
   });
 

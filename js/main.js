@@ -8,6 +8,7 @@ import { createEventBus } from './core/event-bus.js';
 import { bootEngine } from './legacy/engine.js';
 import { markBootReady } from './ui/boot-gate.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
+import { showSaveResetLoginAlert } from './ui/save-reset-login-alert.js';
 import {
   endBrowserSession,
   getAuthToken,
@@ -103,6 +104,7 @@ if (SITE_MAINTENANCE.enabled) {
     onAuthChange: state => syncCareerWelcomeAuth?.(state),
     onPlayLocal: () => openCareerCreatorRef?.(),
     onLoginSuccess: async () => {
+      await showSaveResetLoginAlert();
       if (bootStarted) {
         markSkipSessionEndOnce();
         location.reload();

@@ -288,3 +288,15 @@ def delete_career_stats(root: Path, username: str, career_id: str) -> int:
             (username, career_id),
         )
     return int(count)
+
+
+def delete_user_stats(root: Path, username: str) -> int:
+    if not (root / 'player-stats.sqlite3').is_file():
+        return 0
+    with _db(root) as conn:
+        count = conn.execute(
+            'SELECT COUNT(*) FROM stats_matches WHERE username=?',
+            (username,),
+        ).fetchone()[0]
+        conn.execute('DELETE FROM stats_matches WHERE username=?', (username,))
+    return int(count)

@@ -10,6 +10,15 @@ import {
 } from '../js/core/local-save-checkpoint.js';
 import { mergeSeasonSaves, mergeCareerSaves, pickNewerSave } from '../js/core/save-sync.js';
 
+const store = new Map();
+globalThis.localStorage = {
+  getItem: key => store.get(key) ?? null,
+  setItem: (key, value) => store.set(key, String(value)),
+  removeItem: key => store.delete(key),
+  key: index => [...store.keys()][index] ?? null,
+  get length() { return store.size; },
+};
+
 let passed = 0;
 let failed = 0;
 
@@ -46,6 +55,7 @@ check('buildCareerLocalCheckpoint keeps identity fields', () => {
     updatedAt: '2026-07-29T12:00:00.000Z',
   };
   const cp = buildCareerLocalCheckpoint(career);
+  assert(cp.version === 7, 'current save version preserved');
   assert(cp[LOCAL_CHECKPOINT_FLAG] === true, 'flag set');
   assert(cp.clubName === 'Vinaz Athletic', 'club preserved');
   assert(!cp.userRoster, 'roster offloaded');
@@ -96,11 +106,15 @@ check('applyLocalCheckpointTrim no-op when cloud trim disabled', () => {
   assert(!applyLocalCheckpointTrim(SAVE_KEYS.season, season), 'trim disabled');
 });
 
-check('applyLocalCheckpointTrim keeps season/career even when trim enabled', () => {
+check('applyLocalCheckpointTrim creates a versioned canonical checkpoint only', () => {
   setCloudLocalTrimEnabled(true);
-  const season = { seed: 1, userClubName: 'X', currentRound: 4, updatedAt: '2026-07-29T12:00:00.000Z' };
-  assert(!applyLocalCheckpointTrim(SAVE_KEYS.season, season), 'season stays full locally');
-  assert(!applyLocalCheckpointTrim(SAVE_KEYS.career, { clubName: 'X', seed: 1 }), 'career stays full locally');
+  store.clear();
+  const career = { version: 7, clubName: 'X', seed: 1 };
+  assert(applyLocalCheckpointTrim(SAVE_KEYS.career, career), 'canonical career is offloaded');
+  const checkpoint = JSON.parse(localStorage.getItem(SAVE_KEYS.career));
+  assert(checkpoint.version === 7, 'checkpoint remains compatible');
+  assert(isLocalStorageCheckpoint(checkpoint), 'checkpoint is stamped');
+  assert(!applyLocalCheckpointTrim('brfut-slot-new-career', career), 'slot bundle remains full');
 });
 
 check('mergeSeasonSaves prefers remote when local is checkpoint', () => {

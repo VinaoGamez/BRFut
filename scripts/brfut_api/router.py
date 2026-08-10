@@ -13,11 +13,13 @@ from .saves import (
     delete_save,
     get_all_saves,
     get_save,
+    has_obsolete_career_saves,
     migrate_saves,
     put_save,
 )
 from .player_stats import (
     delete_career_stats,
+    delete_user_stats,
     get_club_history,
     get_club_squad,
     get_leaders,
@@ -25,7 +27,7 @@ from .player_stats import (
     get_player,
     put_match_batch,
 )
-from .career_history import delete_career_history, get_club_seasons, get_manager_history, get_season_history, put_season_history
+from .career_history import delete_career_history, delete_user_history, get_club_seasons, get_manager_history, get_season_history, put_season_history
 
 
 PUBLIC_ROUTES = {
@@ -36,6 +38,16 @@ PUBLIC_ROUTES = {
     ('POST', 'auth/register'),
     ('POST', 'auth/google'),
 }
+
+
+def _purge_obsolete_user_data(root, username: str) -> dict[str, int]:
+    if not has_obsolete_career_saves(root, username):
+        return {'saves': 0, 'stats': 0, 'history': 0}
+    return {
+        'saves': delete_all_saves(root, username),
+        'stats': delete_user_stats(root, username),
+        'history': delete_user_history(root, username),
+    }
 
 
 def _json_response(status: int, payload: dict[str, Any]) -> tuple[int, dict[str, str], bytes]:
@@ -196,6 +208,7 @@ def handle_api(
             return _json_response(200, get_club_seasons(root, username, parts[1], parts[3]))
 
         if method == 'GET' and rel == 'saves':
+            _purge_obsolete_user_data(root, username)
             return _json_response(200, {'saves': get_all_saves(root, username)})
 
         if method == 'POST' and rel == 'saves/migrate':
@@ -210,11 +223,16 @@ def handle_api(
 
         if method == 'DELETE' and rel == 'saves':
             removed = delete_all_saves(root, username)
-            return _json_response(200, {'removed': removed})
+            return _json_response(200, {
+                'removed': removed,
+                'statsRemoved': delete_user_stats(root, username),
+                'historyRemoved': delete_user_history(root, username),
+            })
 
         if len(parts) == 2 and parts[0] == 'saves':
             key = parts[1]
             if method == 'GET':
+                _purge_obsolete_user_data(root, username)
                 return _json_response(200, {'key': key, 'value': get_save(root, username, key)})
             if method == 'PUT':
                 data = _parse_json(body)

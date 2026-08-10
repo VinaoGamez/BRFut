@@ -14,6 +14,7 @@ import {
   isSlotBundleKey,
   isSeasonArchiveKey,
   slotBundleKeys,
+  SAVE_VERSION,
 } from './constants.js';
 import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves, mergeCareerSaves, isSaveProgressAhead, logicalSaveKey } from './save-sync.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
@@ -22,7 +23,8 @@ import {
   setCloudLocalTrimEnabled,
 } from './local-save-checkpoint.js';
 import { isLocalStorageCheckpoint } from './save-sync.js';
-import { consumeFreshCareerBoot, readJson } from './save.js';
+import { consumeFreshCareerBoot, purgeAllCareerStorage, purgeObsoleteCareerStorage, readJson } from './save.js';
+import { containsObsoleteCareerEntries } from './save-compatibility.js';
 import { normalizeRemoteSaveKeys } from './save-key-normalizer.js';
 import { createRecoverySnapshot } from './save-recovery-snapshots.js';
 
@@ -662,6 +664,30 @@ async function putCloudSaveValue(key, value, { retry = true } = {}) {
   });
   rememberRemoteSave(key, prepared);
   return { value: prepared, complete: prepared === value };
+}
+
+async function discardObsoleteCareerSet(remoteSaves = {}) {
+  const remoteObsolete = containsObsoleteCareerEntries(normalizeRemoteSaveKeys(remoteSaves));
+  const localObsolete = purgeObsoleteCareerStorage(SAVE_VERSION.career);
+  if (!remoteObsolete && !localObsolete) return false;
+
+  // Um cache local antigo não pode apagar uma carreira remota já compatível.
+  if (!remoteObsolete) return false;
+
+  if (!localObsolete) {
+    purgeAllCareerStorage({ preserveLastSeenBuild: true });
+  }
+  try {
+    await authedFetch('/api/saves', { method: 'DELETE', retry: false });
+  } catch (error) {
+    warnSyncOnce(
+      'obsolete-save-delete-failed',
+      '[brfut] save incompatível descartado localmente; exclusão remota pendente',
+      error?.message || error,
+    );
+  }
+  setRemoteSavesCache({});
+  return true;
 }
 
 /**
@@ -1446,8 +1472,9 @@ async function initStorageBackendImpl({ skipProbe = false, preferMigrate = false
 
   try {
     const remote = await authedFetch('/api/saves');
-    const remoteSaves = remote?.saves || {};
+    let remoteSaves = remote?.saves || {};
     setRemoteSavesCache(remoteSaves);
+    if (await discardObsoleteCareerSet(remoteSaves)) remoteSaves = {};
     await createRecoverySnapshot(remoteSaves, { reason: 'storage-init' });
     const hasRemoteCareer = remoteHasCareer(remoteSaves);
     const hasLocalCareer = localHasAnyCareerPayload();

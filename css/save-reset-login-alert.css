@@ -1,0 +1,55 @@
+.save-reset-login-alert-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 13000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #020b10d9;
+  backdrop-filter: blur(5px);
+}
+
+.save-reset-login-alert-wrap.hidden {
+  display: none !important;
+}
+
+.save-reset-login-alert-card {
+  width: min(520px, calc(100vw - 32px));
+  padding: 34px 32px 26px;
+  border: 2px solid #18d7f2;
+  border-radius: 26px;
+  background:
+    linear-gradient(145deg, #0c2330f5, #06131cfb),
+    repeating-linear-gradient(135deg, transparent 0 28px, #19d8f207 29px 30px);
+  color: #f4fbfd;
+  text-align: center;
+  box-shadow: 0 24px 70px #000c, inset 0 0 28px #18d7f20a;
+}
+
+.save-reset-login-alert-card p {
+  white-space: pre-line;
+  margin: 0;
+  font: 700 clamp(18px, 3.8vw, 23px)/1.4 'DM Sans', sans-serif;
+  letter-spacing: -0.2px;
+}
+
+.save-reset-login-alert-card button {
+  min-width: 116px;
+  margin-top: 26px;
+  padding: 11px 24px;
+  border: 1px solid #5cecff;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #19cde9, #85f13c);
+  color: #03131a;
+  font: 900 13px 'DM Sans', sans-serif;
+  letter-spacing: 0.7px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px #18d7f22e;
+}
+
+.save-reset-login-alert-card button:hover,
+.save-reset-login-alert-card button:focus-visible {
+  filter: brightness(1.08);
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}

@@ -18,9 +18,10 @@ export const RELEASE_NOTES = [
       {
         label: 'Novo ciclo de carreiras',
         items: [
-          'Como medida de prevenção e correção de falhas, todos os saves de carreira foram excluídos.',
-          'Contas e cadastros foram preservados. Será necessário iniciar uma nova carreira.',
+          'Todos os saves anteriores a 10/08 foram excluídos para evitar erros. Contas e cadastros foram preservados.',
           'Saves antigos agora são bloqueados para impedir que dados incompatíveis retornem pela sincronização.',
+          'Novas carreiras são preservadas corretamente ao salvar, sair do sistema e entrar novamente.',
+          'A equipe BRFut pede desculpas pelo inconveniente. Aproveitem o jogo e não esqueçam: seu feedback é importante!',
         ],
       },
       {
@@ -36,6 +37,7 @@ export const RELEASE_NOTES = [
         items: [
           'Históricos de jogadores, clubes, técnicos, partidas e temporadas passam a usar o novo fluxo de dados da API.',
           'A limpeza preventiva remove estruturas antigas que poderiam causar calendários travados, estatísticas incompletas ou falhas ao avançar.',
+          'A validação de compatibilidade agora diferencia saves antigos de checkpoints atuais sem interromper a sessão de login.',
         ],
       },
     ],

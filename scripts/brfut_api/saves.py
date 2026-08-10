@@ -53,6 +53,21 @@ def _validate_career_version(key: str, value: Any) -> None:
         )
 
 
+def has_obsolete_career_saves(root: Path, username: str) -> bool:
+    user_dir = _user_dir(root, username)
+    if not user_dir.is_dir():
+        return False
+    for key in list_saves(root, username):
+        if not _is_career_key(key):
+            continue
+        payload = _read_payload(_key_path(user_dir, key))
+        value = payload.get('value') if isinstance(payload, dict) and 'value' in payload else payload
+        version = value.get('version') if isinstance(value, dict) else None
+        if not isinstance(version, int) or version < MIN_CAREER_VERSION:
+            return True
+    return False
+
+
 def _is_allowed_save_key(key: str) -> bool:
     if key in ALLOWED_SAVE_KEYS:
         return True

@@ -215,3 +215,15 @@ def delete_career_history(root: Path, username: str, career_id: str) -> int:
         ).fetchone()[0]
         conn.execute('DELETE FROM career_seasons WHERE username=? AND career_id=?', (username, career_id))
     return int(count)
+
+
+def delete_user_history(root: Path, username: str) -> int:
+    if not (root / 'career-history.sqlite3').is_file():
+        return 0
+    with _db(root) as conn:
+        count = conn.execute(
+            'SELECT COUNT(*) FROM career_seasons WHERE username=?',
+            (username,),
+        ).fetchone()[0]
+        conn.execute('DELETE FROM career_seasons WHERE username=?', (username,))
+    return int(count)
