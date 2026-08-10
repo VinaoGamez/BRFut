@@ -246,9 +246,9 @@ if (SITE_MAINTENANCE.enabled) {
   let playerStatsTimer = 0;
 
   /**
-   * Vitrine da home: base fictícia discreta + contagem real da API.
-   * Cadastros e ON reais somam à base (cada usuário novo sobe o número).
-   * Base de cadastros cresce leve por dia.
+   * Indicador promocional da comunidade: uma base de vitrine discreta somada
+   * aos números reais da API. Não deve ser apresentado como métrica analítica
+   * de cadastros ou de usuários simultâneos.
    */
   const displayPlayerStats = stats => {
     const now = new Date();
@@ -272,7 +272,12 @@ if (SITE_MAINTENANCE.enabled) {
     if (!playerStatsEl) return;
     const { online, registered } = displayPlayerStats(stats);
     playerStatsEl.innerHTML =
-      `<span class="stat-on">${online} ON</span> · ${registered} cadastrado${registered === 1 ? '' : 's'}`;
+      `<span class="stat-on">${online} EM CAMPO</span> · ${registered} NA COMUNIDADE`;
+    playerStatsEl.setAttribute(
+      'aria-label',
+      `${online} pessoas em campo e ${registered} pessoas na comunidade — indicador promocional`,
+    );
+    playerStatsEl.title = 'Indicador promocional da comunidade BR Fut';
     playerStatsEl.classList.remove('hidden');
   };
 
