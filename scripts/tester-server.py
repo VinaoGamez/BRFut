@@ -183,7 +183,12 @@ class TesterHandler(SimpleHTTPRequestHandler):
         try:
             status, headers, body = handle_api(method, parsed.path, self._header_map(), self._read_body())
         except Exception as error:  # pragma: no cover — fallback seguro
-            payload = json.dumps({'ok': False, 'code': 'internal_error', 'error': str(error)}).encode('utf-8')
+            self.log_error('API internal error: %s', type(error).__name__)
+            payload = json.dumps({
+                'ok': False,
+                'code': 'internal_error',
+                'error': 'Erro interno do servidor.',
+            }).encode('utf-8')
             status = 500
             headers = {
                 'Content-Type': 'application/json; charset=utf-8',

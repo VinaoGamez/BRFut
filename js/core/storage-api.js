@@ -27,9 +27,16 @@ import { consumeFreshCareerBoot, purgeAllCareerStorage, purgeObsoleteCareerStora
 import { containsObsoleteCareerEntries } from './save-compatibility.js';
 import { normalizeRemoteSaveKeys } from './save-key-normalizer.js';
 import { createRecoverySnapshot } from './save-recovery-snapshots.js';
+import {
+  AUTH_REMEMBER_KEY,
+  authSessionSignal,
+  authenticatedFetchOptions,
+  clearBrowserAuthSession,
+  legacyAuthToken,
+  persistAuthSessionHint,
+  persistLegacyAuthToken,
+} from './auth-session.js';
 
-const AUTH_TOKEN_KEY = 'brfut-auth-token';
-const AUTH_REMEMBER_KEY = 'brfut-auth-remember';
 const SYNCABLE_KEYS = ALL_SYNCABLE_SAVE_KEYS;
 const SYNC_DEBOUNCE_MS = 400;
 const SYNC_AUTH_BACKOFF_MS = 30_000;
@@ -276,17 +283,7 @@ async function parseJsonResponse(response) {
 }
 
 export function getAuthToken() {
-  try {
-    // Aceita token em localStorage (lembrar) ou sessionStorage (aba).
-    // Antes: se remember=0, ignorava localStorage mesmo com token válido residual.
-    return (
-      localStorage.getItem(AUTH_TOKEN_KEY) ||
-      sessionStorage.getItem(AUTH_TOKEN_KEY) ||
-      ''
-    );
-  } catch {
-    return '';
-  }
+  return authSessionSignal();
 }
 
 export function isAuthRememberEnabled() {
@@ -298,23 +295,8 @@ export function isAuthRememberEnabled() {
 }
 
 function setAuthToken(token, { remember = false } = {}) {
-  try {
-    sessionStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    if (token) {
-      if (remember) {
-        localStorage.setItem(AUTH_TOKEN_KEY, token);
-        localStorage.setItem(AUTH_REMEMBER_KEY, '1');
-      } else {
-        sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-        localStorage.removeItem(AUTH_REMEMBER_KEY);
-      }
-      return;
-    }
-    localStorage.removeItem(AUTH_REMEMBER_KEY);
-  } catch {
-    /* ignore */
-  }
+  if (token) persistAuthSessionHint({ remember });
+  else clearBrowserAuthSession();
 }
 
 export function isCloudStorageActive() {
@@ -401,6 +383,14 @@ export async function validateAuthenticatedSession() {
     // API para não devolver ao login uma sessão que acabou de ser criada.
     const body = await authedFetch('/api/auth/me');
     if (!body?.user) return { authenticated: false, reason: 'invalid_response', user: null };
+    if (legacyAuthToken()) {
+      await authedFetch('/api/auth/session/migrate', {
+        method: 'POST',
+        body: JSON.stringify({ remember: isAuthRememberEnabled() }),
+        retry: false,
+      });
+      persistAuthSessionHint({ remember: isAuthRememberEnabled() });
+    }
     currentUser = body.user;
     cloudActive = true;
     syncAuthBlockedUntil = 0;
@@ -480,16 +470,15 @@ function sleep(ms) {
 async function authedFetch(path, options = {}) {
   const { retry, ...fetchOptions } = options;
   const headers = { ...(fetchOptions.headers || {}) };
-  const token = getAuthToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
   if (fetchOptions.body != null && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
+  const requestOptions = authenticatedFetchOptions({ ...fetchOptions, headers });
   const maxAttempts = retry === false ? 1 : 3;
   let lastError = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      const response = await fetch(apiUrl(path), { ...fetchOptions, headers, cache: 'no-store' });
+      const response = await fetch(apiUrl(path), { ...requestOptions, cache: 'no-store' });
       const body = await parseJsonResponse(response);
       if (!response.ok) {
         const message = body?.error || `HTTP ${response.status}`;
@@ -535,7 +524,8 @@ async function authedFetch(path, options = {}) {
 async function postAuthJson(path, payload) {
   const response = await fetch(apiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'X-BRFut-Request': '1' },
     body: JSON.stringify(payload),
     cache: 'no-store',
   });
@@ -916,7 +906,6 @@ function flushSyncQueueKeepalive() {
   if (!isCloudStorageActive() || !syncQueue.size) return;
   const batch = new Map(syncQueue);
   syncQueue.clear();
-  const token = getAuthToken();
   let deferred = false;
 
   batch.forEach((value, key) => {
@@ -933,16 +922,15 @@ function flushSyncQueueKeepalive() {
       );
       return;
     }
-    fetch(apiUrl(`/api/saves/${encodeURIComponent(key)}`), {
+    fetch(apiUrl(`/api/saves/${encodeURIComponent(key)}`), authenticatedFetchOptions({
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body,
       keepalive: true,
       cache: 'no-store',
-    })
+    }))
       .then(async response => {
         if (!response.ok) {
           if (response.status === 401) {
@@ -1288,8 +1276,11 @@ export async function flushCloudDeletesAsync(keys = [SAVE_KEYS.career, SAVE_KEYS
 
 export async function loginWithGoogleIdToken(idToken, { remember = true } = {}) {
   // Login Google sempre persiste a sessão — save na nuvem exige token após home→jogo.
-  const body = await postAuthJson('/api/auth/google', { idToken });
-  setAuthToken(body.token, { remember: remember !== false });
+  const persist = remember !== false;
+  const body = await postAuthJson('/api/auth/google', { idToken, remember: persist });
+  if (!persistLegacyAuthToken(body.token, { remember: persist })) {
+    persistAuthSessionHint({ remember: persist });
+  }
   currentUser = body.user;
   cloudActive = true;
   syncAuthBlockedUntil = 0;
@@ -1299,8 +1290,8 @@ export async function loginWithGoogleIdToken(idToken, { remember = true } = {}) 
 }
 
 export async function loginAccount(username, password, { remember = false } = {}) {
-  const body = await postAuthJson('/api/auth/login', { username, password });
-  setAuthToken(body.token, { remember });
+  const body = await postAuthJson('/api/auth/login', { username, password, remember });
+  if (!persistLegacyAuthToken(body.token, { remember })) persistAuthSessionHint({ remember });
   currentUser = body.user;
   cloudActive = true;
   syncAuthBlockedUntil = 0;
@@ -1314,8 +1305,9 @@ export async function registerAccount(username, password, displayName, { remembe
     username,
     password,
     displayName,
+    remember,
   });
-  setAuthToken(body.token, { remember });
+  if (!persistLegacyAuthToken(body.token, { remember })) persistAuthSessionHint({ remember });
   currentUser = body.user;
   cloudActive = true;
   syncAuthBlockedUntil = 0;
@@ -1633,11 +1625,9 @@ export async function updateAccountProfile({ displayName, avatar } = {}) {
 export async function fetchAccountAvatarObjectUrl() {
   if (!isCloudStorageActive() || !currentUser?.hasAvatar) return '';
   try {
-    const token = getAuthToken();
-    const response = await fetch(apiUrl('/api/auth/avatar'), {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    const response = await fetch(apiUrl('/api/auth/avatar'), authenticatedFetchOptions({
       cache: 'no-store',
-    });
+    }));
     if (!response.ok) return '';
     const blob = await response.blob();
     return URL.createObjectURL(blob);

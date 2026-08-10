@@ -127,6 +127,22 @@ checkSync('sessão persistente exige escolha explícita', () => {
   assert(modal.includes('MANTER CONECTADO NESTE DISPOSITIVO'), 'decisão é clara para o usuário');
 });
 
+checkSync('sessão usa cookie HttpOnly e não persiste novos tokens no frontend', () => {
+  const authSession = readFileSync(join(ROOT, 'js/core/auth-session.js'), 'utf8');
+  const storage = readFileSync(join(ROOT, 'js/core/storage-api.js'), 'utf8');
+  const router = readFileSync(join(ROOT, 'scripts/brfut_api/router.py'), 'utf8');
+  const cors = readFileSync(join(ROOT, 'scripts/brfut_api/cors.py'), 'utf8');
+  assert(authSession.includes("COOKIE_SESSION_MARKER = 'cookie-session'"), 'frontend usa indicador não secreto');
+  assert(authSession.includes("credentials: 'include'"), 'requisições enviam cookie da API');
+  assert(storage.includes("'/api/auth/session/migrate'"), 'sessões Bearer antigas são migradas');
+  assert(storage.includes('persistLegacyAuthToken(body.token'), 'frontend mantém compatibilidade temporária com API antiga');
+  assert(router.includes("'token': result['token']") === false, 'API nova não devolve token ao frontend');
+  assert(router.includes("'HttpOnly'"), 'cookie não é acessível ao JavaScript');
+  assert(router.includes("'SameSite=None'"), 'cookie funciona entre site e API HTTPS');
+  assert(router.includes("'X-BRFut-Request'".toLowerCase()) || router.includes('x-brfut-request'), 'API aplica proteção CSRF');
+  assert(cors.includes("'Access-Control-Allow-Credentials': 'true'"), 'CORS permite cookie apenas em origens autorizadas');
+});
+
 checkSync('páginas públicas aplicam CSP e não exibem diagnóstico interno', () => {
   const homeHtml = readFileSync(join(ROOT, 'home.html'), 'utf8');
   const indexHtml = readFileSync(join(ROOT, 'index.html'), 'utf8');
@@ -144,7 +160,7 @@ checkSync('boot reutiliza sessão validada e não trata cache parcial como save 
   const validateEnd = storage.indexOf('export function getSaveSyncStatus', validateStart);
   const validate = storage.slice(validateStart, validateEnd);
   assert(
-    validate.includes("authedFetch('/api/auth/me')") && !validate.includes('retry: false'),
+    validate.includes("const body = await authedFetch('/api/auth/me');"),
     'validação de boot tolera falha transitória',
   );
   assert(

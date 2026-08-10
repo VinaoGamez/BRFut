@@ -13,6 +13,11 @@ ln -sf /etc/nginx/sites-available/brfut-api /etc/nginx/sites-enabled/brfut-api
 nginx -t
 systemctl reload nginx
 
+echo "==> systemd hardening"
+install -m 644 "$BRFUT_HOME/deploy/brfut-api.service" /etc/systemd/system/brfut-api.service
+systemctl daemon-reload
+systemctl restart brfut-api
+
 echo "==> backup diário"
 install -m 750 "$BRFUT_HOME/deploy/backup-brfut-data.sh" /usr/local/sbin/backup-brfut-data.sh
 CRON_LINE='15 3 * * * root /usr/local/sbin/backup-brfut-data.sh >> /var/log/brfut-backup.log 2>&1'

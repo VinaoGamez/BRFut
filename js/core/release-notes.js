@@ -28,6 +28,7 @@ export const RELEASE_NOTES = [
         label: 'Acesso ao jogo',
         items: [
           'O acesso com Google voltou a ser exibido corretamente quando a configuração estiver ativa na API.',
+          'A sessão da conta agora usa cookie protegido e não deixa novos tokens de acesso armazenados no navegador.',
         ],
       },
       {

@@ -1,6 +1,6 @@
 import { ACTIVE_SLOT_SESSION_KEY, BRFUT_API_ORIGIN, CAREER_INDEX_KEY } from './constants.js';
+import { authSessionSignal, authenticatedFetchOptions } from './auth-session.js';
 
-const AUTH_TOKEN_KEY = 'brfut-auth-token';
 const DB_NAME = 'brfut-career-history';
 const DB_VERSION = 1;
 const STORE = 'season-outbox';
@@ -92,9 +92,7 @@ export async function queueSeasonHistorySync(archive, managerRanking = null) {
 
 export async function flushCareerHistoryOutbox() {
   if (flushing || typeof fetch !== 'function') return { ok: false, reason: 'busy' };
-  let token;
-  try { token = localStorage.getItem(AUTH_TOKEN_KEY); } catch { return { ok: false, reason: 'storage' }; }
-  if (!token) return { ok: false, reason: 'auth' };
+  if (!authSessionSignal()) return { ok: false, reason: 'auth' };
   flushing = true;
   try {
     const db = await openDb();
@@ -102,12 +100,12 @@ export async function flushCareerHistoryOutbox() {
     const entries = await requestResult(db.transaction(STORE).objectStore(STORE).getAll());
     let synced = 0;
     for (const entry of entries) {
-      const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(entry.careerId)}/seasons/${entry.season}`), {
+      const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(entry.careerId)}/seasons/${entry.season}`), authenticatedFetchOptions({
         method: 'PUT',
         cache: 'no-store',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ archive: entry.archive, managerRanking: entry.managerRanking }),
-      });
+      }));
       if (!response.ok) return { ok: false, reason: `http_${response.status}`, synced };
       try { localStorage.setItem(`${SYNCED_PREFIX}:${entry.careerId}:${entry.season}`, entry.checksum || 'legacy'); } catch { /* ignore */ }
       const tx = db.transaction(STORE, 'readwrite');
@@ -128,42 +126,33 @@ export async function flushCareerHistoryOutbox() {
 
 export async function fetchStructuredSeasonHistory(season) {
   const careerId = activeCareerId();
-  let token;
-  try { token = localStorage.getItem(AUTH_TOKEN_KEY); } catch { return null; }
-  if (!careerId || !token || !season) return null;
+  if (!careerId || !authSessionSignal() || !season) return null;
   try {
-    const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(careerId)}/seasons/${Number(season)}`), {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(careerId)}/seasons/${Number(season)}`), authenticatedFetchOptions({
       cache: 'no-store',
-    });
+    }));
     return response.ok ? response.json() : null;
   } catch { return null; }
 }
 
 export async function fetchStructuredManagerHistory(managerId) {
   const careerId = activeCareerId();
-  let token;
-  try { token = localStorage.getItem(AUTH_TOKEN_KEY); } catch { return null; }
-  if (!careerId || !token || !managerId) return null;
+  if (!careerId || !authSessionSignal() || !managerId) return null;
   try {
-    const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(careerId)}/managers/${encodeURIComponent(managerId)}`), {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(careerId)}/managers/${encodeURIComponent(managerId)}`), authenticatedFetchOptions({
       cache: 'no-store',
-    });
+    }));
     return response.ok ? response.json() : null;
   } catch { return null; }
 }
 
 export async function fetchStructuredClubHistory(clubId) {
   const careerId = activeCareerId();
-  let token;
-  try { token = localStorage.getItem(AUTH_TOKEN_KEY); } catch { return null; }
-  if (!careerId || !token || !clubId) return null;
+  if (!careerId || !authSessionSignal() || !clubId) return null;
   try {
-    const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(careerId)}/clubs/${encodeURIComponent(clubId)}`), {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(careerId)}/clubs/${encodeURIComponent(clubId)}`), authenticatedFetchOptions({
       cache: 'no-store',
-    });
+    }));
     return response.ok ? response.json() : null;
   } catch { return null; }
 }

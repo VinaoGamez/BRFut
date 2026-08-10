@@ -6,6 +6,7 @@ After=network.target
 Type=simple
 User=brfut
 Group=brfut
+UMask=0077
 WorkingDirectory=/opt/brfut
 EnvironmentFile=/etc/brfut/brfut.env
 Environment=BRFUT_ENV_FILE=/etc/brfut/brfut.env

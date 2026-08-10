@@ -8,11 +8,11 @@ import {
   BRFUT_API_ORIGIN,
   CAREER_INDEX_KEY,
 } from './constants.js';
+import { authSessionSignal, authenticatedFetchOptions } from './auth-session.js';
 
 const DB_NAME = 'brfut-player-stats';
 const DB_VERSION = 1;
 const STORE = 'match-outbox';
-const AUTH_TOKEN_KEY = 'brfut-auth-token';
 let flushing = false;
 
 function openDb() {
@@ -152,13 +152,7 @@ export async function reconcilePlayerStatsHistory(logs) {
 
 export async function flushPlayerStatsOutbox() {
   if (flushing || typeof fetch !== 'function') return { ok: false, reason: 'busy' };
-  let token = null;
-  try {
-    token = localStorage.getItem(AUTH_TOKEN_KEY);
-  } catch {
-    return { ok: false, reason: 'storage' };
-  }
-  if (!token) return { ok: false, reason: 'auth' };
+  if (!authSessionSignal()) return { ok: false, reason: 'auth' };
   flushing = true;
   try {
     const db = await openDb();
@@ -173,15 +167,14 @@ export async function flushPlayerStatsOutbox() {
     for (const [careerId, rows] of groups) {
       for (let offset = 0; offset < rows.length; offset += 25) {
         const batch = rows.slice(offset, offset + 25);
-        const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(careerId)}/stats/matches`), {
+        const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(careerId)}/stats/matches`), authenticatedFetchOptions({
           method: 'POST',
           cache: 'no-store',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ matches: batch.map(row => row.match) }),
-        });
+        }));
         if (!response.ok) return { ok: false, reason: `http_${response.status}`, synced };
         const tx = db.transaction(STORE, 'readwrite');
         batch.forEach(row => tx.objectStore(STORE).delete(row.id));
@@ -201,21 +194,14 @@ export async function flushPlayerStatsOutbox() {
 }
 
 async function statsGet(path) {
-  let token = null;
-  try {
-    token = localStorage.getItem(AUTH_TOKEN_KEY);
-  } catch {
-    return null;
-  }
-  if (!token) return null;
+  if (!authSessionSignal()) return null;
   try {
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const timer = controller ? setTimeout(() => controller.abort(), 2500) : null;
-    const response = await fetch(apiUrl(path), {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await fetch(apiUrl(path), authenticatedFetchOptions({
       cache: 'no-store',
       signal: controller?.signal,
-    });
+    }));
     if (timer) clearTimeout(timer);
     if (!response.ok) return null;
     return await response.json();
@@ -226,20 +212,13 @@ async function statsGet(path) {
 
 export async function deleteCareerStats(careerId) {
   if (!careerId || typeof fetch !== 'function') return false;
-  let token = null;
-  try {
-    token = localStorage.getItem(AUTH_TOKEN_KEY);
-  } catch {
-    return false;
-  }
-  if (!token) return false;
+  if (!authSessionSignal()) return false;
   try {
     const response = await fetch(
       apiUrl(`/api/careers/${encodeURIComponent(careerId)}/stats`),
-      {
+      authenticatedFetchOptions({
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      },
+      }),
     );
     return response.ok;
   } catch {

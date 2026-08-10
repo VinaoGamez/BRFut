@@ -26,11 +26,14 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run security:secrets
       - run: npm run build
         env:
+          # Somente valores públicos entram no Vite. Segredos nunca devem ser
+          # adicionados a este job, pois seriam incorporados ao bundle.
           GITHUB_PAGES: 'true'
-          BRFUT_API_ORIGIN: 'https://api.brfut.com.br'
-          BRFUT_AUTH_REQUIRED: 'true'
+          BRFUT_API_ORIGIN: ${{ vars.BRFUT_API_ORIGIN || 'https://api.brfut.com.br' }}
+          BRFUT_AUTH_REQUIRED: ${{ vars.BRFUT_AUTH_REQUIRED || 'true' }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

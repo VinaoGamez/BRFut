@@ -10,7 +10,7 @@ Guia para colocar a **API Python** (`/api/*`) na VPS Locaweb, com HTTPS, enquant
 | API (auth, saves, stats) | VPS Locaweb | `https://api.brfut.com.br` |
 | Dados (usuários/saves) | Disco da VPS | `/var/lib/brfut/data` |
 
-O front chama a API via `BRFUT_API_ORIGIN` (build). Login Google continua no domínio do site; o token vai para a API com header `Authorization: Bearer …`.
+O front chama a API via `BRFUT_API_ORIGIN` (build). O login comum e o Google criam uma sessão em cookie `HttpOnly`, `Secure` e `SameSite=None`; o JavaScript não recebe nem armazena o token. O header `Authorization: Bearer …` existe apenas durante a migração automática de sessões antigas.
 
 ---
 

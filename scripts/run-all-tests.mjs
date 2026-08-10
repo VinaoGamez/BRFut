@@ -41,6 +41,7 @@ const pythonCommand = resolvePythonCommand();
 
 /** @type {{ label: string, steps: string[][] }[]} */
 const SUITES = [
+  { label: 'auth-cookie', steps: [['scripts/auth-cookie-tests.mjs']] },
   { label: 'division-information-flow', steps: [['scripts/division-information-flow-tests.mjs']] },
   { label: 'player-card-stats-source', steps: [['scripts/player-card-stats-source-tests.mjs']] },
   { label: 'league-fixtures', steps: [['scripts/league-fixtures-tests.mjs']] },

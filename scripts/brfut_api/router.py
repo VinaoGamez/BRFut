@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from http.cookies import SimpleCookie
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
 
@@ -38,6 +39,10 @@ PUBLIC_ROUTES = {
     ('POST', 'auth/register'),
     ('POST', 'auth/google'),
 }
+
+SESSION_COOKIE_NAME = '__Host-brfut_session'
+LOCAL_SESSION_COOKIE_NAME = 'brfut_session'
+CSRF_HEADER_NAME = 'x-brfut-request'
 
 
 def _purge_obsolete_user_data(root, username: str) -> dict[str, int]:
@@ -77,6 +82,66 @@ def _bearer_token(headers: dict[str, str]) -> str | None:
     return None
 
 
+def _header(headers: dict[str, str], name: str) -> str:
+    wanted = name.lower()
+    return next((str(value) for key, value in headers.items() if key.lower() == wanted), '')
+
+
+def _cookie_token(headers: dict[str, str]) -> str | None:
+    raw = _header(headers, 'cookie')
+    if not raw:
+        return None
+    try:
+        cookies = SimpleCookie()
+        cookies.load(raw)
+        morsel = cookies.get(SESSION_COOKIE_NAME) or cookies.get(LOCAL_SESSION_COOKIE_NAME)
+        return morsel.value.strip() if morsel and morsel.value else None
+    except Exception:
+        return None
+
+
+def _request_token(headers: dict[str, str]) -> tuple[str | None, bool]:
+    bearer = _bearer_token(headers)
+    if bearer:
+        return bearer, False
+    cookie = _cookie_token(headers)
+    return cookie, bool(cookie)
+
+
+def _secure_cookie_request(headers: dict[str, str]) -> bool:
+    forwarded = _header(headers, 'x-forwarded-proto').lower()
+    origin = _header(headers, 'origin').lower()
+    host = _header(headers, 'host').lower()
+    return forwarded == 'https' or origin.startswith('https://') or host == 'api.brfut.com.br'
+
+
+def _session_cookie(token: str, headers: dict[str, str], remember: bool) -> str:
+    secure = _secure_cookie_request(headers)
+    name = SESSION_COOKIE_NAME if secure else LOCAL_SESSION_COOKIE_NAME
+    parts = [f'{name}={token}', 'Path=/', 'HttpOnly']
+    parts.append('SameSite=None' if secure else 'SameSite=Lax')
+    if secure:
+        parts.append('Secure')
+    if remember:
+        parts.append(f'Max-Age={30 * 24 * 60 * 60}')
+    return '; '.join(parts)
+
+
+def _clear_session_cookie(headers: dict[str, str]) -> str:
+    secure = _secure_cookie_request(headers)
+    name = SESSION_COOKIE_NAME if secure else LOCAL_SESSION_COOKIE_NAME
+    parts = [f'{name}=', 'Path=/', 'HttpOnly', 'Max-Age=0']
+    parts.append('SameSite=None' if secure else 'SameSite=Lax')
+    if secure:
+        parts.append('Secure')
+    return '; '.join(parts)
+
+
+def _with_cookie(response, cookie: str):
+    status, response_headers, payload = response
+    return status, {**response_headers, 'Set-Cookie': cookie}, payload
+
+
 def handle_api(
     method: str,
     path: str,
@@ -97,8 +162,17 @@ def handle_api(
     try:
         # Falha fechada: qualquer rota não declarada pública exige uma sessão válida.
         user = None
+        request_token = None
+        cookie_authenticated = False
         if (method, rel) not in PUBLIC_ROUTES:
-            user = resolve_session(root, _bearer_token(headers))
+            request_token, cookie_authenticated = _request_token(headers)
+            if (
+                cookie_authenticated
+                and method not in ('GET', 'HEAD', 'OPTIONS')
+                and _header(headers, CSRF_HEADER_NAME) != '1'
+            ):
+                raise ApiError(403, 'csrf_rejected', 'Requisição de sessão não autorizada.')
+            user = resolve_session(root, request_token)
 
         if method == 'GET' and rel == 'health':
             return _json_response(
@@ -119,7 +193,8 @@ def handle_api(
         if method == 'POST' and rel == 'auth/google':
             data = _parse_json(body) or {}
             token, profile = login_with_google_id_token(root, data.get('idToken', ''))
-            return _json_response(200, {'token': token, 'user': profile})
+            response = _json_response(200, {'user': profile})
+            return _with_cookie(response, _session_cookie(token, headers, bool(data.get('remember'))))
 
         if method == 'GET' and rel == 'stats':
             return _json_response(200, get_player_stats(root))
@@ -128,16 +203,23 @@ def handle_api(
             data = _parse_json(body) or {}
             profile = register_user(root, data.get('username', ''), data.get('password', ''), data.get('displayName'))
             token, logged = login_user(root, profile['username'], data.get('password', ''))
-            return _json_response(201, {'token': token, 'user': logged})
+            response = _json_response(201, {'user': logged})
+            return _with_cookie(response, _session_cookie(token, headers, bool(data.get('remember'))))
 
         if method == 'POST' and rel == 'auth/login':
             data = _parse_json(body) or {}
             token, profile = login_user(root, data.get('username', ''), data.get('password', ''))
-            return _json_response(200, {'token': token, 'user': profile})
+            response = _json_response(200, {'user': profile})
+            return _with_cookie(response, _session_cookie(token, headers, bool(data.get('remember'))))
+
+        if method == 'POST' and rel == 'auth/session/migrate':
+            data = _parse_json(body) or {}
+            response = _json_response(200, {'ok': True, 'user': user})
+            return _with_cookie(response, _session_cookie(request_token, headers, bool(data.get('remember'))))
 
         if method == 'POST' and rel == 'auth/logout':
-            logout_user(root, _bearer_token(headers))
-            return _json_response(200, {'ok': True})
+            logout_user(root, request_token)
+            return _with_cookie(_json_response(200, {'ok': True}), _clear_session_cookie(headers))
 
         if method == 'GET' and rel == 'auth/me':
             return _json_response(200, {'user': user})

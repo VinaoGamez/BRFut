@@ -30,7 +30,16 @@ class BrfutApiTests(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def _route(self, method: str, path: str, body: dict | None = None, token: str | None = None):
+    def _route(
+        self,
+        method: str,
+        path: str,
+        body: dict | None = None,
+        token: str | None = None,
+        cookie: str | None = None,
+        csrf: bool = False,
+        secure: bool = False,
+    ):
         import brfut_api.router as router_mod
 
         old = router_mod.default_data_root
@@ -38,7 +47,16 @@ class BrfutApiTests(unittest.TestCase):
         try:
             raw = json.dumps(body).encode('utf-8') if body is not None else b''
             headers = {'Authorization': f'Bearer {token}'} if token else {}
-            status, _, payload = handle_api(method, path, headers, raw)
+            if cookie:
+                headers['Cookie'] = cookie
+            if csrf:
+                headers['X-BRFut-Request'] = '1'
+            if secure:
+                headers['Origin'] = 'https://brfut.com.br'
+                headers['X-Forwarded-Proto'] = 'https'
+                headers['Host'] = 'api.brfut.com.br'
+            status, response_headers, payload = handle_api(method, path, headers, raw)
+            self.last_headers = response_headers
             return status, json.loads(payload.decode('utf-8'))
         finally:
             router_mod.default_data_root = old
@@ -69,11 +87,21 @@ class BrfutApiTests(unittest.TestCase):
         self.assertNotIn('allowedKeys', body)
         self.assertNotIn('googleClientId', body)
 
-        status, body = self._route('POST', '/api/auth/register', {'username': 'alpha', 'password': 'passphrase12'})
+        status, body = self._route(
+            'POST',
+            '/api/auth/register',
+            {'username': 'alpha', 'password': 'passphrase12', 'remember': True},
+        )
         self.assertEqual(status, 201)
-        token = body['token']
+        self.assertNotIn('token', body)
+        cookie_header = self.last_headers['Set-Cookie']
+        self.assertIn('brfut_session=', cookie_header)
+        self.assertIn('HttpOnly', cookie_header)
+        self.assertIn('SameSite=Lax', cookie_header)
+        self.assertIn('Max-Age=', cookie_header)
+        cookie = cookie_header.split(';', 1)[0]
 
-        status, body = self._route('GET', '/api/auth/me', token=token)
+        status, body = self._route('GET', '/api/auth/me', cookie=cookie)
         self.assertEqual(status, 200)
         self.assertEqual(body['user']['username'], 'alpha')
 
@@ -81,13 +109,46 @@ class BrfutApiTests(unittest.TestCase):
             'PUT',
             '/api/saves/brfut-career',
             {'value': {'version': 7, 'clubName': 'Santos'}},
-            token=token,
+            cookie=cookie,
+        )
+        self.assertEqual(status, 403)
+        self.assertEqual(body['code'], 'csrf_rejected')
+
+        status, body = self._route(
+            'PUT',
+            '/api/saves/brfut-career',
+            {'value': {'version': 7, 'clubName': 'Santos'}},
+            cookie=cookie,
+            csrf=True,
         )
         self.assertEqual(status, 200)
 
-        status, body = self._route('GET', '/api/saves', token=token)
+        status, body = self._route('GET', '/api/saves', cookie=cookie)
         self.assertEqual(status, 200)
         self.assertEqual(body['saves']['brfut-career']['value']['clubName'], 'Santos')
+
+    def test_secure_cookie_and_legacy_session_migration(self) -> None:
+        register_user(self.root, 'legacycookie', 'secretpass1', 'Legacy Cookie')
+        token, _ = login_user(self.root, 'legacycookie', 'secretpass1')
+        status, body = self._route(
+            'POST',
+            '/api/auth/session/migrate',
+            {'remember': True},
+            token=token,
+            csrf=True,
+            secure=True,
+        )
+        self.assertEqual(status, 200)
+        self.assertNotIn('token', body)
+        cookie_header = self.last_headers['Set-Cookie']
+        self.assertIn('HttpOnly', cookie_header)
+        self.assertIn('Secure', cookie_header)
+        self.assertIn('SameSite=None', cookie_header)
+
+        cookie = cookie_header.split(';', 1)[0]
+        status, body = self._route('POST', '/api/auth/logout', cookie=cookie, csrf=True, secure=True)
+        self.assertEqual(status, 200)
+        self.assertIn('Max-Age=0', self.last_headers['Set-Cookie'])
 
     def test_obsolete_career_save_is_rejected(self) -> None:
         with self.assertRaises(ApiError) as context:
@@ -187,6 +248,10 @@ class BrfutApiTests(unittest.TestCase):
             self.assertEqual(
                 cors_headers('https://preview.pages.dev').get('Access-Control-Allow-Origin'),
                 'https://preview.pages.dev',
+            )
+            self.assertEqual(
+                cors_headers('https://preview.pages.dev').get('Access-Control-Allow-Credentials'),
+                'true',
             )
         finally:
             if previous is None:
