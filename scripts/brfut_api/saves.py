@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .auth import ApiError
+from .validation import validate_json_structure
 
 # Chaves espelhadas do localStorage do jogo (constants.js SAVE_KEYS + legado Matchday + slots).
 ALLOWED_SAVE_KEYS = frozenset({
@@ -33,6 +34,8 @@ SLOT_KEY_RE = re.compile(
 )
 ARCHIVE_KEY_RE = re.compile(r'^brfut-season-archive-\d{4}$')
 MIN_CAREER_VERSION = 7
+MAX_SAVE_BYTES = 8_000_000
+MAX_MIGRATION_SAVES = 80
 
 
 def _is_career_key(key: str) -> bool:
@@ -133,6 +136,7 @@ def get_save(root: Path, username: str, key: str) -> Any:
 
 
 def put_save(root: Path, username: str, key: str, value: Any) -> dict[str, Any]:
+    validate_json_structure(value)
     _validate_career_version(key, value)
     user_dir = _user_dir(root, username)
     user_dir.mkdir(parents=True, exist_ok=True)
@@ -143,6 +147,8 @@ def put_save(root: Path, username: str, key: str, value: Any) -> dict[str, Any]:
         'updatedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
     }
     raw = json.dumps(envelope, ensure_ascii=False, separators=(',', ':'))
+    if len(raw.encode('utf-8')) > MAX_SAVE_BYTES:
+        raise ApiError(413, 'save_too_large', 'Save excede o limite de 8 MB.')
     tmp = path.with_name(f'.{path.name}.{secrets.token_hex(6)}.tmp')
     tmp.write_text(raw, encoding='utf-8')
     tmp.replace(path)
@@ -169,6 +175,8 @@ def delete_all_saves(root: Path, username: str) -> int:
 def migrate_saves(root: Path, username: str, saves: dict[str, Any], *, overwrite: bool = False) -> dict[str, Any]:
     if not isinstance(saves, dict):
         raise ApiError(400, 'invalid_body', 'Corpo deve ser um objeto de saves.')
+    if len(saves) > MAX_MIGRATION_SAVES:
+        raise ApiError(413, 'too_many_saves', 'Migração excede o limite de saves permitido.')
     imported: list[str] = []
     skipped: list[str] = []
     for key, value in saves.items():

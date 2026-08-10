@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import sqlite3
 import time
+import unicodedata
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -68,9 +70,36 @@ def _text(value: Any, label: str, required: bool = True) -> str | None:
         if required:
             raise ApiError(400, 'invalid_history', f'{label} inválido.')
         return None
-    if len(value) > 180:
+    if (
+        len(value) > 180
+        or '<' in value
+        or '>' in value
+        or any(unicodedata.category(char).startswith('C') for char in value)
+    ):
         raise ApiError(400, 'invalid_history', f'{label} excede o limite.')
     return value
+
+
+def _integer(value: Any, label: str, minimum: int = 0, maximum: int = 1_000_000) -> int:
+    if isinstance(value, bool):
+        raise ApiError(400, 'invalid_history', f'{label} inválido.')
+    try:
+        number = int(value or 0)
+    except (TypeError, ValueError) as error:
+        raise ApiError(400, 'invalid_history', f'{label} inválido.') from error
+    if not math.isfinite(number) or number < minimum or number > maximum:
+        raise ApiError(400, 'invalid_history', f'{label} fora do intervalo permitido.')
+    return number
+
+
+def _number(value: Any, label: str, minimum: float, maximum: float) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as error:
+        raise ApiError(400, 'invalid_history', f'{label} inválido.') from error
+    if not math.isfinite(number) or number < minimum or number > maximum:
+        raise ApiError(400, 'invalid_history', f'{label} fora do intervalo permitido.')
+    return number
 
 
 def _checksum(payload: dict[str, Any]) -> str:
@@ -79,35 +108,67 @@ def _checksum(payload: dict[str, Any]) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def _special_champion(value: Any) -> Any:
+    return value.get('champion') if isinstance(value, dict) else None
+
+
+def _safe_history_value(value: Any, label: str, depth: int = 0) -> Any:
+    if depth > 4:
+        raise ApiError(400, 'invalid_history', f'{label} excede a profundidade permitida.')
+    if isinstance(value, str):
+        return _text(value, label)
+    if value is None or isinstance(value, (bool, int)):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ApiError(400, 'invalid_history', f'{label} inválido.')
+        return value
+    if isinstance(value, list) and len(value) <= 100:
+        return [_safe_history_value(item, label, depth + 1) for item in value]
+    if isinstance(value, dict) and len(value) <= 32:
+        return {
+            _text(key, f'{label}Key'): _safe_history_value(item, label, depth + 1)
+            for key, item in value.items()
+        }
+    raise ApiError(400, 'invalid_history', f'{label} inválido.')
+
+
 def put_season_history(root: Path, username: str, career_id: str, body: dict[str, Any]) -> dict[str, Any]:
     career = _text(career_id, 'careerId')
     archive = body.get('archive') if isinstance(body, dict) else None
     managers = body.get('managerRanking') if isinstance(body, dict) else None
     if not isinstance(archive, dict):
         raise ApiError(400, 'invalid_history', 'Corpo deve incluir archive.')
-    season = int(archive.get('careerSeason') or 0)
-    if season < 1900:
-        raise ApiError(400, 'invalid_history', 'Temporada inválida.')
+    season = _integer(archive.get('careerSeason'), 'Temporada', 1900, 9999)
     standings = archive.get('standings') or {}
     champions = archive.get('champions') or {}
     if not isinstance(standings, dict) or not isinstance(champions, dict):
         raise ApiError(400, 'invalid_history', 'Classificações ou campeões inválidos.')
+    if len(standings) > 32 or len(champions) > 32:
+        raise ApiError(413, 'history_too_large', 'Quantidade de competições excede o limite.')
     for competition, rows in standings.items():
-        if not isinstance(rows, list):
+        _text(competition, 'competitionId')
+        if not isinstance(rows, list) or len(rows) > 256:
             raise ApiError(400, 'invalid_history', f'Classificação {competition} inválida.')
         for row in rows:
-            played = int(row.get('played') or 0)
-            results = int(row.get('wins') or 0) + int(row.get('draws') or 0) + int(row.get('losses') or 0)
+            if not isinstance(row, dict):
+                raise ApiError(400, 'invalid_history', f'Linha de classificação {competition} inválida.')
+            played = _integer(row.get('played'), 'played', 0, 500)
+            wins = _integer(row.get('wins'), 'wins', 0, 500)
+            draws = _integer(row.get('draws'), 'draws', 0, 500)
+            losses = _integer(row.get('losses'), 'losses', 0, 500)
+            results = wins + draws + losses
             if min(played, results) < 0 or played != results:
                 raise ApiError(400, 'invalid_history', f'Totais inconsistentes na classificação {competition}.')
         if competition in {'A', 'B', 'C'} and rows and champions.get(competition):
             if champions[competition] != rows[0].get('club'):
                 raise ApiError(409, 'champion_mismatch', f'Campeão da Série {competition} diverge da classificação.')
     expected_special = {
-        'D': (archive.get('serieDCompetition') or {}).get('knockout', {}).get('champion'),
-        'CUP': (archive.get('cupCompetition') or {}).get('champion'),
-        'RECOPA': (archive.get('recopaCompetition') or {}).get('champion'),
-        'WORLD_CUP': (archive.get('worldCupCompetition') or {}).get('champion'),
+        'D': _special_champion((archive.get('serieDCompetition') or {}).get('knockout'))
+        if isinstance(archive.get('serieDCompetition'), dict) else None,
+        'CUP': _special_champion(archive.get('cupCompetition')),
+        'RECOPA': _special_champion(archive.get('recopaCompetition')),
+        'WORLD_CUP': _special_champion(archive.get('worldCupCompetition')),
     }
     for competition, expected in expected_special.items():
         if expected and champions.get(competition) and expected != champions[competition]:
@@ -147,23 +208,38 @@ def put_season_history(root: Path, username: str, career_id: str, body: dict[str
                 )
         conn.execute('DELETE FROM manager_season_history WHERE username=? AND career_id=? AND season=?',
                      (username, career, season))
-        for manager in (managers or {}).get('managers', []) if isinstance(managers, dict) else []:
+        manager_rows = (managers or {}).get('managers', []) if isinstance(managers, dict) else []
+        if not isinstance(manager_rows, list) or len(manager_rows) > 10_000:
+            raise ApiError(413, 'history_too_large', 'Quantidade de técnicos excede o limite.')
+        for manager in manager_rows:
+            if not isinstance(manager, dict):
+                raise ApiError(400, 'invalid_history', 'Técnico inválido.')
             manager_id = _text(manager.get('id'), 'managerId', False)
             if not manager_id:
                 continue
             history = manager.get('careerHistory') or {}
-            row = next((item for item in history.get('seasons', []) if int(item.get('season') or 0) == season), None)
+            seasons = history.get('seasons', []) if isinstance(history, dict) else []
+            if not isinstance(seasons, list) or len(seasons) > 200:
+                raise ApiError(400, 'invalid_history', 'Histórico do técnico inválido.')
+            row = next((item for item in seasons if isinstance(item, dict) and _integer(item.get('season'), 'season', 0, 9999) == season), None)
             if not row:
                 continue
+            clubs = row.get('clubs') or []
+            titles = row.get('titles') or []
+            if not isinstance(clubs, list) or len(clubs) > 50 or not isinstance(titles, list) or len(titles) > 100:
+                raise ApiError(400, 'invalid_history', 'Clubes ou títulos do técnico inválidos.')
+            clubs = [_text(club, 'managerClub') for club in clubs]
+            titles = [_safe_history_value(title, 'managerTitle') for title in titles]
             conn.execute(
                 '''INSERT INTO manager_season_history
                    (username,career_id,season,manager_id,manager_name,clubs_json,games,wins,draws,losses,team_average,titles_json)
                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
-                (username, career, season, manager_id, str(manager.get('name') or manager_id),
-                 json.dumps(row.get('clubs') or [], ensure_ascii=False), int(row.get('games') or 0),
-                 int(row.get('wins') or 0), int(row.get('draws') or 0), int(row.get('losses') or 0),
-                 float(row['teamAverage']) if row.get('teamAverage') is not None else None,
-                 json.dumps(row.get('titles') or [], ensure_ascii=False)),
+                (username, career, season, manager_id, _text(manager.get('name') or manager_id, 'managerName'),
+                 json.dumps(clubs, ensure_ascii=False), _integer(row.get('games'), 'games', 0, 500),
+                 _integer(row.get('wins'), 'wins', 0, 500), _integer(row.get('draws'), 'draws', 0, 500),
+                 _integer(row.get('losses'), 'losses', 0, 500),
+                 _number(row['teamAverage'], 'teamAverage', 0, 10) if row.get('teamAverage') is not None else None,
+                 json.dumps(titles, ensure_ascii=False)),
             )
     return {'careerId': career, 'season': season, 'checksum': digest, 'stored': True}
 

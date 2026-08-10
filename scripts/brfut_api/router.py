@@ -30,6 +30,7 @@ from .player_stats import (
 )
 from .career_history import delete_career_history, delete_user_history, get_club_seasons, get_manager_history, get_season_history, put_season_history
 from .rate_limit import RATE_LIMITER, request_ip
+from .validation import query_int, reject_unknown_fields, require_object, validate_json_structure
 
 
 PUBLIC_ROUTES = {
@@ -44,6 +45,7 @@ PUBLIC_ROUTES = {
 SESSION_COOKIE_NAME = '__Host-brfut_session'
 LOCAL_SESSION_COOKIE_NAME = 'brfut_session'
 CSRF_HEADER_NAME = 'x-brfut-request'
+MAX_REQUEST_BODY_BYTES = 10_000_000
 
 
 def _purge_obsolete_user_data(root, username: str) -> dict[str, int]:
@@ -71,7 +73,9 @@ def _parse_json(body: bytes) -> Any:
     if not body:
         return None
     try:
-        return json.loads(body.decode('utf-8'))
+        value = json.loads(body.decode('utf-8'))
+        validate_json_structure(value)
+        return value
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ApiError(400, 'invalid_json', 'JSON inválido.') from error
 
@@ -150,6 +154,8 @@ def handle_api(
     body: bytes,
 ) -> tuple[int, dict[str, str], bytes]:
     root = ensure_layout(default_data_root())
+    if len(body) > MAX_REQUEST_BODY_BYTES:
+        raise ApiError(413, 'request_too_large', 'Requisição excede o limite permitido.')
     method = method.upper()
     split = urlsplit(path)
     query = parse_qs(split.query)
@@ -194,7 +200,8 @@ def handle_api(
             return _json_response(200, {'enabled': bool(cid), 'clientId': cid or ''})
 
         if method == 'POST' and rel == 'auth/google':
-            data = _parse_json(body) or {}
+            data = require_object(_parse_json(body) or {})
+            reject_unknown_fields(data, {'idToken', 'remember'})
             RATE_LIMITER.check_auth(client_ip)
             token, profile = login_with_google_id_token(root, data.get('idToken', ''))
             response = _json_response(200, {'user': profile})
@@ -204,7 +211,8 @@ def handle_api(
             return _json_response(200, get_player_stats(root))
 
         if method == 'POST' and rel == 'auth/register':
-            data = _parse_json(body) or {}
+            data = require_object(_parse_json(body) or {})
+            reject_unknown_fields(data, {'username', 'password', 'displayName', 'remember'})
             RATE_LIMITER.check_auth(client_ip, data.get('username', ''))
             profile = register_user(root, data.get('username', ''), data.get('password', ''), data.get('displayName'))
             token, logged = login_user(root, profile['username'], data.get('password', ''))
@@ -212,7 +220,8 @@ def handle_api(
             return _with_cookie(response, _session_cookie(token, headers, bool(data.get('remember'))))
 
         if method == 'POST' and rel == 'auth/login':
-            data = _parse_json(body) or {}
+            data = require_object(_parse_json(body) or {})
+            reject_unknown_fields(data, {'username', 'password', 'remember'})
             account = data.get('username', '')
             RATE_LIMITER.check_auth(client_ip, account)
             try:
@@ -226,7 +235,8 @@ def handle_api(
             return _with_cookie(response, _session_cookie(token, headers, bool(data.get('remember'))))
 
         if method == 'POST' and rel == 'auth/session/migrate':
-            data = _parse_json(body) or {}
+            data = require_object(_parse_json(body) or {})
+            reject_unknown_fields(data, {'remember'})
             response = _json_response(200, {'ok': True, 'user': user})
             return _with_cookie(response, _session_cookie(request_token, headers, bool(data.get('remember'))))
 
@@ -238,7 +248,8 @@ def handle_api(
             return _json_response(200, {'user': user})
 
         if method == 'PUT' and rel == 'auth/profile':
-            data = _parse_json(body) or {}
+            data = require_object(_parse_json(body) or {})
+            reject_unknown_fields(data, {'displayName', 'avatar'})
             updated = update_user_profile(
                 root,
                 user['id'],
@@ -257,20 +268,21 @@ def handle_api(
         username = user['username']
 
         if len(parts) == 4 and parts[0] == 'careers' and parts[2:] == ['stats', 'matches'] and method == 'POST':
-            data = _parse_json(body) or {}
+            data = require_object(_parse_json(body) or {})
+            reject_unknown_fields(data, {'matches'})
             return _json_response(200, put_match_batch(root, username, parts[1], data))
 
         if len(parts) == 4 and parts[0] == 'careers' and parts[2:] == ['stats', 'matches'] and method == 'GET':
-            season = int((query.get('season') or [0])[0]) or None
+            season = query_int((query.get('season') or [0])[0], 'season', minimum=1900, maximum=9999) or None
             return _json_response(200, get_match_manifest(root, username, parts[1], season))
 
         if len(parts) == 5 and parts[0] == 'careers' and parts[2:4] == ['stats', 'players'] and method == 'GET':
-            season = int((query.get('season') or [0])[0])
+            season = query_int((query.get('season') or [0])[0], 'season', minimum=1900, maximum=9999)
             club_id = (query.get('club') or [None])[0]
             return _json_response(200, get_player(root, username, parts[1], parts[4], season, club_id))
 
         if len(parts) == 6 and parts[0] == 'careers' and parts[2:4] == ['stats', 'clubs'] and parts[5] == 'squad' and method == 'GET':
-            season = int((query.get('season') or [0])[0])
+            season = query_int((query.get('season') or [0])[0], 'season', minimum=1900, maximum=9999)
             competition = (query.get('competition') or [None])[0]
             return _json_response(200, get_club_squad(root, username, parts[1], parts[4], season, competition))
 
@@ -278,7 +290,7 @@ def handle_api(
             return _json_response(200, get_club_history(root, username, parts[1], parts[4]))
 
         if len(parts) == 4 and parts[0] == 'careers' and parts[2:] == ['stats', 'leaders'] and method == 'GET':
-            season = int((query.get('season') or [0])[0])
+            season = query_int((query.get('season') or [0])[0], 'season', minimum=1900, maximum=9999)
             competition = (query.get('competition') or [None])[0]
             metric = (query.get('metric') or ['goals'])[0]
             return _json_response(200, get_leaders(root, username, parts[1], season, competition, metric))
@@ -290,9 +302,11 @@ def handle_api(
             })
 
         if len(parts) == 4 and parts[0] == 'careers' and parts[2] == 'seasons':
-            season = int(parts[3])
+            season = query_int(parts[3], 'season', minimum=1900, maximum=9999)
             if method == 'PUT':
-                return _json_response(200, put_season_history(root, username, parts[1], _parse_json(body) or {}))
+                data = require_object(_parse_json(body) or {})
+                reject_unknown_fields(data, {'archive', 'managerRanking'})
+                return _json_response(200, put_season_history(root, username, parts[1], data))
             if method == 'GET':
                 return _json_response(200, get_season_history(root, username, parts[1], season))
 
@@ -307,7 +321,8 @@ def handle_api(
             return _json_response(200, {'saves': get_all_saves(root, username)})
 
         if method == 'POST' and rel == 'saves/migrate':
-            data = _parse_json(body) or {}
+            data = require_object(_parse_json(body) or {})
+            reject_unknown_fields(data, {'saves', 'overwrite'})
             result = migrate_saves(
                 root,
                 username,
@@ -330,7 +345,8 @@ def handle_api(
                 _purge_obsolete_user_data(root, username)
                 return _json_response(200, {'key': key, 'value': get_save(root, username, key)})
             if method == 'PUT':
-                data = _parse_json(body)
+                data = require_object(_parse_json(body))
+                reject_unknown_fields(data, {'value'})
                 if data is None or 'value' not in data:
                     raise ApiError(400, 'invalid_body', 'Corpo deve incluir "value".')
                 meta = put_save(root, username, key, data['value'])

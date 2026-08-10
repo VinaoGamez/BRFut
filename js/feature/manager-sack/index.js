@@ -1,4 +1,5 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
+import { escapeHtml, escapeHtmlAttribute } from '../../core/html-safe.js';
 
 const MODAL_HTML = `
 <div id="managerSackModal" class="modal hidden">
@@ -94,7 +95,7 @@ export function createManagerSackFeature(deps) {
     }
     if (stats) {
       stats.innerHTML = `
-        <div><small>CLUBE</small><b>${clubName}</b></div>
+        <div><small>CLUBE</small><b>${escapeHtml(clubName)}</b></div>
         <div><small>DIRETORIA</small><b>${Math.round(board)}%</b></div>
         <div><small>SAÚDE FINANCEIRA</small><b>${Math.round(finances)}%</b></div>`;
     }
@@ -107,13 +108,13 @@ export function createManagerSackFeature(deps) {
           .map(
             offer => `<article class="manager-sack-offer">
               <div>
-                <b>${offer.club}</b>
-                <small>Série ${offer.division} · OVR ${offer.overall || '—'} · ${offer.note || ''}</small>
-                <small class="manager-sack-incumbent">Atual: ${offer.incumbentName || '—'}</small>
+                <b>${escapeHtml(offer.club)}</b>
+                <small>Série ${escapeHtml(offer.division)} · OVR ${escapeHtml(offer.overall || '—')} · ${escapeHtml(offer.note || '')}</small>
+                <small class="manager-sack-incumbent">Atual: ${escapeHtml(offer.incumbentName || '—')}</small>
               </div>
               <div class="manager-sack-offer-actions">
-                <button type="button" data-sack-roster="${offer.club}">ELENCO</button>
-                <button type="button" data-sack-accept="${offer.club}">ACEITAR</button>
+                <button type="button" data-sack-roster="${escapeHtmlAttribute(offer.club)}">ELENCO</button>
+                <button type="button" data-sack-accept="${escapeHtmlAttribute(offer.club)}">ACEITAR</button>
               </div>
             </article>`,
           )

@@ -5,33 +5,15 @@ import { isUploadedCrestImage, normalizeCrest } from '../engine/custom-clubs.js'
 
 const CREST_PREVIEW_DEBOUNCE_MS = 120;
 const CREST_UPLOAD_MAX_BYTES = 512 * 1024;
-const CREST_UPLOAD_ACCEPT = 'image/png,image/jpeg,image/webp,image/svg+xml,.svg';
+const CREST_UPLOAD_ACCEPT = 'image/png,image/jpeg,image/webp';
 
 function isAllowedCrestUpload(file) {
   if (!file || file.size > CREST_UPLOAD_MAX_BYTES) return false;
-  if (/^image\/(png|jpeg|webp|svg\+xml)$/i.test(file.type)) return true;
-  return /\.svg$/i.test(file.name || '');
+  return /^image\/(png|jpeg|webp)$/i.test(file.type);
 }
 
 function isAllowedCrestDataUrl(dataUrl) {
-  return /^data:image\/(png|jpeg|webp|svg\+xml)/i.test(String(dataUrl || ''));
-}
-
-function decodeUploadedSvgMarkup(dataUrl, alt = '') {
-  try {
-    const src = String(dataUrl || '');
-    let raw = '';
-    if (/^data:image\/svg\+xml;base64,/i.test(src)) {
-      raw = atob(src.replace(/^data:image\/svg\+xml;base64,/i, ''));
-    } else if (/^data:image\/svg\+xml,/i.test(src)) {
-      raw = decodeURIComponent(src.replace(/^data:image\/svg\+xml(?:;charset=utf-8)?,/i, ''));
-    }
-    if (!/^<svg[\s>]/i.test(raw.trim())) return '';
-    const safeAlt = String(alt || '').replace(/"/g, '&quot;');
-    return raw.replace(/<svg\b/i, `<svg aria-label="${safeAlt}"`);
-  } catch {
-    return '';
-  }
+  return /^data:image\/(png|jpeg|webp);base64,/i.test(String(dataUrl || ''));
 }
 
 const SHAPE_OPTIONS = [
@@ -212,21 +194,10 @@ export function mountCrestEditor(container, options = {}) {
     const crest = readCrestDraft();
     els.preview.innerHTML = '';
     if (isUploadedCrestImage(crest.image)) {
-      if (/^data:image\/svg\+xml/i.test(crest.image)) {
-        const inlineSvg = decodeUploadedSvgMarkup(crest.image, name);
-        if (inlineSvg) els.preview.insertAdjacentHTML('beforeend', inlineSvg);
-        else {
-          const img = document.createElement('img');
-          img.alt = name;
-          img.src = crest.image;
-          els.preview.appendChild(img);
-        }
-      } else {
-        const img = document.createElement('img');
-        img.alt = name;
-        img.src = crest.image;
-        els.preview.appendChild(img);
-      }
+      const img = document.createElement('img');
+      img.alt = name;
+      img.src = crest.image;
+      els.preview.appendChild(img);
     } else if (crestMode !== 'upload') {
       // SVG inline — clip-path não funciona em <img src="data:...">; fundo fica opaco
       els.preview.insertAdjacentHTML(

@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import json
 import hashlib
+import math
 import sqlite3
 import time
+import unicodedata
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -78,7 +80,13 @@ def _db(root: Path):
 
 def _safe_id(value: Any, label: str) -> str:
     text = str(value or '').strip()
-    if not text or len(text) > 180:
+    if (
+        not text
+        or len(text) > 180
+        or '<' in text
+        or '>' in text
+        or any(unicodedata.category(char).startswith('C') for char in text)
+    ):
         raise ApiError(400, 'invalid_stats', f'{label} inválido.')
     return text
 
@@ -88,7 +96,17 @@ def _bounded_int(value: Any, label: str, minimum: int = 0, maximum: int = 1_000_
         number = int(value or 0)
     except (TypeError, ValueError) as error:
         raise ApiError(400, 'invalid_stats', f'{label} inválido.') from error
-    if number < minimum or number > maximum:
+    if not math.isfinite(number) or number < minimum or number > maximum:
+        raise ApiError(400, 'invalid_stats', f'{label} fora do intervalo permitido.')
+    return number
+
+
+def _bounded_float(value: Any, label: str, minimum: float, maximum: float) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as error:
+        raise ApiError(400, 'invalid_stats', f'{label} inválido.') from error
+    if not math.isfinite(number) or number < minimum or number > maximum:
         raise ApiError(400, 'invalid_stats', f'{label} fora do intervalo permitido.')
     return number
 
@@ -110,13 +128,15 @@ def put_match_batch(root: Path, username: str, career_id: str, body: dict[str, A
     accepted = 0
     with _db(root) as conn:
         for match in matches:
+            if not isinstance(match, dict):
+                raise ApiError(400, 'invalid_stats', 'Partida deve ser um objeto.')
             fixture = _safe_id(match.get('fixtureId'), 'fixtureId')
-            season = int(match.get('season') or 0)
+            season = _bounded_int(match.get('season'), 'season', 1900, 9999)
             competition = _safe_id(match.get('competitionId') or 'ALL', 'competitionId')
             home = _safe_id(match.get('homeClub'), 'homeClub')
             away = _safe_id(match.get('awayClub'), 'awayClub')
             players = match.get('players') or []
-            if season < 1900 or not isinstance(players, list) or home == away:
+            if not isinstance(players, list) or len(players) > 100 or home == away:
                 raise ApiError(400, 'invalid_stats', 'Temporada ou jogadores inválidos.')
             home_goals = _bounded_int(match.get('homeGoals'), 'homeGoals', 0, 99)
             away_goals = _bounded_int(match.get('awayGoals'), 'awayGoals', 0, 99)
@@ -147,6 +167,8 @@ def put_match_batch(root: Path, username: str, career_id: str, body: dict[str, A
             )
             player_ids: set[str] = set()
             for row in players:
+                if not isinstance(row, dict):
+                    raise ApiError(400, 'invalid_stats', 'Estatística de jogador deve ser um objeto.')
                 player_id = _safe_id(row.get('playerId'), 'playerId')
                 if player_id in player_ids:
                     raise ApiError(400, 'duplicate_player', f'Jogador duplicado na partida: {player_id}.')
@@ -155,16 +177,15 @@ def put_match_batch(root: Path, username: str, career_id: str, body: dict[str, A
                 if club_id not in {home, away}:
                     raise ApiError(400, 'invalid_player_club', 'Jogador pertence a um clube fora da partida.')
                 minutes = _bounded_int(row.get('minutes'), 'minutes', 0, 200)
-                rating = float(row['rating']) if row.get('rating') is not None else None
-                if rating is not None and not 0 <= rating <= 10:
-                    raise ApiError(400, 'invalid_stats', 'Nota do jogador fora do intervalo permitido.')
+                rating = _bounded_float(row['rating'], 'rating', 0, 10) if row.get('rating') is not None else None
+                player_name = _safe_id(row.get('name') or player_id, 'name')
                 conn.execute(
                     """INSERT INTO player_match_stats
                        (username,career_id,fixture_id,player_id,player_name,club_id,season,
                         competition_id,started,minutes,goals,assists,own_goals,yellow,red,passes,rating)
                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (
-                        username, career, fixture, player_id, str(row.get('name') or player_id),
+                        username, career, fixture, player_id, player_name,
                         club_id, season, competition,
                         int(bool(row.get('started'))), minutes,
                         _bounded_int(row.get('goals'), 'goals', 0, 99),

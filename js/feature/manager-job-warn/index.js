@@ -1,4 +1,5 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
+import { escapeHtml } from '../../core/html-safe.js';
 
 const MODAL_HTML = `
 <div id="managerJobWarnModal" class="modal hidden">
@@ -103,7 +104,7 @@ export function createManagerJobWarnFeature(deps) {
     if (lead) lead.textContent = message || 'A diretoria monitora de perto o projeto e as finanças.';
     if (stats) {
       stats.innerHTML = `
-        <div><small>CLUBE</small><b>${clubName}</b></div>
+        <div><small>CLUBE</small><b>${escapeHtml(clubName)}</b></div>
         <div><small>DIRETORIA</small><b>${Math.round(board)}%</b></div>
         <div><small>SAÚDE FINANCEIRA</small><b>${Math.round(finances)}%</b></div>
         ${shieldLabel ? `<div><small>CAMPANHA</small><b>${shieldLabel}</b></div>` : ''}`;

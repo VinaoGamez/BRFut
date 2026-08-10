@@ -1,4 +1,5 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
+import { escapeHtml } from '../../core/html-safe.js';
 
 const MODAL_HTML = `
 <div id="clubBankruptcyModal" class="modal hidden">
@@ -78,9 +79,9 @@ export function createClubBankruptcyFeature(deps) {
       const cashLabel = typeof formatBudget === 'function' ? formatBudget(cash) : String(cash);
       const debtLabel = typeof formatBudget === 'function' ? formatBudget(debt) : String(debt);
       stats.innerHTML = `
-        <div><small>CLUBE</small><b>${clubName}</b></div>
-        <div><small>CAIXA</small><b class="spend">${cashLabel}</b></div>
-        <div><small>DÍVIDA</small><b class="spend">${debtLabel}</b></div>
+        <div><small>CLUBE</small><b>${escapeHtml(clubName)}</b></div>
+        <div><small>CAIXA</small><b class="spend">${escapeHtml(cashLabel)}</b></div>
+        <div><small>DÍVIDA</small><b class="spend">${escapeHtml(debtLabel)}</b></div>
         <div><small>SAÚDE / DIRETORIA</small><b>${Math.round(finances)}% / ${Math.round(board)}%</b></div>`;
     }
     if (detail) {

@@ -142,7 +142,8 @@ function newId() {
 
 /** Upload manual gravado como data URL no localStorage. */
 export function isUploadedCrestImage(image) {
-  return typeof image === 'string' && image.startsWith('data:image/');
+  return typeof image === 'string'
+    && /^data:image\/(png|jpeg|webp);base64,/i.test(image);
 }
 
 /** Remove paths de pacotes (brasfoot/, clubs/) — só mantém upload data URL. */

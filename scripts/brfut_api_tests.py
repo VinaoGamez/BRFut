@@ -108,6 +108,52 @@ class BrfutApiTests(unittest.TestCase):
         self.assertEqual(data['clubName'], 'Flamengo')
         self.assertEqual(get_all_saves(self.root, 'tester')['brfut-career']['value']['clubName'], 'Flamengo')
 
+    def test_rejects_markup_in_display_name_and_unknown_auth_fields(self) -> None:
+        with self.assertRaises(ApiError) as display_error:
+            register_user(self.root, 'unsafe', 'secretpass1', '<img src=x onerror=alert(1)>')
+        self.assertEqual(display_error.exception.code, 'invalid_display_name')
+
+        status, body = self._route(
+            'POST', '/api/auth/register',
+            {'username': 'alpha', 'password': 'passphrase12', 'admin': True},
+        )
+        self.assertEqual(status, 400)
+        self.assertEqual(body['code'], 'unknown_fields')
+
+    def test_rejects_invalid_query_instead_of_returning_500(self) -> None:
+        register_user(self.root, 'tester', 'secretpass1', 'Tester')
+        token, _ = login_user(self.root, 'tester', 'secretpass1')
+        status, body = self._route(
+            'GET', '/api/careers/career-1/stats/leaders?season=not-a-number', token=token,
+        )
+        self.assertEqual(status, 400)
+        self.assertEqual(body['code'], 'invalid_query')
+
+    def test_rejects_abusive_save_structure(self) -> None:
+        nested = {'value': True}
+        for _ in range(42):
+            nested = {'nested': nested}
+        with self.assertRaises(ApiError) as depth_error:
+            put_save(self.root, 'tester', 'brfut-season', nested)
+        self.assertEqual(depth_error.exception.code, 'json_too_deep')
+
+        with self.assertRaises(ApiError) as string_error:
+            put_save(self.root, 'tester', 'brfut-season', {'data': 'x' * 1_100_001})
+        self.assertEqual(string_error.exception.code, 'string_too_large')
+
+    def test_rejects_non_string_avatar_without_server_error(self) -> None:
+        status, register = self._route(
+            'POST', '/api/auth/register',
+            {'username': 'alpha', 'password': 'passphrase12'},
+        )
+        self.assertEqual(status, 201)
+        token, _ = login_user(self.root, 'alpha', 'passphrase12')
+        status, body = self._route(
+            'PUT', '/api/auth/profile', {'avatar': 123}, token=token,
+        )
+        self.assertEqual(status, 400)
+        self.assertEqual(body['code'], 'invalid_avatar')
+
     def test_season_archives_are_allowed_for_base_and_slot(self) -> None:
         put_save(self.root, 'tester', 'brfut-season-archive-2026', {'year': 2026})
         put_save(self.root, 'tester', 'brfut-slot-abc-season-archive-2026', {'year': 2026})

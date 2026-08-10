@@ -1,4 +1,5 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
+import { escapeHtml } from '../../core/html-safe.js';
 
 const MODAL_HTML = `
 <div id="clubInsolvencyWarnModal" class="modal hidden">
@@ -76,9 +77,9 @@ export function createClubInsolvencyWarnFeature(deps) {
       const debtLabel = typeof formatBudget === 'function' ? formatBudget(debt) : String(debt);
       const streakLabel = Math.max(0, Math.round(Number(delinquencyStreak) || 0));
       stats.innerHTML = `
-        <div><small>CLUBE</small><b>${clubName}</b></div>
-        <div><small>CAIXA</small><b>${cashLabel}</b></div>
-        <div><small>DÍVIDA</small><b class="spend">${debtLabel}</b></div>
+        <div><small>CLUBE</small><b>${escapeHtml(clubName)}</b></div>
+        <div><small>CAIXA</small><b>${escapeHtml(cashLabel)}</b></div>
+        <div><small>DÍVIDA</small><b class="spend">${escapeHtml(debtLabel)}</b></div>
         <div><small>ATRASOS</small><b>${streakLabel}r</b></div>`;
     }
     $('#clubInsolvencyWarnModal')?.classList.remove('hidden');

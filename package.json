@@ -20,7 +20,8 @@
     "test:own-goal-report": "node scripts/own-goal-report-tests.mjs",
     "security:secrets": "node scripts/secret-scan.mjs",
     "security:audit": "npm run security:secrets && npm audit --audit-level=moderate",
-    "test:auth-cookie": "node scripts/auth-cookie-tests.mjs"
+    "test:auth-cookie": "node scripts/auth-cookie-tests.mjs",
+    "test:security-input": "node scripts/frontend-security-tests.mjs"
   },
   "devDependencies": {
     "vite": "^6.3.5"

@@ -10,7 +10,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from .auth import ApiError, _profile_from_user, _load_profiles, _save_profiles, create_session
+from .auth import ApiError, _profile_from_user, _load_profiles, _save_profiles, create_session, validate_display_name
 
 USERNAME_RE = re.compile(r'^[a-zA-Z0-9_]{3,24}$')
 SESSION_TTL_SEC = 60 * 60 * 24 * 30
@@ -62,7 +62,11 @@ def _unique_username(data: dict[str, Any], base: str) -> str:
 def _find_or_create_google_user(root, payload: dict[str, Any]) -> dict[str, Any]:
     sub = str(payload['sub'])
     email = (payload.get('email') or '').strip().lower()
-    display = (payload.get('name') or email.split('@')[0] or 'Jogador').strip()[:40]
+    raw_display = payload.get('name') or email.split('@')[0] or 'Jogador'
+    try:
+        display = validate_display_name(raw_display)
+    except ApiError:
+        display = 'Jogador'
 
     data = _load_profiles(root)
     users: list[dict[str, Any]] = data['users']
@@ -101,10 +105,10 @@ def login_with_google_id_token(root, id_token: str) -> tuple[str, dict[str, Any]
     client_id = google_client_id()
     if not client_id:
         raise ApiError(503, 'google_disabled', 'Login Google não configurado neste servidor.')
-    if not (id_token or '').strip():
+    if not isinstance(id_token, str) or not id_token.strip():
         raise ApiError(400, 'missing_id_token', 'Token Google não informado.')
 
-    payload = _verify_id_token((id_token or '').strip(), client_id)
+    payload = _verify_id_token(id_token.strip(), client_id)
     user = _find_or_create_google_user(root, payload)
 
     token = create_session(root, user, provider='google')

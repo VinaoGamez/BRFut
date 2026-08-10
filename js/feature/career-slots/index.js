@@ -16,6 +16,7 @@ import { clearCareerData } from '../../core/save-clear.js';
 import { markSkipSessionEndOnce, markFreshCareerBoot } from '../../core/save.js';
 import { CAREER_SLOT_LIMIT } from '../../core/constants.js';
 import { deleteCareerStats } from '../../core/player-stats-sync.js';
+import { escapeHtml, escapeHtmlAttribute } from '../../core/html-safe.js';
 
 function ensureModalRoot() {
   let root = document.getElementById('careerSlotsModalRoot');
@@ -42,24 +43,28 @@ function ensureModalRoot() {
 }
 
 function slotCardMarkup(slot, { isLast = false } = {}) {
-  const division = formatSlotDivision(slot.division);
-  const year = slot.seasonYear ? `Temp. ${slot.seasonYear}` : 'Sem temporada';
-  const round = slot.currentRound != null ? ` · Rod. ${slot.currentRound}` : '';
+  const division = escapeHtml(formatSlotDivision(slot.division));
+  const year = slot.seasonYear ? `Temp. ${escapeHtml(slot.seasonYear)}` : 'Sem temporada';
+  const round = slot.currentRound != null ? ` · Rod. ${escapeHtml(slot.currentRound)}` : '';
   const badge = isLast ? '<span class="career-slots-badge">último</span>' : '';
+  const slotId = escapeHtmlAttribute(slot.id);
+  const slotName = escapeHtml(slot.name || 'Carreira');
+  const clubName = escapeHtml(slot.clubName || 'Clube');
+  const updatedAt = escapeHtml(formatSlotUpdatedAt(slot.updatedAt));
   return `
-    <article class="career-slots-item" data-slot-id="${slot.id}">
+    <article class="career-slots-item" data-slot-id="${slotId}">
       <div class="career-slots-item-head">
-        <strong>${slot.name || 'Carreira'}</strong>
+        <strong>${slotName}</strong>
         ${badge}
-        <button type="button" class="career-slots-delete" data-delete-slot="${slot.id}" aria-label="Excluir ${slot.name || 'carreira'}" title="Excluir save">
+        <button type="button" class="career-slots-delete" data-delete-slot="${slotId}" aria-label="Excluir ${escapeHtmlAttribute(slot.name || 'carreira')}" title="Excluir save">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/>
           </svg>
         </button>
       </div>
-      <p class="career-slots-item-meta">${slot.clubName} · ${division} · ${year}${round}</p>
-      <p class="career-slots-item-date">Atualizado: ${formatSlotUpdatedAt(slot.updatedAt)}</p>
-      <button type="button" class="career-slots-play" data-play-slot="${slot.id}">JOGAR</button>
+      <p class="career-slots-item-meta">${clubName} · ${division} · ${year}${round}</p>
+      <p class="career-slots-item-date">Atualizado: ${updatedAt}</p>
+      <button type="button" class="career-slots-play" data-play-slot="${slotId}">JOGAR</button>
     </article>
   `;
 }

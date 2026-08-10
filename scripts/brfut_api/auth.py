@@ -7,6 +7,7 @@ import re
 import secrets
 import time
 import binascii
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,19 @@ MAX_SESSIONS_PER_USER = 5
 ONLINE_WINDOW_SEC = 300  # 5 min — jogador "ON" se teve atividade recente
 SESSION_TOUCH_MIN_SEC = 60  # throttle de gravação lastSeenAt
 PBKDF2_ITERS = 260_000
+
+
+def validate_display_name(value: Any, fallback: str | None = None) -> str:
+    if value is None:
+        value = fallback or ''
+    if not isinstance(value, str):
+        raise ApiError(400, 'invalid_display_name', 'Nome exibido inválido.')
+    name = ' '.join(value.strip().split())
+    if not name or len(name) > 40:
+        raise ApiError(400, 'invalid_display_name', 'Nome exibido deve ter entre 1 e 40 caracteres.')
+    if '<' in name or '>' in name or any(unicodedata.category(char).startswith('C') for char in name):
+        raise ApiError(400, 'invalid_display_name', 'Nome exibido contém caracteres não permitidos.')
+    return name
 
 
 class ApiError(Exception):
@@ -239,6 +253,8 @@ def _decode_avatar_data_url(data_url: str) -> tuple[bytes, str]:
     import base64
     import re
 
+    if not isinstance(data_url, str):
+        raise ApiError(400, 'invalid_avatar', 'Imagem em formato inválido.')
     match = re.match(r'^data:image/(jpeg|jpg|png|webp);base64,(.+)$', (data_url or '').strip(), re.I)
     if not match:
         raise ApiError(400, 'invalid_avatar', 'Imagem inválida (use JPEG, PNG ou WebP).')
@@ -266,10 +282,7 @@ def update_user_profile(
         raise ApiError(404, 'user_not_found', 'Usuário não encontrado.')
 
     if display_name is not None:
-        name = display_name.strip()[:40]
-        if not name:
-            raise ApiError(400, 'invalid_display_name', 'Informe um nome exibido.')
-        user['displayName'] = name
+        user['displayName'] = validate_display_name(display_name)
 
     if avatar_data_url is not None:
         if avatar_data_url == '':
@@ -304,6 +317,8 @@ def get_user_avatar(root: Path, user_id: str) -> tuple[bytes, str] | None:
 
 
 def register_user(root: Path, username: str, password: str, display_name: str | None = None) -> dict[str, Any]:
+    if not isinstance(username, str) or not isinstance(password, str):
+        raise ApiError(400, 'invalid_credentials_format', 'Usuário ou senha em formato inválido.')
     username = (username or '').strip().lower()
     if not USERNAME_RE.match(username):
         raise ApiError(400, 'invalid_username', 'Usuário: 3–24 caracteres (letras, números, _).')
@@ -320,7 +335,7 @@ def register_user(root: Path, username: str, password: str, display_name: str | 
     user = {
         'id': user_id,
         'username': username,
-        'displayName': (display_name or username).strip()[:40] or username,
+        'displayName': validate_display_name(display_name, username),
         'salt': salt_hex,
         'passwordHash': hash_hex,
         'createdAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
@@ -331,6 +346,8 @@ def register_user(root: Path, username: str, password: str, display_name: str | 
 
 
 def login_user(root: Path, username: str, password: str) -> tuple[str, dict[str, Any]]:
+    if not isinstance(username, str) or not isinstance(password, str):
+        raise ApiError(400, 'invalid_credentials_format', 'Usuário ou senha em formato inválido.')
     username = (username or '').strip().lower()
     data = _load_profiles(root)
     user = next((u for u in data['users'] if u.get('username') == username), None)
