@@ -1535,11 +1535,11 @@ export async function fetchBackendHealth() {
 /** Config do login Google (health ou endpoint dedicado). */
 export async function fetchGoogleAuthConfig() {
   const health = await fetchBackendHealth();
-  if (health && ('googleAuthEnabled' in health || 'googleClientId' in health)) {
-    const clientId = health.googleClientId || '';
+  const healthClientId = String(health?.googleClientId || '').trim();
+  if (healthClientId) {
     return {
-      enabled: !!health.googleAuthEnabled && !!clientId,
-      clientId,
+      enabled: health?.googleAuthEnabled !== false,
+      clientId: healthClientId,
     };
   }
   try {

@@ -25,6 +25,12 @@ export const RELEASE_NOTES = [
         ],
       },
       {
+        label: 'Acesso ao jogo',
+        items: [
+          'O acesso com Google voltou a ser exibido corretamente quando a configuração estiver ativa na API.',
+        ],
+      },
+      {
         label: 'Categoria de Base e Mercado',
         items: [
           'A Categoria de Base agora funciona também para os clubes controlados pela IA, com geração, evolução, promoção e dispensa de jovens.',

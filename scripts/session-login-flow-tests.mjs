@@ -54,6 +54,21 @@ checkSync('home abre login em COMEÇAR CARREIRA', () => {
   assert(src.includes("loginBtn?.addEventListener('click', () => account.openLogin())"), 'botão home abre login');
 });
 
+checkSync('login Google consulta endpoint dedicado quando health omite client ID', () => {
+  const src = readFileSync(join(ROOT, 'js/core/storage-api.js'), 'utf8');
+  const configFlow = src.slice(
+    src.indexOf('export async function fetchGoogleAuthConfig'),
+    src.indexOf('/** Contagem de cadastros'),
+  );
+  assert(configFlow.includes("String(health?.googleClientId || '').trim()"), 'normaliza client ID do health');
+  assert(configFlow.includes('if (healthClientId)'), 'health só encerra fluxo com client ID válido');
+  assert(configFlow.includes("apiUrl('/api/auth/google/config')"), 'mantém fallback no endpoint dedicado');
+  assert(
+    configFlow.indexOf('if (healthClientId)') < configFlow.indexOf("apiUrl('/api/auth/google/config')"),
+    'fallback é executado quando o health não traz client ID',
+  );
+});
+
 checkSync('openLogin não fecha modal ao preparar formulário', () => {
   const src = readFileSync(join(ROOT, 'js/feature/account/index.js'), 'utf8');
   const openLogin = src.slice(src.indexOf('const openLogin'), src.indexOf('const refresh = async'));
