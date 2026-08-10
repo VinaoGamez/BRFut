@@ -5515,6 +5515,7 @@ export async function bootEngine({
       syncLeaderboardFromPlayerHistory(game.away);
       renderTeamStatsCard?.();
       renderLeaders?.();
+      const tableViewActive=$('#table')?.classList.contains('active');
       if(tableViewActive)renderChampionshipLeaders?.();
     }
     return log;

@@ -84,14 +84,18 @@ export async function prepareGameSession({
 } = {}) {
   runCareerBootMigration();
   const storage = await ensureStorageHydrated({ skipProbe, reason: 'game-session' });
-  if (slotId) {
-    await activateSlot(slotId, {
+  // O slot deixou de ser exposto na URL. Depois da hidratação, recupere-o
+  // da sessão/índice para que a troca home -> jogo não dependa do cache
+  // ativo já ter sido copiado antes da navegação.
+  const resolvedSlotId = slotId || getActiveSlotId();
+  if (resolvedSlotId) {
+    await activateSlot(resolvedSlotId, {
       skipProbe: true,
       reason: 'game-session-slot',
       allowSeedFromActive,
     });
   }
-  return storage;
+  return { ...storage, slotId: resolvedSlotId || null };
 }
 
 /** Indica se há carreira persistida (ativo ou índice de slots). */

@@ -122,6 +122,7 @@ SECURITY_HEADERS = {
         "default-src 'self'; "
         "script-src 'self' https://accounts.google.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; "
+        "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: blob: https://*.googleusercontent.com; "
         f"connect-src {csp_connect_src()}; "

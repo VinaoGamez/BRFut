@@ -143,13 +143,14 @@ if (SITE_MAINTENANCE.enabled) {
           redirectToHomeLanding();
           return;
         }
-        await prepareGameSession({
+        const gameSession = await prepareGameSession({
           skipProbe: true,
           slotId: slotParam || null,
           allowSeedFromActive: !isNewCareerBoot,
         });
         if (!isNewCareerBoot) {
-          const slotCheck = slotParam ? ensureSlotPlayable(slotParam) : { ok: hasLocalCareerSave() };
+          const bootSlotId = slotParam || gameSession.slotId;
+          const slotCheck = bootSlotId ? ensureSlotPlayable(bootSlotId) : { ok: hasLocalCareerSave() };
           if (!slotCheck.ok) {
             console.warn('[brfut] save local sem payload de carreira', slotCheck.reason, slotCheck.scan);
             redirectToHomeLanding();
@@ -162,12 +163,13 @@ if (SITE_MAINTENANCE.enabled) {
       }
 
       consumeCareerReloadPending();
-      await prepareGameSession({
+      const gameSession = await prepareGameSession({
         slotId: slotParam || null,
         allowSeedFromActive: !isNewCareerBoot,
       });
       if (!isNewCareerBoot) {
-        const slotCheck = slotParam ? ensureSlotPlayable(slotParam) : { ok: hasLocalCareerSave() };
+        const bootSlotId = slotParam || gameSession.slotId;
+        const slotCheck = bootSlotId ? ensureSlotPlayable(bootSlotId) : { ok: hasLocalCareerSave() };
         if (!slotCheck.ok) {
           console.warn('[brfut] save local sem payload de carreira', slotCheck.reason, slotCheck.scan);
           redirectToHomeLanding();

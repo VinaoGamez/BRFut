@@ -23,6 +23,7 @@ import {
   playerSeasonLeaderboard,
 } from '../js/engine/player-history.js';
 import { SAVE_KEYS } from '../js/core/constants.js';
+import fs from 'node:fs';
 
 const memory = new Map();
 globalThis.localStorage = {
@@ -48,6 +49,15 @@ function check(name, fn) {
     throw error;
   }
 }
+
+check('registro pós-jogo resolve o estado da tabela no próprio escopo', () => {
+  const source = fs.readFileSync(new URL('../js/legacy/engine.js', import.meta.url), 'utf8');
+  const start = source.indexOf('const recordPlayerHistoryMatch=');
+  const end = source.indexOf('const beginPauseLineupEdit=', start);
+  const recordSource = source.slice(start, end);
+  assert.match(recordSource, /const tableViewActive=\$\('#table'\)\?\.classList\.contains\('active'\);/);
+  assert.match(recordSource, /if\(tableViewActive\)renderChampionshipLeaders\?\.\(\);/);
+});
 
 function makeRoster(names) {
   return names.map((name, index) => ({

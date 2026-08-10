@@ -50,6 +50,7 @@ const assert = (cond, message) => {
 
 const {
   activateSlot,
+  prepareGameSession,
   runCareerBootMigration,
 } = await import('../js/core/career-activate.js');
 
@@ -126,6 +127,19 @@ await checkAsync('activateSlot flush slot anterior ao trocar', async () => {
   assert(savedA?.clubName === 'Slot A active');
   const active = JSON.parse(localStorage.getItem(SAVE_KEYS.career) || 'null');
   assert(active?.clubName === 'Slot B saved');
+});
+
+await checkAsync('prepareGameSession restaura slot ativo sem expor id na URL', async () => {
+  resetAll();
+  runCareerBootMigration();
+  const slotId = createNewSlot();
+  const bundle = slotBundleKeys(slotId);
+  localStorage.setItem(bundle.career, JSON.stringify({ clubName: 'Hidden Slot FC', division: 'C' }));
+  localStorage.removeItem(SAVE_KEYS.career);
+  const session = await prepareGameSession({ skipProbe: true });
+  const active = JSON.parse(localStorage.getItem(SAVE_KEYS.career) || 'null');
+  assert(session.slotId === slotId, 'slot ativo não foi resolvido');
+  assert(active?.clubName === 'Hidden Slot FC', 'bundle do slot não foi reidratado');
 });
 
 await checkAsync('clearCareerData session não apaga índice', async () => {
