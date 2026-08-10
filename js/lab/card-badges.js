@@ -87,8 +87,12 @@ export function hydrateCardBadgeImages(root = document) {
   root.querySelectorAll('img[data-badge-id]').forEach(async img => {
     const id = img.dataset.badgeId;
     if (!id || img.getAttribute('src')) return;
-    const url = await preloadCardBadge(id);
-    if (url) img.setAttribute('src', url);
+    try {
+      const url = await preloadCardBadge(id);
+      if (url) img.setAttribute('src', url);
+    } catch {
+      // Emblema decorativo: uma falha de cache nunca deve bloquear o card.
+    }
   });
 }
 

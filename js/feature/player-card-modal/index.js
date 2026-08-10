@@ -3,7 +3,9 @@
  */
 
 import { resolvePlayerId } from '../../engine/player-identity.js';
-import { isStaleChunkLoadError, showStaleChunkBanner } from '../../core/chunk-load.js';
+import { fetchPlayerSeasonStats } from '../../core/player-stats-sync.js';
+import { mountMatchdayCard } from '../../lab/player-card-system.js';
+import { rosterPlayerToCardPlayer } from '../player-card/roster-card-player.js';
 
 const MODAL_ID = 'playerCardModal';
 let cardHandlersBound = false;
@@ -62,60 +64,55 @@ export function createPlayerCardModal(deps = {}) {
 
     openCtx = { playerId: resolvePlayerId(player), isOwn, ownerClub };
 
-    let mountMatchdayCard;
-    let rosterPlayerToCardPlayer;
-    try {
-      [{ mountMatchdayCard }, { rosterPlayerToCardPlayer }] = await Promise.all([
-        import('../../lab/player-card-system.js'),
-        import('../player-card/roster-card-player.js'),
-      ]);
-    } catch (error) {
-      if (isStaleChunkLoadError(error)) {
-        showStaleChunkBanner();
-        close();
-        return false;
-      }
-      throw error;
-    }
-
-    const cardPlayer = await rosterPlayerToCardPlayer(player, {
+    const cardContext = {
       playerHistory: deps.getPlayerHistory?.(),
       careerSeason: deps.getCareerSeason?.(),
       clubName: ownerClub,
       clubDivision: ownerClub ? deps.getClubs?.()?.[ownerClub]?.division : null,
-      remoteStats: await import('../../core/player-stats-sync.js')
-        .then(module => module.fetchPlayerSeasonStats(resolvePlayerId(player), deps.getCareerSeason?.(), ownerClub))
-        .catch(() => null),
-    });
+    };
+    const cardPlayer = await rosterPlayerToCardPlayer(player, cardContext);
 
     modal()?.classList.remove('hidden');
 
-    mountMatchdayCard(mountEl(), cardPlayer, {
-      interactive: true,
-      showActions: true,
-      actionMode,
-      actionsEnabled,
-      cardArt: cardPlayer._cardArt,
-      onSell: () => {
-        if (!actionsEnabled || !isOwn) return;
-        close();
-        transfers?.openSellFromCard?.(resolvePlayerId(player));
-      },
-      onBuy: () => {
-        if (!actionsEnabled || isOwn) return;
-        close();
-        transfers?.openBuyFromCard?.(resolvePlayerId(player));
-      },
-      onLoan: () => {
-        if (!actionsEnabled) return;
-        close();
-        if (isOwn) {
-          transfers?.openLoanOutFromCard?.(resolvePlayerId(player));
-        } else {
-          transfers?.openLoanInFromCard?.(resolvePlayerId(player));
-        }
-      },
-    });
+    const renderCard = currentCard => {
+      mountMatchdayCard(mountEl(), currentCard, {
+        interactive: true,
+        showActions: true,
+        actionMode,
+        actionsEnabled,
+        cardArt: currentCard._cardArt,
+        onSell: () => {
+          if (!actionsEnabled || !isOwn) return;
+          close();
+          transfers?.openSellFromCard?.(resolvePlayerId(player));
+        },
+        onBuy: () => {
+          if (!actionsEnabled || isOwn) return;
+          close();
+          transfers?.openBuyFromCard?.(resolvePlayerId(player));
+        },
+        onLoan: () => {
+          if (!actionsEnabled) return;
+          close();
+          if (isOwn) {
+            transfers?.openLoanOutFromCard?.(resolvePlayerId(player));
+          } else {
+            transfers?.openLoanInFromCard?.(resolvePlayerId(player));
+          }
+        },
+      });
+    };
+    renderCard(cardPlayer);
+
+    // O card abre com o save local. Estatísticas da API são apenas um
+    // enriquecimento eventual e nunca bloqueiam a interação do jogador.
+    void fetchPlayerSeasonStats(resolvePlayerId(player), deps.getCareerSeason?.(), ownerClub)
+      .then(async remoteStats => {
+        if (!remoteStats || openCtx?.playerId !== resolvePlayerId(player) || modal()?.classList.contains('hidden')) return;
+        const refreshedCard = await rosterPlayerToCardPlayer(player, { ...cardContext, remoteStats });
+        if (openCtx?.playerId === resolvePlayerId(player)) renderCard(refreshedCard);
+      })
+      .catch(() => {});
 
     return true;
   };

@@ -5,6 +5,7 @@
 import { cardDisplayPos, resolveCardRoleKey } from '../../engine/player-card-variant-id.js';
 import { playerKey } from '../../engine/player-match-stats.js';
 import { resolvePlayerSeasonStats } from '../../engine/player-history.js';
+import { cardArtForPlayer } from '../../engine/player-card-art.js';
 
 export function resolveCardStatsBucket(localBucket, remoteTotal) {
   if (!localBucket) return remoteTotal || null;
@@ -59,7 +60,6 @@ export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSe
     },
   };
 
-  const { cardArtForPlayer } = await import('../../engine/player-card-art.js');
   cardPlayer._cardArt = await cardArtForPlayer(cardPlayer);
   return cardPlayer;
 }

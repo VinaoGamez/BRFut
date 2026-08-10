@@ -59,6 +59,23 @@ check('registro pós-jogo resolve o estado da tabela no próprio escopo', () => 
   assert.match(recordSource, /if\(tableViewActive\)renderChampionshipLeaders\?\.\(\);/);
 });
 
+check('card do jogador não depende de import dinâmico ao clicar', () => {
+  const modalSource = fs.readFileSync(new URL('../js/feature/player-card-modal/index.js', import.meta.url), 'utf8');
+  const adapterSource = fs.readFileSync(new URL('../js/feature/player-card/roster-card-player.js', import.meta.url), 'utf8');
+  const artSource = fs.readFileSync(new URL('../js/engine/player-card-art.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(modalSource, /\bimport\s*\(/);
+  assert.doesNotMatch(adapterSource, /\bimport\s*\(/);
+  assert.doesNotMatch(artSource, /\bimport\s*\(/);
+  assert.doesNotMatch(modalSource, /showStaleChunkBanner/);
+});
+
+check('recursos decorativos não bloqueiam os demais cards', () => {
+  const badgesSource = fs.readFileSync(new URL('../js/lab/card-badges.js', import.meta.url), 'utf8');
+  const trophiesSource = fs.readFileSync(new URL('../js/ui/competition-trophies.js', import.meta.url), 'utf8');
+  assert.match(badgesSource, /Emblema decorativo:[\s\S]*nunca deve bloquear o card/);
+  assert.match(trophiesSource, /Troféu decorativo:[\s\S]*histórico textual continua funcional/);
+});
+
 function makeRoster(names) {
   return names.map((name, index) => ({
     name,

@@ -69,16 +69,20 @@ export function hydratePickerTrophyIcons(root = document) {
   root.querySelectorAll('[data-trophy-key]').forEach(async slot => {
     const key = slot.dataset.trophyKey || 'nacional';
     if (slot.querySelector('img')) return;
-    const url = await preloadCompetitionTrophy(key);
-    const img = document.createElement('img');
-    img.className = 'championship-page-picker-trophy';
-    img.alt = '';
-    img.width = 22;
-    img.height = 22;
-    img.decoding = 'async';
-    img.loading = 'lazy';
-    decorateTrophyImg(img, key);
-    img.src = url;
-    slot.prepend(img);
+    try {
+      const url = await preloadCompetitionTrophy(key);
+      const img = document.createElement('img');
+      img.className = 'championship-page-picker-trophy';
+      img.alt = '';
+      img.width = 22;
+      img.height = 22;
+      img.decoding = 'async';
+      img.loading = 'lazy';
+      decorateTrophyImg(img, key);
+      img.src = url;
+      slot.prepend(img);
+    } catch {
+      // Troféu decorativo: o histórico textual continua funcional.
+    }
   });
 }
