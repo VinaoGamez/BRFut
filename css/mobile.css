@@ -1,0 +1,367 @@
+/* Mobile opt-in. These rules only run after a real mobile/touch-tablet is detected. */
+html.is-mobile,
+html.is-mobile body {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-text-size-adjust: 100%;
+}
+
+html.is-mobile body {
+  padding-bottom: env(safe-area-inset-bottom);
+  overscroll-behavior-x: none;
+}
+
+html.is-mobile button,
+html.is-mobile select,
+html.is-mobile input,
+html.is-mobile textarea,
+html.is-mobile [role="button"] {
+  touch-action: manipulation;
+}
+
+html.is-mobile .game-shell {
+  display: block !important;
+  width: 100%;
+  min-height: 100dvh !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+html.is-mobile .game-shell > main {
+  display: block !important;
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+html.is-mobile main > .view,
+html.is-mobile main > .view.active {
+  min-width: 0;
+  overflow: visible !important;
+  padding: 18px 14px 32px !important;
+}
+
+html.is-mobile .sidebar {
+  position: fixed !important;
+  inset: 0 auto 0 0 !important;
+  z-index: 2002;
+  display: flex !important;
+  width: min(84vw, 320px);
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  padding: max(18px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom)) !important;
+  overflow-y: auto !important;
+  transform: translateX(-105%);
+  transition: transform .22s ease;
+  box-shadow: 18px 0 50px #000b;
+}
+
+html.is-mobile body.mobile-menu-open {
+  overflow: hidden !important;
+}
+
+html.is-mobile body.mobile-menu-open .sidebar {
+  transform: translateX(0);
+}
+
+html.is-mobile .sidebar nav {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+html.is-mobile .sidebar .nav,
+html.is-mobile .sidebar-options,
+html.is-mobile .support-project-nav {
+  min-height: 46px;
+}
+
+html.is-mobile .mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2001;
+  display: block;
+  border: 0;
+  background: #02080dcc;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+
+html.is-mobile body.mobile-menu-open .mobile-menu-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+html:not(.is-mobile) .mobile-menu-toggle,
+html:not(.is-mobile) .mobile-menu-backdrop {
+  display: none !important;
+}
+
+html.is-mobile .app-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 8px;
+  width: 100%;
+  height: 60px;
+  padding: env(safe-area-inset-top) 10px 0 !important;
+  background: #07151eeF !important;
+  backdrop-filter: blur(14px);
+}
+
+html.is-mobile .mobile-menu-toggle {
+  display: grid;
+  place-content: center;
+  gap: 4px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #245668;
+  border-radius: 7px;
+  background: #0d2934;
+}
+
+html.is-mobile .mobile-menu-toggle span {
+  display: block;
+  width: 19px;
+  height: 2px;
+  border-radius: 2px;
+  background: #67e5f4;
+}
+
+html.is-mobile .header-news {
+  min-width: 0;
+  overflow: hidden;
+}
+
+html.is-mobile .header-news-kicker,
+html.is-mobile .header-date {
+  display: none !important;
+}
+
+html.is-mobile .header-news-viewport {
+  width: 100%;
+  min-width: 0;
+}
+
+html.is-mobile .header-actions {
+  gap: 5px;
+  white-space: nowrap;
+}
+
+html.is-mobile .header-budget {
+  font-size: 16px !important;
+}
+
+html.is-mobile .hero,
+html.is-mobile .title {
+  min-width: 0;
+}
+
+html.is-mobile .hero h1,
+html.is-mobile .title h1 {
+  font-size: clamp(30px, 10vw, 42px) !important;
+  line-height: .95;
+}
+
+html.is-mobile .view#dashboard .grid,
+html.is-mobile .dashboard-side,
+html.is-mobile .dashboard-tables,
+html.is-mobile .side-mini-cards,
+html.is-mobile .office-layout,
+html.is-mobile .office-stadium-layout,
+html.is-mobile .messages-layout {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+html.is-mobile .card {
+  min-width: 0;
+  padding: 14px !important;
+}
+
+html.is-mobile .teams {
+  gap: 8px;
+  margin-inline: 0;
+}
+
+html.is-mobile .teams > div {
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+html.is-mobile .teams b {
+  overflow-wrap: anywhere;
+}
+
+html.is-mobile .match-actions-footer,
+html.is-mobile .match-actions-buttons,
+html.is-mobile .roster-filters,
+html.is-mobile .roster-filter-actions {
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch !important;
+}
+
+html.is-mobile .match-actions-buttons button,
+html.is-mobile .roster-filter-actions button,
+html.is-mobile .club-upcoming-actions button {
+  width: 100%;
+  min-height: 44px;
+}
+
+html.is-mobile .roster,
+html.is-mobile .roster-scroll,
+html.is-mobile .table-scroll,
+html.is-mobile .unified-table-wrap,
+html.is-mobile .championship-table-wrap,
+html.is-mobile .transfer-results,
+html.is-mobile .ranking-table-wrap {
+  max-width: 100%;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+html.is-mobile .roster-scroll::after,
+html.is-mobile .table-scroll::after {
+  content: 'Deslize para ver mais';
+  position: sticky;
+  left: 8px;
+  display: block;
+  width: max-content;
+  margin: 8px;
+  color: #76a9b2;
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+html.is-mobile .tactics,
+html.is-mobile #tactics .tactics {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 14px !important;
+}
+
+html.is-mobile #tactics .tactics > .controls,
+html.is-mobile #tactics .tactics > .tactical-board,
+html.is-mobile #tactics .tactic-roster {
+  grid-column: 1 !important;
+  width: 100% !important;
+  max-width: 430px;
+  justify-self: center;
+}
+
+html.is-mobile #tactics .tactics > .tactical-board {
+  grid-row: 2;
+  height: auto !important;
+  aspect-ratio: 68 / 105;
+}
+
+html.is-mobile .modal {
+  align-items: center;
+  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+}
+
+html.is-mobile .modal-card,
+html.is-mobile [class$="-modal-card"],
+html.is-mobile [class*=" modal-card"] {
+  width: min(100%, 620px) !important;
+  max-width: calc(100vw - 16px) !important;
+  max-height: calc(100dvh - 16px) !important;
+  padding: 18px 14px !important;
+  overflow: auto !important;
+}
+
+html.is-mobile .player-card-modal,
+html.is-mobile .manager-card-modal,
+html.is-mobile .club-history-modal,
+html.is-mobile .transfer-history-modal {
+  padding: 8px !important;
+}
+
+html.is-mobile .player-card,
+html.is-mobile .manager-card,
+html.is-mobile .club-history-card,
+html.is-mobile .transfer-history-card {
+  max-width: calc(100vw - 24px) !important;
+  max-height: calc(100dvh - 24px) !important;
+}
+
+html.is-mobile .close {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+html.is-mobile .home-shell {
+  min-height: 100dvh;
+  height: auto;
+  padding: max(18px, env(safe-area-inset-top)) 16px max(130px, env(safe-area-inset-bottom)) !important;
+  overflow: visible;
+}
+
+html.is-mobile .home-header {
+  align-items: flex-start;
+  gap: 14px;
+}
+
+html.is-mobile .home-main {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding-top: 26px;
+}
+
+html.is-mobile .home-hero h1 {
+  font-size: clamp(38px, 12vw, 58px);
+  line-height: .94;
+}
+
+html.is-mobile .home-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+html.is-mobile .home-btn {
+  width: 100%;
+  min-height: 48px;
+}
+
+html.is-mobile .home-support {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-width: 520px;
+  margin: 20px auto 0;
+  transform: none !important;
+}
+
+@media (max-width: 430px) {
+  html.is-mobile .app-header {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+  }
+
+  html.is-mobile .header-budget-icon {
+    display: none;
+  }
+
+  html.is-mobile main > .view,
+  html.is-mobile main > .view.active {
+    padding-inline: 10px !important;
+  }
+
+  html.is-mobile .dashboard-side-split,
+  html.is-mobile .office-stats,
+  html.is-mobile .stadium-summary-stats,
+  html.is-mobile .office-sponsors-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
