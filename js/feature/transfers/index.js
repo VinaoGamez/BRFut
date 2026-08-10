@@ -160,6 +160,7 @@ export function createTransfersFeature(deps) {
     listedOnly: false,
     loanOnly: false,
     specialistOnly: false,
+    freeOnly: false,
     sortBy: 'ovr',
     sortDir: 'desc',
   };
@@ -627,6 +628,7 @@ export function createTransfersFeature(deps) {
     listedOnly: Boolean($('#transfersFilterListed')?.checked),
     loanOnly: Boolean($('#transfersFilterLoan')?.checked),
     specialistOnly: Boolean($('#transfersFilterSpecialist')?.checked),
+    freeOnly: Boolean($('#transfersFilterFree')?.checked),
     sortBy: filters.sortBy || 'ovr',
     sortDir: filters.sortDir || 'desc',
   });
@@ -688,7 +690,9 @@ export function createTransfersFeature(deps) {
     const loan = $('#transfersFilterLoan');
     if (loan) loan.checked = !!filters.loanOnly;
     const specialist = $('#transfersFilterSpecialist');
+    const free = $('#transfersFilterFree');
     if (specialist) specialist.checked = !!filters.specialistOnly;
+    if (free) free.checked = !!filters.freeOnly;
   };
 
   const renderLoanSlots = () => {
@@ -988,6 +992,7 @@ export function createTransfersFeature(deps) {
       listedOnly: !!filters.listedOnly,
       loanOnly: !!filters.loanOnly,
       specialistOnly: !!filters.specialistOnly,
+      freeOnly: !!filters.freeOnly,
       sortBy: filters.sortBy || 'ovr',
       sortDir: filters.sortDir || 'desc',
     });
@@ -1008,7 +1013,7 @@ export function createTransfersFeature(deps) {
         .slice(pageStart, pageStart + BUY_PAGE_SIZE)
         .map(row => {
           const p = row.player;
-          const wage = Number(p.wage || row.wage) || 0;
+          const wage = Number(row.wage || p.wage) || 0;
           const canLoan = !!p.loanListed;
           const loanTag = canLoan
             ? ' <small class="transfers-loan-tag transfers-loan-tag--offer" title="Disponível para empréstimo">EMPR.</small>'
@@ -1016,7 +1021,7 @@ export function createTransfersFeature(deps) {
           const wageCell = formatWageCell(wage, row.division || filters.division || 'A');
           return `<tr>
           <td class="col-name">${renderMarketPlayerName(playerNameCell, p.name, p, { clubName: row.clubName, suffixHtml: loanTag })}</td>
-          <td class="col-club" title="${escapeHtml(row.clubName)}"><span class="club-link" data-club="${escapeHtml(row.clubName)}" role="button" tabindex="0">${escapeHtml(row.clubName)}</span></td>
+          <td class="col-club" title="${escapeHtml(row.clubName)}">${row.freeAgent ? '<strong class="transfers-free-agent-label">LIVRE</strong>' : `<span class="club-link" data-club="${escapeHtml(row.clubName)}" role="button" tabindex="0">${escapeHtml(row.clubName)}</span>`}</td>
           <td>${escapeHtml(p.pos)}</td>
           <td>${escapeHtml(sideLetter(p))}</td>
           <td class="col-force">${escapeHtml(p.overall)}</td>
@@ -1717,6 +1722,37 @@ export function createTransfersFeature(deps) {
     const found = api.findPlayerInWorld(playerId);
     if (!found) {
       setStatus(reasonLabel('not_found'));
+      return;
+    }
+    if (found.freeAgentEntry) {
+      const entry = found.freeAgentEntry;
+      const payroll = previewExpandPayroll({ ...found.player, wage: entry.wageDemand || found.player.wage });
+      openConfirmModal({
+        title: 'Contratar jogador livre',
+        eyebrow: 'MERCADO · LIVRE',
+        playerName: found.player.name,
+        meta: `${found.player.pos} · OVR ${found.player.overall} · ${found.player.age} anos`,
+        lead: `Sem passe · luvas ${formatMoney(entry.signingBonus || 0)}`,
+        slotsLabel: 'LIVRE',
+        slotsCaption: 'CLUBE ATUAL',
+        wage: entry.wageDemand || found.player.wage,
+        fee: entry.signingBonus || 0,
+        payroll,
+        submitLabel: 'CONTRATAR',
+        onConfirm: () => {
+          const result = engine()?.buyPlayer?.(playerId, null);
+          alertTransferResult(result, {
+            titleOk: 'Contratação concluída',
+            leadOk: result?.ok ? `${result.player.name} chegou livre, sem custo de passe.` : '',
+            titleFail: 'Contratação bloqueada',
+          });
+          if (result?.ok) {
+            onDealComplete?.(result);
+            persistSeason();
+            render();
+          }
+        },
+      });
       return;
     }
     const value = Number(found.player.marketValue) || 0;

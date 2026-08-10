@@ -722,6 +722,24 @@ export function purgeAllCareerStorage() {
   invalidateStoragePressureCache();
 }
 
+/**
+ * Executa uma única vez a limpeza local exigida por um novo ciclo incompatível.
+ * O marcador fica fora do conjunto de saves para impedir reexecução a cada boot.
+ */
+export function applySaveResetMigration(epoch, markerKey = 'brfut-save-reset-epoch') {
+  const expected = String(epoch || '').trim();
+  if (!expected) return false;
+  try {
+    if (localStorage.getItem(markerKey) === expected) return false;
+  } catch {
+    return false;
+  }
+  purgeAllCareerStorage();
+  try { localStorage.setItem(markerKey, expected); }
+  catch { /* ignore quota / privacy mode */ }
+  return true;
+}
+
 export function hydrateMessages(season, valid) {
   if (!valid || !Array.isArray(season?.careerMessages)) return [];
   return season.careerMessages.map(message => ({ ...message, read: !!message.read }));

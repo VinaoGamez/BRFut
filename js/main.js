@@ -2,7 +2,7 @@ import './security/https-upgrade.js';
 import './security/tester-hardening.js';
 import '../css/release-notes-viewer.css';
 import '../css/live-volume.css';
-import { AUTH_REQUIRED, BUILD_VERSION, FEATURES, SITE_MAINTENANCE } from './core/constants.js';
+import { AUTH_REQUIRED, BUILD_VERSION, FEATURES, SAVE_RESET_EPOCH, SAVE_RESET_MARKER_KEY, SITE_MAINTENANCE } from './core/constants.js';
 import { registerChunkLoadRecovery } from './core/chunk-load.js';
 import { createEventBus } from './core/event-bus.js';
 import { bootEngine } from './legacy/engine.js';
@@ -21,6 +21,7 @@ import {
   markCareerReloadPending,
   markFreshCareerBoot,
   markSkipSessionEndOnce,
+  applySaveResetMigration,
   purgeAllCareerStorage,
   shouldPreserveAuthOnPageHide,
 } from './core/save.js';
@@ -44,6 +45,7 @@ if (SITE_MAINTENANCE.enabled) {
   markBootReady();
   location.replace('home.html');
 } else {
+  applySaveResetMigration(SAVE_RESET_EPOCH, SAVE_RESET_MARKER_KEY);
   runCareerBootMigration();
   document.documentElement.dataset.build = BUILD_VERSION;
   registerChunkLoadRecovery();

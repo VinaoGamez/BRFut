@@ -16,7 +16,16 @@ from .saves import (
     migrate_saves,
     put_save,
 )
-from .player_stats import delete_career_stats, get_club_squad, get_leaders, get_player, put_match_batch
+from .player_stats import (
+    delete_career_stats,
+    get_club_history,
+    get_club_squad,
+    get_leaders,
+    get_match_manifest,
+    get_player,
+    put_match_batch,
+)
+from .career_history import delete_career_history, get_club_seasons, get_manager_history, get_season_history, put_season_history
 
 
 PUBLIC_ROUTES = {
@@ -34,6 +43,8 @@ def _json_response(status: int, payload: dict[str, Any]) -> tuple[int, dict[str,
     headers = {
         'Content-Type': 'application/json; charset=utf-8',
         'Content-Length': str(len(body)),
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Pragma': 'no-cache',
     }
     return status, headers, body
 
@@ -142,6 +153,10 @@ def handle_api(
             data = _parse_json(body) or {}
             return _json_response(200, put_match_batch(root, username, parts[1], data))
 
+        if len(parts) == 4 and parts[0] == 'careers' and parts[2:] == ['stats', 'matches'] and method == 'GET':
+            season = int((query.get('season') or [0])[0]) or None
+            return _json_response(200, get_match_manifest(root, username, parts[1], season))
+
         if len(parts) == 5 and parts[0] == 'careers' and parts[2:4] == ['stats', 'players'] and method == 'GET':
             season = int((query.get('season') or [0])[0])
             club_id = (query.get('club') or [None])[0]
@@ -152,6 +167,9 @@ def handle_api(
             competition = (query.get('competition') or [None])[0]
             return _json_response(200, get_club_squad(root, username, parts[1], parts[4], season, competition))
 
+        if len(parts) == 6 and parts[0] == 'careers' and parts[2:4] == ['stats', 'clubs'] and parts[5] == 'history' and method == 'GET':
+            return _json_response(200, get_club_history(root, username, parts[1], parts[4]))
+
         if len(parts) == 4 and parts[0] == 'careers' and parts[2:] == ['stats', 'leaders'] and method == 'GET':
             season = int((query.get('season') or [0])[0])
             competition = (query.get('competition') or [None])[0]
@@ -159,7 +177,23 @@ def handle_api(
             return _json_response(200, get_leaders(root, username, parts[1], season, competition, metric))
 
         if len(parts) == 3 and parts[0] == 'careers' and parts[2] == 'stats' and method == 'DELETE':
-            return _json_response(200, {'removed': delete_career_stats(root, username, parts[1])})
+            return _json_response(200, {
+                'removed': delete_career_stats(root, username, parts[1]),
+                'historyRemoved': delete_career_history(root, username, parts[1]),
+            })
+
+        if len(parts) == 4 and parts[0] == 'careers' and parts[2] == 'seasons':
+            season = int(parts[3])
+            if method == 'PUT':
+                return _json_response(200, put_season_history(root, username, parts[1], _parse_json(body) or {}))
+            if method == 'GET':
+                return _json_response(200, get_season_history(root, username, parts[1], season))
+
+        if len(parts) == 4 and parts[0] == 'careers' and parts[2] == 'managers' and method == 'GET':
+            return _json_response(200, get_manager_history(root, username, parts[1], parts[3]))
+
+        if len(parts) == 4 and parts[0] == 'careers' and parts[2] == 'clubs' and method == 'GET':
+            return _json_response(200, get_club_seasons(root, username, parts[1], parts[3]))
 
         if method == 'GET' and rel == 'saves':
             return _json_response(200, {'saves': get_all_saves(root, username)})

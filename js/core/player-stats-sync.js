@@ -130,6 +130,26 @@ export async function queuePlayerStatsHistory(logs) {
   }
 }
 
+/**
+ * Compara o buffer local com o manifesto confirmado pela API e reenfileira
+ * apenas partidas ausentes. Em falha de rede, reenfileira tudo: o PUT da API
+ * é idempotente por fixtureId.
+ */
+export async function reconcilePlayerStatsHistory(logs) {
+  const careerId = activeCareerId();
+  if (!careerId || !Array.isArray(logs) || !logs.length) return 0;
+  const seasons = [...new Set(logs.map(log => Number(log?.season)).filter(Boolean))];
+  const confirmed = new Set();
+  for (const season of seasons) {
+    const data = await statsGet(
+      `/api/careers/${encodeURIComponent(careerId)}/stats/matches?season=${encodeURIComponent(season)}`,
+    );
+    (data?.matches || []).forEach(row => confirmed.add(String(row.fixture_id || row.fixtureId)));
+  }
+  const missing = logs.filter(log => !confirmed.has(String(log?.fixtureId || log?.id)));
+  return queuePlayerStatsHistory(missing.length || seasons.length ? missing : logs);
+}
+
 export async function flushPlayerStatsOutbox() {
   if (flushing || typeof fetch !== 'function') return { ok: false, reason: 'busy' };
   let token = null;
@@ -155,6 +175,7 @@ export async function flushPlayerStatsOutbox() {
         const batch = rows.slice(offset, offset + 25);
         const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(careerId)}/stats/matches`), {
           method: 'POST',
+          cache: 'no-store',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
@@ -192,6 +213,7 @@ async function statsGet(path) {
     const timer = controller ? setTimeout(() => controller.abort(), 2500) : null;
     const response = await fetch(apiUrl(path), {
       headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
       signal: controller?.signal,
     });
     if (timer) clearTimeout(timer);
@@ -255,4 +277,5 @@ export async function fetchSeasonLeaders(season, { competitionId = null, metric 
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => void flushPlayerStatsOutbox());
   window.addEventListener('brfut:auth-changed', () => void flushPlayerStatsOutbox());
+  setTimeout(() => void flushPlayerStatsOutbox(), 0);
 }

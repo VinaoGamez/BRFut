@@ -9,6 +9,38 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: 'Alpha V.6.00',
+    date: '2026-08-09',
+    publishedAt: '2026-08-09T12:00:00-04:00',
+    title: 'BR Fut foi atualizado',
+    promptUpdate: true,
+    topics: [
+      {
+        label: 'Novo ciclo de carreiras',
+        items: [
+          'Como medida de prevenção e correção de falhas, todos os saves de carreira foram excluídos.',
+          'Contas e cadastros foram preservados. Será necessário iniciar uma nova carreira.',
+          'Saves antigos agora são bloqueados para impedir que dados incompatíveis retornem pela sincronização.',
+        ],
+      },
+      {
+        label: 'Categoria de Base e Mercado',
+        items: [
+          'A Categoria de Base agora funciona também para os clubes controlados pela IA, com geração, evolução, promoção e dispensa de jovens.',
+          'Jogadores dispensados ou sem contrato passam a entrar no mercado como LIVRES.',
+          'Novas carreiras começam com mais jogadores livres, distribuídos proporcionalmente entre as divisões.',
+        ],
+      },
+      {
+        label: 'Estatísticas e salvamento',
+        items: [
+          'Históricos de jogadores, clubes, técnicos, partidas e temporadas passam a usar o novo fluxo de dados da API.',
+          'A limpeza preventiva remove estruturas antigas que poderiam causar calendários travados, estatísticas incompletas ou falhas ao avançar.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'Alpha V.5.95',
     date: '2026-07-30',
     publishedAt: '2026-07-30T16:00:00-04:00',

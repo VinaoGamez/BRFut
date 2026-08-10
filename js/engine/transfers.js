@@ -42,6 +42,7 @@ import {
 } from './loan-buy-option.js';
 import { isMarketBuyRestricted } from './club-solvency.js';
 import { isPlayerSpecialist } from './player-generation.js';
+import { FREE_AGENT_CLUB_LABEL, removeFreeAgent, signFreeAgentsForAi } from './free-agents.js';
 
 export const TRANSFER_LIMITS = {
   minRoster: ROSTER_CAREER_MIN,
@@ -285,6 +286,7 @@ export function createTransfersEngine(deps) {
     getClubs,
     getUserClub,
     getCareerSeason,
+    getFreeAgentsPool = () => [],
     spend,
     credit,
     canAfford,
@@ -328,7 +330,20 @@ export function createTransfersEngine(deps) {
     if (hit?.player) return hit;
     const found = findPlayerInWorldLinear(clubs, playerId);
     if (found && playerWorldIndex) playerWorldIndex.set(playerId, found);
-    return found;
+    if (found) return found;
+    const pool = getFreeAgentsPool() || [];
+    const freeIndex = pool.findIndex(item => item?.playerId === playerId || resolvePlayerId(item?.player) === playerId);
+    if (freeIndex >= 0) {
+      const entry = pool[freeIndex];
+      return {
+        clubName: FREE_AGENT_CLUB_LABEL,
+        club: null,
+        player: entry.player,
+        index: freeIndex,
+        freeAgentEntry: entry,
+      };
+    }
+    return null;
   };
   /** @type {Map<string, string>} playerId → dayKey até quando está em cooldown */
   const rejectCooldownUntil = new Map(
@@ -437,7 +452,7 @@ export function createTransfersEngine(deps) {
     const fee = Math.round(Number(deal?.fee) || 0);
     const type = deal.type || 'buy';
     // Compras (fee>0) e movimentos sem taxa (empréstimo / observação) alimentam a agenda do calendário.
-    if (!(fee > 0) && type !== 'ai_loan' && type !== 'loan' && type !== 'watch') return;
+    if (!(fee > 0) && type !== 'ai_loan' && type !== 'loan' && type !== 'watch' && type !== 'free_agent') return;
     seasonDealLog.push({
       playerName: deal.player?.name || deal.playerName || '—',
       playerId: deal.player ? resolvePlayerId(deal.player) : deal.playerId || null,
@@ -499,10 +514,17 @@ export function createTransfersEngine(deps) {
       listedSample,
       freeAgents: {
         /** Flag para a futura mecânica de jogadores livres no mercado. */
-        enabled: false,
-        comingSoon: true,
-        players: [],
-        note: 'Jogadores livres no mercado — mecânica futura, após validar compra/venda/empréstimo.',
+        enabled: true,
+        comingSoon: false,
+        players: (getFreeAgentsPool() || []).slice(0, 4).map(entry => ({
+          playerId: entry.playerId,
+          playerName: entry.player?.name || '—',
+          overall: Number(entry.player?.overall) || 0,
+          marketTier: entry.marketTier || 'D',
+          wageDemand: Number(entry.wageDemand) || 0,
+        })),
+        total: (getFreeAgentsPool() || []).length,
+        note: 'Jogadores sem clube disponíveis para contratação sem custo de passe.',
       },
     };
   };
@@ -750,6 +772,42 @@ export function createTransfersEngine(deps) {
         if (player.listed) listedCount += 1;
       });
     });
+    (getFreeAgentsPool() || []).forEach(entry => {
+      const player = entry?.player;
+      if (!player || player.nationalTeamOnly) return;
+      const tier = entry.marketTier || entry.formerDivision || 'D';
+      if (division && tier !== division) return;
+      if (loanOnly) return;
+      if (specialistOnly && !isPlayerSpecialist(player)) return;
+      if (pos && player.pos !== pos) return;
+      if (foot && String(player.preferredFoot || player.foot || '').trim().toLocaleLowerCase('pt-BR') !== foot) return;
+      if (nationality && String(player.nationality || 'Brasil').trim().toLocaleLowerCase('pt-BR') !== nationality) return;
+      const ovr = Number(player.overall) || 0;
+      const age = Number(player.age) || 0;
+      if (Number.isFinite(minOvr) && minOvr > 0 && ovr < minOvr) return;
+      if (Number.isFinite(maxOvr) && maxOvr > 0 && ovr > maxOvr) return;
+      if (Number.isFinite(minAge) && minAge > 0 && age < minAge) return;
+      if (Number.isFinite(maxAge) && maxAge > 0 && age > maxAge) return;
+      if (query && !String(player.name || '').toLocaleLowerCase('pt-BR').includes(query) && !'livre'.includes(query)) return;
+      const value = Number(entry.marketValue) || Number(player.marketValue) || estimatePlayerValue(player, tier);
+      const wage = Number(entry.wageDemand) || Number(player.wage) || resolvePlayerRoundWage(player, tier);
+      if (Number.isFinite(maxWage) && maxWage > 0 && wage > maxWage) return;
+      rows.push({
+        playerId: entry.playerId || resolvePlayerId(player),
+        player,
+        clubName: FREE_AGENT_CLUB_LABEL,
+        division: tier,
+        value,
+        price: 0,
+        wage,
+        age,
+        overall: ovr,
+        loanListed: false,
+        listed: true,
+        freeAgent: true,
+        signingBonus: Number(entry.signingBonus) || 0,
+      });
+    });
     if (listedCount >= minListed) return 0;
 
     let seeded = 0;
@@ -828,6 +886,7 @@ export function createTransfersEngine(deps) {
     const listedOnly = filters.listedOnly === true;
     const loanOnly = filters.loanOnly === true;
     const specialistOnly = filters.specialistOnly === true;
+    const freeOnly = filters.freeOnly === true;
     let sortBy = String(filters.sortBy || 'ovr').toLowerCase();
     // Compat: chaves antigas com direção embutida
     let sortDir = String(filters.sortDir || '').toLowerCase();
@@ -844,6 +903,7 @@ export function createTransfersEngine(deps) {
 
     const rows = [];
     Object.entries(clubs).forEach(([clubName, club]) => {
+      if (freeOnly) return;
       if (clubName === userName || !Array.isArray(club?.roster)) return;
       if (division && club.division !== division) return;
       club.roster.forEach(player => {
@@ -1262,6 +1322,44 @@ export function createTransfersEngine(deps) {
     if (!restriction.ok) return restriction;
     const { name: buyerName, club: buyer } = userClubState();
     if (!buyer) return { ok: false, reason: 'no_club' };
+
+    const freePool = getFreeAgentsPool() || [];
+    const freeEntry = freePool.find(item => item?.playerId === playerId || resolvePlayerId(item?.player) === playerId);
+    if (freeEntry) {
+      const player = freeEntry.player;
+      const payroll = payrollExpand(buyer, { ...player, wage: freeEntry.wageDemand || player.wage });
+      if (!payroll.ok) return { ok: false, reason: payroll.reason || 'payroll_pressure', payroll, fee: 0 };
+      const signingBonus = Math.max(0, Math.round(Number(freeEntry.signingBonus) || 0));
+      if (!canAfford(buyer, signingBonus)) return { ok: false, reason: 'cannot_afford', fee: signingBonus, payroll };
+      const paid = spend(buyer, signingBonus, {
+        reason: 'free_agent_signing',
+        label: `Luvas · ${player.name}`,
+        meta: { playerId, from: FREE_AGENT_CLUB_LABEL, to: buyerName, signingBonus },
+      });
+      if (!paid?.ok) return { ok: false, reason: 'cannot_afford', fee: signingBonus };
+      const removed = removeFreeAgent(freePool, playerId);
+      if (!removed) return { ok: false, reason: 'not_found' };
+      const moved = { ...player, listed: false, askingPrice: null, freeAgent: false, club: buyerName };
+      moved.wage = Number(freeEntry.wageDemand) || moved.wage;
+      markPlayerMoved(moved);
+      applyTransferContract(moved, buyer.division);
+      buyer.roster.push(moved);
+      invalidatePlayerWorldIndex();
+      const result = {
+        ok: true,
+        type: 'free_agent',
+        player: moved,
+        fee: 0,
+        signingBonus,
+        from: FREE_AGENT_CLUB_LABEL,
+        to: buyerName,
+        value: Number(freeEntry.marketValue) || Number(player.marketValue) || 0,
+        payroll: evaluateRosterPayroll(buyer, { division: buyer.division || 'A' }),
+      };
+      recordSeasonDeal(result);
+      onAfterTransfer?.(result);
+      return result;
+    }
 
     const found = findPlayerInWorld( playerId);
     if (!found || found.clubName === buyerName) return { ok: false, reason: 'not_found' };
@@ -2191,6 +2289,19 @@ export function createTransfersEngine(deps) {
     const season = getCareerSeason();
     const deals = [];
     const offers = [];
+
+    const freeMoves = signFreeAgentsForAi(clubs, getFreeAgentsPool() || [], {
+      userClub: userName,
+      season,
+      careerDate: careerDate(),
+      targetRoster: 22,
+    });
+    freeMoves.forEach(move => {
+      recordSeasonDeal(move);
+      deals.push({ ok: true, ...move });
+      onAfterTransfer?.({ ok: true, ...move });
+    });
+    if (freeMoves.length) invalidatePlayerWorldIndex();
 
     // Re-seed listings levemente para manter mercado vivo.
     if (!skipSeed) {

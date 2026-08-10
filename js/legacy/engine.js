@@ -35,6 +35,7 @@ import { createRosterContractsFeature } from '../feature/roster-contracts/index.
 import { renderTransferHistoryCard } from '../ui/transfer-history-card.js';
 import { SAVE_KEYS, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { getAuthToken, isCloudStorageActive, probeBackend } from '../core/storage-api.js';
+import { fetchClubSeasonStats } from '../core/player-stats-sync.js';
 import { collectWorldRosters, applyWorldRosters, stampWorldPlayers } from '../engine/world-rosters.js';
 import {
   computeRenewalWageAsk,
@@ -111,7 +112,18 @@ import {
   summarizeSquadTrainingXp,
   XP_PER_ATTR_POINT,
 } from '../engine/training-development.js';
-import { collectYouthTrainingPlayers } from '../engine/youth-academy.js';
+import {
+  collectYouthTrainingPlayers,
+  applyYouthClubState,
+  serializeYouthClubState,
+} from '../engine/youth-academy.js';
+import {
+  createInitialFreeAgentsPool,
+  ensureFreeAgentsPool,
+  releasePlayerToFreeAgents,
+  serializeFreeAgentsPool,
+  signFreeAgentsForAi,
+} from '../engine/free-agents.js';
 import {
   generatePlayer as generatePlayerCore,
   DIVISION_CLUB_POWER,
@@ -869,6 +881,26 @@ export async function bootEngine({
     ensureStadium,
   });
   const clubs=clubsBoot.clubs;
+  if(savedNewGame){
+    Object.entries(savedNewGame.worldYouthStates||{}).forEach(([clubName,state])=>{
+      if(clubs[clubName]&&clubName!==userClub)applyYouthClubState(clubs[clubName],state);
+    });
+    const existingFreeAgents=ensureFreeAgentsPool(savedNewGame.freeAgentsPool);
+    const needsInitialFreeAgents=!existingFreeAgents.length&&!savedNewGame.freeAgentsPoolInitialized;
+    savedNewGame.freeAgentsPool=needsInitialFreeAgents
+      ?createInitialFreeAgentsPool(clubs,{
+        seed:savedNewGame.seed||0,
+        season:careerSeason,
+        careerDate:new Date(careerSeason,0,1,12),
+        random:gameRandom,
+        firstNames,
+        lastNames,
+      })
+      :existingFreeAgents;
+    savedNewGame.freeAgentsPoolInitialized=true;
+    if(!Array.isArray(savedNewGame.freeAgentsPool))savedNewGame.freeAgentsPool=[];
+    if(needsInitialFreeAgents)persistCareer({...savedNewGame});
+  }
   let continuingCareer=clubsBoot.continuingCareer;
   if(clubsBoot.careerWorldNeedsPersist)careerWorldNeedsPersist=true;
   if(clubsBoot.serieDLayoutRepaired)serieDLayoutRepaired=true;
@@ -1877,6 +1909,37 @@ export async function bootEngine({
   });
   const allScorers=Object.values(clubs).flatMap(club=>club.roster.map(player=>({name:player.name,club:club.name,division:club.division,games:savedNewGame?0:int(9,13),goals:savedNewGame?0:int(0,8),tieValue:player.finishing+player.heading*.2}))).sort((a,b)=>b.goals-a.goals||b.tieValue-a.tieValue);
   const allAssistants=Object.values(clubs).flatMap(club=>club.roster.filter(player=>player.pos!=='GOL').map(player=>({name:player.name,club:club.name,division:club.division,games:savedNewGame?0:int(9,13),assists:savedNewGame?0:int(0,7),tieValue:player.passing+player.playmaking}))).sort((a,b)=>b.assists-a.assists||b.tieValue-a.tieValue);
+  // Confirmados pela API; mantidos apenas em memoria durante a sessao.
+  const remoteClubStatsCache=new Map();
+  const remoteClubStatsKey=clubName=>`${careerSeason}:${clubName}`;
+  const remoteClubRows=clubName=>remoteClubStatsCache.get(remoteClubStatsKey(clubName))?.players||[];
+  const ensureRemoteClubStats=async clubName=>{
+    if(!clubName)return null;
+    const key=remoteClubStatsKey(clubName);
+    if(remoteClubStatsCache.has(key))return remoteClubStatsCache.get(key);
+    const result=await fetchClubSeasonStats(clubName,careerSeason);
+    if(result&&Array.isArray(result.players))remoteClubStatsCache.set(key,result);
+    return result;
+  };
+  const remoteClubLeaders=clubName=>{
+    const rows=remoteClubRows(clubName);
+    if(!rows.length)return null;
+    const scorers=[...rows].filter(row=>(Number(row.goals)||0)>0).sort((a,b)=>Number(b.goals)-Number(a.goals)||Number(a.apps)-Number(b.apps));
+    const assistants=[...rows].filter(row=>(Number(row.assists)||0)>0).sort((a,b)=>Number(b.assists)-Number(a.assists)||Number(a.apps)-Number(b.apps));
+    return {
+      scorer:scorers[0]?{name:scorers[0].player_name,goals:Number(scorers[0].goals)||0,apps:Number(scorers[0].apps)||0}:{name:'—'},
+      goals:Number(scorers[0]?.goals)||0,
+      assistant:assistants[0]?{name:assistants[0].player_name,assists:Number(assistants[0].assists)||0,apps:Number(assistants[0].apps)||0}:{name:'—'},
+      assists:Number(assistants[0]?.assists)||0,
+    };
+  };
+  const remoteClubRatingSummary=clubName=>{
+    const rated=remoteClubRows(clubName).filter(row=>(Number(row.rating_count)||0)>0&&Number.isFinite(Number(row.avg_rating)));
+    if(!rated.length)return null;
+    const count=rated.reduce((sum,row)=>sum+(Number(row.rating_count)||0),0);
+    const weighted=rated.reduce((sum,row)=>sum+(Number(row.avg_rating)||0)*(Number(row.rating_count)||0),0);
+    return {average:count?weighted/count:null,matches:Math.max(0,...rated.map(row=>Number(row.apps)||0))};
+  };
   if(validSavedSeason){(savedSeason.scorers||[]).forEach(saved=>{const row=allScorers.find(item=>item.club===saved.club&&item.name===saved.name);if(row)Object.assign(row,saved);});(savedSeason.assistants||[]).forEach(saved=>{const row=allAssistants.find(item=>item.club===saved.club&&item.name===saved.name);if(row)Object.assign(row,saved);});allScorers.sort((a,b)=>b.goals-a.goals);allAssistants.sort((a,b)=>b.assists-a.assists);}
   const historyLeaders=(competitionId,mode,clubNames=null)=>{
     if(!playerHistory)return [];
@@ -1902,14 +1965,24 @@ export async function bootEngine({
       :null;
     const scorers=allScorers.filter(player=>player.club===clubName&&player.goals>0).sort((a,b)=>b.goals-a.goals||b.tieValue-a.tieValue||a.games-b.games);
     const assistants=allAssistants.filter(player=>player.club===clubName&&player.assists>0).sort((a,b)=>b.assists-a.assists||b.tieValue-a.tieValue||a.games-b.games);
-    const scorer=fromHistory?.goals>0?fromHistory.scorer:scorers[0];
-    const assistant=fromHistory?.assists>0?fromHistory.assistant:assistants[0];
+    const remote=remoteClubLeaders(clubName);
+    const localGoals=Math.max(Number(fromHistory?.goals)||0,Number(scorers[0]?.goals)||0);
+    const localAssists=Math.max(Number(fromHistory?.assists)||0,Number(assistants[0]?.assists)||0);
+    const scorer=remote?.goals>localGoals?remote.scorer:(fromHistory?.goals>0?fromHistory.scorer:scorers[0]);
+    const assistant=remote?.assists>localAssists?remote.assistant:(fromHistory?.assists>0?fromHistory.assistant:assistants[0]);
     return {
       scorer:scorer||{name:'—'},
-      goals:fromHistory?.goals>0?fromHistory.goals:(scorer?.goals||0),
+      goals:Math.max(localGoals,Number(remote?.goals)||0),
       assistant:assistant||{name:'—'},
-      assists:fromHistory?.assists>0?fromHistory.assists:(assistant?.assists||0),
+      assists:Math.max(localAssists,Number(remote?.assists)||0),
     };
+  };
+  const clubSeasonRatingSummary=clubName=>{
+    const local=computeClubSeasonRatingSummary(playerHistory?.getStore?.(),clubName,careerSeason,{getClub:resolveClubForStats});
+    const remote=remoteClubRatingSummary(clubName);
+    if(!remote)return local;
+    if(!local||Number(remote.matches)>=Number(local.matches||0))return remote;
+    return local;
   };
   const dashboardStatsClub=()=>(isWorldCupDashboard()&&userNationalTeamName?userNationalTeamName:userClub);
   const championshipLeadersFor=(division,mode)=>{
@@ -3423,7 +3496,7 @@ export async function bootEngine({
     leadersFor,
     clubSeasonLeaders,
     getDashboardStatsClub:()=>dashboardStatsClub(),
-    clubSeasonRatingSummary:clubName=>computeClubSeasonRatingSummary(playerHistory?.getStore?.(),clubName,careerSeason,{getClub:resolveClubForStats}),
+    clubSeasonRatingSummary,
     getSeasonRoundHistory:()=>seasonRoundHistory,
     getCopaFixtures:()=>copaDoBrasilFixtures,
     getNationalCompetitions:()=>nationalCompetitions,
@@ -3697,6 +3770,7 @@ export async function bootEngine({
     getCurrentRound:()=>currentRound,
     getSeasonRoundCount:()=>seasonMaxRound(),
     getCareerDate:()=>careerCalendarDate,
+    getFreeAgentsPool:()=>savedNewGame?.freeAgentsPool||[],
     initialPendingOffers:validSavedSeason&&Array.isArray(savedSeason.pendingTransferOffers)
       ?savedSeason.pendingTransferOffers.map(item=>({...item}))
       :[],
@@ -3739,6 +3813,7 @@ export async function bootEngine({
         }
       }
       syncCareerRosters();
+      if(savedNewGame)savedNewGame.freeAgentsPool=serializeFreeAgentsPool(savedNewGame.freeAgentsPool);
       try{renderRoster();}catch{/* boot */}
       try{renderEnvironmentCard();}catch{/* boot */}
     },
@@ -4089,7 +4164,16 @@ export async function bootEngine({
     }
     Object.entries(clubs).forEach(([clubName,club])=>{
       if(clubName===userClub||!Array.isArray(club?.roster)||!club.roster.length)return;
-      processAiClubContractsSilent(club,club.division||'A',date,()=>aiContractRoll(clubName,date));
+      processAiClubContractsSilent(club,club.division||'A',date,()=>aiContractRoll(clubName,date),{
+        onReleased:(player,meta)=>{
+          releasePlayerToFreeAgents(savedNewGame.freeAgentsPool,player,{
+            ...meta,
+            formerClub:clubName,
+            season:careerSeason,
+          });
+          transfersEngine?.invalidatePlayerWorldIndex?.();
+        },
+      });
     });
   };
   respondToContractRenewal=({playerId,accept,messageId}={})=>{
@@ -4613,11 +4697,16 @@ export async function bootEngine({
   
   const playerSeasonAvgLabel=(player,clubName=null)=>{
     const key=playerKey(player);
+    const remote=clubName?remoteClubRows(clubName).find(row=>
+      String(row.player_id)===String(key)||String(row.player_name||'').toLowerCase()===String(player.name||'').toLowerCase()
+    ):null;
+    const local=(
+      resolvePlayerSeasonStats(playerHistory,key,careerSeason,null,{clubId:clubName||player.club||null})
+      || resolvePlayerSeasonStats(playerHistory,key,careerSeason)
+    );
+    const average=remote&&Number(remote.apps)>=Number(local?.apps||0)?remote.avg_rating:local?.avgRating;
     return formatMatchRating(
-      (
-        resolvePlayerSeasonStats(playerHistory,key,careerSeason,null,{clubId:clubName||player.club||null})
-        || resolvePlayerSeasonStats(playerHistory,key,careerSeason)
-      )?.avgRating,
+      average,
     );
   };
   const analysisTable=(title,players,{numbered=false,slotOffset=0,clubName=''}={})=>`<section class="analysis-roster"><h3>${title}</h3><div class="analysis-head"><span>JOGADOR</span><span>POS.</span><span>OVR</span><span>MÉDIA</span><span>CANSAÇO</span></div>${players.map((player,index)=>`<div class="analysis-player" data-slot="${slotOffset+index}" tabindex="0">${playerNameCell(player.name,player,{prefix:numbered?(index+1)+'. ': '',openCard:true,clubName})}<span>${player.pos}</span><span>${player.overall}</span><span class="analysis-avg">${playerSeasonAvgLabel(player,clubName)}</span>${fatigueCell(player)}</div>`).join('')}</section>`;
@@ -4648,11 +4737,12 @@ export async function bootEngine({
       rowSelector:'.analysis-player[data-slot]',
     });
   };
-  const openScout=name=>{
+  const openScout=async name=>{
     const nt=resolveNationalTeam(name);
     if(nt){openNationalTeamScout(nt.code);return;}
     const club=clubs[name];
     if(!club)return;
+    await ensureRemoteClubStats(name);
     const leaders=clubSeasonLeaders(name);
     const roster=club.roster.map((player,index)=>ensurePlayerId(player,{club:name,index}));
     const coords=formations[club.formation]||formations['4-3-3'];
@@ -5233,6 +5323,11 @@ export async function bootEngine({
     playerHistory.persist();
   }
   renderTeamStatsCard?.();
+  void ensureRemoteClubStats(dashboardStatsClub()).then(result=>{
+    if(!result)return;
+    renderTeamStatsCard?.();
+    renderLeaders?.();
+  });
   playerDevelopment=normalizeDevelopmentState(
     validSavedSeason?savedSeason?.playerDevelopment:null,
     careerSeason,
@@ -5366,6 +5461,16 @@ export async function bootEngine({
       evaluateRosterPayroll,
       pushMessage,
       openPlayerCard:payload=>playerCardModal.open(payload),
+      onYouthReleased:player=>{
+        releasePlayerToFreeAgents(savedNewGame.freeAgentsPool,player,{
+          formerClub:userClub,
+          division:userDivision,
+          season:careerSeason,
+          careerDate:careerCalendarDate,
+          reason:'youth_released',
+        });
+        transfersEngine?.invalidatePlayerWorldIndex?.();
+      },
       syncUserSquad:()=>{if(clubs[userClub])squad.splice(0,squad.length,...clubs[userClub].roster);syncCareerRosters();},
       structureLevelLabel,
       getStructureLevel,
@@ -5442,7 +5547,6 @@ export async function bootEngine({
   };
   const enrichGameForHistory=game=>{
     if(!game?.home||!game?.away)return game;
-    if(game.workload?.home?.length||game.workload?.away?.length)return game;
     const {swap}=liveSideMapsToFixture(game);
     if(!liveMatchGame||(game.home!==liveMatchGame.home&&game.home!==liveMatchGame.away))return game;
     const userSide='home',oppSide='away';
@@ -5489,13 +5593,18 @@ export async function bootEngine({
         homeXg:Number(a.xg)||0,awayXg:Number(h.xg)||0,
       };
     };
+    const liveGoalLists=swap
+      ?{home:[...(goals?.away||[])],away:[...(goals?.home||[])]}
+      :{home:[...(goals?.home||[])],away:[...(goals?.away||[])]};
+    const savedGoalCount=(game.goals?.home?.length||0)+(game.goals?.away?.length||0);
+    const scoreGoalCount=(Number(game.homeGoals)||0)+(Number(game.awayGoals)||0);
     return {
       ...game,
       data:game.data||liveMatchGame.data||dataFromStats(),
-      goals:game.goals||(swap
-        ?{home:[...(goals?.away||[])],away:[...(goals?.home||[])]}
-        :{home:[...(goals?.home||[])],away:[...(goals?.away||[])]}),
-      workload:{home:workloadFrom(fixtureHomeLive),away:workloadFrom(fixtureAwayLive)},
+      goals:savedGoalCount>=scoreGoalCount?game.goals:liveGoalLists,
+      workload:(game.workload?.home?.length||game.workload?.away?.length)
+        ?game.workload
+        :{home:workloadFrom(fixtureHomeLive),away:workloadFrom(fixtureAwayLive)},
       discipline:{home:disciplineMapToList(matchDiscipline[fixtureHomeLive]),away:disciplineMapToList(matchDiscipline[fixtureAwayLive])},
     };
   };
@@ -6840,7 +6949,7 @@ export async function bootEngine({
       seasonObjectives:nextObjectives,
       seasonObjectivesResult:null,
       createdAt:new Date().toISOString(),
-      version:4,
+      version:7,
     };
     persistCareer(nextCareer);
     managerJobCrisis=null;
@@ -7261,6 +7370,7 @@ export async function bootEngine({
       getAllScorers:()=>allScorers,
       getAllAssistants:()=>allAssistants,
       getTransferDeals:()=>transfersEngine?.snapshotSeasonDeals?.()||[],
+      getManagerRanking:()=>managerRanking.snapshot(),
     }, meta),
     persistSeason,
     renderClubBudget,
@@ -7318,31 +7428,56 @@ export async function bootEngine({
     },
     finalizeManagerSeason:({season,champions,championEstaduais})=>{
       const summariesByClub={};
+      const completedManagerGames=[];
+      const seenManagerGames=new Set();
+      const collectManagerGame=game=>{
+        if(!game?.home||!game?.away||!Number.isFinite(Number(game.homeGoals))||!Number.isFinite(Number(game.awayGoals)))return;
+        const key=String(game.fixtureId||game.id||[
+          game.competition,game.round,game.matchday,game.date,game.home,game.away,
+        ].join('|'));
+        if(seenManagerGames.has(key))return;
+        seenManagerGames.add(key);
+        completedManagerGames.push(game);
+      };
+      seasonRoundHistory.flatMap(round=>round?.games||[]).forEach(collectManagerGame);
+      copaDoBrasilFixtures.forEach(collectManagerGame);
+      recopaFixtures.forEach(collectManagerGame);
+      worldCupFixtures.forEach(collectManagerGame);
+      if(FEATURES.stateLeague)stateLeagueEngine.allFixturesFlat().forEach(collectManagerGame);
+      completedManagerGames.forEach(game=>{
+        [game.home,game.away].forEach(club=>{
+          const row=summariesByClub[club]||(summariesByClub[club]={club,clubs:[club],games:0,wins:0,draws:0,losses:0,teamAverage:null});
+          const home=game.home===club;
+          const own=Number(home?game.homeGoals:game.awayGoals);
+          const rival=Number(home?game.awayGoals:game.homeGoals);
+          row.games++;
+          if(own>rival)row.wins++;
+          else if(own<rival)row.losses++;
+          else row.draws++;
+        });
+      });
+      // Saves antigos podem não possuir o histórico completo de rodadas. A
+      // classificação é usada somente para clubes sem partidas reconstruídas.
       Object.values(nationalCompetitions||{}).forEach(competition=>{
         (competition?.standings||[]).forEach(row=>{
-          if(!row?.club)return;
-          summariesByClub[row.club]={
-            club:row.club,
-            clubs:[row.club],
-            games:Number(row.played)||0,
-            wins:Number(row.wins)||0,
-            draws:Number(row.draws)||0,
-            losses:Number(row.losses)||0,
-            teamAverage:null,
-          };
+          if(!row?.club||summariesByClub[row.club]?.games)return;
+          summariesByClub[row.club]={club:row.club,clubs:[row.club],games:Number(row.played)||0,wins:Number(row.wins)||0,draws:Number(row.draws)||0,losses:Number(row.losses)||0,teamAverage:null};
         });
       });
       const logs=(playerHistory?.getStore?.()?.matchLogs||[]).filter(log=>
         Number(log?.season)===Number(season)&&(log.home===userClub||log.away===userClub)
       );
-      const userSummary={club:userClub,clubs:[userClub],games:logs.length,wins:0,draws:0,losses:0,teamAverage:null};
-      logs.forEach(log=>{
-        const gf=log.home===userClub?Number(log.homeGoals):Number(log.awayGoals);
-        const ga=log.home===userClub?Number(log.awayGoals):Number(log.homeGoals);
-        if(gf>ga)userSummary.wins++;
-        else if(gf<ga)userSummary.losses++;
-        else userSummary.draws++;
-      });
+      const userSummary={...(summariesByClub[userClub]||{club:userClub,clubs:[userClub],games:0,wins:0,draws:0,losses:0}),teamAverage:null};
+      if(!userSummary.games&&logs.length){
+        userSummary.games=logs.length;
+        logs.forEach(log=>{
+          const gf=log.home===userClub?Number(log.homeGoals):Number(log.awayGoals);
+          const ga=log.home===userClub?Number(log.awayGoals):Number(log.homeGoals);
+          if(gf>ga)userSummary.wins++;
+          else if(gf<ga)userSummary.losses++;
+          else userSummary.draws++;
+        });
+      }
       const rating=computeClubSeasonRatingSummary(playerHistory?.getStore?.(),userClub,season,{getClub:resolveClubForStats});
       userSummary.teamAverage=rating?.average??null;
       const labels={
@@ -7436,18 +7571,37 @@ export async function bootEngine({
       }
       try{persistSeason(true);}catch{/* quota */}
     },
-    runYouthSeasonTransition:(clubsList,ctx)=>import('../engine/youth-academy.js').then(({runYouthSeasonTransition})=>runYouthSeasonTransition(clubsList,{
-      ...ctx,
-      userClub,
-      division:userDivision,
-      careerDate:careerCalendarDate,
-      season:(savedNewGame?.season||2026)+1,
-      random:rnd,
-      firstNames,
-      lastNames,
-      userUf:savedNewGame?.userUf||getRealClub(userClub)?.uf||'SP',
-      retiredPool:savedNewGame?.retiredPool||ctx.retiredPool||[],
-    })),
+    runYouthSeasonTransition:(clubsList,ctx)=>import('../engine/youth-academy.js').then(({runYouthSeasonTransition})=>{
+      const nextSeason=(savedNewGame?.season||2026)+1;
+      const summary=runYouthSeasonTransition(clubsList,{
+        ...ctx,
+        userClub,
+        division:userDivision,
+        careerDate:careerCalendarDate,
+        season:nextSeason,
+        random:rnd,
+        firstNames,
+        lastNames,
+        userUf:savedNewGame?.userUf||getRealClub(userClub)?.uf||'SP',
+        retiredPool:savedNewGame?.retiredPool||ctx.retiredPool||[],
+        onYouthReleased:(player,meta)=>releasePlayerToFreeAgents(savedNewGame.freeAgentsPool,player,{
+          ...meta,
+          season:nextSeason,
+          careerDate:careerCalendarDate,
+        }),
+      });
+      const freeAgentMoves=signFreeAgentsForAi(clubsList,savedNewGame.freeAgentsPool,{
+        userClub,
+        season:nextSeason,
+        careerDate:careerCalendarDate,
+      });
+      summary.freeAgentSignings=freeAgentMoves.length;
+      savedNewGame.worldYouthStates=Object.fromEntries(
+        Object.entries(clubsList).filter(([name])=>name!==userClub).map(([name,club])=>[name,serializeYouthClubState(club)]),
+      );
+      savedNewGame.freeAgentsPool=serializeFreeAgentsPool(savedNewGame.freeAgentsPool);
+      return summary;
+    }),
     resetPlayerDevelopment:year=>{playerDevelopment=emptyDevelopmentState(year);},
     pruneInjuryHistory,
     collectWorldRosters,

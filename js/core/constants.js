@@ -2,7 +2,11 @@
  * Build pública para testers.
  * Nomenclatura: Alpha V.X.YY — sobe +0.05 a cada publicação (1.00 → 1.05 → …).
  */
-export const BUILD_VERSION = 'Alpha V.5.80';
+export const BUILD_VERSION = 'Alpha V.6.00';
+
+/** Ciclo destrutivo de compatibilidade: invalida saves Alpha anteriores no navegador. */
+export const SAVE_RESET_EPOCH = '2026-08-09-v7';
+export const SAVE_RESET_MARKER_KEY = 'brfut-save-reset-epoch';
 
 /** Nome público do jogo (UI, títulos, alertas de update). */
 export const GAME_BRAND_NAME = 'BR Fut';
@@ -91,7 +95,7 @@ export function saveKeyVariants(key) {
 }
 
 export const SAVE_VERSION = {
-  career: 4,
+  career: 7,
   season: 1,
   playerHistory: 1,
 };

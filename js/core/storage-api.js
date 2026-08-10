@@ -661,7 +661,7 @@ async function putCloudSaveValue(key, value, { retry = true } = {}) {
     retry,
   });
   rememberRemoteSave(key, prepared);
-  return prepared;
+  return { value: prepared, complete: prepared === value };
 }
 
 /**
@@ -933,10 +933,11 @@ function flushSyncQueueKeepalive() {
           scheduleCloudSync(noteSyncFailure({ status: response.status, code: `http_${response.status}` }));
           return;
         }
-        rememberRemoteSave(key, prepareCloudSavePayload(key, value));
+        const prepared = prepareCloudSavePayload(key, value);
+        rememberRemoteSave(key, prepared);
         const mirror = mirrorFullSaveToActiveSlot(key, value);
         if (mirror) queueCloudSave(mirror.key, mirror.value);
-        applyLocalCheckpointTrim(key, value);
+        if (prepared === value) applyLocalCheckpointTrim(key, value);
         markSyncComplete(key);
         noteSyncSuccess();
       })
@@ -1035,12 +1036,13 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
     if (value == null) continue;
     const bodyChars = estimateCloudBodyChars(key, value);
     try {
-      await putCloudSaveValue(key, value, { retry: false });
+      const upload = await putCloudSaveValue(key, value, { retry: false });
       const mirror = mirrorFullSaveToActiveSlot(key, value);
       if (mirror && !mirroredSlotKeys.has(mirror.key) && !batch.has(mirror.key)) {
         mirroredSlotKeys.add(mirror.key);
         try {
-          await putCloudSaveValue(mirror.key, mirror.value, { retry: false });
+          const mirrorUpload = await putCloudSaveValue(mirror.key, mirror.value, { retry: false });
+          if (mirrorUpload.complete) applyLocalCheckpointTrim(mirror.key, mirror.value);
           results.push({
             key: mirror.key,
             ok: true,
@@ -1071,7 +1073,7 @@ export async function flushCloudSyncAsync({ forceLocalKeys = null } = {}) {
           }
         }
       }
-      applyLocalCheckpointTrim(key, value);
+      if (upload.complete) applyLocalCheckpointTrim(key, value);
       markSyncComplete(key);
       if (!stopAfterCurrent) noteSyncSuccess();
       results.push({ key, ok: true, bodyChars, slimmed: bodyChars < rawPayloadChars(value) });
@@ -1180,10 +1182,10 @@ async function flushSyncQueue() {
     for (let index = 0; index < entries.length; index += 1) {
       const [key, value] = entries[index];
       try {
-        await putCloudSaveValue(key, value, { retry: false });
+        const upload = await putCloudSaveValue(key, value, { retry: false });
         const mirror = mirrorFullSaveToActiveSlot(key, value);
         if (mirror) queueCloudSave(mirror.key, mirror.value);
-        applyLocalCheckpointTrim(key, value);
+        if (upload.complete) applyLocalCheckpointTrim(key, value);
         markSyncComplete(key);
         noteSyncSuccess();
       } catch (error) {

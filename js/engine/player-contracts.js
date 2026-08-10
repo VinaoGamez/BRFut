@@ -383,10 +383,10 @@ export function listRosterContractAlerts(roster, { division = 'A', careerDate = 
 }
 
 /** IA: renova titulares prováveis; libera reservas caras expiradas. */
-export function processAiClubContractsSilent(club, division = 'A', careerDate = new Date(), random = Math.random) {
+export function processAiClubContractsSilent(club, division = 'A', careerDate = new Date(), random = Math.random, context = {}) {
   if (!club?.roster?.length) return;
   const today = careerDate instanceof Date ? careerDate : new Date(careerDate);
-  club.roster.forEach(player => {
+  [...club.roster].forEach(player => {
     ensurePlayerContract(player, { division, careerDate: today });
     if (!isInRenewalWindow(player, today) && !isContractExpired(player, today)) return;
 
@@ -406,7 +406,17 @@ export function processAiClubContractsSilent(club, division = 'A', careerDate = 
         division,
       });
     } else if (isContractExpired(player, today)) {
-      player.contract.status = 'expired';
+      if (club.roster.length > 18) {
+        const index = club.roster.indexOf(player);
+        if (index >= 0) club.roster.splice(index, 1);
+        context.onReleased?.(player, {
+          division,
+          reason: 'contract_expired',
+          careerDate: today,
+        });
+      } else {
+        player.contract.status = 'expired';
+      }
     }
   });
 }

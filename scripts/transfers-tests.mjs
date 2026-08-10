@@ -393,7 +393,7 @@ check('transfer window CBF: first/second open, mid-year closed', () => {
   assert(last.isDeadlineDay && last.daysLeft === 0, 'deadline day');
 });
 
-check('market day brief groups deals/interests and stubs free agents', () => {
+check('market day brief groups deals/interests and exposes free agents', () => {
   const day = new Date(2030, 0, 20, 12);
   const clubs = {
     'Meu Clube': {
@@ -444,7 +444,7 @@ check('market day brief groups deals/interests and stubs free agents', () => {
   engine.runAiMarketTick({ maxBuys: 6, maxLoanDeals: 2, maxUserOffers: 2 });
   const brief = engine.getMarketDayBrief(day);
   assert(brief.phase?.active, 'window active on day');
-  assert(brief.freeAgents?.comingSoon && !brief.freeAgents.enabled, 'free agents stubbed');
+  assert(brief.freeAgents?.enabled && !brief.freeAgents.comingSoon, 'free agents enabled');
   assert(Array.isArray(brief.deals), 'deals array');
   assert(Array.isArray(brief.watches), 'watches array');
   assert(Array.isArray(brief.interests), 'interests array');

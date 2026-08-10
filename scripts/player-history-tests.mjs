@@ -429,6 +429,26 @@ check('duplicate match id is ignored', () => {
   assert.equal(player.seasons['2026'].apps, 1);
 });
 
+check('incomplete duplicate can be repaired without double counting', () => {
+  memory.clear();
+  clearPlayerHistoryStore();
+  const { game, clubs } = makeGame();
+  const history = createPlayerHistoryEngine({ getClub: name => clubs[name] });
+  const incomplete = { ...game, goals: { home: [], away: [] } };
+  history.recordMatch(incomplete, { season: 2026, round: 1, competition: 'LEAGUE:A', id: 'repair-1' });
+  history.recordMatch(game, {
+    season: 2026,
+    round: 1,
+    competition: 'LEAGUE:A',
+    id: 'repair-1',
+    replaceExisting: true,
+  });
+  assert.equal(history.getStore().matchLogs.length, 1);
+  const player = history.getPlayer(playerKey({ name: 'Ata Home', age: 28 }));
+  assert.equal(player.seasons['2026'].apps, 1);
+  assert.equal(player.seasons['2026'].goals, 2);
+});
+
 check('archiveSeasonBalance keeps slim archive', () => {
   memory.clear();
   clearPlayerHistoryStore();

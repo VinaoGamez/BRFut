@@ -184,6 +184,30 @@ function applySheetToSeason(player, year, sheet, competitionId) {
   applySheetToBucket(bucket.competitions[key].clubs[sheet.club], sheet);
 }
 
+function rebuildSeasonFromMatchLogs(store, year) {
+  const seasonKey = String(year);
+  Object.keys(store.players || {}).forEach(key => {
+    const player = store.players[key];
+    if (player?.seasons) delete player.seasons[seasonKey];
+    if (!Object.keys(player?.seasons || {}).length) delete store.players[key];
+  });
+  (store.matchLogs || []).forEach(log => {
+    if (Number(log?.season) !== Number(year)) return;
+    (log.players || []).forEach(raw => {
+      if (!raw?.key || !raw?.name || !raw?.club) return;
+      const sheet = { ...raw, passesEst: Number(raw.passesEst ?? raw.passes) || 0 };
+      let player = store.players[sheet.key];
+      if (!player) {
+        player = { name: sheet.name, club: sheet.club, seasons: {} };
+        store.players[sheet.key] = player;
+      }
+      player.name = sheet.name;
+      player.club = sheet.club;
+      applySheetToSeason(player, year, sheet, log.competition || 'LEAGUE');
+    });
+  });
+}
+
 /** Fonte única para card, elenco, dashboard e rankings. */
 export function resolvePlayerSeasonStats(
   storeOrEngine,
@@ -551,10 +575,24 @@ export function backfillClubSeasonMatchLogs(
       round,
       leg,
     });
-    if (knownIds.has(id)) return;
+    const existing = (engine.getStore?.().matchLogs || []).find(entry => entry.id === id);
+    const incomingEvents = (game.goals?.home?.length || 0) + (game.goals?.away?.length || 0);
+    const existingEvents = (existing?.players || []).reduce(
+      (sum, row) => sum + (Number(row?.goals) || 0) + (Number(row?.assists) || 0),
+      0,
+    );
+    if (knownIds.has(id) && !(incomingEvents > 0 && existingEvents === 0)) return;
     const log = engine.recordMatch(
-      { ...game, completed: game.completed !== false },
-      { season: year, persist: false, competition, round, leg: leg || null, fixtureId: id },
+      { ...game, fixtureId: id, completed: game.completed !== false },
+      {
+        season: year,
+        persist: false,
+        competition,
+        round,
+        leg: leg || null,
+        fixtureId: id,
+        replaceExisting: !!existing,
+      },
     );
     if (log?.id) {
       knownIds.add(log.id);
@@ -788,7 +826,7 @@ export function createPlayerHistoryEngine(deps = {}) {
     typeof deps.getMatchLogBudget === 'function' ? deps.getMatchLogBudget : null;
   let store = loadPlayerHistoryStore();
   void import('../core/player-stats-sync.js')
-    .then(module => module.queuePlayerStatsHistory(store.matchLogs))
+    .then(module => module.reconcilePlayerStatsHistory(store.matchLogs))
     .catch(() => {});
 
   const resolveBudget = () => {
@@ -869,28 +907,28 @@ export function createPlayerHistoryEngine(deps = {}) {
       meta.competition || game.competition || 'LEAGUE',
       getClub(game.home)?.division || null,
     );
-    const id = buildStatsFixtureId(game, {
+    const id = String(meta.fixtureId || meta.id || buildStatsFixtureId(game, {
       season,
       competitionId,
       round: meta.round ?? game.round,
       leg: meta.leg || game.leg,
-    });
+    }));
 
-    // Evita duplicar o mesmo id na temporada corrente.
-    if (store.matchLogs.some(entry => entry.id === id)) {
-      return store.matchLogs.find(entry => entry.id === id);
+    const duplicateIndex = store.matchLogs.findIndex(entry => entry.id === id);
+    if (duplicateIndex >= 0 && !meta.replaceExisting) return store.matchLogs[duplicateIndex];
+
+    if (duplicateIndex < 0) {
+      allSheets.forEach(sheet => {
+        let player = store.players[sheet.key];
+        if (!player) {
+          player = { name: sheet.name, club: sheet.club, seasons: {} };
+          store.players[sheet.key] = player;
+        }
+        player.name = sheet.name;
+        player.club = sheet.club;
+        applySheetToSeason(player, season, sheet, competitionId);
+      });
     }
-
-    allSheets.forEach(sheet => {
-      let player = store.players[sheet.key];
-      if (!player) {
-        player = { name: sheet.name, club: sheet.club, seasons: {} };
-        store.players[sheet.key] = player;
-      }
-      player.name = sheet.name;
-      player.club = sheet.club;
-      applySheetToSeason(player, season, sheet, competitionId);
-    });
 
     const log = {
       id,
@@ -907,7 +945,9 @@ export function createPlayerHistoryEngine(deps = {}) {
       data: game.data && typeof game.data === 'object' ? { ...game.data } : null,
       players: allSheets.map(slimLogPlayer),
     };
-    store.matchLogs.push(log);
+    if (duplicateIndex >= 0) store.matchLogs[duplicateIndex] = log;
+    else store.matchLogs.push(log);
+    if (duplicateIndex >= 0) rebuildSeasonFromMatchLogs(store, season);
     store.matchLogs = pruneMatchLogsForSeason(
       store.matchLogs,
       store.season ?? season,
@@ -983,13 +1023,16 @@ export function createPlayerHistoryEngine(deps = {}) {
           }))
         : [],
       leaders: payload.leadersByDivision
-        ? {
-            A: {
-              scorers: slimLeaders(payload.leadersByDivision.A?.scorers, 'goals'),
-              assistants: slimLeaders(payload.leadersByDivision.A?.assistants, 'assists'),
-            },
-            userDivision: payload.userDivision || null,
-          }
+        ? Object.fromEntries([
+            ...Object.entries(payload.leadersByDivision).map(([competition, leaders]) => [
+              competition,
+              {
+                scorers: slimLeaders(leaders?.scorers, 'goals'),
+                assistants: slimLeaders(leaders?.assistants, 'assists'),
+              },
+            ]),
+            ['userDivision', payload.userDivision || null],
+          ])
         : null,
     };
     store.seasonArchives = store.seasonArchives.filter(

@@ -411,12 +411,12 @@ export function createOptionsFeature(deps) {
         replacementMode: 'cascade',
         stateCompetitionId: stateCompetitionIdForUf(selectedOriginUf),
         regionalBaseClubs: [],
-        version: 6,
+        version: 7,
       });
     } else {
       selectedCareerDivision = $('#careerDivision')?.value || 'A';
       if (!['A', 'B', 'C', 'D'].includes(selectedCareerDivision)) selectedCareerDivision = 'A';
-      Object.assign(careerPayloadExtra, { version: 4 });
+      Object.assign(careerPayloadExtra, { version: 7 });
     }
 
     const seed = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;

@@ -741,6 +741,7 @@ function buildScoutMissionReportSummary({ slot, grade, region, talentCount, repo
     };
   }
   return {
+    aiYouthInitialized: !!club.aiYouthInitialized,
     region,
     regionLabel,
     talentCount: 0,
@@ -1025,11 +1026,43 @@ export function advanceYouthAges(club) {
   return released;
 }
 
+/** Promoção anual da IA: cobre carências e evita perder talentos maduros. */
+export function promoteAiYouthPlayers(club, context = {}) {
+  ensureYouthState(club);
+  if (!Array.isArray(club.roster)) club.roster = [];
+  const maxPromotions = Math.max(0, Number(context.maxPromotions) || 3);
+  const needs = pos => club.roster.filter(player => player?.pos === pos).length;
+  const candidates = [...club.youthRoster]
+    .filter(player => (Number(player.age) || 0) >= YOUTH_PROMOTION_MIN_AGE)
+    .sort((a, b) => {
+      const urgentA = Number(a.age) >= YOUTH_AGE_MAX ? 100 : 0;
+      const urgentB = Number(b.age) >= YOUTH_AGE_MAX ? 100 : 0;
+      const needA = needs(a.pos) < (a.pos === 'GOL' ? 2 : 3) ? 30 : 0;
+      const needB = needs(b.pos) < (b.pos === 'GOL' ? 2 : 3) ? 30 : 0;
+      return (urgentB + needB + Number(b.potential || b.overall || 0)) -
+        (urgentA + needA + Number(a.potential || a.overall || 0));
+    });
+  const promoted = [];
+  for (const player of candidates) {
+    if (promoted.length >= maxPromotions || club.roster.length >= 30) break;
+    const result = promoteYouthPlayer(club, player.playerId, {
+      division: context.division || club.division,
+      clubName: context.clubName,
+      clubs: context.clubs,
+      careerDate: context.careerDate,
+      season: context.season,
+    });
+    if (result.ok) promoted.push(result.player);
+  }
+  return promoted;
+}
+
 export function releaseYouthPlayer(club, playerId) {
   ensureYouthState(club);
-  const before = club.youthRoster.length;
-  club.youthRoster = club.youthRoster.filter(p => p.playerId !== playerId);
-  return { ok: club.youthRoster.length < before };
+  const index = club.youthRoster.findIndex(p => p.playerId === playerId);
+  if (index < 0) return { ok: false, player: null };
+  const [player] = club.youthRoster.splice(index, 1);
+  return { ok: true, player };
 }
 
 export function promoteYouthPlayer(club, playerId, context = {}) {
@@ -1108,6 +1141,7 @@ export function serializeYouthClubState(club) {
 export function applyYouthClubState(club, saved) {
   if (!club || !saved || typeof saved !== 'object') return false;
   ensureYouthState(club);
+  if (saved.aiYouthInitialized != null) club.aiYouthInitialized = !!saved.aiYouthInitialized;
   if (Number.isFinite(Number(saved.youthAcademyLevel))) {
     club.youthAcademyLevel = Math.max(0, Math.min(ACADEMY_MAX_LEVEL, Math.round(Number(saved.youthAcademyLevel))));
   }
@@ -1143,16 +1177,39 @@ export function applyYouthClubState(club, saved) {
 }
 
 export function runYouthSeasonTransition(clubs, context = {}) {
-  const summary = { aged: 0, released: 0, intakes: 0, reports: 0 };
+  const summary = { aged: 0, released: 0, promoted: 0, intakes: 0, reports: 0 };
   const season = Number(context.season) || null;
   Object.entries(clubs || {}).forEach(([clubName, club]) => {
     ensureYouthState(club);
     if (season) club.youthLegacyMeta = { season, count: 0 };
+    const isUserClub = clubName === context.userClub;
+    // A trava de infraestrutura é uma progressão de interface do usuário.
+    // Clubes da IA recebem um perfil de formação coerente com sua divisão.
+    if (!isUserClub && !club.aiYouthInitialized) {
+      const baseByDivision = { A: 3, B: 2, C: 1, D: 1 };
+      club.stadiumStructure = Math.max(YOUTH_STRUCTURE_UNLOCK, Number(club.stadiumStructure) || 0);
+      club.youthAcademyLevel = Math.max(club.youthAcademyLevel, baseByDivision[club.division] || 1);
+      club.scoutingDeptLevel = Math.max(club.scoutingDeptLevel, club.division === 'A' ? 2 : 1);
+      club.aiYouthInitialized = true;
+    }
     if (!isYouthAcademyUnlocked(club)) return;
+    if (!isUserClub) {
+      const promoted = promoteAiYouthPlayers(club, {
+        ...context,
+        clubs,
+        clubName,
+        division: club.division,
+      });
+      summary.promoted += promoted.length;
+    }
     const released = advanceYouthAges(club);
+    released.forEach(player => context.onYouthReleased?.(player, {
+      formerClub: clubName,
+      division: club.division,
+      reason: 'youth_age_limit',
+    }));
     summary.released += released.length;
     summary.aged += club.youthRoster.length;
-    const isUserClub = clubName === context.userClub;
     const result = runSeasonYouthIntake(club, clubName, { ...context, isUserClub, clubName });
     summary.intakes += result.intake;
     summary.reports += result.reports;

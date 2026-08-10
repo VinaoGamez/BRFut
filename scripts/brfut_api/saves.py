@@ -32,6 +32,25 @@ SLOT_KEY_RE = re.compile(
     r'^brfut-slot-[a-zA-Z0-9-]+-(career|season|player-history|live-match|season-archive-\d{4})$'
 )
 ARCHIVE_KEY_RE = re.compile(r'^brfut-season-archive-\d{4}$')
+MIN_CAREER_VERSION = 7
+
+
+def _is_career_key(key: str) -> bool:
+    return key in {'brfut-career', 'matchday-new-game'} or bool(
+        re.match(r'^brfut-slot-[a-zA-Z0-9-]+-career$', key)
+    )
+
+
+def _validate_career_version(key: str, value: Any) -> None:
+    if not _is_career_key(key):
+        return
+    version = value.get('version') if isinstance(value, dict) else None
+    if not isinstance(version, int) or version < MIN_CAREER_VERSION:
+        raise ApiError(
+            409,
+            'save_version_obsolete',
+            'Este save pertence a uma versão antiga e não pode ser sincronizado.',
+        )
 
 
 def _is_allowed_save_key(key: str) -> bool:
@@ -99,6 +118,7 @@ def get_save(root: Path, username: str, key: str) -> Any:
 
 
 def put_save(root: Path, username: str, key: str, value: Any) -> dict[str, Any]:
+    _validate_career_version(key, value)
     user_dir = _user_dir(root, username)
     user_dir.mkdir(parents=True, exist_ok=True)
     path = _key_path(user_dir, key)

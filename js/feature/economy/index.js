@@ -16,6 +16,7 @@ import { sponsorLogoUrl } from '../../assets/sponsor-logos.js';
 import { listSeasonArchiveYears, loadSeasonArchive } from '../../core/season-archive-storage.js';
 import { buildClubHistory } from '../../engine/club-history.js';
 import { renderClubHistoryCard, hydrateClubHistoryCard } from '../../ui/club-history-card.js';
+import { fetchStructuredSeasonHistory } from '../../core/career-history-sync.js';
 
 const NAMING_MODAL_HTML = `
 <div id="namingPickerModal" class="modal hidden">
@@ -185,6 +186,19 @@ export function createEconomyFeature(deps) {
     $('#clubHistoryCardModal').hidden = false;
     document.body.classList.add('club-history-open');
     body.querySelector('.club-history-card')?.focus();
+    const missingYears = years.filter(year => !archives.some(archive => Number(archive?.careerSeason) === Number(year)));
+    if (missingYears.length) {
+      Promise.all(missingYears.map(year => fetchStructuredSeasonHistory(year)))
+        .then(remote => remote.map(item => item?.archive).filter(Boolean))
+        .then(remoteArchives => {
+          if (!remoteArchives.length || $('#clubHistoryCardModal')?.hidden) return;
+          const merged = [...archives, ...remoteArchives]
+            .filter((archive, index, all) => all.findIndex(item => Number(item.careerSeason) === Number(archive.careerSeason)) === index);
+          const updated = buildClubHistory({ clubName, currentSeason: getCareerSeason?.(), currentLogs, currentStanding: getCurrentClubStanding?.(clubName), archives: merged, rankingTitles });
+          body.innerHTML = renderClubHistoryCard({ clubName, seasons: updated });
+          hydrateClubHistoryCard(body);
+        });
+    }
   };
 
   const ensureStadiumAlertModal = () => {

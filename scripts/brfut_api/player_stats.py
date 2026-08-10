@@ -2,15 +2,18 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import sqlite3
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 from .auth import ApiError
 
 
-def _db(root: Path) -> sqlite3.Connection:
+@contextmanager
+def _db(root: Path):
     path = root / 'player-stats.sqlite3'
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
@@ -63,7 +66,14 @@ def _db(root: Path) -> sqlite3.Connection:
           ON player_match_stats(username, career_id, season, club_id, competition_id);
         """
     )
-    return conn
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def _safe_id(value: Any, label: str) -> str:
@@ -71,6 +81,22 @@ def _safe_id(value: Any, label: str) -> str:
     if not text or len(text) > 180:
         raise ApiError(400, 'invalid_stats', f'{label} inválido.')
     return text
+
+
+def _bounded_int(value: Any, label: str, minimum: int = 0, maximum: int = 1_000_000) -> int:
+    try:
+        number = int(value or 0)
+    except (TypeError, ValueError) as error:
+        raise ApiError(400, 'invalid_stats', f'{label} inválido.') from error
+    if number < minimum or number > maximum:
+        raise ApiError(400, 'invalid_stats', f'{label} fora do intervalo permitido.')
+    return number
+
+
+def _match_checksum(match: dict[str, Any]) -> str:
+    canonical = {key: value for key, value in match.items() if key != 'checksum'}
+    raw = json.dumps(canonical, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+    return hashlib.sha256(raw).hexdigest()
 
 
 def put_match_batch(root: Path, username: str, career_id: str, body: dict[str, Any]) -> dict[str, Any]:
@@ -90,8 +116,11 @@ def put_match_batch(root: Path, username: str, career_id: str, body: dict[str, A
             home = _safe_id(match.get('homeClub'), 'homeClub')
             away = _safe_id(match.get('awayClub'), 'awayClub')
             players = match.get('players') or []
-            if season < 1900 or not isinstance(players, list):
+            if season < 1900 or not isinstance(players, list) or home == away:
                 raise ApiError(400, 'invalid_stats', 'Temporada ou jogadores inválidos.')
+            home_goals = _bounded_int(match.get('homeGoals'), 'homeGoals', 0, 99)
+            away_goals = _bounded_int(match.get('awayGoals'), 'awayGoals', 0, 99)
+            checksum = _match_checksum(match)
             now = int(time.time())
             payload = json.dumps(match, ensure_ascii=False, separators=(',', ':'))
             conn.execute(
@@ -108,16 +137,27 @@ def put_match_batch(root: Path, username: str, career_id: str, body: dict[str, A
                      updated_at=excluded.updated_at""",
                 (
                     username, career, fixture, season, competition, str(match.get('round') or ''),
-                    home, away, int(match.get('homeGoals') or 0), int(match.get('awayGoals') or 0),
-                    match.get('playedAt'), match.get('checksum'), payload, now,
+                    home, away, home_goals, away_goals,
+                    match.get('playedAt'), checksum, payload, now,
                 ),
             )
             conn.execute(
                 'DELETE FROM player_match_stats WHERE username=? AND career_id=? AND fixture_id=?',
                 (username, career, fixture),
             )
+            player_ids: set[str] = set()
             for row in players:
                 player_id = _safe_id(row.get('playerId'), 'playerId')
+                if player_id in player_ids:
+                    raise ApiError(400, 'duplicate_player', f'Jogador duplicado na partida: {player_id}.')
+                player_ids.add(player_id)
+                club_id = _safe_id(row.get('clubId'), 'clubId')
+                if club_id not in {home, away}:
+                    raise ApiError(400, 'invalid_player_club', 'Jogador pertence a um clube fora da partida.')
+                minutes = _bounded_int(row.get('minutes'), 'minutes', 0, 200)
+                rating = float(row['rating']) if row.get('rating') is not None else None
+                if rating is not None and not 0 <= rating <= 10:
+                    raise ApiError(400, 'invalid_stats', 'Nota do jogador fora do intervalo permitido.')
                 conn.execute(
                     """INSERT INTO player_match_stats
                        (username,career_id,fixture_id,player_id,player_name,club_id,season,
@@ -125,16 +165,54 @@ def put_match_batch(root: Path, username: str, career_id: str, body: dict[str, A
                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (
                         username, career, fixture, player_id, str(row.get('name') or player_id),
-                        _safe_id(row.get('clubId'), 'clubId'), season, competition,
-                        int(bool(row.get('started'))), int(row.get('minutes') or 0),
-                        int(row.get('goals') or 0), int(row.get('assists') or 0),
-                        int(row.get('ownGoals') or 0), int(bool(row.get('yellow'))),
-                        int(bool(row.get('red'))), int(row.get('passes') or 0),
-                        float(row['rating']) if row.get('rating') is not None else None,
+                        club_id, season, competition,
+                        int(bool(row.get('started'))), minutes,
+                        _bounded_int(row.get('goals'), 'goals', 0, 99),
+                        _bounded_int(row.get('assists'), 'assists', 0, 99),
+                        _bounded_int(row.get('ownGoals'), 'ownGoals', 0, 99), int(bool(row.get('yellow'))),
+                        int(bool(row.get('red'))), _bounded_int(row.get('passes'), 'passes'),
+                        rating,
                     ),
                 )
             accepted += 1
     return {'accepted': accepted, 'careerId': career}
+
+
+def get_match_manifest(
+    root: Path, username: str, career_id: str, season: int | None = None,
+) -> dict[str, Any]:
+    where = 'username=? AND career_id=?'
+    args: list[Any] = [username, career_id]
+    if season:
+        where += ' AND season=?'
+        args.append(season)
+    with _db(root) as conn:
+        rows = conn.execute(
+            f'''SELECT fixture_id,season,competition_id,home_club,away_club,
+                       home_goals,away_goals,played_at,checksum,updated_at
+                FROM stats_matches WHERE {where}
+                ORDER BY season, played_at, fixture_id''',
+            args,
+        ).fetchall()
+    return {'careerId': career_id, 'season': season, 'matches': [dict(row) for row in rows]}
+
+
+def get_club_history(root: Path, username: str, career_id: str, club_id: str) -> dict[str, Any]:
+    with _db(root) as conn:
+        rows = conn.execute(
+            '''SELECT season, competition_id,
+                      COUNT(*) games,
+                      SUM(CASE WHEN (home_club=? AND home_goals>away_goals) OR
+                                         (away_club=? AND away_goals>home_goals) THEN 1 ELSE 0 END) wins,
+                      SUM(CASE WHEN home_goals=away_goals THEN 1 ELSE 0 END) draws,
+                      SUM(CASE WHEN (home_club=? AND home_goals<away_goals) OR
+                                         (away_club=? AND away_goals<home_goals) THEN 1 ELSE 0 END) losses
+               FROM stats_matches
+               WHERE username=? AND career_id=? AND (home_club=? OR away_club=?)
+               GROUP BY season, competition_id ORDER BY season DESC, competition_id''',
+            (club_id, club_id, club_id, club_id, username, career_id, club_id, club_id),
+        ).fetchall()
+    return {'careerId': career_id, 'clubId': club_id, 'competitions': [dict(row) for row in rows]}
 
 
 _AGG_SQL = """

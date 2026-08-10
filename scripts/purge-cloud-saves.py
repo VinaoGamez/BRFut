@@ -39,6 +39,18 @@ def purge_saves(root: Path) -> int:
     return count
 
 
+def purge_structured_history(root: Path) -> int:
+    count = 0
+    for name in ('career-history.sqlite3', 'player-stats.sqlite3'):
+        for suffix in ('', '-wal', '-shm'):
+            path = root / f'{name}{suffix}'
+            if path.is_file():
+                path.unlink()
+                count += 1
+    print(f'Removidos {count} arquivo(s) de histórico estruturado em {root}')
+    return count
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description='Apaga todos os saves da nuvem local/VPS.')
     parser.add_argument(
@@ -61,6 +73,7 @@ def main() -> int:
             print('Cancelado.')
             return 1
     purge_saves(root)
+    purge_structured_history(root)
     return 0
 
 

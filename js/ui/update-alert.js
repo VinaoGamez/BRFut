@@ -15,6 +15,7 @@ const MODAL_ID = 'updateAlertModal';
 
 export function isTesterUpdateChannel() {
   const host = location.hostname.toLowerCase();
+  if (host === 'brfut.com.br' || host === 'www.brfut.com.br') return true;
   if (location.port === '5081') return true;
   if (/\.github\.io$/i.test(host)) return true;
   if (/\.pages\.dev$/i.test(host)) return true;

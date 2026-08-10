@@ -48,11 +48,11 @@ check('buildCareerLocalCheckpoint keeps identity fields', () => {
   const cp = buildCareerLocalCheckpoint(career);
   assert(cp[LOCAL_CHECKPOINT_FLAG] === true, 'flag set');
   assert(cp.clubName === 'Vinaz Athletic', 'club preserved');
-  assert(cp.userRoster.length === 20, 'roster trimmed to 22 max');
+  assert(!cp.userRoster, 'roster offloaded');
   assert(!cp.divisionTeams?.D?.length, 'pyramid offloaded');
 });
 
-check('buildPlayerHistoryLocalCheckpoint keeps recent match logs', () => {
+check('buildPlayerHistoryLocalCheckpoint offloads match details', () => {
   const history = {
     version: 1,
     season: 2026,
@@ -71,13 +71,13 @@ check('buildPlayerHistoryLocalCheckpoint keeps recent match logs', () => {
   };
   const cp = buildPlayerHistoryLocalCheckpoint(history);
   assert(isLocalStorageCheckpoint(cp), 'checkpoint');
-  assert(cp.matchLogs.length === 1, 'recent logs kept for dashboard stats');
-  assert(cp.players.a?.name === 'A', 'players from logs kept');
+  assert(cp.matchLogs.length === 0, 'match logs offloaded');
+  assert(Object.keys(cp.players).length === 0, 'player details offloaded');
   assert(!cp.seasonArchives?.length, 'archives offloaded');
   assert(cp.season === 2026, 'season kept');
 });
 
-check('buildSeasonLocalCheckpoint keeps scorers', () => {
+check('buildSeasonLocalCheckpoint keeps progress only', () => {
   const cp = buildSeasonLocalCheckpoint({
     seed: 1,
     userClubName: 'FC',
@@ -85,8 +85,9 @@ check('buildSeasonLocalCheckpoint keeps scorers', () => {
     scorers: [{ name: 'Gol', club: 'FC', goals: 5 }],
     assistants: [{ name: 'Pass', club: 'FC', assists: 3 }],
   });
-  assert(cp.scorers?.[0]?.goals === 5, 'scorers kept');
-  assert(cp.assistants?.[0]?.assists === 3, 'assistants kept');
+  assert(!cp.scorers, 'scorers offloaded');
+  assert(!cp.assistants, 'assistants offloaded');
+  assert(cp.currentRound === 3, 'progress kept');
 });
 
 check('applyLocalCheckpointTrim no-op when cloud trim disabled', () => {

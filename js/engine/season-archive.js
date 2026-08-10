@@ -133,7 +133,13 @@ export function seasonArchiveChecksum(archive) {
       y: archive?.careerSeason,
       s: archive?.seed,
       c: archive?.champions,
-      a: archive?.standings?.A?.[0],
+      standings: archive?.standings,
+      cup: archive?.cupCompetition,
+      recopa: archive?.recopaCompetition,
+      world: archive?.worldCupCompetition,
+      states: archive?.stateLeagueResults,
+      transfers: archive?.transferDeals,
+      movements: archive?.movements,
     });
     let hash = 2166136261;
     for (let i = 0; i < raw.length; i += 1) {

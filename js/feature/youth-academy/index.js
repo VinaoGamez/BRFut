@@ -501,7 +501,9 @@ export function createYouthAcademyFeature(deps) {
       if (releaseBtn) {
         const id = releaseBtn.dataset.releaseYouth;
         if (!id) return;
-        releaseYouthPlayer(userClubState(), id);
+        const released = releaseYouthPlayer(userClubState(), id);
+        if (released.ok) deps.onYouthReleased?.(released.player);
+        deps.syncUserSquad?.();
         render();
         return;
       }

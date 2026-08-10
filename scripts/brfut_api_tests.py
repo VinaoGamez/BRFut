@@ -49,7 +49,7 @@ class BrfutApiTests(unittest.TestCase):
         self.assertEqual(profile['username'], 'tester')
         resolve_session(self.root, token)
 
-        put_save(self.root, 'tester', 'brfut-career', {'clubName': 'Flamengo', 'division': 'A'})
+        put_save(self.root, 'tester', 'brfut-career', {'version': 7, 'clubName': 'Flamengo', 'division': 'A'})
         data = get_save(self.root, 'tester', 'brfut-career')
         self.assertEqual(data['clubName'], 'Flamengo')
         self.assertEqual(get_all_saves(self.root, 'tester')['brfut-career']['value']['clubName'], 'Flamengo')
@@ -80,7 +80,7 @@ class BrfutApiTests(unittest.TestCase):
         status, body = self._route(
             'PUT',
             '/api/saves/brfut-career',
-            {'value': {'clubName': 'Santos'}},
+            {'value': {'version': 7, 'clubName': 'Santos'}},
             token=token,
         )
         self.assertEqual(status, 200)
@@ -88,6 +88,15 @@ class BrfutApiTests(unittest.TestCase):
         status, body = self._route('GET', '/api/saves', token=token)
         self.assertEqual(status, 200)
         self.assertEqual(body['saves']['brfut-career']['value']['clubName'], 'Santos')
+
+    def test_obsolete_career_save_is_rejected(self) -> None:
+        with self.assertRaises(ApiError) as context:
+            put_save(self.root, 'tester', 'brfut-career', {'version': 6, 'clubName': 'Antigo'})
+        self.assertEqual(context.exception.status, 409)
+        self.assertEqual(context.exception.code, 'save_version_obsolete')
+
+        put_save(self.root, 'tester', 'brfut-season', {'version': 1, 'year': 2028})
+        self.assertEqual(get_save(self.root, 'tester', 'brfut-season')['year'], 2028)
 
     def test_private_routes_fail_closed_without_session(self) -> None:
         private_routes = [

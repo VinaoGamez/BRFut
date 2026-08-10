@@ -4,6 +4,7 @@ import {
   resolveNationalRankingEntry,
   sortNationalRankingEntries,
 } from '../../engine/national-ranking.js';
+import { fetchStructuredManagerHistory } from '../../core/career-history-sync.js';
 
 const STAFF_ROUNDS_PER_MONTH = 4;
 const MANAGER_CARD_ART_COUNT = 17;
@@ -154,7 +155,7 @@ export function createRankingViewsFeature(deps) {
     return $('#managerTrophyRoomModal');
   };
 
-  const renderManagerTrophyRoom = managerId => {
+  const renderManagerTrophyRoom = (managerId, { skipRemote = false } = {}) => {
     const manager = getManagerRanking().byId(managerId);
     if (!manager) return;
     openTrophyManagerId = manager.id;
@@ -207,6 +208,24 @@ export function createRankingViewsFeature(deps) {
     modal.hidden = false;
     document.body.classList.add('modal-open');
     modal.querySelector('[data-manager-card]')?.focus();
+    if (!skipRemote) {
+      void fetchStructuredManagerHistory(manager.id).then(remote => {
+        if (!Array.isArray(remote?.seasons) || !remote.seasons.length || openTrophyManagerId !== manager.id) return;
+        const local = manager.careerHistory?.seasons || [];
+        const normalized = remote.seasons.map(row => ({
+          season: Number(row.season), clubs: row.clubs || [], games: Number(row.games) || 0,
+          wins: Number(row.wins) || 0, draws: Number(row.draws) || 0, losses: Number(row.losses) || 0,
+          teamAverage: row.team_average == null ? null : Number(row.team_average), titles: row.titles || [],
+        }));
+        manager.careerHistory = {
+          version: 1,
+          seasons: [...normalized, ...local]
+            .filter((row, index, all) => all.findIndex(item => Number(item.season) === Number(row.season)) === index)
+            .sort((a, b) => Number(b.season) - Number(a.season)),
+        };
+        renderManagerTrophyRoom(manager.id, { skipRemote: true });
+      });
+    }
   };
 
   const closeManagerTrophyRoom = () => {

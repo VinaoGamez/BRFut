@@ -1,8 +1,10 @@
 /** Reduz payloads antes do PUT na nuvem (limite nginx ~2 MB). */
 import { SAVE_KEYS } from './constants.js';
 
-const CLOUD_PAYLOAD_TARGET = 400_000;
-const PLAYER_HISTORY_CLOUD_TARGET = 1_800_000;
+// A API aceita 10 MB. A margem cobre o envelope JSON e mantem a VPS como
+// fonte de verdade, sem compactacao destrutiva do estado corrente.
+const CLOUD_PAYLOAD_TARGET = 8_500_000;
+const PLAYER_HISTORY_CLOUD_TARGET = 8_500_000;
 
 const syncMetadata = value => ({
   saveRevision: Number(value?.saveRevision) || 0,
@@ -90,6 +92,9 @@ export function slimCareerForCloudUpload(career) {
     nationalTeamCode: career.nationalTeamCode,
     preferences: career.preferences,
     userRoster: Array.isArray(career.userRoster) ? career.userRoster.slice(0, 32) : [],
+    freeAgentsPoolInitialized: !!career.freeAgentsPoolInitialized,
+    freeAgentsPool: Array.isArray(career.freeAgentsPool) ? career.freeAgentsPool : [],
+    worldYouthStates: career.worldYouthStates || {},
   };
   if (payloadChars(checkpoint) <= CLOUD_PAYLOAD_TARGET) return checkpoint;
 

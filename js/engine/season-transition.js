@@ -552,7 +552,7 @@ export function createSeasonTransitionEngine(deps) {
       retiredPool: savedNewGame.retiredPool || [],
       seasonIndex: Array.isArray(savedNewGame.seasonIndex) ? [...savedNewGame.seasonIndex] : [],
       createdAt: new Date().toISOString(),
-      version: 4,
+      version: 7,
     };
 
     // Garante archive do ano que fecha antes de limpar a season viva.

@@ -5,13 +5,13 @@ import {
   ACTIVE_SLOT_SESSION_KEY,
 } from './constants.js';
 import { readJson, writeJson } from './save.js';
-import { isCloudStorageActive, queueCloudSave } from './storage-api.js';
 import {
   buildSeasonArchive,
   isValidSeasonArchive,
   seasonIndexEntryFromArchive,
   upsertSeasonIndex,
 } from '../engine/season-archive.js';
+import { queueSeasonHistorySync } from './career-history-sync.js';
 
 export const LOCAL_ARCHIVE_KEEP = 8;
 
@@ -101,11 +101,6 @@ export function writeSeasonArchive(archive, { slotId = null, career = null } = {
   // Espelho ativo facilita load sem slot em sessões antigas.
   if (activeKey && activeKey !== key) writeJson(activeKey, archive);
 
-  if (okSlot && isCloudStorageActive()) {
-    queueCloudSave(key, archive);
-    if (activeKey && activeKey !== key) queueCloudSave(activeKey, archive);
-  }
-
   let bytes = 0;
   try {
     bytes = JSON.stringify(archive).length;
@@ -185,8 +180,31 @@ export function commitSeasonArchiveFromLive(deps, meta = {}) {
 
   const career = deps.getSavedNewGame?.() || null;
   const result = writeSeasonArchive(archive, { career });
+  if (result) queueSeasonHistorySync(archive, deps.getManagerRanking?.() || null);
   if (result?.seasonIndex && career) {
     career.seasonIndex = result.seasonIndex;
   }
   return result;
+}
+
+// Migra silenciosamente os arquivos anuais de saves antigos para a camada
+// estruturada. O marcador por checksum em career-history-sync impede reenvios.
+if (typeof window !== 'undefined') {
+  window.addEventListener('brfut:season-history-synced', event => {
+    const year = Number(event?.detail?.season);
+    if (!year) return;
+    const slotId = readActiveSlotId();
+    [seasonArchiveStorageKey(year, slotId), seasonArchiveStorageKey(year, null)]
+      .filter(Boolean)
+      .forEach(key => {
+        try { localStorage.removeItem(key); } catch { /* ignore */ }
+      });
+  });
+  setTimeout(() => {
+    const slotId = readActiveSlotId();
+    listLocalArchiveKeys(slotId).forEach(key => {
+      const archive = readJson(key, null);
+      if (isValidSeasonArchive(archive)) queueSeasonHistorySync(archive, null);
+    });
+  }, 0);
 }

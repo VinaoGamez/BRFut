@@ -831,7 +831,7 @@ export function createCalendarViewFeature(deps) {
     if (phase.active || brief.deals?.length || brief.loans?.length || brief.interests?.length) {
       const free = brief.freeAgents || {};
       parts.push(
-        `<div class="agenda-item market-free coming-soon"><i>LIV</i><div><small>JOGADORES LIVRES</small><strong>Em breve no mercado</strong><span class="agenda-market-note">${escapeAgenda(free.note || 'Mecânica futura — após validar o mercado.')}</span></div></div>`,
+        `<div class="agenda-item market-free${free.enabled ? '' : ' coming-soon'}"><i>LIV</i><div><small>JOGADORES LIVRES</small><strong>${free.enabled ? `${Number(free.total) || 0} disponíveis` : 'Em breve no mercado'}</strong><span class="agenda-market-note">${escapeAgenda(free.note || 'Jogadores sem clube disponíveis no mercado.')}</span></div></div>`,
       );
     }
 
