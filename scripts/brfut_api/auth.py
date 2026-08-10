@@ -22,11 +22,12 @@ PBKDF2_ITERS = 260_000
 
 
 class ApiError(Exception):
-    def __init__(self, status: int, code: str, message: str) -> None:
+    def __init__(self, status: int, code: str, message: str, retry_after: int | None = None) -> None:
         super().__init__(message)
         self.status = status
         self.code = code
         self.message = message
+        self.retry_after = retry_after
 
 
 def _profiles_path(root: Path) -> Path:

@@ -29,6 +29,7 @@ from .player_stats import (
     put_match_batch,
 )
 from .career_history import delete_career_history, delete_user_history, get_club_seasons, get_manager_history, get_season_history, put_season_history
+from .rate_limit import RATE_LIMITER, request_ip
 
 
 PUBLIC_ROUTES = {
@@ -158,8 +159,10 @@ def handle_api(
 
     rel = path[len('/api/') :].strip('/')
     parts = [p for p in rel.split('/') if p]
+    client_ip = request_ip(headers)
 
     try:
+        RATE_LIMITER.check_request(client_ip)
         # Falha fechada: qualquer rota não declarada pública exige uma sessão válida.
         user = None
         request_token = None
@@ -192,6 +195,7 @@ def handle_api(
 
         if method == 'POST' and rel == 'auth/google':
             data = _parse_json(body) or {}
+            RATE_LIMITER.check_auth(client_ip)
             token, profile = login_with_google_id_token(root, data.get('idToken', ''))
             response = _json_response(200, {'user': profile})
             return _with_cookie(response, _session_cookie(token, headers, bool(data.get('remember'))))
@@ -201,6 +205,7 @@ def handle_api(
 
         if method == 'POST' and rel == 'auth/register':
             data = _parse_json(body) or {}
+            RATE_LIMITER.check_auth(client_ip, data.get('username', ''))
             profile = register_user(root, data.get('username', ''), data.get('password', ''), data.get('displayName'))
             token, logged = login_user(root, profile['username'], data.get('password', ''))
             response = _json_response(201, {'user': logged})
@@ -208,7 +213,15 @@ def handle_api(
 
         if method == 'POST' and rel == 'auth/login':
             data = _parse_json(body) or {}
-            token, profile = login_user(root, data.get('username', ''), data.get('password', ''))
+            account = data.get('username', '')
+            RATE_LIMITER.check_auth(client_ip, account)
+            try:
+                token, profile = login_user(root, account, data.get('password', ''))
+            except ApiError as error:
+                if error.code == 'invalid_credentials':
+                    RATE_LIMITER.record_login_failure(account)
+                raise
+            RATE_LIMITER.record_login_success(account)
             response = _json_response(200, {'user': profile})
             return _with_cookie(response, _session_cookie(token, headers, bool(data.get('remember'))))
 
@@ -328,4 +341,9 @@ def handle_api(
 
         raise ApiError(404, 'not_found', 'Endpoint não encontrado.')
     except ApiError as error:
-        return _json_response(error.status, {'ok': False, 'code': error.code, 'error': error.message})
+        response = _json_response(error.status, {'ok': False, 'code': error.code, 'error': error.message})
+        if error.retry_after:
+            status, response_headers, payload = response
+            response_headers['Retry-After'] = str(error.retry_after)
+            return status, response_headers, payload
+        return response

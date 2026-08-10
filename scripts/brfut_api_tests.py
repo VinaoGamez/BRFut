@@ -16,11 +16,13 @@ sys.path.insert(0, str(ROOT))
 from brfut_api.auth import ApiError, _legacy_session_path, _session_path, login_user, register_user, resolve_session  # noqa: E402
 from brfut_api.cors import cors_headers  # noqa: E402
 from brfut_api.router import handle_api  # noqa: E402
+from brfut_api.rate_limit import RateLimiter, reset_rate_limits  # noqa: E402
 from brfut_api.saves import get_all_saves, get_save, put_save  # noqa: E402
 
 
 class BrfutApiTests(unittest.TestCase):
     def setUp(self) -> None:
+        reset_rate_limits()
         self.tmp = tempfile.mkdtemp(prefix='brfut-api-')
         self.root = Path(self.tmp)
         (self.root / 'profiles').mkdir(parents=True)
@@ -28,7 +30,41 @@ class BrfutApiTests(unittest.TestCase):
         (self.root / 'sessions').mkdir(parents=True)
 
     def tearDown(self) -> None:
+        reset_rate_limits()
         shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_python_rate_limit_and_progressive_account_block(self) -> None:
+        now = [1000.0]
+        limiter = RateLimiter(clock=lambda: now[0])
+        for _ in range(10):
+            limiter.check_auth('203.0.113.10')
+        with self.assertRaises(ApiError) as ip_error:
+            limiter.check_auth('203.0.113.10')
+        self.assertEqual(ip_error.exception.status, 429)
+        self.assertGreaterEqual(ip_error.exception.retry_after or 0, 1)
+
+        for _ in range(3):
+            limiter.record_login_failure('Tester')
+        with self.assertRaises(ApiError) as account_error:
+            limiter.check_auth('203.0.113.11', 'tester')
+        self.assertEqual(account_error.exception.code, 'login_temporarily_blocked')
+        now[0] += 6
+        limiter.check_auth('203.0.113.11', 'tester')
+        limiter.record_login_success('tester')
+
+    def test_rate_limit_response_exposes_retry_after(self) -> None:
+        for index in range(10):
+            self._route(
+                'POST', '/api/auth/login',
+                {'username': f'missing{index}', 'password': 'wrongpass123'},
+            )
+        status, body = self._route(
+            'POST', '/api/auth/login',
+            {'username': 'missing-final', 'password': 'wrongpass123'},
+        )
+        self.assertEqual(status, 429)
+        self.assertEqual(body['code'], 'rate_limited')
+        self.assertIn('Retry-After', self.last_headers)
 
     def _route(
         self,

@@ -38,6 +38,12 @@ Client ID. Senhas, tokens, chaves privadas e client secrets nunca devem usar var
 | systemd hardening | `deploy/brfut-api.service` |
 | Backup diário | `/usr/local/sbin/backup-brfut-data.sh` |
 
+O processo Python funciona como segunda camada: aceita até 180 requisições por
+minuto por IP, limita autenticação a 10 tentativas por minuto por IP e a 8 por
+conta em 15 minutos. Falhas repetidas na mesma conta aplicam bloqueios progressivos
+de até 5 minutos. Respostas limitadas usam HTTP `429` e `Retry-After`; os logs de
+segurança registram somente hashes dos identificadores.
+
 Aplicar as proteções na VPS após atualizar o repositório:
 
 ```bash
@@ -53,7 +59,6 @@ cd /opt/brfut && bash deploy/apply-vps-security.sh
 ## Pendências conhecidas
 
 - Centralizar logs de segurança e alertas de autenticação.
-- Rate limit também no processo Python, como segunda camada além do nginx.
 - Avaliar WAF/DDoS na borda conforme o crescimento do serviço.
 
 Detalhes de deploy: [VPS-LOCAWEB.md](./VPS-LOCAWEB.md).

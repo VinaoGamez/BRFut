@@ -29,6 +29,7 @@ export const RELEASE_NOTES = [
         items: [
           'O acesso com Google voltou a ser exibido corretamente quando a configuração estiver ativa na API.',
           'A sessão da conta agora usa cookie protegido e não deixa novos tokens de acesso armazenados no navegador.',
+          'O acesso ganhou proteção adicional contra tentativas excessivas e bloqueios automáticos temporários.',
         ],
       },
       {
