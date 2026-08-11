@@ -204,7 +204,6 @@ import {
 } from '../engine/brazilian-clubs-by-uf.js';
 import {
   loadOfficialBrazilWorld,
-  ensureAllImportClubs,
   ensureImportClubsForUfs,
   pickCascadeVictim,
   serieDGroupSizes,
@@ -425,6 +424,7 @@ export async function bootEngine({
   openAccountLogin,
   registerWelcomeAuthSync,
   registerCareerCreator,
+  stateLeagueSnapshotPromise,
 } = {}) {
   try {
   const savedNewGame = loadCareerSave();
@@ -469,11 +469,14 @@ export async function bootEngine({
   if(savedNewGame&&FEATURES.stateLeague){
     try{
       officialBrazilWorld=await loadOfficialBrazilWorld();
-      // O hub de Campeonatos permite consultar todos os Estaduais. Portanto,
-      // as competições precisam ser construídas somente depois que a base das
-      // 27 UFs estiver disponível; carregar apenas a UF do usuário deixava os
-      // demais botões visíveis, porém indisponíveis.
-      await ensureAllImportClubs();
+      // O índice nacional é suficiente para montar todas as competições.
+      // No boot, baixa detalhes apenas da UF do usuário e de associações já
+      // registradas. As demais UFs continuam disponíveis sob demanda no hub.
+      const bootUfs=[
+        savedNewGame.userUf||'SP',
+        ...Object.keys(savedNewGame.stateLeagueMembership||{}),
+      ];
+      await ensureImportClubsForUfs(bootUfs);
       hydrateRealClubsFromImport(officialBrazilWorld?.importClubs);
     }catch(err){
       console.warn('[brfut] Pirâmide oficial indisponível',err);
@@ -1403,7 +1406,15 @@ export async function bootEngine({
   const stateLeagueEngine=createStateLeagueEngine();
   if(FEATURES.stateLeague&&savedNewGame){
     const userOriginUf=savedNewGame.userUf||getRealClub(userClub)?.uf||'SP';
-    const remoteStateLeagueSnapshot=consumePrefetchedStateLeagueSnapshot();
+    let remoteStateLeagueSnapshot=null;
+    if(stateLeagueSnapshotPromise){
+      // Uma API lenta não pode manter o jogo preso na tela de carregamento.
+      remoteStateLeagueSnapshot=await Promise.race([
+        Promise.resolve(stateLeagueSnapshotPromise).catch(()=>null),
+        new Promise(resolve=>setTimeout(()=>resolve(null),1500)),
+      ]);
+    }
+    remoteStateLeagueSnapshot||=consumePrefetchedStateLeagueSnapshot();
     const stateLeagueSnapshot=hasUsableStateLeagueSave(remoteStateLeagueSnapshot)
       ?remoteStateLeagueSnapshot
       :(validSavedSeason&&hasUsableStateLeagueSave(savedSeason.stateLeagues)?savedSeason.stateLeagues:null);
@@ -3445,10 +3456,14 @@ export async function bootEngine({
     const cv=createCalendarViewFeature(buildCalendarDeps());
     calendarView=cv;
     rawOnCupScheduleChanged=cv.onCupScheduleChanged;
+    cv.setPersist?.(persistSeason);
+    cv.init(initialCalendarDate);
     return cv;
   });
   const ensureCalendarView=()=>calendarLazy.ensure();
-  const renderCalendar=()=>{void calendarLazy.call('renderCalendar');};
+  // Atualiza a agenda somente depois de ela ter sido aberta. Isso impede que
+  // refreshes do dashboard puxem o chunk inteiro do Calendário durante o boot.
+  const renderCalendar=()=>{calendarLazy.get()?.renderCalendar?.();};
   const openCalendarMatchReport=(...args)=>{void calendarLazy.call('openCalendarMatchReport',...args);};
   const calendarGameResult=(...args)=>{
     const cv=calendarLazy.get();
@@ -3464,13 +3479,14 @@ export async function bootEngine({
       return;
     }
     if(calendarView)rawOnCupScheduleChanged();
-    else void ensureCalendarView().then(cv=>cv.onCupScheduleChanged?.());
+    else cupScheduleRefreshPending=true;
   };
   const flushCupScheduleRefresh=()=>{
     if(!cupScheduleRefreshPending)return;
     cupScheduleRefreshPending=false;
     if(calendarView)rawOnCupScheduleChanged();
-    else void ensureCalendarView().then(cv=>cv.onCupScheduleChanged?.());
+    // A reconstrução principal já ocorreu; a interface da agenda será
+    // renderizada com o estado atual quando o usuário abri-la.
   };
   let advanceTransferCalendarFn=()=>({ok:false,reason:'no_club'});
   let advanceCalendarWeekFn=()=>null;
@@ -3604,12 +3620,7 @@ export async function bootEngine({
     if(userSeasonCrowds.length>before)persistSeason(true);
   };
   backfillUserSeasonCrowds();
-  if(savedNewGame){
-    void ensureCalendarView().then(cv=>cv.init(initialCalendarDate));
-    const preloadCalendar=()=>{void ensureCalendarView();};
-    if(typeof requestIdleCallback==='function')requestIdleCallback(preloadCalendar,{timeout:4000});
-    else setTimeout(preloadCalendar,1500);
-  }
+  if(savedNewGame)router.onView('calendar',()=>{void ensureCalendarView().then(cv=>cv.renderCalendar());});
   dashboard.init();
   economyUi=createEconomyFeature({
     $,
@@ -4379,6 +4390,7 @@ export async function bootEngine({
     const ui=createTransfersFeature(buildTransfersUiDeps());
     transfersUi=ui;
     ui.bindHandlers();
+    ui.setPersist?.(persistSeason);
     return ui;
   });
   const ensureTransfersUi=()=>transfersUiLazy.ensure();
@@ -6439,12 +6451,8 @@ export async function bootEngine({
   const persistAfterRoundAdvance=careerPersistence.persistAfterRoundAdvance.bind(careerPersistence);
   const notifyUserMatchPlayed=careerPersistence.notifyUserMatchPlayed.bind(careerPersistence);
   dashboard.setPersist(persistSeason);
-  void ensureCalendarView().then(cv=>cv.setPersist?.(persistSeason));
   tactics.setPersist(persistSeason);
   messages.setPersist(persistSeason);
-  void ensureTransfersUi().then(ui=>{
-    ui.setPersist?.(persistSeason);
-  });
   let bootPersistPending=false;
   if(validSavedSeason&&(savedSeason.currentRound!==currentRound||knockoutShootoutSanitized||serieDReturnLegsRepaired))bootPersistPending=true;
   if(calendarBootRepaired&&validSavedSeason)bootPersistPending=true;
@@ -6484,17 +6492,20 @@ export async function bootEngine({
     shouldStoreMatchLocally:game=>!isStateLeagueGame(game)||involvesClub(game,userClub),
   });
   if(validSavedSeason&&FEATURES.stateLeague&&savedNewGame){
-    advanceStateLeagueThroughDateCore({
-      getSavedNewGame:()=>savedNewGame,
-      getStateLeagueEngine:()=>stateLeagueEngine,
-      simulateRoundMatch,
-      recordGameLeaders,
-      getManagerForClub:clubName=>managerRanking.byClub(clubName),
-      getUserClub:()=>userClub,
-      rebuildCalendarGames,
-      persistPlayerHistory:()=>playerHistory.persist(),
-      invalidateUserScheduleCache,
-    },careerCalendarDate);
+    const catchUpStateLeagues=()=>advanceStateLeagueThroughDateCore({
+        getSavedNewGame:()=>savedNewGame,
+        getStateLeagueEngine:()=>stateLeagueEngine,
+        simulateRoundMatch,
+        recordGameLeaders,
+        getManagerForClub:clubName=>managerRanking.byClub(clubName),
+        getUserClub:()=>userClub,
+        rebuildCalendarGames,
+        persistPlayerHistory:()=>playerHistory.persist(),
+        invalidateUserScheduleCache,
+      },careerCalendarDate);
+    // Simulações de IA não bloqueiam mais a primeira pintura da interface.
+    if(typeof requestIdleCallback==='function')requestIdleCallback(catchUpStateLeagues,{timeout:1200});
+    else setTimeout(catchUpStateLeagues,0);
   }
   ({
     buildLiveKnockoutStats,

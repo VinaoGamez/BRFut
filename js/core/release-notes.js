@@ -50,6 +50,7 @@ export const RELEASE_NOTES = [
           'Partidas estaduais simuladas passam a alimentar as estatísticas dos jogadores e o histórico do técnico que realmente comandou cada jogo.',
           'Estatísticas dos jogos estaduais da IA são enviadas diretamente à API, reduzindo o tempo de carregamento e o uso de armazenamento do navegador.',
           'O avanço dos Estaduais ficou mais rápido: partidas da IA agora sincronizam estatísticas em lotes e o calendário evita atualizações desnecessárias.',
+          'A entrada no jogo ficou mais leve: Mercado e Calendário carregam somente quando abertos, e os dados estaduais deixam de bloquear a tela inicial.',
           'A limpeza preventiva remove estruturas antigas que poderiam causar calendários travados, estatísticas incompletas ou falhas ao avançar.',
           'A validação de compatibilidade agora diferencia saves antigos de checkpoints atuais sem interromper a sessão de login.',
         ],

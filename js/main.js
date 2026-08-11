@@ -81,7 +81,11 @@ if (SITE_MAINTENANCE.enabled) {
     if (bootStarted) return;
     bootStarted = true;
     const activeSeason = loadSeasonSave()?.careerSeason;
-    if (activeSeason) await prefetchStateLeagueSnapshot(activeSeason);
+    // Dispara a hidratação remota em paralelo com o restante do boot. O motor
+    // consome o resultado apenas quando chega à etapa dos estaduais.
+    const stateLeagueSnapshotPromise = activeSeason
+      ? prefetchStateLeagueSnapshot(activeSeason)
+      : Promise.resolve(null);
     bootEngine({
       bus,
       features: FEATURES,
@@ -93,6 +97,7 @@ if (SITE_MAINTENANCE.enabled) {
       registerCareerCreator: fn => {
         openCareerCreatorRef = fn;
       },
+      stateLeagueSnapshotPromise,
     })
       .then(() => markBootReady())
       .catch(error => {
