@@ -10,8 +10,8 @@
 export const RELEASE_NOTES = [
   {
     version: 'Alpha V.6.00',
-    date: '2026-08-09',
-    publishedAt: '2026-08-09T12:00:00-04:00',
+    date: '2026-08-11',
+    publishedAt: '2026-08-11T12:00:00-04:00',
     title: 'BR Fut foi atualizado',
     promptUpdate: true,
     topics: [
@@ -38,6 +38,8 @@ export const RELEASE_NOTES = [
           'A Categoria de Base agora funciona também para os clubes controlados pela IA, com geração, evolução, promoção e dispensa de jovens.',
           'Jogadores dispensados ou sem contrato passam a entrar no mercado como LIVRES.',
           'Novas carreiras começam com mais jogadores livres, distribuídos proporcionalmente entre as divisões.',
+          'O Histórico de Transferências foi movido para a tela do Mercado, ao lado dos botões Comprar e Vender.',
+          'Ao abrir o Mercado, um novo alerta apresenta as datas de abertura e fechamento da janela atual ou da próxima janela.',
         ],
       },
       {

@@ -89,6 +89,7 @@ export function createCalendarWeekAdvance(deps) {
       deps.maybeSendNationalTeamOffers();
       deps.persistSeason(true);
       deps.refreshSeasonPresentation();
+      if (deps.getTransferWindowPhase()?.active) deps.showTransferWindowOpenAlert?.();
     } else {
       deps.renderCalendar();
     }
@@ -186,6 +187,7 @@ export function createCalendarWeekAdvance(deps) {
       deps.persistSeason(true);
       deps.refreshSeasonPresentation();
       deps.renderTransfersUi?.();
+      if (deps.getTransferWindowPhase()?.active) deps.showTransferWindowOpenAlert?.();
       if (deferredOffers.length) {
         deps.presentTransferOffersAfterAdvance({ ok: true, days: simulatedDays, newOfferIds: deferredOffers });
       }
@@ -195,6 +197,7 @@ export function createCalendarWeekAdvance(deps) {
       deps.persistSeason(true);
       deps.refreshSeasonPresentation();
       deps.renderTransfersUi?.();
+      if (deps.getTransferWindowPhase()?.active) deps.showTransferWindowOpenAlert?.();
       if (deferredOffers.length) {
         deps.presentTransferOffersAfterAdvance({ ok: true, days: simulatedDays, newOfferIds: deferredOffers });
       }

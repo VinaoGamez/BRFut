@@ -169,7 +169,7 @@
           <label>POS<select data-roster-filter="pos" aria-label="Filtrar posição"><option value="">Todas</option></select></label>
           <label>PÉ<select data-roster-filter="foot" aria-label="Filtrar pé"><option value="">Todos</option></select></label>
           <label>PERFIL<select data-roster-filter="personality" aria-label="Filtrar perfil"><option value="">Todos</option></select></label>
-          <div class="roster-filter-actions"><button type="button" id="rosterContractBtn" aria-expanded="false" aria-controls="rosterContractPanel">CONTRATO<span class="roster-contract-btn-badge hidden" aria-hidden="true">0</span></button><button type="button" id="openTransferHistoryCard">HISTÓRICO DE TRANSFERÊNCIAS</button></div>
+          <div class="roster-filter-actions"><button type="button" id="rosterContractBtn" aria-expanded="false" aria-controls="rosterContractPanel">CONTRATO<span class="roster-contract-btn-badge hidden" aria-hidden="true">0</span></button></div>
         </div>
         <div class="roster-scroll">
           <div class="roster-head roster-expanded" id="rosterHead" role="row">
@@ -445,9 +445,12 @@
           </span>
           <em id="transfersMarketState" class="transfers-market-state">MERCADO ABERTO</em>
         </div>
-        <div id="transfersTabs" class="transfers-tabs" role="tablist">
-          <button type="button" data-transfers-tab="buy" class="is-active">COMPRAR</button>
-          <button type="button" data-transfers-tab="sell">VENDER</button>
+        <div class="transfers-toolbar-actions">
+          <div id="transfersTabs" class="transfers-tabs" role="tablist">
+            <button type="button" data-transfers-tab="buy" class="is-active">COMPRAR</button>
+            <button type="button" data-transfers-tab="sell">VENDER</button>
+          </div>
+          <button type="button" id="openTransferHistoryCard" class="transfers-history-button">HISTÓRICO DE TRANSFERÊNCIAS</button>
         </div>
       </div>
       <p id="transfersStatus" class="transfers-status" aria-live="polite"></p>
@@ -866,8 +869,6 @@
   #squad .roster-filters label{display:grid;gap:4px;min-width:120px;color:#75cde3;font:700 10px 'DM Sans',sans-serif;letter-spacing:.45px}
   #squad .roster-filters select{min-width:120px;padding:6px 8px;border:1px solid #315d69;border-radius:4px;background:#0c1e28;color:#edf8f5;font:600 12px 'DM Sans',sans-serif}
   #squad .roster-filter-actions{margin-left:auto;align-self:center;display:flex;align-items:center;gap:8px}
-  #squad #openTransferHistoryCard{min-height:36px;padding:0 13px;border:1px solid #397487;border-radius:5px;background:#102833;color:#dff7fa;font:800 9px 'DM Sans',sans-serif;letter-spacing:.45px;cursor:pointer}
-  #squad #openTransferHistoryCard:hover,#squad #openTransferHistoryCard:focus-visible{border-color:#63d9ff;background:#163845;color:#fff}
   .roster-head.roster-expanded,.player-row.roster-expanded{width:max-content;min-width:100%;grid-template-columns:minmax(240px,1.65fr) 52px 52px 52px 72px 38px 110px 48px 48px 48px 48px 48px 48px 48px 48px 56px 64px 64px 64px 48px 72px 80px 82px 92px;gap:6px}
   #squad .roster-head>button[data-roster-sort="ovr"],#squad .player-row>.roster-col-ovr{min-width:0;padding-inline:2px}
   #squad .roster-ovr{display:inline-flex;align-items:center;justify-content:center;gap:4px;font-weight:700}

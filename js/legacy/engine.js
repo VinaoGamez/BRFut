@@ -4355,6 +4355,13 @@ export async function bootEngine({
     formatBudget,
     pushMessage,
     getCurrentRound:()=>currentRound,
+    getCareerSeason:()=>careerSeason,
+    getTransferWindowAlertStamp:()=>savedNewGame?.transferWindowAlertStamp||null,
+    setTransferWindowAlertStamp:stamp=>{
+      if(!savedNewGame||savedNewGame.transferWindowAlertStamp===stamp)return;
+      savedNewGame.transferWindowAlertStamp=stamp;
+      persistSeason(true);
+    },
     playerNameCell,
     onTransferOfferRespond:opts=>respondToIncomingTransferOffer(opts),
     openOfferMessage:offer=>{
@@ -4376,7 +4383,7 @@ export async function bootEngine({
   });
   const ensureTransfersUi=()=>transfersUiLazy.ensure();
   if(FEATURES.transfers){
-    router.onView('transfers',()=>{void ensureTransfersUi().then(ui=>ui.render());});
+    router.onView('transfers',()=>{void ensureTransfersUi().then(ui=>ui.render({showWindowAlert:true}));});
   }
   /** Rótulo do informativo: RODADA N ou MATA-MATA + fase/leg. */
   const headerMatchContext=game=>{
@@ -6435,7 +6442,9 @@ export async function bootEngine({
   void ensureCalendarView().then(cv=>cv.setPersist?.(persistSeason));
   tactics.setPersist(persistSeason);
   messages.setPersist(persistSeason);
-  void ensureTransfersUi().then(ui=>ui.setPersist?.(persistSeason));
+  void ensureTransfersUi().then(ui=>{
+    ui.setPersist?.(persistSeason);
+  });
   let bootPersistPending=false;
   if(validSavedSeason&&(savedSeason.currentRound!==currentRound||knockoutShootoutSanitized||serieDReturnLegsRepaired))bootPersistPending=true;
   if(calendarBootRepaired&&validSavedSeason)bootPersistPending=true;
@@ -7278,6 +7287,7 @@ export async function bootEngine({
     setSuppressTransferOfferPopup:value=>{suppressTransferOfferPopup=value;},
     getPendingTransferOfferPopupIds:()=>pendingTransferOfferPopupIds,
     renderTransfersUi:()=>transfersUi?.render?.(),
+    showTransferWindowOpenAlert:()=>void ensureTransfersUi().then(ui=>ui.showWindowOpenAlert?.()),
     presentTransferOffersAfterAdvance,
   }));
   advanceCalendarWeekFn=advanceCalendarWeek;

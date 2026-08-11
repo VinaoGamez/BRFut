@@ -6,6 +6,8 @@ import {
 } from '../../engine/economy.js';
 import { wageMonthlyFromRound } from '../../engine/player-contracts.js';
 import { BRAZIL_NATION, FOREIGN_NATIONS } from '../../engine/player-nationality.js';
+import { getTransferWindowBounds } from '../../engine/transfers.js';
+import mercadoDaBolaUrl from '../../../brand/transfer-history/mercado-da-bola.png?url';
 import {
   formatSellerRejectLetter,
   formatLoanLevelPlayerReply,
@@ -182,6 +184,7 @@ export function createTransfersFeature(deps) {
   let persistSeason = typeof deps.onPersist === 'function' ? deps.onPersist : () => {};
   let statusText = '';
   let seededListings = false;
+  let windowAlertBound = false;
   /** Índice da página de propostas recebidas (cards por linha). */
   let incomingOfferIndex = 0;
   let incomingAutoTimer = null;
@@ -1312,7 +1315,7 @@ export function createTransfersFeature(deps) {
     startIncomingAutoRotate();
   };
 
-  const render = () => {
+  const render = ({ showWindowAlert = false } = {}) => {
     const root = $('#transfers');
     if (!root) return;
     root.classList.remove('coming-soon-view');
@@ -1330,7 +1333,89 @@ export function createTransfersFeature(deps) {
       renderBuyTable();
     }
     setStatus(statusText);
+    if (showWindowAlert) showWindowOpenAlert({ force: true });
   };
+
+  const closeWindowOpenAlert = () => {
+    const modal = $('#transferWindowOpenAlert');
+    if (modal) modal.hidden = true;
+    document.body.classList.remove('transfer-window-alert-open');
+  };
+
+  const ensureWindowOpenAlert = () => {
+    let modal = $('#transferWindowOpenAlert');
+    if (!modal) {
+      document.body.insertAdjacentHTML('beforeend', `
+        <div id="transferWindowOpenAlert" class="transfer-window-open-alert" role="dialog" aria-modal="true" aria-labelledby="transferWindowOpenAlertTitle" hidden>
+          <article class="transfer-window-open-card">
+            <button type="button" class="transfer-window-open-close" aria-label="Fechar alerta">&times;</button>
+            <img src="${mercadoDaBolaUrl}" alt="Mercado da Bola">
+            <div class="transfer-window-open-copy">
+              <h2 id="transferWindowOpenAlertTitle">MERCADO ABERTO</h2>
+              <p><span>ABERTURA</span><strong id="transferWindowOpenStart">&mdash;</strong></p>
+              <i aria-hidden="true"></i>
+              <p><span>FECHAMENTO</span><strong id="transferWindowOpenEnd">&mdash;</strong></p>
+            </div>
+            <button type="button" class="transfer-window-open-ok">CONTINUAR</button>
+          </article>
+        </div>`);
+      modal = $('#transferWindowOpenAlert');
+    }
+    if (!windowAlertBound && modal) {
+      windowAlertBound = true;
+      modal.addEventListener('click', event => {
+        if (
+          event.target === modal
+          || event.target.closest('.transfer-window-open-close')
+          || event.target.closest('.transfer-window-open-ok')
+        ) closeWindowOpenAlert();
+      });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !modal.hidden) closeWindowOpenAlert();
+      });
+    }
+    return modal;
+  };
+
+  function showWindowOpenAlert({ force = false } = {}) {
+    const api = engine();
+    const phase = api?.getWindowPhase?.() || null;
+    const status = api?.marketStatus?.() || null;
+    const careerDate = status?.careerDate instanceof Date
+      ? status.careerDate
+      : new Date(status?.careerDate || `${deps.getCareerSeason?.() || new Date().getFullYear()}-01-01T12:00:00`);
+    if (Number.isNaN(careerDate.getTime())) return false;
+    const careerSeason = Number(deps.getCareerSeason?.()) || careerDate.getFullYear();
+    const monthDay = (careerDate.getMonth() + 1) * 100 + careerDate.getDate();
+    let windowKey = phase?.active && phase.windowKey ? phase.windowKey : null;
+    let season = careerSeason;
+    if (!windowKey) {
+      if (monthDay < 101) windowKey = 'first';
+      else if (monthDay < 720) windowKey = 'second';
+      else {
+        windowKey = 'first';
+        season += 1;
+      }
+    }
+    const stamp = `${season}:${windowKey}`;
+    if (!force && deps.getTransferWindowAlertStamp?.() === stamp) return false;
+    const bounds = getTransferWindowBounds()[windowKey];
+    if (!bounds) return false;
+    const formatDate = ({ month, day }) =>
+      new Date(season, month - 1, day, 12).toLocaleDateString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+      });
+    const modal = ensureWindowOpenAlert();
+    if (!modal) return false;
+    const start = $('#transferWindowOpenStart');
+    const end = $('#transferWindowOpenEnd');
+    if (start) start.textContent = formatDate(bounds.start);
+    if (end) end.textContent = formatDate(bounds.end);
+    modal.hidden = false;
+    document.body.classList.add('transfer-window-alert-open');
+    deps.setTransferWindowAlertStamp?.(stamp);
+    return true;
+  }
 
   let offerState = null;
 
@@ -2248,6 +2333,7 @@ export function createTransfersFeature(deps) {
     bindHandlers,
     setPersist,
     showWindowReport,
+    showWindowOpenAlert,
     showActionAlert,
     closeActionAlert,
     openBuyFromCard: confirmBuy,
