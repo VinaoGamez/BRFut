@@ -47,6 +47,7 @@ export const RELEASE_NOTES = [
           'Todos os Campeonatos Estaduais agora preservam jogos, tabelas e resultados para consulta, mesmo quando o seu clube disputa outra federação.',
           'Partidas estaduais simuladas passam a alimentar as estatísticas dos jogadores e o histórico do técnico que realmente comandou cada jogo.',
           'Estatísticas dos jogos estaduais da IA são enviadas diretamente à API, reduzindo o tempo de carregamento e o uso de armazenamento do navegador.',
+          'O avanço dos Estaduais ficou mais rápido: partidas da IA agora sincronizam estatísticas em lotes e o calendário evita atualizações desnecessárias.',
           'A limpeza preventiva remove estruturas antigas que poderiam causar calendários travados, estatísticas incompletas ou falhas ao avançar.',
           'A validação de compatibilidade agora diferencia saves antigos de checkpoints atuais sem interromper a sessão de login.',
         ],
