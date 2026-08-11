@@ -1,4 +1,5 @@
 import { FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
+import { queuePlayerStatsHistory } from '../core/player-stats-sync.js';
 import { clamp } from '../ui/dom.js';
 import { compactMatchResult, involvesClub, MEMORY_LIMITS } from '../core/save.js';
 import {
@@ -178,14 +179,21 @@ function advanceStateLeagueThroughDateCore(deps, date) {
   if (!FEATURES.stateLeague || !deps.getSavedNewGame() || !date || typeof deps.simulateRoundMatch !== 'function') {
     return false;
   }
-  const changed = deps.getStateLeagueEngine().advanceThroughDate(date, {
+  const engine = deps.getStateLeagueEngine();
+  const fixtureCountBefore = engine.allFixturesFlat().length;
+  const apiLogs = [];
+  const changed = engine.advanceThroughDate(date, {
     simulateMatch: deps.simulateRoundMatch,
     userClub: deps.getUserClub(),
-    recordLeaders: deps.recordGameLeaders,
+    recordLeaders: game => {
+      const log = deps.recordGameLeaders(game, { deferApi: true });
+      if (log?.id) apiLogs.push(log);
+    },
     getManagerForClub: deps.getManagerForClub,
   });
+  if (apiLogs.length) void queuePlayerStatsHistory(apiLogs);
   if (changed) {
-    deps.rebuildCalendarGames();
+    if (engine.allFixturesFlat().length !== fixtureCountBefore) deps.rebuildCalendarGames();
     // Os jogos processados aqui nunca envolvem o clube do usuário e seus
     // detalhes seguem diretamente para a API. Regravar o histórico local
     // inteiro após cada catch-up apenas pressiona a cota do navegador.

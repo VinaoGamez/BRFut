@@ -4,7 +4,7 @@ import { clamp } from '../ui/dom.js';
  * Artilharia/assistências pós-jogo e atualização da tabela da divisão do usuário.
  */
 export function createGameLeadersTable(deps) {
-  const recordGameLeaders = game => {
+  const recordGameLeaders = (game, options = {}) => {
     if (!game?.home || !game?.away) return;
     const rosterFor = clubName =>
       deps.getClubs()[clubName]?.roster || deps.getNationalTeamClub(clubName)?.roster || null;
@@ -74,8 +74,9 @@ export function createGameLeadersTable(deps) {
     }
     allScorers.sort((a, b) => b.goals - a.goals || b.tieValue - a.tieValue || a.games - b.games);
     allAssistants.sort((a, b) => b.assists - a.assists || b.tieValue - a.tieValue || a.games - b.games);
-    deps.recordPlayerHistoryMatch(game, {
+    return deps.recordPlayerHistoryMatch(game, {
       persist: false,
+      deferApi: options.deferApi === true,
       apiOnly: typeof deps.shouldStoreMatchLocally === 'function'
         ? !deps.shouldStoreMatchLocally(game)
         : false,

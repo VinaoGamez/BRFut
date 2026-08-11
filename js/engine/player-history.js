@@ -960,9 +960,11 @@ export function createPlayerHistoryEngine(deps = {}) {
       );
       if (meta.persist !== false) persist();
     }
-    void import('../core/player-stats-sync.js')
-      .then(module => module.queuePlayerStatsMatch(log))
-      .catch(() => {});
+    if (meta.deferApi !== true) {
+      void import('../core/player-stats-sync.js')
+        .then(module => module.queuePlayerStatsMatch(log))
+        .catch(() => {});
+    }
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('brfut:player-stats-updated', {
         detail: { season, fixtureId: id, clubs: [game.home, game.away] },

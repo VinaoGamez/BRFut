@@ -169,8 +169,8 @@ export async function flushPlayerStatsOutbox() {
     });
     let synced = 0;
     for (const [careerId, rows] of groups) {
-      for (let offset = 0; offset < rows.length; offset += 25) {
-        const batch = rows.slice(offset, offset + 25);
+      for (let offset = 0; offset < rows.length; offset += 100) {
+        const batch = rows.slice(offset, offset + 100);
         const response = await fetch(apiUrl(`/api/careers/${encodeURIComponent(careerId)}/stats/matches`), authenticatedFetchOptions({
           method: 'POST',
           cache: 'no-store',
