@@ -36,6 +36,7 @@ import { renderTransferHistoryCard } from '../ui/transfer-history-card.js';
 import { SAVE_KEYS, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { getAuthToken, isCloudStorageActive, probeBackend } from '../core/storage-api.js';
 import { fetchClubSeasonStats } from '../core/player-stats-sync.js';
+import { consumePrefetchedStateLeagueSnapshot } from '../core/state-league-sync.js';
 import { collectWorldRosters, applyWorldRosters, stampWorldPlayers } from '../engine/world-rosters.js';
 import {
   computeRenewalWageAsk,
@@ -203,6 +204,7 @@ import {
 } from '../engine/brazilian-clubs-by-uf.js';
 import {
   loadOfficialBrazilWorld,
+  ensureAllImportClubs,
   ensureImportClubsForUfs,
   pickCascadeVictim,
   serieDGroupSizes,
@@ -467,8 +469,11 @@ export async function bootEngine({
   if(savedNewGame&&FEATURES.stateLeague){
     try{
       officialBrazilWorld=await loadOfficialBrazilWorld();
-      const userOriginUf=savedNewGame.userUf||getRealClub(userClub)?.uf||'SP';
-      await ensureImportClubsForUfs([userOriginUf]);
+      // O hub de Campeonatos permite consultar todos os Estaduais. Portanto,
+      // as competições precisam ser construídas somente depois que a base das
+      // 27 UFs estiver disponível; carregar apenas a UF do usuário deixava os
+      // demais botões visíveis, porém indisponíveis.
+      await ensureAllImportClubs();
       hydrateRealClubsFromImport(officialBrazilWorld?.importClubs);
     }catch(err){
       console.warn('[brfut] Pirâmide oficial indisponível',err);
@@ -1398,8 +1403,12 @@ export async function bootEngine({
   const stateLeagueEngine=createStateLeagueEngine();
   if(FEATURES.stateLeague&&savedNewGame){
     const userOriginUf=savedNewGame.userUf||getRealClub(userClub)?.uf||'SP';
-    if(validSavedSeason&&hasUsableStateLeagueSave(savedSeason.stateLeagues)){
-      stateLeagueEngine.hydrate(savedSeason.stateLeagues,{userUf:userOriginUf,seasonYear:careerSeason,clubs});
+    const remoteStateLeagueSnapshot=consumePrefetchedStateLeagueSnapshot();
+    const stateLeagueSnapshot=hasUsableStateLeagueSave(remoteStateLeagueSnapshot)
+      ?remoteStateLeagueSnapshot
+      :(validSavedSeason&&hasUsableStateLeagueSave(savedSeason.stateLeagues)?savedSeason.stateLeagues:null);
+    if(stateLeagueSnapshot){
+      stateLeagueEngine.hydrate(stateLeagueSnapshot,{userUf:userOriginUf,seasonYear:careerSeason,clubs});
       stateLeagueEngine.ensureAllCompetitions({
         clubs,
         regionalBaseClubs:savedNewGame.regionalBaseClubs||[],
@@ -5622,6 +5631,16 @@ export async function bootEngine({
   };
   const recordPlayerHistoryMatch=(game,meta={})=>{
     const enriched=enrichGameForHistory(game);
+    const homeManager=managerRanking.byClub(enriched.home);
+    const awayManager=managerRanking.byClub(enriched.away);
+    if(!enriched.homeManagerId&&homeManager){
+      enriched.homeManagerId=homeManager.id;
+      enriched.homeManagerName=homeManager.name;
+    }
+    if(!enriched.awayManagerId&&awayManager){
+      enriched.awayManagerId=awayManager.id;
+      enriched.awayManagerName=awayManager.name;
+    }
     const log=playerHistory.recordMatch(enriched,{
       season:careerSeason,
       round:meta.round??game.round??currentRound,
@@ -6181,17 +6200,6 @@ export async function bootEngine({
   let advanceSeasonRound=()=>{};
   let advanceCupRound=()=>{};
   let simulateIdleRound=()=>({sacked:false,finished:false});
-  if(validSavedSeason&&FEATURES.stateLeague&&savedNewGame){
-    advanceStateLeagueThroughDateCore({
-      getSavedNewGame:()=>savedNewGame,
-      getStateLeagueEngine:()=>stateLeagueEngine,
-      simulateRoundMatch,
-      getUserClub:()=>userClub,
-      rebuildCalendarGames,
-      persistPlayerHistory:()=>playerHistory.persist(),
-      invalidateUserScheduleCache,
-    },careerCalendarDate);
-  }
   const reconcileSerieACupEntry=()=>{
     if(userDivision!=='A'||!cupSerieAEntrants.includes(userClub))return false;
     const userHadCup=cupCompetition.stages.some(stage=>stage.fixtures.some(game=>game.home===userClub||game.away===userClub));
@@ -6464,7 +6472,21 @@ export async function bootEngine({
     getNationalCompetitions: () => nationalCompetitions,
     getLeagueData: () => leagueData,
     applyMatchAvailability,
+    shouldStoreMatchLocally:game=>!isStateLeagueGame(game)||involvesClub(game,userClub),
   });
+  if(validSavedSeason&&FEATURES.stateLeague&&savedNewGame){
+    advanceStateLeagueThroughDateCore({
+      getSavedNewGame:()=>savedNewGame,
+      getStateLeagueEngine:()=>stateLeagueEngine,
+      simulateRoundMatch,
+      recordGameLeaders,
+      getManagerForClub:clubName=>managerRanking.byClub(clubName),
+      getUserClub:()=>userClub,
+      rebuildCalendarGames,
+      persistPlayerHistory:()=>playerHistory.persist(),
+      invalidateUserScheduleCache,
+    },careerCalendarDate);
+  }
   ({
     buildLiveKnockoutStats,
     commitLiveKnockoutResult,
@@ -7110,6 +7132,8 @@ export async function bootEngine({
     getSavedNewGame:()=>savedNewGame,
     getStateLeagueEngine:()=>stateLeagueEngine,
     simulateRoundMatch,
+    recordGameLeaders,
+    getManagerForClub:clubName=>managerRanking.byClub(clubName),
     getUserClub:()=>userClub,
     getUserDivision:()=>userDivision,
     getCareerSeason:()=>careerSeason,
@@ -7433,6 +7457,8 @@ export async function bootEngine({
               tier:division.tier||1,
               label:division.label||uf,
               clubName:division.champion,
+              managerId:division.championManagerId||null,
+              managerName:division.championManagerName||null,
             });
           }
         });
@@ -7441,6 +7467,7 @@ export async function bootEngine({
     },
     finalizeManagerSeason:({season,champions,championEstaduais})=>{
       const summariesByClub={};
+      const summariesByManager={};
       const completedManagerGames=[];
       const seenManagerGames=new Set();
       const collectManagerGame=game=>{
@@ -7458,7 +7485,7 @@ export async function bootEngine({
       worldCupFixtures.forEach(collectManagerGame);
       if(FEATURES.stateLeague)stateLeagueEngine.allFixturesFlat().forEach(collectManagerGame);
       completedManagerGames.forEach(game=>{
-        [game.home,game.away].forEach(club=>{
+        [game.home,game.away].forEach((club,sideIndex)=>{
           const row=summariesByClub[club]||(summariesByClub[club]={club,clubs:[club],games:0,wins:0,draws:0,losses:0,teamAverage:null});
           const home=game.home===club;
           const own=Number(home?game.homeGoals:game.awayGoals);
@@ -7467,6 +7494,16 @@ export async function bootEngine({
           if(own>rival)row.wins++;
           else if(own<rival)row.losses++;
           else row.draws++;
+          const managerId=sideIndex===0?game.homeManagerId:game.awayManagerId;
+          if(managerId){
+            const managerRow=summariesByManager[managerId]||(summariesByManager[managerId]={clubs:[],games:0,wins:0,draws:0,losses:0,teamAverage:null});
+            if(!managerRow.clubs.includes(club))managerRow.clubs.push(club);
+            managerRow.club=club;
+            managerRow.games++;
+            if(own>rival)managerRow.wins++;
+            else if(own<rival)managerRow.losses++;
+            else managerRow.draws++;
+          }
         });
       });
       // Saves antigos podem não possuir o histórico completo de rodadas. A
@@ -7512,12 +7549,14 @@ export async function bootEngine({
           id:`${season}:${item.key||item.label}:${item.clubName}`,
           competition:item.label||'Campeonato Estadual',
           club:item.clubName,
+          managerId:item.managerId||null,
         });
       });
       const userManager=managerRanking.byClub(userClub)||managerRanking.byName(careerProfile.managerName);
       managerRanking.finalizeSeason({
         season,
         summariesByClub,
+        summariesByManager,
         titles,
         userManagerId:userManager?.id||null,
         userSummary,

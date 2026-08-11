@@ -25,10 +25,12 @@ from .player_stats import (
     get_club_squad,
     get_leaders,
     get_match_manifest,
+    get_manager_match_history,
     get_player,
     put_match_batch,
 )
 from .career_history import delete_career_history, delete_user_history, get_club_seasons, get_manager_history, get_season_history, put_season_history
+from .state_leagues import delete_career_state_leagues, delete_user_state_leagues, get_state_leagues, put_state_leagues
 from .rate_limit import RATE_LIMITER, request_ip
 from .validation import query_int, reject_unknown_fields, require_object, validate_json_structure
 
@@ -50,11 +52,12 @@ MAX_REQUEST_BODY_BYTES = 10_000_000
 
 def _purge_obsolete_user_data(root, username: str) -> dict[str, int]:
     if not has_obsolete_career_saves(root, username):
-        return {'saves': 0, 'stats': 0, 'history': 0}
+        return {'saves': 0, 'stats': 0, 'history': 0, 'stateLeagues': 0}
     return {
         'saves': delete_all_saves(root, username),
         'stats': delete_user_stats(root, username),
         'history': delete_user_history(root, username),
+        'stateLeagues': delete_user_state_leagues(root, username),
     }
 
 
@@ -189,7 +192,12 @@ def handle_api(
                 {
                     'ok': True,
                     'service': 'brfut-api',
-                    'version': 1,
+                    'version': 2,
+                    'capabilities': {
+                        'stateLeagues': True,
+                        'managerMatchStats': True,
+                        'optionalSaveReads': True,
+                    },
                     'googleAuthEnabled': google_auth_enabled(),
                     **get_player_stats(root),
                 },
@@ -295,11 +303,25 @@ def handle_api(
             metric = (query.get('metric') or ['goals'])[0]
             return _json_response(200, get_leaders(root, username, parts[1], season, competition, metric))
 
+        if len(parts) == 5 and parts[0] == 'careers' and parts[2:4] == ['stats', 'managers'] and method == 'GET':
+            return _json_response(200, get_manager_match_history(root, username, parts[1], parts[4]))
+
         if len(parts) == 3 and parts[0] == 'careers' and parts[2] == 'stats' and method == 'DELETE':
             return _json_response(200, {
                 'removed': delete_career_stats(root, username, parts[1]),
                 'historyRemoved': delete_career_history(root, username, parts[1]),
+                'stateLeaguesRemoved': delete_career_state_leagues(root, username, parts[1]),
             })
+
+        if len(parts) == 4 and parts[0] == 'careers' and parts[2] == 'state-leagues':
+            season = query_int(parts[3], 'season', minimum=1900, maximum=9999)
+            if method == 'PUT':
+                data = require_object(_parse_json(body) or {})
+                reject_unknown_fields(data, {'snapshot'})
+                return _json_response(200, put_state_leagues(root, username, parts[1], season, data))
+            if method == 'GET':
+                uf = (query.get('uf') or [None])[0]
+                return _json_response(200, get_state_leagues(root, username, parts[1], season, uf))
 
         if len(parts) == 4 and parts[0] == 'careers' and parts[2] == 'seasons':
             season = query_int(parts[3], 'season', minimum=1900, maximum=9999)
@@ -337,6 +359,7 @@ def handle_api(
                 'removed': removed,
                 'statsRemoved': delete_user_stats(root, username),
                 'historyRemoved': delete_user_history(root, username),
+                'stateLeaguesRemoved': delete_user_state_leagues(root, username),
             })
 
         if len(parts) == 2 and parts[0] == 'saves':

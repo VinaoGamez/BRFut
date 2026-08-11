@@ -2,16 +2,20 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from brfut_api.career_history import get_club_seasons, get_manager_history, get_season_history, put_season_history
-from brfut_api.player_stats import get_club_history, get_match_manifest, put_match_batch
+from brfut_api.player_stats import get_club_history, get_manager_match_history, get_match_manifest, put_match_batch
+from brfut_api.state_leagues import get_state_leagues, put_state_leagues
 from brfut_api.auth import ApiError
 
 
 def main() -> None:
     with TemporaryDirectory() as temporary:
         root = Path(temporary)
+        assert get_state_leagues(root, 'tester', 'slot-1', 2028)['snapshot'] is None
         match = {
             'fixtureId': '2028:C:1:A:B', 'season': 2028, 'competitionId': 'C',
             'homeClub': 'A', 'awayClub': 'B', 'homeGoals': 2, 'awayGoals': 1,
+            'homeManagerId': 'm1', 'homeManagerName': 'Técnico A',
+            'awayManagerId': 'm2', 'awayManagerName': 'Técnico B',
             'players': [
                 {'playerId': 'p1', 'name': 'Um', 'clubId': 'A', 'minutes': 90, 'goals': 2, 'rating': 8},
                 {'playerId': 'p2', 'name': 'Dois', 'clubId': 'B', 'minutes': 90, 'goals': 1, 'rating': 7},
@@ -21,6 +25,17 @@ def main() -> None:
         assert len(get_match_manifest(root, 'tester', 'slot-1', 2028)['matches']) == 1
         club = get_club_history(root, 'tester', 'slot-1', 'A')['competitions'][0]
         assert club['games'] == 1 and club['wins'] == 1
+        manager_live = get_manager_match_history(root, 'tester', 'slot-1', 'm1')['competitions'][0]
+        assert manager_live['games'] == 1 and manager_live['wins'] == 1 and manager_live['club_id'] == 'A'
+
+        state_snapshot = {
+            'seasonYear': 2028,
+            'competitions': {'SP': [{'tier': 1, 'teams': ['A', 'B'], 'fixtures': [[match]]}]},
+            'historyByUf': {}, 'results': {'SP': [{'champion': 'A'}]},
+        }
+        assert put_state_leagues(root, 'tester', 'slot-1', 2028, {'snapshot': state_snapshot})['stored'] == 1
+        restored_state = get_state_leagues(root, 'tester', 'slot-1', 2028)['snapshot']
+        assert restored_state['competitions']['SP'][0]['teams'] == ['A', 'B']
 
         archive = {
             'careerSeason': 2028, 'userClub': 'A', 'userDivision': 'C',

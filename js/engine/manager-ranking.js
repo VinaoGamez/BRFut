@@ -277,6 +277,7 @@ export function createManagerRankingEngine(deps = {}) {
   const finalizeSeason = ({
     season,
     summariesByClub = {},
+    summariesByManager = {},
     titles = [],
     userManagerId = null,
     userSummary = null,
@@ -304,7 +305,7 @@ export function createManagerRankingEngine(deps = {}) {
     managers.forEach(manager => {
       const raw = manager.id === userManagerId && userSummary
         ? userSummary
-        : summariesByClub[manager.club];
+        : (summariesByManager[manager.id] || summariesByClub[manager.club]);
       const managerTitles = titlesByManager.get(manager.id) || [];
       if (!raw && !managerTitles.length) return;
       const history = normalizeCareerHistory(manager.careerHistory);

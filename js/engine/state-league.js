@@ -191,6 +191,11 @@ function maybeAdvanceKnockout(competition) {
       game.shootoutWinner || (game.homeGoals >= game.awayGoals ? game.home : game.away);
     competition.runnerUp =
       competition.champion === game.home ? game.away : game.home;
+    const championAtHome = competition.champion === game.home;
+    competition.championManagerId = championAtHome ? game.homeManagerId || null : game.awayManagerId || null;
+    competition.championManagerName = championAtHome ? game.homeManagerName || null : game.awayManagerName || null;
+    competition.runnerUpManagerId = championAtHome ? game.awayManagerId || null : game.homeManagerId || null;
+    competition.runnerUpManagerName = championAtHome ? game.awayManagerName || null : game.homeManagerName || null;
     competition.complete = true;
     ensureStateCopaSlot(competition);
     return true;
@@ -294,11 +299,13 @@ export function createStateLeagueEngine() {
     return true;
   };
 
-  const serialize = ({ all = false } = {}) => ({
+  const serialize = ({ all = false, includeHistory = true } = {}) => ({
     seasonYear,
     userUf,
     competitions: all ? byUf : (byUf[userUf]?.length ? { [userUf]: byUf[userUf] } : {}),
-    historyByUf: all ? historyByUf : (historyByUf[userUf]?.length ? { [userUf]: historyByUf[userUf] } : {}),
+    historyByUf: includeHistory
+      ? (all ? historyByUf : (historyByUf[userUf]?.length ? { [userUf]: historyByUf[userUf] } : {}))
+      : {},
     results: exportSeasonResults(),
   });
 
@@ -310,6 +317,10 @@ export function createStateLeagueEngine() {
         tier: division.tier || 1,
         champion: division.champion || null,
         runnerUp: division.runnerUp || null,
+        championManagerId: division.championManagerId || null,
+        championManagerName: division.championManagerName || null,
+        runnerUpManagerId: division.runnerUpManagerId || null,
+        runnerUpManagerName: division.runnerUpManagerName || null,
         semifinalists: [...(division.semifinalists || [])],
         copaSlot: division.copaSlot || null,
         complete: !!division.complete,
@@ -358,15 +369,51 @@ export function createStateLeagueEngine() {
     return !!history?.games?.some(entry => entry.home === game.home && entry.away === game.away);
   };
 
-  const simulateDivisionRound = (competition, round, simulateMatch, { skipUserClub = null } = {}) => {
+  const stampMatchManagers = (game, getManagerForClub) => {
+    if (typeof getManagerForClub !== 'function' || !game) return game;
+    const homeManager = getManagerForClub(game.home);
+    const awayManager = getManagerForClub(game.away);
+    if (homeManager) {
+      game.homeManagerId = homeManager.id || null;
+      game.homeManagerName = homeManager.name || null;
+    }
+    if (awayManager) {
+      game.awayManagerId = awayManager.id || null;
+      game.awayManagerName = awayManager.name || null;
+    }
+    return game;
+  };
+
+  const simulateDivisionRound = (
+    competition,
+    round,
+    simulateMatch,
+    { skipUserClub = null, recordLeaders = null, getManagerForClub = null } = {},
+  ) => {
     const games = roundGames(competition, round);
     const results = [];
     games.forEach(game => {
       if (game.completed) return;
       if (skipUserClub && (game.home === skipUserClub || game.away === skipUserClub)) return;
+      stampMatchManagers(game, getManagerForClub);
       const result = simulateMatch(game.home, game.away, game);
       recordGame(competition, game, result.homeGoals, result.awayGoals, true);
-      results.push({ ...result, game });
+      const completed = {
+        ...result,
+        home: game.home,
+        away: game.away,
+        competition: game.competition || competition.label,
+        round: game.round || round,
+        phase: game.phase,
+        date: game.date,
+        homeManagerId: game.homeManagerId || null,
+        homeManagerName: game.homeManagerName || null,
+        awayManagerId: game.awayManagerId || null,
+        awayManagerName: game.awayManagerName || null,
+        game,
+      };
+      results.push(completed);
+      if (typeof recordLeaders === 'function') recordLeaders(completed);
     });
     maybeAdvanceKnockout(competition);
     return results;
@@ -378,6 +425,7 @@ export function createStateLeagueEngine() {
       simulateMatch,
       userClub,
       recordLeaders,
+      getManagerForClub = null,
       persistHistory = true,
       userLiveGame = null,
       scopeUf = null,
@@ -395,6 +443,7 @@ export function createStateLeagueEngine() {
             game => game.home === userLiveGame.home && game.away === userLiveGame.away,
           );
           if (target && !target.completed) {
+            stampMatchManagers(target, getManagerForClub);
             if (userLiveGame.shootoutWinner) {
               Object.assign(target, {
                 homeGoals: userLiveGame.homeGoals,
@@ -417,8 +466,11 @@ export function createStateLeagueEngine() {
             }
           }
         }
-        const results = simulateDivisionRound(competition, round, simulateMatch, { skipUserClub: userClub });
-        results.forEach(recordLeaders);
+        const results = simulateDivisionRound(competition, round, simulateMatch, {
+          skipUserClub: userClub,
+          recordLeaders,
+          getManagerForClub,
+        });
         if (persistHistory) {
           if (!historyByUf[uf]) historyByUf[uf] = [];
           const existing = historyByUf[uf].find(item => item.round === round);
@@ -602,7 +654,15 @@ export function createStateLeagueEngine() {
     });
   };
 
-  const advanceThroughDate = (date, { simulateMatch, userClub: skipUserClub = null } = {}) => {
+  const advanceThroughDate = (
+    date,
+    {
+      simulateMatch,
+      userClub: skipUserClub = null,
+      recordLeaders = null,
+      getManagerForClub = null,
+    } = {},
+  ) => {
     if (!date || !simulateMatch) return false;
     const refTs = normalizeNoon(date).getTime();
     let changed = false;
@@ -638,6 +698,8 @@ export function createStateLeagueEngine() {
             if (userPending) continue;
             const results = simulateDivisionRound(competition, round, simulateMatch, {
               skipUserClub: skipUserClub,
+              recordLeaders,
+              getManagerForClub,
             });
             if (results.length) passChanged = true;
           }

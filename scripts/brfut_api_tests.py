@@ -165,6 +165,8 @@ class BrfutApiTests(unittest.TestCase):
         status, body = self._route('GET', '/api/health')
         self.assertEqual(status, 200)
         self.assertTrue(body['ok'])
+        self.assertTrue(body['capabilities']['stateLeagues'])
+        self.assertTrue(body['capabilities']['optionalSaveReads'])
         self.assertNotIn('dataRoot', body)
         self.assertNotIn('allowedKeys', body)
         self.assertNotIn('googleClientId', body)

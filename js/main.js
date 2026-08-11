@@ -17,6 +17,7 @@ import {
 } from './core/storage-api.js';
 import {
   clearSessionCareerData,
+  loadSeasonSave,
   consumeCareerReloadPending,
   hasLocalCareerSave,
   markCareerReloadPending,
@@ -26,6 +27,7 @@ import {
   purgeAllCareerStorage,
   shouldPreserveAuthOnPageHide,
 } from './core/save.js';
+import { prefetchStateLeagueSnapshot } from './core/state-league-sync.js';
 import {
   prepareGameSession,
   runCareerBootMigration,
@@ -75,9 +77,11 @@ if (SITE_MAINTENANCE.enabled) {
     location.replace(`${dest.pathname}${dest.search}`);
   };
 
-  const startBootOnce = () => {
+  const startBootOnce = async () => {
     if (bootStarted) return;
     bootStarted = true;
+    const activeSeason = loadSeasonSave()?.careerSeason;
+    if (activeSeason) await prefetchStateLeagueSnapshot(activeSeason);
     bootEngine({
       bus,
       features: FEATURES,

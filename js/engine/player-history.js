@@ -915,9 +915,9 @@ export function createPlayerHistoryEngine(deps = {}) {
     }));
 
     const duplicateIndex = store.matchLogs.findIndex(entry => entry.id === id);
-    if (duplicateIndex >= 0 && !meta.replaceExisting) return store.matchLogs[duplicateIndex];
+    if (duplicateIndex >= 0 && !meta.replaceExisting && !meta.apiOnly) return store.matchLogs[duplicateIndex];
 
-    if (duplicateIndex < 0) {
+    if (duplicateIndex < 0 && !meta.apiOnly) {
       allSheets.forEach(sheet => {
         let player = store.players[sheet.key];
         if (!player) {
@@ -942,18 +942,24 @@ export function createPlayerHistoryEngine(deps = {}) {
       away: game.away,
       homeGoals: Number(game.homeGoals) || 0,
       awayGoals: Number(game.awayGoals) || 0,
+      homeManagerId: game.homeManagerId || game.game?.homeManagerId || null,
+      homeManagerName: game.homeManagerName || game.game?.homeManagerName || null,
+      awayManagerId: game.awayManagerId || game.game?.awayManagerId || null,
+      awayManagerName: game.awayManagerName || game.game?.awayManagerName || null,
       data: game.data && typeof game.data === 'object' ? { ...game.data } : null,
       players: allSheets.map(slimLogPlayer),
     };
-    if (duplicateIndex >= 0) store.matchLogs[duplicateIndex] = log;
-    else store.matchLogs.push(log);
-    if (duplicateIndex >= 0) rebuildSeasonFromMatchLogs(store, season);
-    store.matchLogs = pruneMatchLogsForSeason(
-      store.matchLogs,
-      store.season ?? season,
-      resolveBudget(),
-    );
-    if (meta.persist !== false) persist();
+    if (!meta.apiOnly) {
+      if (duplicateIndex >= 0) store.matchLogs[duplicateIndex] = log;
+      else store.matchLogs.push(log);
+      if (duplicateIndex >= 0) rebuildSeasonFromMatchLogs(store, season);
+      store.matchLogs = pruneMatchLogsForSeason(
+        store.matchLogs,
+        store.season ?? season,
+        resolveBudget(),
+      );
+      if (meta.persist !== false) persist();
+    }
     void import('../core/player-stats-sync.js')
       .then(module => module.queuePlayerStatsMatch(log))
       .catch(() => {});

@@ -22,6 +22,7 @@ import { serializeCompetitionWindows } from './season-scheduler.js';
 import { serializeUserStadium } from './stadium-sectors.js';
 import { serializeWorldCupCompetition } from './world-cup-competition.js';
 import { compactTransferDeals } from './transfer-history-data.js';
+import { queueStateLeagueSnapshot } from '../core/state-league-sync.js';
 
 function slimCareerMessages(messages = []) {
   return messages
@@ -436,6 +437,9 @@ export function createSeasonSaveWriter({
       updatedAt: new Date().toISOString(),
     };
     seasonPayload.stateLeagueProgressRound = maxStateLeagueRound(seasonPayload);
+    if (FEATURES.stateLeague && savedNewGame) {
+      void queueStateLeagueSnapshot(stateLeagueEngine.serialize({ all: true, includeHistory: false }));
+    }
 
     if (savedNewGame) {
       savedNewGame.clubStatus = {

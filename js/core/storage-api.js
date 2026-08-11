@@ -1649,6 +1649,9 @@ export async function fetchRemoteSaveKey(key) {
     // A listagem pode omitir bundles grandes. Cache miss não significa que a
     // chave inexiste; consulta o endpoint individual antes de desistir.
     if (cached !== undefined) return cached;
+    // A listagem completa é suficiente para checkpoints pequenos de partida.
+    // Ausência significa "nenhuma partida interrompida", não erro de API.
+    if (key === SAVE_KEYS.liveMatch || String(key).endsWith('-live-match')) return null;
   }
   try {
     const body = await authedFetch(`/api/saves/${encodeURIComponent(key)}`);

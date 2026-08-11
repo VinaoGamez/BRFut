@@ -181,10 +181,14 @@ function advanceStateLeagueThroughDateCore(deps, date) {
   const changed = deps.getStateLeagueEngine().advanceThroughDate(date, {
     simulateMatch: deps.simulateRoundMatch,
     userClub: deps.getUserClub(),
+    recordLeaders: deps.recordGameLeaders,
+    getManagerForClub: deps.getManagerForClub,
   });
   if (changed) {
     deps.rebuildCalendarGames();
-    deps.persistPlayerHistory();
+    // Os jogos processados aqui nunca envolvem o clube do usuário e seus
+    // detalhes seguem diretamente para a API. Regravar o histórico local
+    // inteiro após cada catch-up apenas pressiona a cota do navegador.
     deps.invalidateUserScheduleCache();
   }
   return changed;
@@ -245,6 +249,7 @@ export function createRoundAdvanceEngine(deps) {
         recordLeaders: deps.recordGameLeaders,
         userLiveGame,
         scopeUf: liveMatchGame.stateUf,
+        getManagerForClub: deps.getManagerForClub,
       });
       deps.persistPlayerHistory();
       const fillRate = deps.resolveMatchAttendance(liveMatchGame)?.fillRate ?? liveMatchGame.fillRate ?? null;

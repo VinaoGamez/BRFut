@@ -44,6 +44,9 @@ export const RELEASE_NOTES = [
         label: 'Estatísticas e salvamento',
         items: [
           'Históricos de jogadores, clubes, técnicos, partidas e temporadas passam a usar o novo fluxo de dados da API.',
+          'Todos os Campeonatos Estaduais agora preservam jogos, tabelas e resultados para consulta, mesmo quando o seu clube disputa outra federação.',
+          'Partidas estaduais simuladas passam a alimentar as estatísticas dos jogadores e o histórico do técnico que realmente comandou cada jogo.',
+          'Estatísticas dos jogos estaduais da IA são enviadas diretamente à API, reduzindo o tempo de carregamento e o uso de armazenamento do navegador.',
           'A limpeza preventiva remove estruturas antigas que poderiam causar calendários travados, estatísticas incompletas ou falhas ao avançar.',
           'A validação de compatibilidade agora diferencia saves antigos de checkpoints atuais sem interromper a sessão de login.',
         ],

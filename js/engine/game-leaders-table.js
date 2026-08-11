@@ -76,6 +76,9 @@ export function createGameLeadersTable(deps) {
     allAssistants.sort((a, b) => b.assists - a.assists || b.tieValue - a.tieValue || a.games - b.games);
     deps.recordPlayerHistoryMatch(game, {
       persist: false,
+      apiOnly: typeof deps.shouldStoreMatchLocally === 'function'
+        ? !deps.shouldStoreMatchLocally(game)
+        : false,
       round: game.round ?? deps.getCurrentRound(),
       competition: game.competition,
       leg: game.leg,

@@ -405,6 +405,25 @@ check('commit round simulates other UFs in parallel', () => {
   assert(played.length > 0, 'RJ round 1 simulated');
 });
 
+check('calendar simulation records players and manager identity for other UFs', () => {
+  const engine = createStateLeagueEngine();
+  engine.build({
+    clubs: {}, regionalBaseClubs: [], importClubs,
+    seasonYear: 2026, userUf: 'SP', userClub: 'Palmeiras',
+  });
+  const rj = engine.competitions.RJ?.[0];
+  const due = rj?.fixtures?.[0]?.[0]?.date;
+  const recorded = [];
+  engine.advanceThroughDate(due, {
+    simulateMatch: (home, away) => ({ home, away, homeGoals: 2, awayGoals: 1, goals: { home: [], away: [] } }),
+    userClub: 'Palmeiras',
+    recordLeaders: game => recorded.push(game),
+    getManagerForClub: club => ({ id: `manager:${club}`, name: `Técnico ${club}` }),
+  });
+  assert(recorded.some(game => game.homeManagerId === `manager:${game.home}`), 'manager stamped');
+  assert(recorded.some(game => game.game?.stateUf === 'RJ'), 'RJ player stats recorded');
+});
+
 check('round browse helpers expose fixtures per UF', () => {
   const engine = createStateLeagueEngine();
   engine.build({

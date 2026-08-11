@@ -5,6 +5,7 @@ import {
   sortNationalRankingEntries,
 } from '../../engine/national-ranking.js';
 import { fetchStructuredManagerHistory } from '../../core/career-history-sync.js';
+import { fetchManagerMatchStats } from '../../core/player-stats-sync.js';
 
 const STAFF_ROUNDS_PER_MONTH = 4;
 const MANAGER_CARD_ART_COUNT = 17;
@@ -209,19 +210,42 @@ export function createRankingViewsFeature(deps) {
     document.body.classList.add('modal-open');
     modal.querySelector('[data-manager-card]')?.focus();
     if (!skipRemote) {
-      void fetchStructuredManagerHistory(manager.id).then(remote => {
-        if (!Array.isArray(remote?.seasons) || !remote.seasons.length || openTrophyManagerId !== manager.id) return;
+      void Promise.all([
+        fetchStructuredManagerHistory(manager.id),
+        fetchManagerMatchStats(manager.id),
+      ]).then(([remote, live]) => {
+        if (openTrophyManagerId !== manager.id) return;
         const local = manager.careerHistory?.seasons || [];
-        const normalized = remote.seasons.map(row => ({
+        const normalized = (remote?.seasons || []).map(row => ({
           season: Number(row.season), clubs: row.clubs || [], games: Number(row.games) || 0,
           wins: Number(row.wins) || 0, draws: Number(row.draws) || 0, losses: Number(row.losses) || 0,
           teamAverage: row.team_average == null ? null : Number(row.team_average), titles: row.titles || [],
         }));
+        const matchSeasons = new Map();
+        (live?.competitions || []).forEach(row => {
+          const year = Number(row.season);
+          if (!year) return;
+          const current = matchSeasons.get(year) || { season: year, clubs: [], games: 0, wins: 0, draws: 0, losses: 0 };
+          if (row.club_id && !current.clubs.includes(row.club_id)) current.clubs.push(row.club_id);
+          current.games += Number(row.games) || 0;
+          current.wins += Number(row.wins) || 0;
+          current.draws += Number(row.draws) || 0;
+          current.losses += Number(row.losses) || 0;
+          matchSeasons.set(year, current);
+        });
+        const bases = [...normalized, ...local]
+          .filter((row, index, all) => all.findIndex(item => Number(item.season) === Number(row.season)) === index);
+        matchSeasons.forEach((stats, year) => {
+          const base = bases.find(row => Number(row.season) === year);
+          const merged = { ...base, ...stats, titles: base?.titles || [], teamAverage: base?.teamAverage ?? null };
+          const index = bases.findIndex(row => Number(row.season) === year);
+          if (index >= 0) bases[index] = merged;
+          else bases.push(merged);
+        });
+        if (!bases.length) return;
         manager.careerHistory = {
           version: 1,
-          seasons: [...normalized, ...local]
-            .filter((row, index, all) => all.findIndex(item => Number(item.season) === Number(row.season)) === index)
-            .sort((a, b) => Number(b.season) - Number(a.season)),
+          seasons: bases.sort((a, b) => Number(b.season) - Number(a.season)),
         };
         renderManagerTrophyRoom(manager.id, { skipRemote: true });
       });

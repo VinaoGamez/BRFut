@@ -62,10 +62,26 @@ def _db(root: Path):
           FOREIGN KEY (username, career_id, fixture_id)
             REFERENCES stats_matches(username, career_id, fixture_id) ON DELETE CASCADE
         );
+        CREATE TABLE IF NOT EXISTS manager_match_stats (
+          username TEXT NOT NULL,
+          career_id TEXT NOT NULL,
+          fixture_id TEXT NOT NULL,
+          manager_id TEXT NOT NULL,
+          manager_name TEXT NOT NULL,
+          club_id TEXT NOT NULL,
+          season INTEGER NOT NULL,
+          competition_id TEXT NOT NULL,
+          result TEXT NOT NULL,
+          PRIMARY KEY (username, career_id, fixture_id, manager_id),
+          FOREIGN KEY (username, career_id, fixture_id)
+            REFERENCES stats_matches(username, career_id, fixture_id) ON DELETE CASCADE
+        );
         CREATE INDEX IF NOT EXISTS idx_player_stats_lookup
           ON player_match_stats(username, career_id, season, player_id);
         CREATE INDEX IF NOT EXISTS idx_player_stats_club
           ON player_match_stats(username, career_id, season, club_id, competition_id);
+        CREATE INDEX IF NOT EXISTS idx_manager_match_lookup
+          ON manager_match_stats(username, career_id, season, manager_id);
         """
     )
     try:
@@ -165,6 +181,10 @@ def put_match_batch(root: Path, username: str, career_id: str, body: dict[str, A
                 'DELETE FROM player_match_stats WHERE username=? AND career_id=? AND fixture_id=?',
                 (username, career, fixture),
             )
+            conn.execute(
+                'DELETE FROM manager_match_stats WHERE username=? AND career_id=? AND fixture_id=?',
+                (username, career, fixture),
+            )
             player_ids: set[str] = set()
             for row in players:
                 if not isinstance(row, dict):
@@ -194,6 +214,25 @@ def put_match_batch(root: Path, username: str, career_id: str, body: dict[str, A
                         int(bool(row.get('red'))), _bounded_int(row.get('passes'), 'passes'),
                         rating,
                     ),
+                )
+            manager_sides = (
+                ('home', home, home_goals, away_goals),
+                ('away', away, away_goals, home_goals),
+            )
+            for side, club_id, own_goals, rival_goals in manager_sides:
+                manager_id = match.get(f'{side}ManagerId')
+                if not manager_id:
+                    continue
+                manager_id = _safe_id(manager_id, f'{side}ManagerId')
+                manager_name = _safe_id(match.get(f'{side}ManagerName') or manager_id, f'{side}ManagerName')
+                result = 'W' if own_goals > rival_goals else ('L' if own_goals < rival_goals else 'D')
+                conn.execute(
+                    '''INSERT INTO manager_match_stats
+                       (username,career_id,fixture_id,manager_id,manager_name,club_id,
+                        season,competition_id,result)
+                       VALUES (?,?,?,?,?,?,?,?,?)''',
+                    (username, career, fixture, manager_id, manager_name, club_id,
+                     season, competition, result),
                 )
             accepted += 1
     return {'accepted': accepted, 'careerId': career}
@@ -296,6 +335,25 @@ def get_leaders(
     with _db(root) as conn:
         rows = conn.execute(sql, (username, career_id, season, *args)).fetchall()
     return {'season': season, 'competitionId': competition, 'metric': metric, 'leaders': [dict(r) for r in rows]}
+
+
+def get_manager_match_history(
+    root: Path, username: str, career_id: str, manager_id: str,
+) -> dict[str, Any]:
+    with _db(root) as conn:
+        rows = conn.execute(
+            '''SELECT season,competition_id,club_id,MAX(manager_name) manager_name,
+                      COUNT(*) games,
+                      SUM(CASE WHEN result='W' THEN 1 ELSE 0 END) wins,
+                      SUM(CASE WHEN result='D' THEN 1 ELSE 0 END) draws,
+                      SUM(CASE WHEN result='L' THEN 1 ELSE 0 END) losses
+               FROM manager_match_stats
+               WHERE username=? AND career_id=? AND manager_id=?
+               GROUP BY season,competition_id,club_id
+               ORDER BY season DESC,competition_id,club_id''',
+            (username, career_id, manager_id),
+        ).fetchall()
+    return {'careerId': career_id, 'managerId': manager_id, 'competitions': [dict(row) for row in rows]}
 
 
 def delete_career_stats(root: Path, username: str, career_id: str) -> int:

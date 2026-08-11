@@ -61,6 +61,10 @@ function toApiMatch(log) {
     awayClub: log.away,
     homeGoals: Number(log.homeGoals) || 0,
     awayGoals: Number(log.awayGoals) || 0,
+    homeManagerId: log.homeManagerId || null,
+    homeManagerName: log.homeManagerName || null,
+    awayManagerId: log.awayManagerId || null,
+    awayManagerName: log.awayManagerName || null,
     playedAt: log.date || new Date().toISOString(),
     players: (log.players || []).map(row => ({
       playerId: row.key,
@@ -250,6 +254,14 @@ export async function fetchSeasonLeaders(season, { competitionId = null, metric 
   const competition = competitionId ? `&competition=${encodeURIComponent(competitionId)}` : '';
   return statsGet(
     `/api/careers/${encodeURIComponent(careerId)}/stats/leaders?season=${encodeURIComponent(season)}&metric=${encodeURIComponent(metric)}${competition}`,
+  );
+}
+
+export async function fetchManagerMatchStats(managerId) {
+  const careerId = activeCareerId();
+  if (!careerId || !managerId) return null;
+  return statsGet(
+    `/api/careers/${encodeURIComponent(careerId)}/stats/managers/${encodeURIComponent(managerId)}`,
   );
 }
 
