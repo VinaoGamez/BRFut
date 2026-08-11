@@ -164,6 +164,14 @@ checkSync('boot reutiliza sessão validada e não trata cache parcial como save 
     'validação de boot tolera falha transitória',
   );
   assert(
+    !validate.includes("if (!token) return { authenticated: false"),
+    'cookie HttpOnly precisa ser validado mesmo quando o hint local desaparece',
+  );
+  assert(
+    validate.includes('else if (!token)') && validate.includes('persistAuthSessionHint'),
+    'sessão confirmada pela API reconstrói o indicador local',
+  );
+  assert(
     storage.includes('if (!cloudActive || !currentUser) {'),
     'hidratação não repete /auth/me depois de sessão confirmada',
   );

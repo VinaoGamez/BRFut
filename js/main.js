@@ -125,19 +125,17 @@ if (SITE_MAINTENANCE.enabled) {
       const isNewCareerBoot = params.has('novo');
       if (isNewCareerBoot) markFreshCareerBoot();
 
-      const token = getAuthToken();
+      let token = getAuthToken();
 
       if (AUTH_REQUIRED) {
-        if (!token) {
-          redirectToHomeLanding();
-          return;
-        }
         const auth = await validateAuthenticatedSession();
         if (!auth.authenticated) {
           console.warn('[brfut] boot bloqueado: sessão não confirmada', auth.reason);
           redirectToHomeLanding();
           return;
         }
+        // /auth/me pode ter restaurado o indicador local a partir do cookie.
+        token = getAuthToken();
       }
 
       if (!token) {

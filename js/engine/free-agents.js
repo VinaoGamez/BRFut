@@ -55,7 +55,8 @@ export function releasePlayerToFreeAgents(poolInput, player, context = {}) {
   const wageDemand = Math.max(100, Math.round(resolvePlayerRoundWage(moved, division)));
   const age = Number(moved.age) || 24;
   const potential = Number(moved.potential) || Number(moved.overall) || 0;
-  const signingBonusFactor = age <= 23 && potential > (Number(moved.overall) || 0) + 5 ? 8 : 5;
+  const prospect = age <= 23 && potential > (Number(moved.overall) || 0) + 5;
+  const signingBonusFactor = prospect ? 10 : 7;
   const entry = {
     playerId,
     player: moved,
@@ -68,7 +69,12 @@ export function releasePlayerToFreeAgents(poolInput, player, context = {}) {
     freeSinceSeason: Number(context.season) || new Date().getFullYear(),
     marketValue,
     wageDemand,
-    signingBonus: Math.max(0, Math.round(wageDemand * signingBonusFactor)),
+    // Sem passe não significa sem custo: luvas preservam o peso econômico do
+    // atleta livre e impedem que o pool seja um atalho para reformar todo o time.
+    signingBonus: Math.max(
+      Math.round(marketValue * (prospect ? 0.55 : 0.4)),
+      Math.round(wageDemand * signingBonusFactor),
+    ),
   };
   pool.push(entry);
   return { ok: true, entry, pool };

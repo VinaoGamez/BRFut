@@ -13,6 +13,7 @@ import {
   signSemesterContract,
 } from './player-contracts.js';
 import {
+  estimatePlayerWage,
   evaluateRosterPayroll,
   resolvePlayerRoundWage,
 } from './economy.js';
@@ -80,6 +81,67 @@ export const TRANSFER_LIMITS = {
 };
 
 const DIV_BUDGET_FALLBACK = { A: 40_000_000, B: 20_000_000, C: 10_000_000, D: 4_000_000, REG: 2_000_000 };
+const CAREER_INITIAL_BUDGET = { A: 9_500_000, B: 6_200_000, C: 4_200_000, D: 2_700_000, REG: 1_800_000 };
+const DIVISION_RANK = { A: 4, B: 3, C: 2, D: 1, REG: 0 };
+const DIVISION_COMPETITIVE_OVR = { A: 58, B: 46, C: 34, D: 22, REG: 16 };
+
+export const TRANSFER_COST_RULES = Object.freeze({
+  commissionRate: 0.05,
+  minimumSigningRate: 0,
+  signingWageRounds: 2,
+  upfrontRate: 0.35,
+  installmentRounds: 10,
+  freeAgentValueRate: 0.4,
+});
+
+/** Salário exigido no destino, incluindo destaque no elenco e queda de divisão. */
+export function estimateTransferWageDemand(player, buyerDivision = 'A', sellerDivision = buyerDivision) {
+  const base = estimatePlayerWage(player, buyerDivision);
+  const current = Math.max(0, Number(player?.wage) || 0);
+  const ovr = Number(player?.overall) || 0;
+  const competitive = DIVISION_COMPETITIVE_OVR[buyerDivision] ?? 22;
+  const standout = clamp(1 + Math.max(0, ovr - competitive) * 0.035, 1, 1.8);
+  const drop = Math.max(
+    0,
+    (DIVISION_RANK[sellerDivision] ?? 1) - (DIVISION_RANK[buyerDivision] ?? 1),
+  );
+  const divisionPremium = 1 + drop * 0.2;
+  return Math.max(100, Math.round(Math.max(base, current) * standout * divisionPremium));
+}
+
+/** Custos que não viram receita do vendedor: comissão e luvas. */
+export function estimateTransferAncillaryCosts({ fee = 0, wage = 0 } = {}) {
+  const transferFee = Math.max(0, Math.round(Number(fee) || 0));
+  const roundWage = Math.max(0, Math.round(Number(wage) || 0));
+  const commission = Math.round(transferFee * TRANSFER_COST_RULES.commissionRate);
+  const signingBonus = Math.max(
+    Math.round(transferFee * TRANSFER_COST_RULES.minimumSigningRate),
+    Math.round(roundWage * TRANSFER_COST_RULES.signingWageRounds),
+  );
+  return { commission, signingBonus, total: commission + signingBonus };
+}
+
+export function estimateTransferPaymentPlan({ fee = 0, wage = 0 } = {}) {
+  const transferFee = Math.max(0, Math.round(Number(fee) || 0));
+  const ancillary = estimateTransferAncillaryCosts({ fee: transferFee, wage });
+  const downPayment = Math.min(
+    transferFee,
+    Math.max(0, Math.round(transferFee * TRANSFER_COST_RULES.upfrontRate)),
+  );
+  const financed = Math.max(0, transferFee - downPayment);
+  const installmentsTotal = financed > 0 ? TRANSFER_COST_RULES.installmentRounds : 0;
+  const installmentAmount = installmentsTotal > 0 ? Math.ceil(financed / installmentsTotal) : 0;
+  return {
+    fee: transferFee,
+    ancillary,
+    downPayment,
+    financed,
+    installmentsTotal,
+    installmentAmount,
+    dueNow: downPayment + ancillary.total,
+    totalCost: transferFee + ancillary.total,
+  };
+}
 
 /**
  * Template estável inspirado na CBF/FIFA (mês 1–12).
@@ -594,18 +656,98 @@ export function createTransfersEngine(deps) {
     return toCareerDate(deps.getCareerDate());
   };
 
-  const applyTransferContract = (player, buyerDivision) => {
+  const applyTransferContract = (player, buyerDivision, wageDemand = null) => {
     const date = careerDate() || new Date();
     ensureMarketFields(player, {
       division: buyerDivision,
       season: getCareerSeason(),
       careerDate: date,
     });
+    if (Number(wageDemand) > 0) player.wage = Math.round(Number(wageDemand));
     signSemesterContract(player, {
       wagePerRound: player.wage,
       signedDate: date,
       division: buyerDivision,
     });
+  };
+
+  /** Compra agressiva reduz imediatamente a saúde; a recuperação continua nas rodadas. */
+  const applyTransferFinancialPressure = (club, payroll = null) => {
+    if (!club) return null;
+    const division = club.division || 'D';
+    const cash = Math.max(0, Number(club.budget) || 0);
+    const baseline = CAREER_INITIAL_BUDGET[division] || CAREER_INITIAL_BUDGET.D;
+    const wageBill = Math.max(1, Number(payroll?.wageAfter) || 1);
+    const cashScore = clamp(28 + Math.min(1.3, cash / Math.max(1, baseline)) * 52, 28, 96);
+    const runway = cash / wageBill;
+    const runwayScore = clamp(28 + Math.min(10, runway) * 4.2, 28, 70);
+    let target = cashScore * 0.45 + runwayScore * 0.55;
+    const payrollRatio = wageBill / Math.max(1, Number(payroll?.revenue) || wageBill);
+    if (payrollRatio > 0.85) target -= 5;
+    if (payrollRatio > 1.1) target -= 9;
+    if (runway < 3) target -= 8;
+    if (runway < 1.5) target -= 6;
+    target = clamp(target, 20, 96);
+    const current = Number.isFinite(Number(club.finances)) ? Number(club.finances) : target;
+    // Compra nunca melhora o indicador; operações repetidas acumulam pressão.
+    club.finances = Math.round(Math.min(current, current * 0.65 + target * 0.35));
+    return { cash, baseline, wageBill, payrollRatio, runway, target, finances: club.finances };
+  };
+
+  const addTransferInstallments = (club, plan, deal = {}) => {
+    if (!club || !(plan?.financed > 0) || !(plan?.installmentsTotal > 0)) return null;
+    if (!Array.isArray(club.transferInstallments)) club.transferInstallments = [];
+    const obligation = {
+      id: `tr-${deal.playerId || 'player'}-${getCareerSeason()}-${Date.now()}-${club.transferInstallments.length}`,
+      playerId: deal.playerId || null,
+      playerName: deal.playerName || null,
+      from: deal.from || null,
+      season: getCareerSeason(),
+      principal: plan.financed,
+      balance: plan.financed,
+      installmentsTotal: plan.installmentsTotal,
+      installmentsPaid: 0,
+      installmentAmount: plan.installmentAmount,
+      lastServicedKey: null,
+    };
+    club.transferInstallments.push(obligation);
+    return obligation;
+  };
+
+  /** Cobra parcelas de transferências uma vez por rodada; atraso pode levar o caixa ao vermelho. */
+  const serviceTransferInstallments = ({ round = getCurrentRound(), season = getCareerSeason() } = {}) => {
+    const { club } = userClubState();
+    if (!club) return { ok: false, reason: 'no_club', paid: 0, due: 0 };
+    const obligations = Array.isArray(club.transferInstallments) ? club.transferInstallments : [];
+    const serviceKey = `${season}:${round}`;
+    let paid = 0;
+    let due = 0;
+    obligations.forEach(item => {
+      if (!item || !(Number(item.balance) > 0) || item.lastServicedKey === serviceKey) return;
+      const amount = Math.min(
+        Math.max(0, Math.round(Number(item.balance) || 0)),
+        Math.max(1, Math.round(Number(item.installmentAmount) || 0)),
+      );
+      due += amount;
+      const result = spend(club, amount, {
+        reason: 'transfer_installment',
+        label: `Parcela de transferência · ${item.playerName || 'Jogador'}`,
+        meta: { transferId: item.id, playerId: item.playerId, from: item.from, round, season },
+        allowNegative: true,
+      });
+      if (result?.ok) {
+        item.balance = Math.max(0, Math.round(Number(item.balance) || 0) - amount);
+        item.installmentsPaid = Math.min(
+          Number(item.installmentsTotal) || TRANSFER_COST_RULES.installmentRounds,
+          Math.max(0, Math.round(Number(item.installmentsPaid) || 0)) + 1,
+        );
+        paid += amount;
+      }
+      item.lastServicedKey = serviceKey;
+    });
+    club.transferInstallments = obligations.filter(item => Number(item?.balance) > 0);
+    club.transferInstallmentShortfall = club.budget < 0 && due > 0;
+    return { ok: paid >= due, paid, due, active: club.transferInstallments.length };
   };
 
   const chargeSellerReleaseFee = (seller, sellerDivision, player) => {
@@ -772,42 +914,6 @@ export function createTransfersEngine(deps) {
         if (player.listed) listedCount += 1;
       });
     });
-    (getFreeAgentsPool() || []).forEach(entry => {
-      const player = entry?.player;
-      if (!player || player.nationalTeamOnly) return;
-      const tier = entry.marketTier || entry.formerDivision || 'D';
-      if (division && tier !== division) return;
-      if (loanOnly) return;
-      if (specialistOnly && !isPlayerSpecialist(player)) return;
-      if (pos && player.pos !== pos) return;
-      if (foot && String(player.preferredFoot || player.foot || '').trim().toLocaleLowerCase('pt-BR') !== foot) return;
-      if (nationality && String(player.nationality || 'Brasil').trim().toLocaleLowerCase('pt-BR') !== nationality) return;
-      const ovr = Number(player.overall) || 0;
-      const age = Number(player.age) || 0;
-      if (Number.isFinite(minOvr) && minOvr > 0 && ovr < minOvr) return;
-      if (Number.isFinite(maxOvr) && maxOvr > 0 && ovr > maxOvr) return;
-      if (Number.isFinite(minAge) && minAge > 0 && age < minAge) return;
-      if (Number.isFinite(maxAge) && maxAge > 0 && age > maxAge) return;
-      if (query && !String(player.name || '').toLocaleLowerCase('pt-BR').includes(query) && !'livre'.includes(query)) return;
-      const value = Number(entry.marketValue) || Number(player.marketValue) || estimatePlayerValue(player, tier);
-      const wage = Number(entry.wageDemand) || Number(player.wage) || resolvePlayerRoundWage(player, tier);
-      if (Number.isFinite(maxWage) && maxWage > 0 && wage > maxWage) return;
-      rows.push({
-        playerId: entry.playerId || resolvePlayerId(player),
-        player,
-        clubName: FREE_AGENT_CLUB_LABEL,
-        division: tier,
-        value,
-        price: 0,
-        wage,
-        age,
-        overall: ovr,
-        loanListed: false,
-        listed: true,
-        freeAgent: true,
-        signingBonus: Number(entry.signingBonus) || 0,
-      });
-    });
     if (listedCount >= minListed) return 0;
 
     let seeded = 0;
@@ -971,6 +1077,66 @@ export function createTransfersEngine(deps) {
           loanListed: !!player.loanListed,
           listed: !!player.listed,
         });
+      });
+    });
+
+    // Jogadores sem clube fazem parte da mesma pesquisa global. Este bloco
+    // pertence à consulta (não ao seed de listagens da IA), pois usa os filtros
+    // escolhidos pelo usuário e alimenta a coleção paginada `rows`.
+    (getFreeAgentsPool() || []).forEach(entry => {
+      const player = entry?.player;
+      if (!player || player.nationalTeamOnly) return;
+      const tier = entry.marketTier || entry.formerDivision || 'D';
+      if (division && tier !== division) return;
+      if (loanOnly) return;
+      if (specialistOnly && !isPlayerSpecialist(player)) return;
+      if (pos && player.pos !== pos) return;
+      if (
+        foot &&
+        String(player.preferredFoot || player.foot || '')
+          .trim()
+          .toLocaleLowerCase('pt-BR') !== foot
+      ) return;
+      if (
+        nationality &&
+        String(player.nationality || 'Brasil')
+          .trim()
+          .toLocaleLowerCase('pt-BR') !== nationality
+      ) return;
+      const ovr = Number(player.overall) || 0;
+      const age = Number(player.age) || 0;
+      if (Number.isFinite(minOvr) && minOvr > 0 && ovr < minOvr) return;
+      if (Number.isFinite(maxOvr) && maxOvr > 0 && ovr > maxOvr) return;
+      if (Number.isFinite(minAge) && minAge > 0 && age < minAge) return;
+      if (Number.isFinite(maxAge) && maxAge > 0 && age > maxAge) return;
+      if (
+        query &&
+        !String(player.name || '').toLocaleLowerCase('pt-BR').includes(query) &&
+        !'livre'.includes(query)
+      ) return;
+      const value =
+        Number(entry.marketValue) ||
+        Number(player.marketValue) ||
+        estimatePlayerValue(player, tier);
+      const wage =
+        Number(entry.wageDemand) ||
+        Number(player.wage) ||
+        resolvePlayerRoundWage(player, tier);
+      if (Number.isFinite(maxWage) && maxWage > 0 && wage > maxWage) return;
+      rows.push({
+        playerId: entry.playerId || resolvePlayerId(player),
+        player,
+        clubName: FREE_AGENT_CLUB_LABEL,
+        division: tier,
+        value,
+        price: 0,
+        wage,
+        age,
+        overall: ovr,
+        loanListed: false,
+        listed: true,
+        freeAgent: true,
+        signingBonus: Number(entry.signingBonus) || 0,
       });
     });
 
@@ -1327,9 +1493,20 @@ export function createTransfersEngine(deps) {
     const freeEntry = freePool.find(item => item?.playerId === playerId || resolvePlayerId(item?.player) === playerId);
     if (freeEntry) {
       const player = freeEntry.player;
-      const payroll = payrollExpand(buyer, { ...player, wage: freeEntry.wageDemand || player.wage });
+      const wageDemand = estimateTransferWageDemand(
+        { ...player, wage: freeEntry.wageDemand || player.wage },
+        buyer.division,
+        freeEntry.formerDivision || freeEntry.marketTier || buyer.division,
+      );
+      const payroll = payrollExpand(buyer, { ...player, wage: wageDemand });
       if (!payroll.ok) return { ok: false, reason: payroll.reason || 'payroll_pressure', payroll, fee: 0 };
-      const signingBonus = Math.max(0, Math.round(Number(freeEntry.signingBonus) || 0));
+      const freeValue = Number(freeEntry.marketValue) || Number(player.marketValue) || 0;
+      const signingBonus = Math.max(
+        0,
+        Math.round(Number(freeEntry.signingBonus) || 0),
+        Math.round(freeValue * TRANSFER_COST_RULES.freeAgentValueRate),
+        wageDemand * 7,
+      );
       if (!canAfford(buyer, signingBonus)) return { ok: false, reason: 'cannot_afford', fee: signingBonus, payroll };
       const paid = spend(buyer, signingBonus, {
         reason: 'free_agent_signing',
@@ -1340,11 +1517,13 @@ export function createTransfersEngine(deps) {
       const removed = removeFreeAgent(freePool, playerId);
       if (!removed) return { ok: false, reason: 'not_found' };
       const moved = { ...player, listed: false, askingPrice: null, freeAgent: false, club: buyerName };
-      moved.wage = Number(freeEntry.wageDemand) || moved.wage;
+      moved.wage = wageDemand;
       markPlayerMoved(moved);
-      applyTransferContract(moved, buyer.division);
+      applyTransferContract(moved, buyer.division, wageDemand);
       buyer.roster.push(moved);
       invalidatePlayerWorldIndex();
+      const payrollAfter = evaluateRosterPayroll(buyer, { division: buyer.division || 'A' });
+      const financialImpact = applyTransferFinancialPressure(buyer, payrollAfter);
       const result = {
         ok: true,
         type: 'free_agent',
@@ -1353,8 +1532,11 @@ export function createTransfersEngine(deps) {
         signingBonus,
         from: FREE_AGENT_CLUB_LABEL,
         to: buyerName,
-        value: Number(freeEntry.marketValue) || Number(player.marketValue) || 0,
-        payroll: evaluateRosterPayroll(buyer, { division: buyer.division || 'A' }),
+        value: freeValue,
+        wageDemand,
+        totalCost: signingBonus,
+        financialImpact,
+        payroll: payrollAfter,
       };
       recordSeasonDeal(result);
       onAfterTransfer?.(result);
@@ -1370,7 +1552,8 @@ export function createTransfersEngine(deps) {
     if (seller.roster.length <= minRoster) return { ok: false, reason: 'seller_min_roster' };
 
     ensureMarketFields(player, { division: seller.division, season: getCareerSeason() });
-    const payroll = payrollExpand(buyer, player);
+    const wageDemand = estimateTransferWageDemand(player, buyer.division, seller.division);
+    const payroll = payrollExpand(buyer, { ...player, wage: wageDemand });
     if (!payroll.ok) {
       return { ok: false, reason: payroll.reason || 'payroll_pressure', payroll, fee: null };
     }
@@ -1497,7 +1680,11 @@ export function createTransfersEngine(deps) {
         };
       }
     }
-    if (!canAfford(buyer, fee)) return { ok: false, reason: 'cannot_afford', fee, payroll };
+    const paymentPlan = estimateTransferPaymentPlan({ fee, wage: wageDemand });
+    const { ancillary, totalCost } = paymentPlan;
+    if (!canAfford(buyer, paymentPlan.dueNow)) {
+      return { ok: false, reason: 'cannot_afford', fee, totalCost, dueNow: paymentPlan.dueNow, ancillary, paymentPlan, payroll };
+    }
 
     const releaseGate = chargeSellerReleaseFee(seller, seller.division, player);
     if (!releaseGate.ok) {
@@ -1513,19 +1700,30 @@ export function createTransfersEngine(deps) {
       };
     }
 
-    const paid = spend(buyer, fee, {
+    const paid = spend(buyer, paymentPlan.downPayment, {
       reason: 'transfer',
       label: `Contratação · ${player.name}`,
-      meta: { playerId, from: sellerName, to: buyerName, fee },
+      meta: { playerId, from: sellerName, to: buyerName, fee, downPayment: paymentPlan.downPayment },
     });
     if (!paid?.ok) return { ok: false, reason: 'cannot_afford', fee };
+    const extrasPaid = spend(buyer, ancillary.total, {
+      reason: 'transfer_costs',
+      label: `Comissão e luvas · ${player.name}`,
+      meta: { playerId, from: sellerName, to: buyerName, fee, ...ancillary },
+    });
+    if (!extrasPaid?.ok) return { ok: false, reason: 'cannot_afford', fee, totalCost, ancillary };
 
     seller.roster.splice(index, 1);
     const moved = { ...player, listed: false, askingPrice: null };
     clearLoanState(moved);
     markPlayerMoved(moved);
-    applyTransferContract(moved, buyer.division);
+    applyTransferContract(moved, buyer.division, wageDemand);
     buyer.roster.push(moved);
+    const installmentPlan = addTransferInstallments(buyer, paymentPlan, {
+      playerId,
+      playerName: player.name,
+      from: sellerName,
+    });
 
     if (sellerName !== buyerName) {
       credit(seller, fee, {
@@ -1535,11 +1733,19 @@ export function createTransfersEngine(deps) {
       });
     }
 
+    const payrollAfter = evaluateRosterPayroll(buyer, { division: buyer.division || 'A' });
+    const financialImpact = applyTransferFinancialPressure(buyer, payrollAfter);
     const result = {
       ok: true,
       type: 'buy',
       player: moved,
       fee,
+      ancillary,
+      totalCost,
+      dueNow: paymentPlan.dueNow,
+      paymentPlan: { ...paymentPlan, obligationId: installmentPlan?.id || null },
+      wageDemand,
+      financialImpact,
       releaseFee: releaseGate.releaseFee || 0,
       from: sellerName,
       to: buyerName,
@@ -1547,7 +1753,7 @@ export function createTransfersEngine(deps) {
       reasons: buyoutDeal ? ['sell_down_buyout'] : verdict.reasons,
       playerPull: buyoutDeal ? false : verdict.playerPull,
       buyout: buyoutDeal,
-      payroll: evaluateRosterPayroll(buyer, { division: buyer.division || 'A' }),
+      payroll: payrollAfter,
     };
     recordSeasonDeal(result);
     onAfterTransfer?.(result);
@@ -2742,6 +2948,56 @@ export function createTransfersEngine(deps) {
     });
   };
 
+  const previewTransferOperation = (playerId, feeInput = 0) => {
+    const { name: buyerName, club: buyer } = userClubState();
+    if (!buyer) return null;
+    const freePool = getFreeAgentsPool() || [];
+    const freeEntry = freePool.find(
+      item => item?.playerId === playerId || resolvePlayerId(item?.player) === playerId,
+    );
+    if (freeEntry) {
+      const player = freeEntry.player;
+      const wageDemand = estimateTransferWageDemand(
+        { ...player, wage: freeEntry.wageDemand || player.wage },
+        buyer.division,
+        freeEntry.formerDivision || freeEntry.marketTier || buyer.division,
+      );
+      const value = Number(freeEntry.marketValue) || Number(player.marketValue) || 0;
+      const signingBonus = Math.max(
+        Math.round(Number(freeEntry.signingBonus) || 0),
+        Math.round(value * TRANSFER_COST_RULES.freeAgentValueRate),
+        wageDemand * 7,
+      );
+      return {
+        freeAgent: true,
+        fee: 0,
+        wageDemand,
+        ancillary: { commission: 0, signingBonus, total: signingBonus },
+        totalCost: signingBonus,
+        payroll: payrollExpand(buyer, { ...player, wage: wageDemand }),
+      };
+    }
+    const found = findPlayerInWorld(playerId);
+    if (!found || found.clubName === buyerName) return null;
+    const fee = Math.max(0, Math.round(Number(feeInput) || Number(found.player.marketValue) || 0));
+    const wageDemand = estimateTransferWageDemand(
+      found.player,
+      buyer.division,
+      found.club.division,
+    );
+    const paymentPlan = estimateTransferPaymentPlan({ fee, wage: wageDemand });
+    return {
+      freeAgent: false,
+      fee,
+      wageDemand,
+      ancillary: paymentPlan.ancillary,
+      totalCost: paymentPlan.totalCost,
+      dueNow: paymentPlan.dueNow,
+      paymentPlan,
+      payroll: payrollExpand(buyer, { ...found.player, wage: wageDemand }),
+    };
+  };
+
   return {
     TRANSFER_LIMITS: {
       minRoster,
@@ -2775,6 +3031,7 @@ export function createTransfersEngine(deps) {
     setListed,
     setLoanListed,
     buyPlayer,
+    serviceTransferInstallments,
     sellPlayer,
     loanPlayer,
     loanOutPlayer,
@@ -2787,6 +3044,7 @@ export function createTransfersEngine(deps) {
     evaluateSellerAccept,
     getBuyDivisionFit,
     previewSellDownBuyout,
+    previewTransferOperation,
     findPlayerInWorld,
     invalidatePlayerWorldIndex,
     estimatePlayerValue,

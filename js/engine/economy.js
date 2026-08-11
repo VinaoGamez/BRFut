@@ -235,6 +235,8 @@ export const WAGE_BASE_BY_DIVISION = {
   D: 3_600,
 };
 
+export const PLAYER_WAGE_MODEL = 2;
+
 /** Teto suave da folha por rodada (evita outliers em elencos gerados). */
 export const WAGE_BILL_SOFT_CAP = {
   A: 420_000,
@@ -315,8 +317,11 @@ const wageAgeFactor = age => {
 /** Salário de um jogador na rodada. */
 export function estimatePlayerWage(player, division = 'A') {
   const base = WAGE_BASE_BY_DIVISION[division] ?? WAGE_BASE_BY_DIVISION.D;
-  const overall = Math.max(40, Math.min(99, Number(player?.overall) || 60));
-  const scale = (overall / 75) ** 1.35;
+  const overall = Math.max(10, Math.min(99, Number(player?.overall) || 15));
+  // Escala exponencial compatível com os OVR reais do jogo. Na Série D, um
+  // atleta OVR 35 passa a custar várias vezes o salário de um OVR 19.
+  const reference = { A: 60, B: 46, C: 34, D: 18 }[division] ?? 18;
+  const scale = Math.max(0.45, Math.min(5, 1.06 ** (overall - reference)));
   const reputation = Math.max(0, Math.min(100, Number(player?.reputation) || 50));
   const form = Number(player?.form);
   const status = String(player?.squadRole || player?.roleStatus || '').toLowerCase();
@@ -427,16 +432,22 @@ export function evaluateRosterPayroll(club, opts = {}) {
   const wageAfter = Math.max(0, wageBefore + extraWage - removeWage);
   const revenue = estimateRoundRecurringRevenue(club, division);
   const factor = financesPayrollFactor(club?.finances);
-  const limit = Math.round(revenue * factor);
+  const comfortLimit = Math.round(revenue * 0.85);
+  const warningLimit = Math.round(revenue * 1.1);
+  const criticalLimit = Math.round(revenue * 1.35);
+  // A folha é um risco econômico progressivo. Só o teto crítico evita um
+  // estado matematicamente irrecuperável; abaixo dele a contratação é livre.
+  const limit = criticalLimit;
   const pctBefore = revenue > 0 ? (wageBefore / revenue) * 100 : 0;
   const pctAfter = revenue > 0 ? (wageAfter / revenue) * 100 : 0;
   const rosterFull = rosterDelta > 0 && sizeNext > ROSTER_PRO_MAX;
   const hardFull = rosterDelta > 0 && sizeNext > ROSTER_HARD_MAX;
-  const overPayroll = rosterDelta > 0 && wageAfter > limit;
+  const overPayroll = rosterDelta > 0 && wageAfter > criticalLimit;
   const ok = !rosterFull && !hardFull && !overPayroll;
   let tone = 'ok';
   if (!ok) tone = 'block';
-  else if (rosterDelta > 0 && wageAfter > limit * 0.85) tone = 'warn';
+  else if (rosterDelta > 0 && wageAfter > warningLimit) tone = 'critical';
+  else if (rosterDelta > 0 && wageAfter > comfortLimit) tone = 'warn';
   else if (rosterDelta < 0 && pctAfter < pctBefore - 0.5) tone = 'relief';
   return {
     ok,
@@ -451,6 +462,9 @@ export function evaluateRosterPayroll(club, opts = {}) {
     revenue,
     factor,
     limit,
+    comfortLimit,
+    warningLimit,
+    criticalLimit,
     pctBefore: Math.round(pctBefore),
     pctAfter: Math.round(pctAfter),
     finances: Number(club?.finances) || 50,
@@ -461,7 +475,7 @@ export function evaluateRosterPayroll(club, opts = {}) {
  * Phase B — envelope soft a partir do preview de folha.
  * `warn` não trava; `block` só espelha o gate duro já existente (`payroll_pressure`).
  * @param {ReturnType<typeof evaluateRosterPayroll>|null|undefined} payroll
- * @returns {{ level: 'none'|'ok'|'warn'|'block'|'relief', message: string, allow: boolean }}
+ * @returns {{ level: 'none'|'ok'|'warn'|'critical'|'block'|'relief', message: string, allow: boolean }}
  */
 export function softEnvelopeFromPayroll(payroll) {
   if (!payroll) {
@@ -484,6 +498,13 @@ export function softEnvelopeFromPayroll(payroll) {
       level: 'warn',
       allow: true,
       message: 'Folha no limite — operação ainda permitida. Cuidado com novas contratações.',
+    };
+  }
+  if (payroll.tone === 'critical') {
+    return {
+      level: 'critical',
+      allow: true,
+      message: 'Folha crítica (acima de 110% da receita), mas operação permitida. Vendas ou novas receitas serão necessárias.',
     };
   }
   if (payroll.tone === 'relief') {
@@ -1406,7 +1427,7 @@ const EMPTY_SEASON_OUTFLOWS = () => ({
 });
 
 const seasonCashflowCategory = (type, reason) => {
-  if (reason === 'transfer') {
+  if (reason === 'transfer' || reason === 'transfer_installment') {
     return type === 'credit' ? ['inflows', 'transfers_in'] : ['outflows', 'transfers_out'];
   }
   if (type === 'credit') {

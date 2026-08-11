@@ -12,6 +12,7 @@ import {
   logoutAccount,
   registerAccount,
   updateAccountProfile,
+  validateAuthenticatedSession,
 } from '../../core/storage-api.js';
 import { AUTH_REQUIRED, SAVE_KEYS, BRFUT_API_ORIGIN } from '../../core/constants.js';
 import { clearSessionCareerData } from '../../core/save.js';
@@ -470,7 +471,14 @@ export function mountAccountPanel({
   const refresh = async () => {
     setError('');
     const health = await fetchBackendHealth();
-    const token = getAuthToken();
+    let token = getAuthToken();
+
+    // Depois da migração para cookie HttpOnly, a ausência do indicador
+    // local não significa logout. Confirme a sessão na API e reconstrua o hint.
+    if (!token && health) {
+      const auth = await validateAuthenticatedSession();
+      if (auth.authenticated) token = getAuthToken();
+    }
 
     if (!token) {
       if (!health && !BRFUT_API_ORIGIN) {

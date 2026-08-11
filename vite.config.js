@@ -8,6 +8,20 @@ const enableTransfers = process.env.BRFUT_DISABLE_TRANSFERS !== 'true' && proces
 /** Origem estadual / campeonato estadual — local e GitHub Pages (opt-out via env). */
 const enableStateLeague = process.env.BRFUT_DISABLE_STATE_LEAGUE !== 'true' && process.env.MATCHDAY_DISABLE_STATE_LEAGUE !== 'true';
 
+/**
+ * A VPS usa o cookie HTTPS `__Host-brfut_session`. Em desenvolvimento, a
+ * resposta passa pelo Vite em HTTP; navegadores descartam esse cookie porque
+ * o prefixo `__Host-` exige `Secure`. Convertemos somente no proxy local para
+ * o cookie alternativo que a própria API já reconhece.
+ */
+export function rewriteLocalSessionCookie(value) {
+  return String(value || '')
+    .replace(/^__Host-brfut_session=/i, 'brfut_session=')
+    .replace(/;\s*Domain=[^;]+/gi, '')
+    .replace(/;\s*Secure\b/gi, '')
+    .replace(/;\s*SameSite=None\b/gi, '; SameSite=Lax');
+}
+
 export default defineConfig({
   root: '.',
   base: './',
@@ -17,7 +31,9 @@ export default defineConfig({
     __MATCHDAY_ENABLE_TRANSFERS__: JSON.stringify(enableTransfers),
     __MATCHDAY_ENABLE_STATE_LEAGUE__: JSON.stringify(enableStateLeague),
     __BRFUT_API_ORIGIN__: JSON.stringify(process.env.BRFUT_API_ORIGIN || ''),
-    __BRFUT_AUTH_REQUIRED__: JSON.stringify(process.env.BRFUT_AUTH_REQUIRED === 'true'),
+    // Falha fechada em todos os ambientes. Somente um opt-out local explícito
+    // pode desativar a autenticação durante manutenção isolada.
+    __BRFUT_AUTH_REQUIRED__: JSON.stringify(process.env.BRFUT_AUTH_REQUIRED !== 'false'),
   },
   plugins: [
     {
@@ -77,5 +93,26 @@ export default defineConfig({
   server: {
     port: 5080,
     strictPort: true,
+    proxy: {
+      '/api': {
+        target: process.env.BRFUT_LOCAL_API_TARGET || 'https://api.brfut.com.br',
+        changeOrigin: false,
+        secure: true,
+        configure(proxy) {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            // A VPS deve emitir o cookie local (SameSite=Lax, sem Secure) para
+            // que o login funcione em http://localhost e no IP da rede local.
+            proxyReq.setHeader('host', req.headers.host || '127.0.0.1:5080');
+            proxyReq.setHeader('x-forwarded-proto', 'http');
+            proxyReq.removeHeader('origin');
+          });
+          proxy.on('proxyRes', proxyRes => {
+            const cookies = proxyRes.headers['set-cookie'];
+            if (!cookies) return;
+            proxyRes.headers['set-cookie'] = cookies.map(rewriteLocalSessionCookie);
+          });
+        },
+      },
+    },
   },
 });

@@ -377,8 +377,11 @@ export function clearAuthSession() {
 /** Confirma a identidade diretamente na API; token armazenado sozinho não autentica. */
 export async function validateAuthenticatedSession() {
   const token = getAuthToken();
-  if (!token) return { authenticated: false, reason: 'missing_token', user: null };
   try {
+    // O cookie HttpOnly é a credencial real. O indicador do navegador é
+    // apenas uma otimização e pode desaparecer numa navegação, limpeza de
+    // sessão ou atualização do build. Portanto /auth/me precisa ser consultado
+    // mesmo sem o hint local; caso o cookie seja válido, reconstruímos o hint.
     // O boot depende desta confirmação. Tolera uma indisponibilidade curta da
     // API para não devolver ao login uma sessão que acabou de ser criada.
     const body = await authedFetch('/api/auth/me');
@@ -389,6 +392,8 @@ export async function validateAuthenticatedSession() {
         body: JSON.stringify({ remember: isAuthRememberEnabled() }),
         retry: false,
       });
+      persistAuthSessionHint({ remember: isAuthRememberEnabled() });
+    } else if (!token) {
       persistAuthSessionHint({ remember: isAuthRememberEnabled() });
     }
     currentUser = body.user;

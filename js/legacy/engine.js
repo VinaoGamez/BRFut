@@ -1154,6 +1154,9 @@ export async function bootEngine({
         budget:status.budget??getBalance(clubs[userClub]),
         // Dívida bancária acompanha o clube entre temporadas (não some no clearSeasonSave).
         bankLoan:serializeBankLoan(clubs[userClub]),
+        transferInstallments:Array.isArray(clubs[userClub]?.transferInstallments)
+          ?clubs[userClub].transferInstallments.map(item=>({...item}))
+          :[],
       };
     },
     onStatusChanged:()=>renderEnvironmentCard(),
@@ -1200,6 +1203,7 @@ export async function bootEngine({
     creditNamingInstallment(clubs[userClub],{round,division:userDivision,season:careerSeason});
     // TV: parcela no mando de campo (creditHomeTv / creditLeagueHomeTvForGames).
     // Serviço do empréstimo bancário (juros + amortização mínima) na rodada nacional.
+    transfersEngine?.serviceTransferInstallments?.({round,season:careerSeason});
     serviceBankLoan(clubs[userClub],{division:userDivision,round,season:careerSeason});
     // Cheque especial: juros sobre saldo negativo.
     serviceOverdraft(clubs[userClub],{division:userDivision,round});
@@ -1545,6 +1549,14 @@ export async function bootEngine({
     ensureBudget(clubs[userClub],userDivision);
     if(seasonStatusForClub&&Array.isArray(savedSeason?.userBudgetLedger))clubs[userClub].budgetLedger=savedSeason.userBudgetLedger.map(entry=>({...entry}));
     else clubs[userClub].budgetLedger=[];
+    const savedTransferInstallments=seasonStatusForClub&&Array.isArray(savedSeason?.userTransferInstallments)
+      ?savedSeason.userTransferInstallments
+      :Array.isArray(savedNewGame?.clubStatus?.transferInstallments)
+        ?savedNewGame.clubStatus.transferInstallments
+        :[];
+    clubs[userClub].transferInstallments=savedTransferInstallments
+      .filter(item=>Number(item?.balance)>0)
+      .map(item=>({...item}));
     const savedStatus=validSavedSeason&&seasonStatusForClub&&savedSeason.userClubStatus&&typeof savedSeason.userClubStatus==='object'?savedSeason.userClubStatus:null;
     if(savedStatus){
       const user=clubs[userClub];
@@ -6891,6 +6903,7 @@ export async function bootEngine({
     newClub.sponsors=null;
     newClub.tvRights=null;
     newClub.seasonCashflow=null;
+    newClub.transferInstallments=[];
     newClub.wageShortfall=false;
     clearBankLoan(newClub);
     if(clubs[oldClubName])clearBankLoan(clubs[oldClubName]);

@@ -1363,8 +1363,12 @@ export function createTransfersFeature(deps) {
     const offer = parseMoneyInput(input.value);
     const { ask, value, mode } = offerState;
     if (mode === 'buy' && offerState.payroll) {
+      const operation = engine()?.previewTransferOperation?.(
+        offerState.playerId,
+        offer || Math.round(Number(ask) || Number(value) || 0),
+      );
       const envelope = fillEnvelopePanel('transfersOfferEnvelope', offerState.payroll, {
-        fee: offer || Math.round(Number(ask) || Number(value) || 0),
+        fee: operation?.dueNow || operation?.totalCost || offer || Math.round(Number(ask) || Number(value) || 0),
       });
       const submitBtn = $('#transfersOfferSubmit');
       if (submitBtn) {
@@ -1381,6 +1385,7 @@ export function createTransfersFeature(deps) {
     }
     if (mode === 'buy') {
       const api = engine();
+      const operation = api?.previewTransferOperation?.(offerState.playerId, offer);
       const found = api?.findPlayerInWorld?.(offerState.playerId);
       if (found && api.evaluateSellerAccept) {
         const phase1 = api.getBuyDivisionFit?.(offerState.playerId);
@@ -1414,6 +1419,12 @@ export function createTransfersFeature(deps) {
             offer >= ask
               ? 'Oferta no pedido ou acima — alta chance de aceite.'
               : 'Oferta abaixo do pedido, mas ainda pode ser aceita.';
+          if (operation?.totalCost > offer) {
+            text += ` Custo total com comissão e luvas: ${formatMoney(operation.totalCost)}.`;
+          }
+          if (operation?.paymentPlan?.financed > 0) {
+            text += ` Agora: ${formatMoney(operation.dueNow)}; saldo em ${operation.paymentPlan.installmentsTotal} parcelas de aproximadamente ${formatMoney(operation.paymentPlan.installmentAmount)}.`;
+          }
           if (verdict.playerPull) {
             text += ' O jogador gostaria de trabalhar com seu técnico.';
           }
@@ -1524,10 +1535,12 @@ export function createTransfersFeature(deps) {
     let envelopeAllow = true;
     if (mode === 'buy') {
       const api = engine();
-      const found = api?.findPlayerInWorld?.(playerId);
-      const payroll = found ? previewExpandPayroll(found.player) : null;
       const fee = Math.round(Number(ask) || Number(value) || 0);
-      const envelope = fillEnvelopePanel('transfersOfferEnvelope', payroll, { fee });
+      const operation = api?.previewTransferOperation?.(playerId, fee);
+      const payroll = operation?.payroll || null;
+      const envelope = fillEnvelopePanel('transfersOfferEnvelope', payroll, {
+        fee: operation?.dueNow || operation?.totalCost || fee,
+      });
       envelopeAllow = envelope.allow;
       offerState.payroll = payroll;
     } else {
@@ -1726,17 +1739,20 @@ export function createTransfersFeature(deps) {
     }
     if (found.freeAgentEntry) {
       const entry = found.freeAgentEntry;
-      const payroll = previewExpandPayroll({ ...found.player, wage: entry.wageDemand || found.player.wage });
+      const operation = api.previewTransferOperation?.(playerId, 0);
+      const payroll = operation?.payroll || previewExpandPayroll({ ...found.player, wage: entry.wageDemand || found.player.wage });
+      const signingBonus = operation?.totalCost || entry.signingBonus || 0;
+      const wageDemand = operation?.wageDemand || entry.wageDemand || found.player.wage;
       openConfirmModal({
         title: 'Contratar jogador livre',
         eyebrow: 'MERCADO · LIVRE',
         playerName: found.player.name,
         meta: `${found.player.pos} · OVR ${found.player.overall} · ${found.player.age} anos`,
-        lead: `Sem passe · luvas ${formatMoney(entry.signingBonus || 0)}`,
+        lead: `Sem passe · luvas ${formatMoney(signingBonus)}`,
         slotsLabel: 'LIVRE',
         slotsCaption: 'CLUBE ATUAL',
-        wage: entry.wageDemand || found.player.wage,
-        fee: entry.signingBonus || 0,
+        wage: wageDemand,
+        fee: signingBonus,
         payroll,
         submitLabel: 'CONTRATAR',
         onConfirm: () => {

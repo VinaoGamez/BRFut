@@ -307,6 +307,11 @@ export function createSeasonSaveWriter({
       clubMedical,
       userBudget: seasonBudget,
       userBudgetLedger: seasonLedger,
+      userTransferInstallments: opts.resetUserEconomy
+        ? []
+        : Array.isArray(userClubState.transferInstallments)
+          ? userClubState.transferInstallments.map(item => ({ ...item }))
+          : [],
       userStaffContract: userClubState.staffContract && Number(userClubState.staffContract.amountPerRound) > 0
         ? {
           managerId: userClubState.staffContract.managerId || null,
@@ -438,6 +443,11 @@ export function createSeasonSaveWriter({
         ...(statusSnapshot || {}),
         budget: seasonBudget,
         bankLoan: opts.resetUserEconomy ? null : serializeBankLoan(userClubState),
+        transferInstallments: opts.resetUserEconomy
+          ? []
+          : Array.isArray(userClubState.transferInstallments)
+            ? userClubState.transferInstallments.map(item => ({ ...item }))
+            : [],
       };
       if (!opts.resetUserEconomy && userStadium) {
         savedNewGame.userStadium = userStadium;

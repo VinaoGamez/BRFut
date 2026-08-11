@@ -519,6 +519,9 @@ export function createSeasonTransitionEngine(deps) {
         ...(deps.snapshotUserClubStatus() || savedNewGame.clubStatus || {}),
         budget: deps.getBalance(clubs[userClub]),
         bankLoan: deps.serializeBankLoan(clubs[userClub]),
+        transferInstallments: Array.isArray(clubs[userClub].transferInstallments)
+          ? clubs[userClub].transferInstallments.map(item => ({ ...item }))
+          : [],
       },
       nationalRanking: {
         formulaVersion: deps.getNationalRankingFormulaVersion(),

@@ -53,8 +53,8 @@ const assert = (cond, message) => {
   if (!cond) throw new Error(message || 'assertion failed');
 };
 
-const makePlayer = (overrides = {}) =>
-  ensureMarketFields(
+const makePlayer = (overrides = {}) => {
+  const normalized = ensureMarketFields(
     ensurePlayerId(
       {
         name: 'Teste Silva',
@@ -70,9 +70,13 @@ const makePlayer = (overrides = {}) =>
     ),
     { division: 'C', season: 2030 },
   );
+  // Campos explícitos do caso de teste prevalecem sobre a migração dos
+  // modelos econômicos (valor/salário) para manter fixtures determinísticos.
+  return Object.assign(normalized, overrides);
+};
 
 /** Clube com receita/folha realistas para testes de compra/empréstimo. */
-const makeTransferClub = (name, { division = 'C', roster = [], budget = 20_000_000, power = 70, ...extra } = {}) => ({
+const makeTransferClub = (name, { division = 'C', roster = [], budget = 200_000_000, power = 70, ...extra } = {}) => ({
   name,
   division,
   budget,
@@ -260,6 +264,35 @@ check('setListed stores asking price; seedAiListings fills market', () => {
   const onlyListed = engine.listBuyCandidates({ listedOnly: true });
   assert(onlyListed.length > 0, 'listedOnly has rows');
   assert(onlyListed.every(row => row.player.listed), 'all listed');
+});
+
+check('market seed does not depend on search filters and free agents are searchable', () => {
+  const freePlayer = makePlayer({
+    name: 'Agente Livre Teste',
+    playerId: 'free-market-regression',
+    overall: 63,
+    nationality: 'Brasil',
+  });
+  const clubs = {
+    'Meu Clube': makeTransferClub('Meu Clube', { roster: transferSquad(19, 'RegMeu') }),
+    'Rival FC': makeTransferClub('Rival FC', { roster: transferSquad(22, 'RegRival') }),
+  };
+  const engine = createTransfersEngine({
+    ...moneyEngineDeps(clubs),
+    getFreeAgentsPool: () => [{
+      playerId: freePlayer.playerId,
+      player: freePlayer,
+      marketTier: 'C',
+      marketValue: 650_000,
+      wageDemand: 5_000,
+      signingBonus: 80_000,
+    }],
+  });
+
+  const seeded = engine.seedAiListings({ ratio: 1, minListed: 8 });
+  assert(seeded > 0, `seeded=${seeded}`);
+  const rows = engine.listBuyCandidates({ query: 'Agente Livre', division: 'C' });
+  assert(rows.some(row => row.playerId === freePlayer.playerId && row.freeAgent), 'free agent searchable');
 });
 
 check('world roster roundtrip', () => {
@@ -1109,7 +1142,9 @@ check('loan buy option: exercise locks fee and clears loan flags', () => {
   });
   const clubs = withPayrollRoom({
     'Meu Clube': makeTransferClub('Meu Clube', {
-      budget: 5_000_000,
+      // OVR 70 pertence ao topo da escala nova; caixa alto isola aqui apenas
+      // a mecânica da opção de compra, não o balanceamento financeiro.
+      budget: 150_000_000,
       roster: transferSquad(19, 'loan-buy-host'),
     }),
     'Dono FC': makeTransferClub('Dono FC', {

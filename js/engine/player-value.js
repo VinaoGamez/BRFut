@@ -2,12 +2,12 @@
  * Valuation e campos de mercado do jogador.
  */
 
-import { estimatePlayerWage } from './economy.js';
+import { estimatePlayerWage, PLAYER_WAGE_MODEL } from './economy.js';
 import { ensurePlayerContract } from './player-contracts.js';
 
-const VALUE_BASE = 800_000;
-const VALUE_DIVISION_CONTEXT = { A: 1.2, B: 1, C: 0.75, D: 0.45 };
-export const PLAYER_VALUE_MODEL = 2;
+const VALUE_BASE = 80_000;
+const VALUE_DIVISION_CONTEXT = { A: 1.4, B: 1.25, C: 1.12, D: 1 };
+export const PLAYER_VALUE_MODEL = 3;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -26,9 +26,12 @@ const valueAgeFactor = age => {
  */
 export function estimatePlayerValue(player, division = 'A') {
   const divisionContext = VALUE_DIVISION_CONTEXT[division] ?? VALUE_DIVISION_CONTEXT.D;
-  const overall = clamp(Number(player?.overall) || 60, 40, 99);
+  // A escala do BR Fut começa em OVR 10 (Série D), não em 40. O piso antigo
+  // tornava atletas OVR 19 e 39 economicamente idênticos e permitia reformar um
+  // elenco inteiro pelo caixa inicial.
+  const overall = clamp(Number(player?.overall) || 15, 10, 99);
   const potential = clamp(Number(player?.potential) || overall, overall, 99);
-  const ovrFactor = (overall / 70) ** 2.15;
+  const ovrFactor = 1.12 ** (overall - 15);
   const potentialGap = potential - overall;
   const potFactor = 1 + potentialGap * 0.025 + potentialGap ** 1.35 * 0.006;
   const ageFactor = valueAgeFactor(player?.age);
@@ -36,7 +39,7 @@ export function estimatePlayerValue(player, division = 'A') {
   const formFactor = Number.isFinite(rawForm) ? clamp(1 + (rawForm - 60) / 500, 0.88, 1.12) : 1;
   const injuryFactor = player?.injured || player?.injury ? 0.9 : 1;
   return Math.max(
-    25_000,
+    20_000,
     Math.round(VALUE_BASE * divisionContext * ovrFactor * potFactor * ageFactor * formFactor * injuryFactor),
   );
 }
@@ -58,8 +61,16 @@ export function ensureMarketFields(player, ctx = {}) {
     player.marketValue = estimatePlayerValue(player, division);
     player.marketValueModel = PLAYER_VALUE_MODEL;
   }
-  if (player.wage == null || !Number.isFinite(Number(player.wage))) {
+  const migrateWage =
+    player.wageModel !== PLAYER_WAGE_MODEL ||
+    player.wage == null ||
+    !Number.isFinite(Number(player.wage));
+  if (migrateWage) {
     player.wage = estimatePlayerWage(player, division);
+    player.wageModel = PLAYER_WAGE_MODEL;
+    if (player.contract && typeof player.contract === 'object') {
+      player.contract.wagePerRound = player.wage;
+    }
   }
   ensurePlayerContract(player, {
     division,
@@ -82,8 +93,16 @@ export function refreshMarketFields(player, ctx = {}) {
   const season = Number(ctx.season) || 2026;
   player.marketValue = estimatePlayerValue(player, division);
   player.marketValueModel = PLAYER_VALUE_MODEL;
-  if (!Number.isFinite(Number(player.wage)) || Number(player.wage) <= 0) {
+  if (
+    player.wageModel !== PLAYER_WAGE_MODEL ||
+    !Number.isFinite(Number(player.wage)) ||
+    Number(player.wage) <= 0
+  ) {
     player.wage = estimatePlayerWage(player, division);
+    player.wageModel = PLAYER_WAGE_MODEL;
+    if (player.contract && typeof player.contract === 'object') {
+      player.contract.wagePerRound = player.wage;
+    }
   }
   ensurePlayerContract(player, {
     division,
