@@ -1348,7 +1348,6 @@ export function createTransfersFeature(deps) {
       document.body.insertAdjacentHTML('beforeend', `
         <div id="transferWindowOpenAlert" class="transfer-window-open-alert" role="dialog" aria-modal="true" aria-labelledby="transferWindowOpenAlertTitle" hidden>
           <article class="transfer-window-open-card">
-            <button type="button" class="transfer-window-open-close" aria-label="Fechar alerta">&times;</button>
             <img src="${mercadoDaBolaUrl}" alt="Mercado da Bola">
             <div class="transfer-window-open-copy">
               <h2 id="transferWindowOpenAlertTitle">MERCADO ABERTO</h2>
@@ -1364,14 +1363,7 @@ export function createTransfersFeature(deps) {
     if (!windowAlertBound && modal) {
       windowAlertBound = true;
       modal.addEventListener('click', event => {
-        if (
-          event.target === modal
-          || event.target.closest('.transfer-window-open-close')
-          || event.target.closest('.transfer-window-open-ok')
-        ) closeWindowOpenAlert();
-      });
-      document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && !modal.hidden) closeWindowOpenAlert();
+        if (event.target.closest('.transfer-window-open-ok')) closeWindowOpenAlert();
       });
     }
     return modal;
@@ -1413,7 +1405,9 @@ export function createTransfersFeature(deps) {
     if (end) end.textContent = formatDate(bounds.end);
     modal.hidden = false;
     document.body.classList.add('transfer-window-alert-open');
-    deps.setTransferWindowAlertStamp?.(stamp);
+    // Consultar a próxima janela ao entrar no Mercado não pode consumir
+    // o alerta automático disparado na data real de abertura.
+    if (!force) deps.setTransferWindowAlertStamp?.(stamp);
     return true;
   }
 

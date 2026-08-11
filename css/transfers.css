@@ -193,16 +193,6 @@ body.transfer-window-alert-open { overflow: hidden; }
   font: 800 22px 'Barlow Condensed', sans-serif;
 }
 .transfer-window-open-copy > i { display: block; height: 1px; background: #245363; }
-.transfer-window-open-close {
-  position: absolute;
-  top: 14px;
-  right: 16px;
-  border: 0;
-  background: transparent;
-  color: #9ab7bd;
-  font: 700 25px/1 'DM Sans', sans-serif;
-  cursor: pointer;
-}
 .transfer-window-open-ok {
   margin-top: 22px;
   min-width: 160px;
