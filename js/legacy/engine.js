@@ -2671,7 +2671,14 @@ export async function bootEngine({
   }else rescheduleAllCupFixtures();
   restConflictCount=calculateRestConflicts();
   if(restConflictCount)console.warn(`Calendário gerado com ${restConflictCount} conflito(s) de descanso.`);
-  const seasonMaxRound=()=>userDivision==='D'?22:38;
+  // A última rodada vem dos fixtures reais da divisão do usuário. Fixar 38
+  // quebrava a Série C no formato CBF, que termina em 27 rodadas com 20 clubes.
+  const seasonMaxRound=()=>{
+    if(userDivision==='D')return SERIE_D_GROUP_ROUNDS;
+    const fixtures=championshipFixtures;
+    const total=Array.isArray(fixtures)?fixtures.length:0;
+    return total>0?total:38;
+  };
   const seasonComplete=()=>currentRound>seasonMaxRound();
   const hasPendingUserFixtures=()=>pendingUserSchedule().length>0;
   const dashboardLeagueRoundLabel=()=>{

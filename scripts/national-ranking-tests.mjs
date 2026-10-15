@@ -33,8 +33,14 @@ assert.ok(entries.Alpha.base > 0);
 assert.ok(computeNationalRankingBase(clubs.Alpha, 42) > 0);
 assert.equal(roundRankingScore(1.234), 1.2);
 assert.equal(classificationZone('A', 16, 20), 'relegation');
-assert.equal(classificationZone('C', 2, 20, 4), 'promotion');
-assert.equal(classificationZone('C', 17, 20, 4), 'relegation');
+// Série C no formato CBF: na fase 1 os 8 primeiros avançam para os grupos, mas
+// ninguém sobe direto — o acesso sai dos vencedores de grupo, na final.
+assert.equal(classificationZone('C', 2, 20, 2), 'qualified');
+assert.equal(classificationZone('C', 7, 20, 2), 'qualified');
+assert.equal(classificationZone('C', 8, 20, 2), '');
+assert.equal(classificationZone('C', 18, 20, 2), 'relegation');
+// Fora da fase 1 (grupos/final) o primeiro colocado da tabela é acesso.
+assert.equal(classificationZone('C', 0, 20, 2, { phase: 2 }), 'promotion');
 
 const resolved = resolveNationalRankingEntry(entries.Alpha, {
   clubs,

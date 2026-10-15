@@ -53,12 +53,21 @@ export function createSeasonTransitionEngine(deps) {
   const finishRemainingNationalRounds = (fromRound, throughRound = 38) => {
     const nationalCompetitions = deps.getNationalCompetitions();
     const competitionRoundHistory = deps.getCompetitionRoundHistory();
-    const lastRound = Math.min(38, Math.max(fromRound, Number(throughRound) || 38));
-    for (let round = fromRound; round <= lastRound; round++) {
-      ['A', 'B', 'C'].forEach(division => {
+    // O corte deixa de ser 38 fixo: cada divisão termina na própria contagem de
+    // rodadas. Com a Série C no formato CBF isso é 27, não 38 — e cortar em 38
+    // deixava a última rodada da C semGames.
+    const lastRoundOf = division => {
+      const fixtures = nationalCompetitions?.[division]?.fixtures;
+      const total = Array.isArray(fixtures) ? fixtures.length : 0;
+      return total || 38;
+    };
+    for (const division of ['A', 'B', 'C']) {
+      const defaultLast = lastRoundOf(division);
+      const lastRound = Math.min(defaultLast, Math.max(fromRound, Number(throughRound) || defaultLast));
+      for (let round = fromRound; round <= lastRound; round++) {
         const history = competitionRoundHistory[division] || [];
         // Idempotente: não reaplicar rodada já no histórico (evita J>38 / J=42).
-        if (history.some(entry => Number(entry?.round) === round)) return;
+        if (history.some(entry => Number(entry?.round) === round)) continue;
         const competition = nationalCompetitions[division];
         const fixtures = (Array.isArray(competition?.fixtures) ? competition.fixtures : [])[round - 1] || [];
         const clubs = deps.getClubs();
@@ -67,7 +76,7 @@ export function createSeasonTransitionEngine(deps) {
           if (game.completed) return false;
           return true;
         });
-        if (!playable.length) return;
+        if (!playable.length) continue;
         const results = playable.map(game => deps.simulateRoundMatch(game.home, game.away, game));
         results.forEach(deps.recordGameLeaders);
         results.forEach(game => deps.applySecondaryResult(game, competition));
@@ -81,7 +90,7 @@ export function createSeasonTransitionEngine(deps) {
           round,
           games: results.map(game => deps.compactMatchResult(game, { keepData: false })),
         });
-      });
+      }
     }
     Object.values(nationalCompetitions).forEach(competition => {
       if (Array.isArray(competition?.standings)) {
