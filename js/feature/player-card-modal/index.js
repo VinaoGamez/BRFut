@@ -5,7 +5,13 @@
 import { resolvePlayerId } from '../../engine/player-identity.js';
 import { fetchPlayerSeasonStats } from '../../core/player-stats-sync.js';
 import { mountMatchdayCard } from '../../lab/player-card-system.js';
+import { cardArtForPlayer } from '../../engine/player-card-art.js';
 import { rosterPlayerToCardPlayer } from '../player-card/roster-card-player.js';
+
+// A arte entra aqui, e nao no adaptador de dados: e o unico lugar que ja
+// depende da camada visual, entao nao ha import dinamico nem PNG arrastado
+// para quem so precisa da parte de stats.
+const withCardArt = context => ({ ...context, resolveArt: cardArtForPlayer });
 
 const MODAL_ID = 'playerCardModal';
 let cardHandlersBound = false;
@@ -70,7 +76,7 @@ export function createPlayerCardModal(deps = {}) {
       clubName: ownerClub,
       clubDivision: ownerClub ? deps.getClubs?.()?.[ownerClub]?.division : null,
     };
-    const cardPlayer = await rosterPlayerToCardPlayer(player, cardContext);
+    const cardPlayer = await rosterPlayerToCardPlayer(player, withCardArt(cardContext));
 
     modal()?.classList.remove('hidden');
 
@@ -109,7 +115,7 @@ export function createPlayerCardModal(deps = {}) {
     void fetchPlayerSeasonStats(resolvePlayerId(player), deps.getCareerSeason?.(), ownerClub)
       .then(async remoteStats => {
         if (!remoteStats || openCtx?.playerId !== resolvePlayerId(player) || modal()?.classList.contains('hidden')) return;
-        const refreshedCard = await rosterPlayerToCardPlayer(player, { ...cardContext, remoteStats });
+        const refreshedCard = await rosterPlayerToCardPlayer(player, { ...withCardArt(cardContext), remoteStats });
         if (openCtx?.playerId === resolvePlayerId(player)) renderCard(refreshedCard);
       })
       .catch(() => {});

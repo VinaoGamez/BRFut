@@ -67,19 +67,25 @@ check('soft warn permite (zona amarela)', () => {
   assert(/ainda permitida/i.test(soft.message), soft.message);
 });
 
-check('evaluateRosterPayroll marca warn na faixa 85–100%', () => {
+check('evaluateRosterPayroll marca warn na faixa amarela', () => {
+  // As faixas são frações da receita: comfort 85%, warning 110%, critical 135%.
+  // `payroll.limit` é o teto crítico (135%), não 100% — mirar 90% dele caía na
+  // faixa vermelha. O alvo correto é a receita, que é a base das três faixas.
   const club = makeClub({
     finances: 80,
     wages: [50_000, 50_000, 50_000], // 150k
   });
   const baseline = evaluateRosterPayroll(club);
-  const targetWage = Math.floor(baseline.limit * 0.9);
+  const targetWage = Math.floor(baseline.revenue * 1.0);
   const payroll = evaluateRosterPayroll(club, {
     extraWage: Math.max(0, targetWage - baseline.wageBefore),
     rosterDelta: 1,
   });
+  console.log(
+    `    receita ${baseline.revenue} · alvo ${targetWage} · folha ${payroll.wageAfter} (${payroll.tone})`,
+  );
   assert(payroll.ok, `ok ${payroll.wageAfter}/${payroll.limit}`);
-  assert(payroll.tone === 'warn', `tone=${payroll.tone} after=${payroll.wageAfter} limit=${payroll.limit}`);
+  assert(payroll.tone === 'warn', `tone=${payroll.tone} after=${payroll.wageAfter} revenue=${baseline.revenue}`);
 });
 
 check('soft block não permite (espelha gate duro)', () => {

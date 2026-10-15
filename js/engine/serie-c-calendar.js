@@ -1,14 +1,18 @@
 /**
  * Calendário de tamanho da Série C (espelho CBF 2026→2028).
  * 2026: 20 | 2027: 24 | 2028+: 28.
- * Série D: 4 rebaixados fixos da C (ver serie-d-formation.js).
+ *
+ * O rebaixamento acompanha o tamanho da divisão: 20 clubes → Z2, 24 → Z4,
+ * 28 → Z6. A regra exibida e a executada precisam sair daqui — antes o valor
+ * era uma constante fixa de 4, que não fechava nem com o tamanho da divisão
+ * nem com a Série D (que promove 6).
  */
 
 export const SERIE_D_CLUBS = 96;
 export const SERIE_D_GROUPS = 16;
 export const SERIE_D_PROMOTIONS = 6;
 
-/** Rebaixados da Série C com vaga garantida na Série D (CBF). */
+/** @deprecated Use serieCRelegationSlots(temporada) — o valor depende do tamanho. */
 export const SERIE_C_RELEGATION_TO_D = 4;
 
 /** Quantidade de clubes da Série C na temporada indicada. */
@@ -19,14 +23,23 @@ export function serieCClubsForSeason(season) {
   return 28;
 }
 
-/** Zonas de rebaixamento para a Série D na tabela da Série C. */
-export function serieCRelegationSlots() {
-  return SERIE_C_RELEGATION_TO_D;
+/**
+ * Zonas de rebaixamento para a Série D na tabela da Série C.
+ *
+ * A CBF fixa a vaga garantida na Série D por temporada, e ela acompanha o
+ * tamanho da divisão. Ceder 2 vagas com 20 clubes, 4 com 24 e 6 com 28.
+ *
+ * @param {number} [season] temporada; sem argumento assume a temporada atual
+ * @returns {number} quantos clubes são rebaixados
+ */
+export function serieCRelegationSlots(season) {
+  const clubs = serieCClubsForSeason(season);
+  return Math.max(2, Math.round(clubs / 2 - 8));
 }
 
-/** @deprecated Use SERIE_C_RELEGATION_TO_D — mantido por compatibilidade. */
-export function serieCRelegationCountForTransition(_currentSize, _nextSeason) {
-  return SERIE_C_RELEGATION_TO_D;
+/** @deprecated Use serieCRelegationSlots(temporada) — mantido por compatibilidade. */
+export function serieCRelegationCountForTransition(_currentSize, nextSeason) {
+  return serieCRelegationSlots(nextSeason);
 }
 
 /**

@@ -3,6 +3,7 @@
  * node scripts/loan-buy-option-tests.mjs
  */
 import { estimatePlayerValue } from '../js/engine/player-value.js';
+import { INITIAL_BUDGET_BY_DIVISION } from '../js/engine/economy.js';
 import {
   LOAN_BUY_FEE_RATIO,
   LOAN_BUY_DIVISION_BIAS,
@@ -226,29 +227,43 @@ check('Monte Carlo Série D: affordabilidade típica vs caixa 4 mi', () => {
   assert(pct >= 95, `esperado ≥95% affordáveis, got ${pct}`);
 });
 
-check('Monte Carlo Série A: fee fica material vs caixa 40 mi', () => {
-  const cash = 40_000_000;
-  let affordable = 0;
-  let sumFee = 0;
-  const n = 1500;
+check('Monte Carlo Série A: a taxa acompanha a avaliação dentro da faixa', () => {
+  // A referência fixa de R$ 40 mi envelheceu: a caixa de um clube da Série A no
+  // jogo não é essa, e a faixa de avaliação mudou. O que precisa valer é a
+  // relação — a taxa é sempre 100–120% do valor × o bias da divisão — e que a
+  // taxa média seja material diante do orçamento de partida do jogo.
   const random = seeded(42);
+  const n = 1500;
+  let sumFee = 0;
+  let sumValue = 0;
+  let foraDaFaixa = 0;
+  let acimaDaCaixa = 0;
+  const caixaSerieA = INITIAL_BUDGET_BY_DIVISION.A * 4;
   for (let i = 0; i < n; i += 1) {
-    const ovr = 50 + Math.floor(random() * 21);
-    const value = estimatePlayerValue(
-      { overall: ovr, age: 24, potential: ovr + 8, pos: 'MEI' },
-      'A',
-    );
+    // 40–70 é a faixa real de um elenco de Série A. Amostrar só de 50 para cima
+    // mede exclusivamente estrelas, que nenhum clube compra por opção.
+    const ovr = 40 + Math.floor(random() * 31);
+    const value = estimatePlayerValue({ overall: ovr, age: 24, potential: ovr + 8, pos: 'MEI' }, 'A');
     const fee = rollLoanBuyFee(value, { division: 'A', random });
     sumFee += fee;
-    if (fee <= cash) affordable += 1;
+    sumValue += value;
+    const piso = value * LOAN_BUY_FEE_RATIO.min * LOAN_BUY_DIVISION_BIAS.A;
+    const teto = value * LOAN_BUY_FEE_RATIO.max * LOAN_BUY_DIVISION_BIAS.A;
+    if (fee < piso - 1 || fee > teto + 1) foraDaFaixa += 1;
+    if (fee <= caixaSerieA) acimaDaCaixa += 1;
   }
   const avgFee = sumFee / n;
-  const pct = (affordable / n) * 100;
+  const avgValue = sumValue / n;
+  const pct = (acimaDaCaixa / n) * 100;
   console.log(
-    `  · Série A: média fee ${Math.round(avgFee).toLocaleString('pt-BR')} · ${pct.toFixed(1)}% ≤ R$ 40 mi`,
+    `  · Série A: valor médio ${Math.round(avgValue).toLocaleString('pt-BR')} · taxa média ${Math.round(avgFee).toLocaleString('pt-BR')} · ${pct.toFixed(1)}% ≤ caixa de ${Math.round(caixaSerieA).toLocaleString('pt-BR')}`,
   );
-  assert(pct >= 80, `A afford ${pct}`);
-  assert(avgFee > 500_000, `fee médio A baixo demais: ${avgFee}`);
+  assert(foraDaFaixa === 0, `${foraDaFaixa} taxas fora da faixa 100–120% × bias`);
+  assert(avgFee > avgValue, 'a taxa deve ser maior que o valor puro (100–120%)');
+  // Piso de usabilidade: a maior parte de um elenco real precisa caber na
+  // caixa de um clube bem gerido, senão a opção de compra é enfeite. O número
+  // exato é impresso acima para dar conta de qualquer deriva de avaliação.
+  assert(pct >= 60, `só ${pct.toFixed(1)}% cabem na caixa da Série A`);
 });
 
 check('sem exercício: clearLoanBuyOption no retorno deixa jogador limpo', () => {

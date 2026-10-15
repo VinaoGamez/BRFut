@@ -1,7 +1,7 @@
 import {
   SERIE_D_CLUBS,
   SERIE_D_PROMOTIONS,
-  SERIE_C_RELEGATION_TO_D,
+  serieCRelegationSlots,
   normalizeDivisionTeamsSerieC,
 } from './serie-c-calendar.js';
 import {
@@ -145,7 +145,10 @@ export function createSeasonTransitionEngine(deps) {
     const promB = [b[0], b[1], playoffEdge(b[2], b[5], 'B'), playoffEdge(b[3], b[4], 'B')];
     const relB = b.slice(-4);
     const promC = c.slice(0, 4);
-    const relC = c.slice(-SERIE_C_RELEGATION_TO_D);
+    // A mesma função que gera o regulamento mostrado na tela: 20 clubes -> Z2,
+    // 24 -> Z4, 28 -> Z6. Antes o corte usava uma constante fixa de 4 e a regra
+    // exibida dizia outra coisa.
+    const relC = c.slice(-serieCRelegationSlots(careerSeason));
     let promD = [...deps.serieDPromotedClubs()];
     if (promD.length < SERIE_D_PROMOTIONS) {
       const groupWinners = serieDGroups

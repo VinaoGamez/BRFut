@@ -167,7 +167,7 @@ export function buildCompetitionRules(competitionId, season) {
         ]),
         section('Formação do elenco (CBF)', [
           `${SERIE_D_CLUBS} vagas totais, definidas por quatro critérios:`,
-          `${SERIE_C_RELEGATION_TO_D} rebaixados da Série C do ano anterior.`,
+          `${serieCRelegationSlots(year)} rebaixados da Série C do ano anterior.`,
           `${SERIE_D_STATE_SLOTS} vagas estaduais distribuídas às 27 federações (RNF).`,
           'Permanência: clubes que alcançaram a 2ª fase na edição anterior.',
           'Complemento: melhores colocados no Ranking Nacional de Clubes sem divisão nacional (RNC).',
@@ -190,11 +190,11 @@ export function buildCompetitionRules(competitionId, season) {
 
   if (id === 'C') {
     const clubs = serieCClubsForSeason(year);
-    const relegated = serieCRelegationSlots();
+    const relegated = serieCRelegationSlots(year);
     const nextClubs = serieCClubsForSeason(year + 1);
     const expansionNote =
       clubs < 28
-        ? `Transição CBF: esta temporada tem ${clubs} clubes; na próxima a Série C passa a ${nextClubs} (${relegated} rebaixados à D e ${SERIE_D_PROMOTIONS} acessos da Série D).`
+        ? `Transição CBF: esta temporada tem ${clubs} clubes e ${relegated} vagas de rebaixamento; a Série C passa a ${nextClubs} clubes em ${year + 1}.`
         : `Formato estável CBF a partir de 2028: ${clubs} clubes, ${relegated} rebaixados à Série D e ${SERIE_D_PROMOTIONS} acessos da Série D.`;
 
     return {
