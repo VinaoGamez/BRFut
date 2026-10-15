@@ -2,7 +2,11 @@
 setlocal EnableExtensions
 title BR Fut - Servidor Local
 
-set "PROJECT_DIR=%USERPROFILE%\Documents\Matchday-Alpha"
+rem O projeto e sempre a pasta deste arquivo. Antes era um caminho fixo em
+rem %USERPROFILE%\Documents\Matchday-Alpha, que quebrava em qualquer outra
+rem maquina ou quando a pasta era movida.
+set "PROJECT_DIR=%~dp0"
+if "%PROJECT_DIR:~-1%"=="\" set "PROJECT_DIR=%PROJECT_DIR:~0,-1%"
 set "PORT=5080"
 set "URL=http://127.0.0.1:%PORT%/home.html"
 set "LOCAL_IP="
