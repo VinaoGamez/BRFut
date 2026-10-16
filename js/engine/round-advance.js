@@ -425,6 +425,7 @@ export function createRoundAdvanceEngine(deps) {
           seasonRoundHistory.splice(0, seasonRoundHistory.length - MEMORY_LIMITS.seasonRoundHistory);
         }
         deps.updateSeriesDKnockout(roundAtStart);
+        deps.updateSerieCPhases?.(roundAtStart);
         deps.orderAllClubFormations(roundParticipants);
         deps.renderRoster();
         deps.drawBoard();
@@ -594,6 +595,7 @@ export function createRoundAdvanceEngine(deps) {
         userStats: null,
       });
       deps.updateSeriesDKnockout(currentRound);
+      deps.updateSerieCPhases?.(currentRound);
       deps.recoverPlayers(Math.max(1, Math.round(restDays * recoveryMod)));
       deps.orderAllClubFormations(roundParticipants);
       deps.advanceCareerCalendarTo(deps.fixtureDate(currentRound));
@@ -601,6 +603,7 @@ export function createRoundAdvanceEngine(deps) {
       if (deps.evaluateManagerJobRisk()) return { sacked: true };
     } else {
       deps.updateSeriesDKnockout(currentRound);
+      deps.updateSerieCPhases?.(currentRound);
       deps.invalidateUserScheduleCache?.();
     }
     const userDivision = deps.getUserDivision();

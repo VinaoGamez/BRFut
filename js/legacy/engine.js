@@ -194,6 +194,8 @@ import {
   serieCRelegationSlots,
   normalizeDivisionTeamsSerieC,
 } from '../engine/serie-c-calendar.js';
+import { serieCTotalRounds, serieCPhaseRounds } from '../engine/serie-c-format.js';
+import { createSerieCPhaseAdvance } from '../engine/serie-c-phase-advance.js';
 import {
   getAllRealClubs,
   getRealClub,
@@ -1275,7 +1277,22 @@ export async function bootEngine({
   };
   const serieAFixtures=resolveDivisionFixtures('A',divisionTeams.A,'brasileirao',38);
   const serieBFixtures=savedNewGame?resolveDivisionFixtures('B',divisionTeams.B,'brasileirao',38):[];
-  const serieCFixtures=savedNewGame?resolveDivisionFixtures('C',divisionTeams.C,'brasileirao',null):[];
+  // A Série C usa a política de turno único (formato CBF). O expectedRounds
+  // deixa de ser null: um save com as 38 rodadas antigas precisa ser rejeitado,
+  // senão a temporada vira um híbrido de formatos.
+  const serieCRoundsExpected=serieCTotalRounds(serieCClubsForSeason(careerSeason));
+  const serieCFixtures=savedNewGame?resolveDivisionFixtures('C',divisionTeams.C,'serie-c-phase1',serieCRoundsExpected):[];
+  // Estado das fases da Série C (grupos instalados, vencedores). Vive fora dos
+  // fixtures porque quem decide se a fase já avançou é a máquina, não o array.
+  let serieCPhaseState=null;
+  if(savedSeason?.serieCPhases&&savedSeason.seed===savedNewGame?.seed)serieCPhaseState=savedSeason.serieCPhases;
+  const serieCPhases=createSerieCPhaseAdvance({
+    getNationalCompetitions:()=>nationalCompetitions,
+    getSerieCClubs:()=>serieCClubsForSeason(careerSeason),
+    getSerieCState:()=>serieCPhaseState,
+    setSerieCState:next=>{serieCPhaseState=next;},
+    rebuildCalendarGames:()=>rebuildCalendarGames(),
+  });
   const restoredSerieDGroups=!!(!officialBrazilWorld&&!serieDLayoutRepaired&&savedNewGame&&!serieCSizeRepaired&&savedSeason&&savedSeason.seed===savedNewGame.seed&&Array.isArray(savedSeason.serieDGroups)&&savedSeason.serieDGroups.length===16)?savedSeason.serieDGroups:null;
   const buildSerieDGroups=()=>{
     if(officialBrazilWorld){
@@ -3554,6 +3571,9 @@ export async function bootEngine({
     fixtureDate,
     getUserSerieDGroupIndex:()=>userSerieDGroupIndex,
     getSerieDGroups:()=>serieDGroups,
+    // Máquina de fases da Série C (formato CBF): grupos ao fim da rodada 19,
+    // final ao fim da 25.
+    updateSerieCPhases:round=>serieCPhases.updateSerieCPhases(round),
     SERIE_D_GROUP_ROUNDS,
     isSponsorChoicePending:()=>!!pendingSponsorChoice,
     onRequestSponsorPicker:()=>openSponsorPickerIfPending?.(),
