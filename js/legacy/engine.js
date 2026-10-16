@@ -881,6 +881,7 @@ export async function bootEngine({
     useCareerOriginFlow,
     careerHostMeta,
     careerPyramidFreshlyGenerated,
+    officialBrazilWorld,
     gameRandom,
     int,
     initialEnvironmentRanges,

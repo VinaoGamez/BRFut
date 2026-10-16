@@ -140,7 +140,7 @@ export function injectRealClubsIntoPyramid(divisionTeams, options = {}) {
 /**
  * Substitui o host pelo clube do usuário (nível de nomes, antes dos elencos).
  */
-export function applyCareerHostNameSwap(divisionTeams, { userClub, replacedHostClub, hostDivision }) {
+export function applyCareerHostNameSwap(divisionTeams, { userClub, replacedHostClub, hostDivision, protectedNames = [] }) {
   const next = {
     A: [...(divisionTeams?.A || [])],
     B: [...(divisionTeams?.B || [])],
@@ -161,8 +161,16 @@ export function applyCareerHostNameSwap(divisionTeams, { userClub, replacedHostC
   }
 
   if (hostDivision && Array.isArray(next[hostDivision])) {
+    // O anfitriao nao existe mais: sobram so nomes ficticios. Clubes reais da
+    // piramide oficial (protectedNames) nunca podem ser a vaga — sobrepor um deles
+    // encolheria a divisao e apagaria um clube da CBF da competicao.
+    const keepOut = new Set([normClubName(userClub)]);
+    for (const name of protectedNames) {
+      const key = normClubName(name);
+      if (key) keepOut.add(key);
+    }
     const swapIndex = next[hostDivision].findIndex(name =>
-      isGeneratedClubName(name, new Set([normClubName(userClub)])),
+      isGeneratedClubName(name, keepOut),
     );
     if (swapIndex >= 0) next[hostDivision][swapIndex] = userClub;
     else next[hostDivision].push(userClub);
@@ -442,6 +450,7 @@ export function ensureCascadePyramidIntegrity({
   victimClub,
   startDivision,
   cascadeSeed = 0,
+  protectedNames = [],
 }) {
   const startDiv = String(startDivision || 'A').toUpperCase();
   const victim = victimClub || null;
@@ -467,8 +476,12 @@ export function ensureCascadePyramidIntegrity({
     && victimDiv !== startDiv
     && !victimInRegional
     && (!expectedVictimDiv || victimDiv === expectedVictimDiv);
+  // O anfitriao ja foi consumido por um swap anterior (career-pyramid-bootstrap):
+  // ele some da piramide e o clube do jogador ocupa a vaga. Rodar o cascade de novo
+  // reaplicaria a troca sobre um clube real e encolheria a divisao.
+  const victimAlreadySwapped = !victimDiv && !victimInRegional;
 
-  if (userInStart && victimOk) {
+  if (userInStart && (victimOk || victimAlreadySwapped)) {
     return {
       applied: false,
       divisionTeams,
@@ -481,6 +494,7 @@ export function ensureCascadePyramidIntegrity({
     userClub: user,
     replacedHostClub: victim,
     hostDivision: startDiv,
+    protectedNames,
   });
   Object.assign(divisionTeams, swapped);
 

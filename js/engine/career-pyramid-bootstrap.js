@@ -116,6 +116,7 @@ export function bootstrapCareerDivisionTeams({
           userClub,
           replacedHostClub: careerHostMeta.hostName,
           hostDivision: careerHostMeta.hostDivision,
+          protectedNames: Object.values(officialBrazilWorld?.divisionTeams || {}).flat(),
         }),
       );
     } else {

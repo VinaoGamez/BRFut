@@ -51,6 +51,7 @@ export function bootstrapCareerClubs({
   useCareerOriginFlow,
   careerHostMeta,
   careerPyramidFreshlyGenerated,
+  officialBrazilWorld,
   gameRandom,
   int,
   initialEnvironmentRanges,
@@ -154,6 +155,7 @@ export function bootstrapCareerClubs({
           victimClub: careerHostMeta.hostName,
           startDivision: savedNewGame.targetDivision || userDivision,
           cascadeSeed: savedNewGame.seed || 0,
+          protectedNames: Object.values(officialBrazilWorld?.divisionTeams || {}).flat(),
         });
         if (cascadeFix.applied) {
           Object.keys(divisionRules).forEach(division => {
