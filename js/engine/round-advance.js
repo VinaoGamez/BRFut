@@ -11,6 +11,7 @@ import {
 import { recordKnockoutResult, winnerFromGame, loserFromGame } from './world-cup-bracket.js';
 import { isKnockoutShootoutCompetition, KNOCKOUT_COMPETITIONS } from './knockout-shootout.js';
 import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
+import { roundFeedsDivisionStandings } from './national-round-sim.js';
 import { worldCupWindowEndDate } from './world-cup-competition.js';
 import { worldCupGroupMatchdayEndDate } from './world-cup-competition.js';
 
@@ -580,7 +581,9 @@ export function createRoundAdvanceEngine(deps) {
           return result;
         });
       completedGames.forEach(deps.recordGameLeaders);
-      if (userDivision !== 'D' || currentRound <= 10) completedGames.forEach(deps.applyRoundToTable);
+      if (roundFeedsDivisionStandings(userDivision, currentRound, deps.getSerieCClubs?.())) {
+        completedGames.forEach(deps.applyRoundToTable);
+      }
       deps.serveDisciplineSuspensionsForRound();
       deps.serveAvailability(restDays, roundParticipants);
       deps.applyClubStatusAfterRound(completedGames, null);

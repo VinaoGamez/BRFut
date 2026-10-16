@@ -9,6 +9,7 @@ import {
   collectSerieDSecondPhaseClubs,
   serieDFormationSummary,
 } from './serie-d-formation.js';
+import { resolveSerieCOutcome } from './serie-c-standings.js';
 
 function seasonPrizeCreditedTotal(club) {
   const ledger = Array.isArray(club?.budgetLedger) ? club.budgetLedger : [];
@@ -153,11 +154,22 @@ export function createSeasonTransitionEngine(deps) {
     const relA = a.slice(-4);
     const promB = [b[0], b[1], playoffEdge(b[2], b[5], 'B'), playoffEdge(b[3], b[4], 'B')];
     const relB = b.slice(-4);
-    const promC = c.slice(0, 4);
+    // A Série C não promove os 4 primeiros da tabela: no formato CBF quem sobe é
+    // o vencedor de cada um dos dois grupos da segunda fase. `ranked('C')` já é só
+    // a fase 1 — os pontos dos grupos e da final não entram nessa tabela.
+    const serieCOutcome = resolveSerieCOutcome({
+      fixtures: nationalCompetitions.C?.fixtures,
+      clubs: divisionTeams.C,
+      clubsCount: divisionTeams.C.length,
+      relegationSlots: serieCRelegationSlots(careerSeason),
+    });
+    const promC = [...serieCOutcome.promoted];
     // A mesma função que gera o regulamento mostrado na tela: 20 clubes -> Z2,
     // 24 -> Z4, 28 -> Z6. Antes o corte usava uma constante fixa de 4 e a regra
     // exibida dizia outra coisa.
-    const relC = c.slice(-serieCRelegationSlots(careerSeason));
+    const relC = serieCOutcome.relegated.length
+      ? serieCOutcome.relegated
+      : c.slice(-serieCRelegationSlots(careerSeason));
     let promD = [...deps.serieDPromotedClubs()];
     if (promD.length < SERIE_D_PROMOTIONS) {
       const groupWinners = serieDGroups
