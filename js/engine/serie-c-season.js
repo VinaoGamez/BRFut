@@ -132,14 +132,12 @@ export function installSerieCSecondPhase({ fixtures, ranked, clubs, roundRobin }
  */
 export function installSerieCFinal({ fixtures, clubs, winnerA, winnerB }) {
   const { phase1, groups } = serieCPhaseRounds(clubs);
-  const rounds = buildSerieCRinalRoundsSafe(winnerA, winnerB);
+  const rounds = buildSerieCRFinalRounds(winnerA, winnerB);
   if (!rounds.length) return { winner: null, roundsInstalled: 0 };
   installSerieCRounds(fixtures, rounds, phase1 + groups + 1);
   return { winner: winnerA, roundsInstalled: rounds.length };
 }
 
-const buildSerieCRinalRoundsSafe = (winnerA, winnerB) =>
-  winnerA && winnerB ? buildSerieCRFinalRounds(winnerA, winnerB) : [];
 
 /** Número de rodadas que a segunda fase ocupa (grupos). */
 export const SERIE_C_GROUPS_ROUNDS = SERIE_C_GROUP_ROUNDS;

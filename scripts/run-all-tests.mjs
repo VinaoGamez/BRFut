@@ -56,6 +56,7 @@ const SUITES = [
   { label: 'championship-history', steps: [['scripts/championship-history-tests.mjs']] },
   { label: 'serie-c-calendar', steps: [['scripts/serie-c-calendar-tests.mjs']] },
   { label: 'serie-c-format', steps: [['scripts/serie-c-format-tests.mjs']] },
+  { label: 'serie-c-phase-advance', steps: [['scripts/serie-c-phase-advance-tests.mjs']] },
   // round-advance cobre nationalSeasonLastRound, que é o que impede a engine de
   // cortar a temporada antes da hora numa divisão com menos de 38 rodadas.
   { label: 'round-advance', steps: [['scripts/round-advance-tests.mjs']] },

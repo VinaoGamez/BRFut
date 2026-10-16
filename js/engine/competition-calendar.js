@@ -28,6 +28,14 @@ export const COMPETITION_CALENDAR_POLICIES = {
     balanceHomeAway: { enabled: false },
     persistFixtures: true,
   },
+  // Primeira fase da Série C no formato CBF: turno único. Grupos e final são
+  // instalados depois, a partir de quem termina o turno em cada posição.
+  'serie-c-phase1': {
+    type: 'round-robin-single',
+    balanceHomeAway: { enabled: true, maxStreak: 2, scope: 'first-leg-only' },
+    singleLeg: true,
+    persistFixtures: true,
+  },
 };
 
 /** Chave estável do par (independe de home/away). */
@@ -171,6 +179,7 @@ export function buildCompetitionRoundRobinFixtures(clubList, competitionKey = 'b
     balanceHomeAway: balance?.enabled !== false,
     maxHomeAwayStreak: balance?.maxStreak ?? 2,
     balanceScope: balance?.scope || 'first-leg-only',
+    singleLeg: policy.singleLeg === true,
   };
   return buildBrazilianLeagueFixtures(clubList, options);
 }
