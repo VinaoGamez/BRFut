@@ -268,6 +268,25 @@ export function serieCChampion({ fixtures, tieId = 'serie-c-final' } = {}) {
   };
 }
 
+/**
+ * Jogos da final, na ordem em que foram instalados.
+ *
+ * @param {Array<Array>} fixtures
+ * @param {string} tieId
+ * @returns {Array<object>}
+ */
+export function serieCFinalGames(fixtures, tieId = 'serie-c-final') {
+  if (!Array.isArray(fixtures)) return [];
+  const out = [];
+  fixtures.forEach(round => {
+    if (!Array.isArray(round)) return;
+    round.forEach(game => {
+      if (game && game.tieId === tieId) out.push(game);
+    });
+  });
+  return out;
+}
+
 /** Gols do clube marcados como visitante na final. */
 function countAwayGoals(fixtures, tieId, clubName) {
   if (!Array.isArray(fixtures) || !clubName) return 0;

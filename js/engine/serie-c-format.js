@@ -21,6 +21,9 @@
 /** Quantos clubes avançam da primeira fase para os grupos. */
 export const SERIE_C_QUALIFIED = 8;
 
+/** Clubes por grupo na segunda fase. */
+export const SERIE_C_GROUP_SIZE = 4;
+
 /** Rodadas por grupo na segunda fase (4 clubes em turno e returno). */
 export const SERIE_C_GROUP_ROUNDS = 6;
 

@@ -1,6 +1,12 @@
 import { SAVE_KEYS, LEGACY_SAVE_KEYS, SAVE_VERSION, CAREER_INDEX_KEY, ACTIVE_SLOT_SESSION_KEY, isSlotBundleKey, slotBundleKeys } from './constants.js';
 import { isCareerSaveKey, isCompatibleCareerPayload } from './save-compatibility.js';
 import { normalizeWorldCupHistory } from '../engine/world-cup-history.js';
+import { SERIE_C_MAX_CLUBS } from '../engine/serie-c-calendar.js';
+import { serieCTotalRounds } from '../engine/serie-c-format.js';
+
+// Maior temporada possível da Série C (28 clubes) — teto do detector de save
+// incompatível, para rejeitar-carreiras do antigo turno e returno.
+const SERIE_C_MAX_ROUNDS = serieCTotalRounds(SERIE_C_MAX_CLUBS);
 import { stampSyncableSave, isLocalStorageCheckpoint } from './save-sync.js';
 import { isCloudStorageActive, queueCloudDelete, queueCloudSave } from './storage-api.js';
 import { migrateLegacyStorageKeysInPlace } from './save-key-normalizer.js';
@@ -431,7 +437,14 @@ export function seasonSaveLooksCorrupt(season, careerYear) {
   const currentRound = Number(season.currentRound) || 0;
 
   for (const [division, rows] of Object.entries(standings)) {
-    const maxPlayed = division === 'D' ? 10 : 38;
+    // Teto por divisão. A Série C tem 27 rodadas com 20 clubes, então aceitar
+    // 38 deixaria passar um save do formato antigo em vez de marcar como
+    // incompatível.
+    const maxPlayed = division === 'D'
+      ? 10
+      : division === 'C'
+        ? SERIE_C_MAX_ROUNDS
+        : 38;
     if (!Array.isArray(rows)) continue;
     for (const row of rows) {
       const played = Number(row?.played) || 0;

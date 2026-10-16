@@ -1,4 +1,5 @@
 import { MODULE_VERSIONS } from '../core/constants.js';
+import { serieCTotalRounds } from './serie-c-format.js';
 import { SPONSOR_EXTERNAL_LINKS, sponsorExternalUrlBySlug } from '../core/sponsor-links.js';
 import {
   OVERDRAFT_PREMIUM_BASE,
@@ -393,7 +394,14 @@ export function financesPayrollFactor(finances) {
  * Usa média por rodada/mando — estável ao longo da temporada (não cai quando parcelas acabam).
  */
 export function estimateRoundRecurringRevenue(club, division = club?.division || 'A') {
-  const sponsorSlots = Math.max(1, Number(club?.sponsors?.installments) || (division === 'D' ? 22 : 38));
+  // Fallback quando o clube ainda não tem parcelas gravadas. A Série C tem 27
+  // rodadas com 20 clubes, não 38: usar 38 espalharia a receita por um
+  // temporada maior do que a que existe.
+  const sponsorSlots = Math.max(
+    1,
+    Number(club?.sponsors?.installments)
+      || (division === 'D' ? 22 : division === 'C' ? serieCTotalRounds(20) : 38),
+  );
   const sponsorTotal = Math.max(0, Number(club?.sponsors?.total) || 0);
   const sponsor = sponsorTotal > 0 ? Math.round(sponsorTotal / sponsorSlots) : 0;
 

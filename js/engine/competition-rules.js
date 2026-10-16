@@ -10,6 +10,13 @@ import {
   serieCRelegationSlots,
 } from './serie-c-calendar.js';
 import { serieDGroupFormationSummary } from './serie-d-format.js';
+import {
+  SERIE_C_GROUP_SIZE,
+  SERIE_C_PROMOTION_SLOTS,
+  SERIE_C_QUALIFIED,
+  serieCPhaseRounds,
+  serieCTotalRounds,
+} from './serie-c-format.js';
 import { SERIE_D_STATE_SLOTS } from './serie-d-formation.js';
 import { ufLabel } from './state-league-format.js';
 import { STATE_LEAGUE_FIRST_SERIE_D_SEASON } from './state-league-format.js';
@@ -192,6 +199,7 @@ export function buildCompetitionRules(competitionId, season) {
     const clubs = serieCClubsForSeason(year);
     const relegated = serieCRelegationSlots(year);
     const nextClubs = serieCClubsForSeason(year + 1);
+    const { phase1 } = serieCPhaseRounds(clubs);
     const expansionNote =
       clubs < 28
         ? `Transição CBF: esta temporada tem ${clubs} clubes e ${relegated} vagas de rebaixamento; a Série C passa a ${nextClubs} clubes em ${year + 1}.`
@@ -202,14 +210,24 @@ export function buildCompetitionRules(competitionId, season) {
       title: 'Regulamento da Série C',
       sections: [
         section('Formato', [
-          `${clubs} clubes em pontos corridos (turno e returno).`,
+          `Fase 1: ${clubs} clubes em turno único, ${phase1} rodadas.`,
+          `Fase 2: dois grupos de ${SERIE_C_GROUP_SIZE} — 1º/4º/5º/8º e 2º/3º/6º/7º — em turno e returno.`,
+          `Fase 3: final em dois jogos entre os vencedores de grupo.`,
+          `${serieCTotalRounds(clubs)} rodadas no total.`,
           expansionNote,
         ]),
+        section('Classificação', [
+          'Ninguém é promovido direto na primeira fase: a Série C não tem acesso por posição.',
+          `${SERIE_C_QUALIFIED} clubes avançam aos grupos (1º/4º/5º/8º num grupo, 2º/3º/6º/7º no outro).`,
+        ]),
         section('Acesso à Série B', [
-          'G4: os 4 primeiros conquistam o acesso à Série B.',
+          `${SERIE_C_PROMOTION_SLOTS}: o vencedor de cada grupo da segunda fase sobe à Série B.`,
+        ]),
+        section('Título', [
+          'O vencedor da final em dois jogos é o campeão da Série C.',
         ]),
         section('Rebaixamento à Série D', [
-          `Z${relegated}: os ${relegated} últimos são rebaixados à Série D.`,
+          `Z${relegated}: os ${relegated} últimos da FASE 1 são rebaixados à Série D.`,
           `A Série D promove ${SERIE_D_PROMOTIONS} clubes para a Série C.`,
         ]),
       ],

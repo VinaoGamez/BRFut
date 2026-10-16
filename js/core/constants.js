@@ -4,8 +4,14 @@
  */
 export const BUILD_VERSION = 'Alpha V.6.00';
 
-/** Ciclo destrutivo de compatibilidade: invalida saves Alpha anteriores no navegador. */
-export const SAVE_RESET_EPOCH = '2026-08-09-v7';
+/**
+ * Ciclo destrutivo de compatibilidade: invalida saves Alpha anteriores no navegador.
+ *
+ * v8: a Série C passou de turno e returno (38 rodadas) para o formato CBF em
+ * três fases. As posições de uma tabela não batem com as da outra, então save
+ * antigo não é migrável — tem de ser rejeitado junto com o restante.
+ */
+export const SAVE_RESET_EPOCH = '2026-08-09-v8';
 export const SAVE_RESET_MARKER_KEY = 'brfut-save-reset-epoch';
 
 /** Nome público do jogo (UI, títulos, alertas de update). */
@@ -95,12 +101,13 @@ export function saveKeyVariants(key) {
 }
 
 export const SAVE_VERSION = {
-  career: 7,
+  career: 8,
   season: 1,
   playerHistory: 1,
 };
 
 export const MODULE_VERSIONS = {
+  serieC: 1,
   messages: 1,
   save: 4,
   injury: 4,

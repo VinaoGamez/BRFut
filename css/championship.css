@@ -1351,6 +1351,18 @@
   padding: 24px 18px;
 }
 
+/* Série C — tabelas dos dois grupos da segunda fase */
+.championship-page-group-title {
+  margin: 14px 0 6px;
+  color: #9fc2bd;
+  font: 700 11px 'DM Sans', sans-serif;
+  letter-spacing: 0.14em;
+}
+
+.championship-page-group-title:first-child {
+  margin-top: 0;
+}
+
 .championship-page-round-panel {
   display: flex;
   flex-direction: column;

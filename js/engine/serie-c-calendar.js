@@ -23,6 +23,9 @@ export function serieCClubsForSeason(season) {
   return 28;
 }
 
+/** Maior tamanho que a Série C alcança no formato CBF. */
+export const SERIE_C_MAX_CLUBS = 28;
+
 /**
  * Zonas de rebaixamento para a Série D na tabela da Série C.
  *

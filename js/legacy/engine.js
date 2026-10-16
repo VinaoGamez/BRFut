@@ -194,7 +194,15 @@ import {
   serieCRelegationSlots,
   normalizeDivisionTeamsSerieC,
 } from '../engine/serie-c-calendar.js';
-import { serieCTotalRounds, serieCPhaseRounds } from '../engine/serie-c-format.js';
+import { serieCTotalRounds, serieCPhaseRounds, SERIE_C_PROMOTION_SLOTS } from '../engine/serie-c-format.js';
+import {
+  detectSerieCGroups,
+  serieCChampion,
+  serieCFinalGames,
+  serieCGroupStandings,
+  serieCGroupWinners,
+  serieCPhaseOneStandings,
+} from '../engine/serie-c-standings.js';
 import { createSerieCPhaseAdvance } from '../engine/serie-c-phase-advance.js';
 import {
   getAllRealClubs,
@@ -826,9 +834,20 @@ export async function bootEngine({
   const divisionRules={
     A:{name:'Série A',clubs:20,power:DIVISION_CLUB_POWER.A,format:'38 rodadas em turno e returno',promotion:0,relegation:4},
     B:{name:'Série B',clubs:20,power:DIVISION_CLUB_POWER.B,format:'38 rodadas; 1º e 2º sobem, 3º–6º disputam playoffs',promotion:4,relegation:4},
-    C:{name:'Série C',clubs:serieCClubsForSeason(careerSeason),power:DIVISION_CLUB_POWER.C,format:'pontos corridos em turno e returno',promotion:4,relegation:serieCRelegationSlots(careerSeason)},
+    C:{name:'Série C',clubs:serieCClubsForSeason(careerSeason),power:DIVISION_CLUB_POWER.C,format:`turno único de ${serieCClubsForSeason(careerSeason) - 1} rodadas; 8 avançam; dois grupos de 4; final em dois jogos; vencedores de grupo sobem`,promotion:SERIE_C_PROMOTION_SLOTS,relegation:serieCRelegationSlots(careerSeason)},
     D:{name:'Série D',clubs:SERIE_D_CLUBS,power:DIVISION_CLUB_POWER.D,format:'16 grupos de 6; fase de grupos; 4 avançam por grupo; mata-mata e playoffs em ida e volta',promotion:SERIE_D_PROMOTIONS,relegation:0}
   };
+  // Rodadas que a divisão realmente disputa. A Série C não é turno e returno:
+  // são 27 com 20 clubes (31 com 24, 35 com 28). Fixar 38 fazia a IA calibrar
+  // ambição e risco para uma temporada que não existe, e o patrocínio pagar por
+  // 11 rodadas que nunca acontecem. A Série D mantém a contagem própria porque
+  // o mata-mata é um bracket separado das 10 rodadas de grupo.
+  const divisionSeasonRounds=div=>{
+    if(div==='D')return SERIE_D_GROUP_ROUNDS;
+    if(div==='C')return serieCTotalRounds(serieCClubsForSeason(careerSeason));
+    return Math.max(1,(Number(divisionRules?.[div]?.clubs)||20)-1)*2;
+  };
+  const divisionSponsorInstallments=div=>div==='D'?22:divisionSeasonRounds(div);
   function generatedPlayer(role,index,clubPower,division='A',starterBoost=true){
     return generatePlayerCore({
       role,
@@ -1195,7 +1214,7 @@ export async function bootEngine({
     const reputation=manager?.reputation??60;
     clubs[userClub].managerReputation=reputation;
     clubs[userClub].managerName=manager?.name||careerProfile.managerName||clubs[userClub].managerName;
-    const installments=userDivision==='D'?22:38;
+    const installments=divisionSponsorInstallments(userDivision);
     const result=chargeRoundCosts(clubs[userClub],{
       division:userDivision,
       round,
@@ -1639,7 +1658,7 @@ export async function bootEngine({
         random:Math.random,
         savedSponsors,
         creditPackage:false,
-        installments:userDivision==='D'?22:38,
+        installments:divisionSponsorInstallments(userDivision),
       });
     }
     const savedTvRights=validSavedSeason?savedSeason?.userTvRights:null;
@@ -1927,7 +1946,7 @@ export async function bootEngine({
       form,
       serieDPhase:serieDPhase||'group',
       promoted,
-      seasonRounds:userDivision==='D'?SERIE_D_GROUP_ROUNDS:38,
+      seasonRounds:divisionSeasonRounds(userDivision),
       division:userDivision,
     };
   };
@@ -2465,7 +2484,7 @@ export async function bootEngine({
     const relegation=Number(divisionRules?.[div]?.relegation)||4;
     return {
       standings:competition?.standings||[],
-      seasonRounds:div==='D'?SERIE_D_GROUP_ROUNDS:38,
+      seasonRounds:divisionSeasonRounds(div),
       currentRound:game?.round??currentRound,
       relegationZone:Math.max(0,relegation),
       division:div,
@@ -5077,6 +5096,34 @@ export async function bootEngine({
     else{homeRow.draws++;awayRow.draws++;homeRow.points++;awayRow.points++;}
     return next;
   };
+  // Visão por fase da Série C para a tela de campeonatos. A primeira fase é a
+  // tabela da divisão; os grupos e a final só existem depois de instalados, e
+  // cada um tem a sua tabela — somados na tabela única dariam uma classificação
+  // que não existe no regulamento da CBF.
+  const serieCView=()=>{
+    const competition=nationalCompetitions.C;
+    const fixtures=competition?.fixtures;
+    const clubs=[...(divisionTeams.C||[])];
+    const clubsCount=clubs.length||serieCClubsForSeason(careerSeason);
+    const groups=detectSerieCGroups(fixtures);
+    const tables=groups?serieCGroupStandings({fixtures,groups,clubsCount}):{A:[],B:[]};
+    const finalGames=serieCFinalGames(fixtures);
+    const phase1=serieCPhaseOneStandings({fixtures,clubs,clubsCount});
+    const available=[1];
+    if(tables.A.length||tables.B.length)available.push(2);
+    if(finalGames.length)available.push(3);
+    return {
+      available,
+      phase1,
+      groups:[
+        {id:'A',label:'GRUPO A',rows:tables.A},
+        {id:'B',label:'GRUPO B',rows:tables.B},
+      ],
+      groupWinners:serieCGroupWinners(tables),
+      finalGames,
+      champion:serieCChampion({fixtures}).champion,
+    };
+  };
   const standingsRowsForDisplay=(division)=>{
     const competition=nationalCompetitions[division];
     if(!competition?.standings?.length)return [];
@@ -6168,6 +6215,7 @@ export async function bootEngine({
     leagueClassificationZone,
     serieCRelegationZone,
     standingsRowsForDisplay,
+    getSerieCView: () => serieCView(),
     seriesDGroupRows,
     stateGroupRows,
     applyTablePreviewToRows,
@@ -7116,7 +7164,7 @@ export async function bootEngine({
         secondaries,
         division:userDivision,
         season:careerSeason,
-        installments:userDivision==='D'?22:38,
+        installments:divisionSponsorInstallments(userDivision),
       });
       if(!applied)return;
       // Fecha pendência antes de esconder o modal — evita ghost-click reabrir o picker.
