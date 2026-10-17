@@ -17,6 +17,9 @@
   Sem contexto de elenco, mantém o completo por segurança. Fichas individuais,
   mensagens e superfícies que não usam a célula compartilhada mantêm o nome.
 - Dados e funções são empacotados pelo Vite, sem consulta de rede em runtime.
+- `generatePlayer()` também usa `rollPlayerName()` diretamente: profissional,
+  base e chamadas isoladas não passam mais pela montagem antiga de nomes.
+  Listas legacy `firstNames`/`lastNames` não substituem a pool nacional.
 
 Validação:
 

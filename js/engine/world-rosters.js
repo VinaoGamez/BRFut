@@ -5,10 +5,10 @@
 
 import { ensurePlayerId } from './player-identity.js';
 import { ensureMarketFields } from './player-value.js';
-import { sanitizeSetPieceForDivision } from './player-generation.js';
 import { ensureRosterNationalities } from './player-nationality.js';
 import { ensureForeignPlayerNames } from './player-names.js';
 import { ensureCardVariantId } from './player-card-variant-id.js';
+import { ensurePlayerOverall } from './player-overall.js';
 
 const WORKLOAD_DEFAULT = {
   minutesLast7Days: 0,
@@ -29,6 +29,9 @@ const PLAYER_WORLD_KEYS = [
   'pos',
   'age',
   'overall',
+  'overallRaw',
+  'overallModelVersion',
+  'generationProfile',
   'potential',
   'height',
   'preferredFoot',
@@ -99,6 +102,7 @@ export function hydratePlayer(raw, context = {}) {
     fatigue: Number.isFinite(Number(raw.fatigue)) ? Number(raw.fatigue) : 100,
   };
   ensurePlayerId(player, context);
+  ensurePlayerOverall(player);
   ensureMarketFields(player, {
     division: context.division,
     season: context.season,
@@ -190,7 +194,8 @@ export function stampWorldPlayers(clubs, context = {}) {
         division,
         season: context.season,
       });
-      if (sanitizeSetPieceForDivision(player, division)) setPieceRepaired += 1;
+      // Preserve saved attributes, including specialties, across promotions.
+      ensurePlayerOverall(player);
       ensureCardVariantId(player);
     });
     ensureRosterNationalities(club.roster, division);

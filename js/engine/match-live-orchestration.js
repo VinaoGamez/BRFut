@@ -1,3 +1,4 @@
+import { overallControlContribution } from './match-tuning.js';
 import { MODULE_VERSIONS } from '../core/constants.js';
 import { getSponsors, sponsorLogoSlug } from './economy.js';
 import { sponsorLogoUrl } from '../assets/sponsor-logos.js';
@@ -1529,15 +1530,12 @@ export function createLiveMatchOrchestration(deps) {
 
     const homeBase = profile(), awayBase = opponentForMatch();
     const homeLive = liveOverall('home', homeBase), awayLive = liveOverall('away', awayBase);
-    // A média efetiva ajusta as ações em escala moderada: favorece o melhor
-    // momento, mas atributos individuais e aleatoriedade continuam decisivos.
-    const homeProfile = { ...homeBase, overall: homeLive, attack: homeBase.attack + (homeLive - homeBase.overall) * .38, passing: homeBase.passing + (homeLive - homeBase.overall) * .32, defense: homeBase.defense + (homeLive - homeBase.overall) * .32 - cautionPenalty('home') };
-    const awayProfile = { ...awayBase, overall: awayLive, attack: awayBase.attack + (awayLive - awayBase.overall) * .38, passing: awayBase.passing + (awayLive - awayBase.overall) * .32, defense: awayBase.defense + (awayLive - awayBase.overall) * .32 - cautionPenalty('away') };
+    // OVR efetivo entra apenas no controle coletivo limitado. As ações usam
+    // os perfis de atributos, sem reaplicar a diferença de OVR neles.
+    const homeProfile = { ...homeBase, overall: homeLive, attack: homeBase.attack, passing: homeBase.passing, defense: homeBase.defense - cautionPenalty('home') };
+    const awayProfile = { ...awayBase, overall: awayLive, attack: awayBase.attack, passing: awayBase.passing, defense: awayBase.defense - cautionPenalty('away') };
     // Posse: força + tática + mando real do calendário (não o "home" interno do motor).
     // Alinhado ao match-sim: swings perceptíveis sem extremos irreais (ex.: 62–38 constantes).
-    const overallGap = homeLive - awayLive;
-    const openingPressure = minute <= 15 && Math.abs(overallGap) > 5 ? clamp((Math.abs(overallGap) - 5) * .55 + 1.5, 1.5, 5.5) : 0;
-    const homeOpeningBias = overallGap > 5 ? openingPressure : overallGap < -5 ? -openingPressure : 0;
     stats.home.momentum = clamp(stats.home.momentum * .88, -12, 12);
     stats.away.momentum = clamp(stats.away.momentum * .88, -12, 12);
     const homeTactic = tacticFor('home'), awayTactic = tacticFor('away');
@@ -1547,7 +1545,7 @@ export function createLiveMatchOrchestration(deps) {
     const redControl = ((cards.away?.filter(card => card.red).length || 0) - (cards.home?.filter(card => card.red).length || 0)) * 2;
     // Motor home = usuário; o bônus de mando segue o calendário (casa/fora de verdade).
     const venueBias = userAtHomeInLiveMatch() ? 2.2 : -2.2;
-    const structuralControl = (homeProfile.passing - awayProfile.passing) * .40 + (homeProfile.overall - awayProfile.overall) * .21 + (homeTactic.possession - awayTactic.possession) * .10 + (homeTactic.press - awayTactic.press) * .03 + (homeTactic.mentality - awayTactic.mentality) * .02 + (stats.home.momentum - stats.away.momentum) * .12 + passControl + attackControl + redControl + homeOpeningBias * .2 + venueBias;
+    const structuralControl = (homeProfile.passing - awayProfile.passing) * .40 + overallControlContribution(homeProfile.overall, awayProfile.overall) + (homeTactic.possession - awayTactic.possession) * .10 + (homeTactic.press - awayTactic.press) * .03 + (homeTactic.mentality - awayTactic.mentality) * .02 + (stats.home.momentum - stats.away.momentum) * .12 + passControl + attackControl + redControl + venueBias;
     const hasRed = cards.home?.some(card => card.red) || cards.away?.some(card => card.red);
     const possMin = hasRed ? 28 : 34, possMax = hasRed ? 72 : 66;
     const targetPossession = clamp(50 + structuralControl, possMin, possMax);
@@ -1612,8 +1610,7 @@ export function createLiveMatchOrchestration(deps) {
       startPenaltyAgainst(penCurrent, penOther);
       return;
     }
-    const openingBoost = minute <= 15 && Math.abs(overallGap) > 5 && ((overallGap > 5 && side === 'home') || (overallGap < -5 && side === 'away')) ? clamp(.08 + (Math.abs(overallGap) - 5) * .022, .08, .22) : 0;
-    buildAttack(side, current, other, passQuality, openingBoost);
+    buildAttack(side, current, other, passQuality);
     renderStats();
     return;
     addPasses('home', homeProfile, awayProfile, elapsed, homeShare);

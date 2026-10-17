@@ -345,8 +345,8 @@ export function createMatchRatingsEngine(deps) {
         : 0;
     return clamp(
       power.overall - (100 - fatigue) * 0.055 - reds * 6.5 + momentum + passForm + attackForm + drawDominance,
-      50,
-      95,
+      1,
+      99,
     );
   };
 

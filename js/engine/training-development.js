@@ -5,6 +5,7 @@
 import { MODULE_VERSIONS } from '../core/constants.js';
 import { formatOvrMarkHtml } from './player-development.js';
 import { syncOverallFromAttributes } from './player-generation.js';
+import { canDevelopAttribute, calculatePlayerOverall, syncPlayerOverall } from './player-overall.js';
 import { clubHasYouthTrainingTargets } from './youth-academy.js';
 
 export const TRAINING_MODULE_VERSION = MODULE_VERSIONS.trainingDevelopment || 1;
@@ -202,17 +203,13 @@ function focusAttrKeys(focusId, player) {
   return DEVELOPMENT_FOCUSES[focusId]?.attrs || ['passing'];
 }
 
-function attrCapForPlayer(player) {
-  const pot = Number(player.potential) || Number(player.overall) || 99;
-  const age = Number(player.age) || 25;
-  return age <= 26 ? Math.min(99, pot + 4) : pot;
-}
-
 function canRaiseAttr(player, key, progress, caps) {
   const gained = Number(progress.attrGains?.[key]) || 0;
   if (gained >= caps.maxAttr) return false;
   const cur = Number(player[key]) || 0;
-  return cur < attrCapForPlayer(player);
+  const start = Number(progress.startOverallRaw ?? calculatePlayerOverall(player));
+  const ceiling = Math.min(Number(player.potential) || start, start + caps.maxOvr);
+  return cur < 99 && canDevelopAttribute(player, key, 1, ceiling);
 }
 
 function pickTrainableAttr(player, focusId, progress, caps) {
@@ -269,6 +266,7 @@ export function applyDevelopmentTrainingDay({
 
   roster.forEach(player => {
     if (!player) return;
+    syncPlayerOverall(player);
     const playerId = typeof getPlayerId === 'function' ? getPlayerId(player) : null;
     if (!playerId) return;
 
@@ -300,6 +298,7 @@ export function applyDevelopmentTrainingDay({
     totalXp += xp;
 
     const progress = ensureTrainingProgress(state, playerId);
+    if (!Number.isFinite(progress.startOverallRaw)) progress.startOverallRaw = calculatePlayerOverall(player);
     progress.xpSeason = (Number(progress.xpSeason) || 0) + xp;
 
     const caps = annualCaps(player.age);
@@ -319,21 +318,9 @@ export function applyDevelopmentTrainingDay({
       progress.attrGains[attrKey] = (Number(progress.attrGains[attrKey]) || 0) + 1;
       progress.xpSeason -= XP_PER_ATTR_POINT;
 
-      const ovrBefore = Number(player.overall) || 0;
       const ovrSync = syncOverallFromAttributes(player);
-      let ovrDelta = ovrSync.applied;
-
-      if (ovrDelta > 0) {
-        const room = caps.maxOvr - (Number(progress.ovrFromTraining) || 0);
-        if (room <= 0) {
-          player.overall = ovrBefore;
-          ovrDelta = 0;
-        } else if (ovrDelta > room) {
-          player.overall = ovrBefore + room;
-          ovrDelta = room;
-        }
-        if (ovrDelta > 0) progress.ovrFromTraining = (Number(progress.ovrFromTraining) || 0) + ovrDelta;
-      }
+      const ovrDelta = ovrSync.applied;
+      if (ovrDelta > 0) progress.ovrFromTraining = (Number(progress.ovrFromTraining) || 0) + ovrDelta;
 
       gains.push({
         playerId,

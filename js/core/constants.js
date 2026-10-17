@@ -112,9 +112,9 @@ export const MODULE_VERSIONS = {
   save: 4,
   injury: 4,
   matchTuning: 1,
-  matchSim: 2,
+  matchSim: 3,
   matchCore: 1,
-  matchLive: 4,
+  matchLive: 5,
   // 6: janelas FIFA reais por ano, Copa por edição e janelas de divisão
   // alargadas. Save agendado sob o calendário anterior tem as datas erradas.
   calendar: 6,
@@ -128,14 +128,14 @@ export const MODULE_VERSIONS = {
   sponsorPicker: 4,
   liveDayMatches: 1,
   fatigue: 1,
-  trainingDevelopment: 1,
+  trainingDevelopment: 2,
   matchLiveUi: 9,
   matchLiveAudio: 6,
   playerRename: 1,
   testerHub: 1,
   matchAvailability: 1,
   matchLiveAwaySubs: 1,
-  matchLiveOrchestration: 5,
+  matchLiveOrchestration: 6,
   matchRatings: 1,
   matchLiveSession: 6,
   liveMatchPersist: 2,
@@ -153,7 +153,7 @@ export const MODULE_VERSIONS = {
   clubFinancialRestriction: 1,
   playerHistory: 1,
   playerMatchStats: 1,
-  playerDevelopment: 1,
+  playerDevelopment: 2,
   transfers: 5,
 };
 

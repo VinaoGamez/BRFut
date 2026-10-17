@@ -138,7 +138,13 @@ check('liveOverall reage a expulsão', () => {
   assert(after < before, `${before} -> ${after}`);
 });
 
-console.log('match-ratings-tests: 7/7 OK');
+check('liveOverall preserva diferenças abaixo de 50', () => {
+  const weak = engine.liveOverall('home', { overall: 15 });
+  const stronger = engine.liveOverall('home', { overall: 30 });
+  assert(weak < stronger && stronger < 50, `${weak} -> ${stronger}`);
+});
+
+console.log('match-ratings-tests: 8/8 OK');
 
 function check(label, fn) {
   try {
