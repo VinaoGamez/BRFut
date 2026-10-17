@@ -1550,7 +1550,14 @@ export async function fetchGoogleAuthConfig() {
   }
 }
 
-/** Contagem de cadastros e jogadores ON (API local 5081). */
+/**
+ * Contagem de cadastros e jogadores ON (API local 5081).
+ *
+ * @deprecated O único consumidor era o contador de comunidade da tela inicial,
+ * removido junto com ele: os números vinham de uma base gerada no cliente e
+ * não refletiam servidor nenhum. Sem consumidor, este endpoint do backend não
+ * tem o que alimentar.
+ */
 export async function fetchPlayerStats() {
   const health = await fetchBackendHealth();
   if (!health || typeof health.registered !== 'number') return null;

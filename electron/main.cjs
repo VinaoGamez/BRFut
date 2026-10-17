@@ -20,6 +20,11 @@ const ENTRADA = 'home.html';
 const ESQUEMA = 'app';
 const HOST = 'brfut';
 
+// Electron tira o nome da pasta de dados do `name` do package.json, que aqui é
+// "brfut-alpha" — o app se chamaria BR Fut mas salvaria em
+// %APPDATA%\brfut-alpha. Fixa o nome para a pasta ficar %APPDATA%\BR Fut.
+app.setName('BR Fut');
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',

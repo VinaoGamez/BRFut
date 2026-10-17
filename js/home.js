@@ -5,7 +5,6 @@ import { SPONSOR_EXTERNAL_LINKS } from './core/sponsor-links.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
 import { showSaveResetLoginAlert } from './ui/save-reset-login-alert.js';
 import { createTesterHubFeature } from './feature/tester-hub/index.js';
-import { fetchPlayerStats, probeBackend } from './core/storage-api.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 import { endBrowserSession, getAuthToken } from './core/storage-api.js';
@@ -242,58 +241,10 @@ if (SITE_MAINTENANCE.enabled) {
   const loginBtn = $('#loginBtn');
   const careerHint = $('#careerHint');
   const storageHint = $('#homeStorageHint');
-  const playerStatsEl = $('#homePlayerStats');
-  let playerStatsTimer = 0;
-
-  /**
-   * Indicador promocional da comunidade: uma base de vitrine discreta somada
-   * aos números reais da API. Não deve ser apresentado como métrica analítica
-   * de cadastros ou de usuários simultâneos.
-   */
-  const displayPlayerStats = stats => {
-    const now = new Date();
-    const hour = now.getHours();
-    const daySeed = Math.floor(now.getTime() / 86_400_000);
-    // Âncora: 29/jul/2026; +~0,7 cadastro fictício/dia.
-    const launchDay = Math.floor(Date.UTC(2026, 6, 29) / 86_400_000);
-    const daysSince = Math.max(0, daySeed - launchDay);
-    const registeredBase = 55 + Math.floor(daysSince * 0.7) + (daySeed % 3); // ~55–57 hoje
-    const eveningBoost = hour >= 19 && hour <= 23 ? 3 : hour >= 12 && hour <= 18 ? 2 : 1;
-    const onlineBase = 8 + eveningBoost + ((daySeed + hour) % 2); // ~9–13
-    const realRegistered = Math.max(0, Number.isFinite(Number(stats?.registered)) ? Number(stats.registered) : 0);
-    const realOnline = Math.max(0, Number.isFinite(Number(stats?.online)) ? Number(stats.online) : 0);
-    return {
-      registered: registeredBase + realRegistered,
-      online: onlineBase + realOnline,
-    };
-  };
-
-  const renderPlayerStats = stats => {
-    if (!playerStatsEl) return;
-    const { online, registered } = displayPlayerStats(stats);
-    playerStatsEl.innerHTML =
-      `<span class="stat-on">${online} EM CAMPO</span> · ${registered} NA COMUNIDADE`;
-    playerStatsEl.setAttribute(
-      'aria-label',
-      `${online} pessoas em campo e ${registered} pessoas na comunidade — indicador promocional`,
-    );
-    playerStatsEl.title = 'Indicador promocional da comunidade BR Fut';
-    playerStatsEl.classList.remove('hidden');
-  };
-
-  const refreshPlayerStats = async () => {
-    if (!(await probeBackend())) {
-      renderPlayerStats(null);
-      return;
-    }
-    renderPlayerStats(await fetchPlayerStats());
-  };
-
-  const startPlayerStatsPolling = () => {
-    if (playerStatsTimer || typeof window === 'undefined') return;
-    void refreshPlayerStats();
-    playerStatsTimer = window.setInterval(refreshPlayerStats, 60_000);
-  };
+  // O rodapé mostra a versão e onde a carreira está salva. O contador de
+  // comunidade que ficava aqui ("N EM CAMPO · N NA COMUNIDADE") foi removido:
+  // a base dos números era gerada no cliente, a partir de uma data de lançamento
+  // fixa, e não refletia nada real. Sem servidor, não há o que medir.
 
   const syncStorageHint = ({ loggedIn, hasBackend }) => {
     if (!storageHint) return;
@@ -351,7 +302,6 @@ if (SITE_MAINTENANCE.enabled) {
       loggedIn,
       hasBackend: !!state.backend || state.mode === 'cloud' || !!BRFUT_API_ORIGIN,
     });
-    startPlayerStatsPolling();
     careerSlots.renderList();
   });
 

@@ -465,16 +465,6 @@ a.home-sponsor-slot:focus-visible {
   letter-spacing: .4px;
 }
 
-.home-player-stats {
-  color: #9ec4c8;
-  font: 600 10px 'DM Sans', sans-serif;
-  letter-spacing: .35px;
-}
-
-.home-player-stats .stat-on {
-  color: #6ef0a8;
-}
-
 .home-account-mini {
   display: flex;
   align-items: center;
@@ -788,8 +778,7 @@ a.home-sponsor-slot:focus-visible {
 .home-maintenance-mode .home-hint,
 .home-maintenance-mode .home-last-save,
 .home-maintenance-mode #accountLogged,
-.home-maintenance-mode #homeStorageHint,
-.home-maintenance-mode #homePlayerStats {
+.home-maintenance-mode #homeStorageHint {
   display: none !important;
 }
 

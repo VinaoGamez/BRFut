@@ -71,11 +71,52 @@ linha do `electron-builder.yml`.
 o sintoma é uma janela em branco com
 `Unable to load preload script`, que não aponta para a causa.
 
-## Saves
+## Como funciona na máquina do usuário
 
-`localStorage` do Electron persiste em `%APPDATA%\BR Fut`. O
+### O que acontece ao abrir o instalador
+
+Assistente em português: escolhe a pasta, cria o atalho no menu Iniciar (e na
+área de trabalho), deixa instalar só para o usuário — sem pedir administrador.
+Instala em `%LOCALAPPDATA%\Programs\BR` (332 MB) e registra o desinstalador no
+Painel de Controle.
+
+**Desinstalar não apaga as carreiras.** `deleteAppDataOnUninstall: false`.
+Reinstalar ou trocar de máquina com a pasta `%APPDATA%\BR Fut` copiada traz as
+carreiras junto.
+
+### Como o motor roda
+
+O jogo continua sendo a mesma aplicação web — nenhum código do jogo foi
+reescrito para o desktop. O que existe em volta:
+
+1. `electron/main.cjs` cria a janela e registra o esquema `app://`
+2. Toda requisição do jogo é servida de dentro do pacote (`app.asar`), do disco
+3. `localStorage` é o do Chromium, com um LevelDB em disco
+
+**Não há servidor, porta, Node na máquina do usuário, nem Python.** O app abre
+sozinho. O `SKILL` de `probeBackend` vai falhar, e tudo bem: o jogo foi montado
+com as variáveis de modo offline embutidas, então nunca espera login.
+
+### Onde ficam os saves
+
+```
+%APPDATA%\BR Fut\
+├── Local Storage\leveldb\    ← as carreiras (localStorage do Chromium)
+├── Preferences               ← janela, idioma
+├── Cache / Code Cache / GPUCache
+└── Local State
+```
+
+Sozinho, ocupa **4,6 MB**. As chaves do jogo (`brfut-career`, `brfut-season`,
+`brfut-save-reset-epoch`, slots `brfut-slot-*`) estão todas no LevelDB.
+
+Copiar essa pasta para outro PC transfere as carreiras. O
 `SAVE_RESET_EPOCH` funciona igual ao navegador: trocar o valor reinicia as
-carreiras, e é o mecanismo para invalidar saves de formato antigo.
+carreiras — é o mecanismo usado para invalidar saves de formato antigo.
+
+> **Detalhe que custou uma correção:** o Electron tira o nome dessa pasta do
+> `name` do `package.json`, que é `brfut-alpha`. Sem `app.setName('BR Fut')` em
+> `main.cjs`, o app se chamava "BR Fut" mas salvava em `%APPDATA%\brfut-alpha`.
 
 ## Modo offline embutido
 
