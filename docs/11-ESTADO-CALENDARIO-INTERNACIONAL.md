@@ -117,14 +117,47 @@ rodada da Série A, e os dois finalistas jogavam duas partidas no mesmo dia.
 
 ## Continental
 
-Vagas: Brasil tem 7 na Libertadores e 6 na Sul-Americana, e **todas vêm da Série A
-ou da Série B**. Série C e Série D não têm vaga nenhuma.
+Vagas do Brasil: **7 na Libertadores e 6 na Sul-Americana**, todas de clubes da
+Série A e da Série B. Série C e Série D nunca tiveram vaga nenhuma.
 
-`divisionPlaysContinental(divisao)` é a única fonte dessa regra.
+Em **2026 as 13 vagas brasileiras foram todas da Série A** — a Série B nem entrou.
+Isso está registrado em teste (`com a Série A cheia a Série B não entra — como em
+2026`), porque a regra do jogo permite a Série B e a realidade daquele ano não
+usou.
 
-A competição continua **desligada in-game** (`enabled: false`): as datas são
-reservadas por clube e nunca bloqueiam a temporada. O precedente é a Copa do
-Brasil, que já mexe em 126 clubes incluindo C e D sem travar ninguém.
+### Datas de 2026
+
+| | Libertadores | Sul-Americana |
+|---|---|---|
+| período | 3/fev – 28/nov | 3/mar – 21/nov |
+| grupos | 7/abr a 28/mai (6 rodadas) | as mesmas datas |
+| pré-classificatória | 3 e 10/fev, 24/fev, 10/mar | fase inicial 3/mar (jogo único) |
+| oitavas | 11 e 18/ago | 11 e 18/ago |
+| quartas | 15 e 21/set | 15 e 21/set |
+| semis | 21 e 28/out | 20 e 21/out |
+| final | 28/nov, jogo único | 21/nov, jogo único |
+| repescagem | não tem | 21 e 28/jul |
+
+As duas competições jogam as 6 rodadas de grupo nas mesmas datas.
+
+### Distribuição das vagas
+
+- **Libertadores** — o campeão da Copa do Brasil e os 7 primeiros da Série A.
+  Quando o campeão da copa já está entre eles, o sétimo lugar entra no lugar dele
+  para a vaga não fechar com 6.
+- **Sul-Americana** — 6 vagas para quem ficou fora da Libertadores, na ordem da
+  Série A. Sobrando vaga, pega da Série B.
+
+### Nada disso bloqueia a temporada
+
+A competição está **desligada in-game** (`enabled: false`). O que existe são as
+datas, reservadas **por clube**. É o mesmo desenho da Copa do Brasil, que já mexe
+em 126 clubes incluindo C e D sem travar ninguém: data reservada é data do clube
+que joga continental, não um feriado geral.
+
+`divisionHasBerth(divisao, competicao)` e `berthAudit(berths)` são as guardas. A
+segunda devolve `ok: false` se aparecer qualquer clube de C ou D — está nos testes
+como trava contra alguém reintroduzir a regra errada.
 
 ## Como auditar a capacidade
 
@@ -140,3 +173,14 @@ Hoje: `100/100`.
 
 Rodar depois de mexer em qualquer janela, banda de copa ou blackout — foi assim
 que apareceram as quatro falhas que o modelo novo expôs.
+
+## Quando o navegador não der
+
+```
+node scripts/import-integrity-tests.mjs
+```
+
+Varre os 261 módulos em `js/` e confere que todo símbolo importado de um módulo
+local existe naquele módulo. Foi um export removido no caminho
+(`FIFA_FRIENDLY_WINDOWS`) que derrubou 36 suítes de uma vez, e isso não depende
+de navegador para pegar.
