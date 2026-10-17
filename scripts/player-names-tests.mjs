@@ -121,33 +121,42 @@ check('pool nao tem nome com grafia duplicada', () => {
   }
 });
 
-check('sufixo nunca aparece sozinho no sorteio', () => {
-  // "Paulo Silva Filho" sem nenhum "Paulo Silva" no clube nao diz nada ao
-  // jogador. O sufixo so tem sentido quando herda um nome que existe, e quem
-  // aplica e a herdanca da base - nao o sorteio.
-  for (const nacionalidade of ['Brasil', 'Colombia', 'Japão', 'Nigéria']) {
-    for (const nome of varios(300, nacionalidade, 41)) {
-      const semSufixo = nome.replace(/ (Júnior|Neto|Filho)$/i, '');
-      assert.equal(semSufixo, nome, nacionalidade + ': sufixo sem nome herdado - ' + nome);
-    }
+check('patronimico e sobrenome legitimo, nao mecanica', () => {
+  // "Paulo Silva Filho" quer dizer filho de um Silva. Fala dos pais do jogador
+  // e nao exige nenhum "Paulo Silva" no clube — e assim que o IBGE lista, e
+  // assim que o brasileiro fala.
+  //
+  // Ja houve aqui uma leitura errada: o sufixo foi tratado como se apontasse
+  // para um homonimo no elenco, e Filho e Junior sairam dos sobrenomes. Nao
+  // tinha por que. Esta pool os traz de volta.
+  const br = PLAYER_NAME_POOLS.Brasil;
+  assert.ok(br.last.includes('Filho'), 'Filho e sobrenome brasileiro comum');
+  assert.ok(br.last.includes('Júnior'), 'Júnior e sobrenome brasileiro comum');
+
+  // E devem aparecer no sorteio, numa taxa baixa e plausível.
+  let comPatronimico = 0;
+  const N = 4000;
+  for (const nome of varios(N, 'Brasil', 77)) {
+    if (/ (Júnior|Neto|Filho)$/i.test(nome)) comPatronimico += 1;
   }
+  const pct = (comPatronimico / N) * 100;
+  assert.ok(
+    pct > 0.4 && pct < 6,
+    `patronímico em ${pct.toFixed(2)}% de ${N} nomes — fora da faixa plausível`,
+  );
+  console.log(`    patronímico em ${pct.toFixed(2)}% dos nomes brasileiros`);
 });
 
-check('pool que nao declara sufixo nao gera sufixo', () => {
-  // "Tanaka Hiroshi Júnior" nao existe. So o Brasil tem patronimico, e o
-  // sorteio nunca o aplica.
+check('só o Brasil usa patronímico', () => {
   for (const [pais, pool] of Object.entries(PLAYER_NAME_POOLS)) {
-    if (pool.sufixos && pool.sufixos.length) continue;
-    for (const nome of varios(200, pais, 53)) {
-      assert.ok(!/ (Júnior|Neto|Filho)$/.test(nome), pais + ' gerou sufixo: ' + nome);
+    if (pais === 'Brasil') continue;
+    for (const nome of varios(150, pais, 59)) {
+      assert.ok(
+        !/ (Júnior|Neto|Filho)$/i.test(nome),
+        `${pais} gerou patronímico: "${nome}"`,
+      );
     }
   }
-});
-
-check('so o Brasil declara sufixo', () => {
-  const comSufixo = Object.entries(PLAYER_NAME_POOLS).filter(([, p]) => p.sufixos && p.sufixos.length);
-  assert.deepEqual(comSufixo.map(([k]) => k), ['Brasil'], 'patronimico so existe onde a cultura tem');
-  assert.deepEqual(PLAYER_NAME_POOLS.Brasil.sufixos, ['Júnior', 'Neto', 'Filho']);
 });
 
 check('stripTrailingNumericNameSuffix removes legacy suffix', () => {
