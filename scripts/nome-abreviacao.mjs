@@ -16,6 +16,7 @@
  * node scripts/nome-abreviacao.mjs
  */
 import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
 
 const br = JSON.parse(readFileSync('js/data/nomes-jogadores.json', 'utf8')).pools.Brasil;
 const SUFIXOS = br.sufixos;
@@ -24,27 +25,31 @@ const sobrenomesBase = br.sobrenomes.filter(s => !eSufixo(s));
 const primeiroBase = br.primeiros.filter(p => !eSufixo(p));
 
 /**
- * Partículas que nunca se abreviam.
+ * Partículas que somem ao abreviar.
  *
- * Sem isso, "José Antônio Ferreira de Oliveira" virava "José A. F. d.
- * Oliveira" — e "d." não é abreviação de nada, é erro de leitura.
+ * "José Antônio Ferreira de Oliveira" vira "José A. F. Oliveira" — o "de"
+ * desaparece, não vira "d.". É a convenção brasileira: partícula é ligante de
+ * sobrenome, não palavra do nome, e ninguém escreve "José A. F. d. Oliveira".
  */
 const PARTICULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'y', 'del', 'la', 'van']);
+const semParticula = parte => !PARTICULAS.has(parte.toLowerCase());
 
-/** Primeiro nome por extenso, meios por inicial, último sobrenome por extenso. */
+/**
+ * Primeiro nome por extenso, meios por inicial, último sobrenome por extenso.
+ *
+ * A partícula é removida antes de abbrevi o resto. Sem remover, "de" viraria
+ * "d." — que não é abreviação, é erro de leitura.
+ */
 export function abreviarMedio(nome) {
-  const p = nome.split(' ').filter(Boolean);
-  if (p.length <= 2) return nome;
-  const meio = p
-    .slice(1, -1)
-    .map(x => (PARTICULAS.has(x.toLowerCase()) ? x : `${x[0]}.`))
-    .join(' ');
-  return `${p[0]} ${meio} ${p.at(-1)}`;
+  const partes = nome.split(' ').filter(Boolean).filter(semParticula);
+  if (partes.length <= 2) return partes.join(' ');
+  const meio = partes.slice(1, -1).map(x => `${x[0]}.`).join(' ');
+  return `${partes[0]} ${meio} ${partes.at(-1)}`;
 }
 
 /** Só o primeiro abreviado. Menos agressivo, resolve a maioria dos casos. */
 export function abreviarPrimeiro(nome) {
-  const p = nome.split(' ').filter(Boolean);
+  const p = nome.split(' ').filter(Boolean).filter(semParticula);
   if (p.length <= 2) return nome;
   return `${p[0][0]}. ${p.slice(1).join(' ')}`;
 }
@@ -141,3 +146,81 @@ console.log('');
 console.log('  E o escopo é o conjunto exibido, não o dado. O jogador tem sempre o');
 console.log('  nome completo armazenado — a abreviação é da tela, e some se o');
 console.log('  contexto mudar. Dedupe continua operando no nome inteiro.');
+// ─────────────────────────────────────────────────────────────
+// Testes
+// ─────────────────────────────────────────────────────────────
+
+const testes = [
+  ['partícula some, não vira inicial', () => {
+    assert.equal(abreviarMedio('José Antônio Ferreira de Oliveira'), 'José A. F. Oliveira');
+    assert.equal(abreviarMedio('João de Souza Lima'), 'João S. Lima');
+    assert.equal(abreviarMedio('Maria da Silva Santos'), 'Maria S. Santos');
+    assert.equal(abreviarMedio('Pedro dos Santos Souza'), 'Pedro S. Souza');
+    assert.equal(abreviarMedio('Carlos da Costa'), 'Carlos Costa');
+  }],
+  ['nunca produz "d." solto', () => {
+    for (const nome of [
+      'José Antônio Ferreira de Oliveira', 'João de Souza', 'Maria da Silva',
+      'Pedro dos Santos', 'Ana das Neves', 'Lucio e Silva', 'João van Dijk',
+    ]) {
+      const f = abreviarMedio(nome);
+      assert.ok(!/(^|\s)[a-z]\.(\s|$)/i.test(f.replace(/\b[A-Z]\.(\s|$)/g, '$1')), `partícula abreviada em "${f}"`);
+      assert.ok(!/\b[dgle]\.$/i.test(f), `partícula no fim em "${f}"`);
+    }
+  }],
+  ['abrevia sem colidir', () => {
+    const par = ['João Souza Silva', 'João Santos Silva'];
+    const [a, b] = abreviarElenco(par);
+    assert.notEqual(a, b, 'as duas formas abriram iguais');
+    assert.ok(abreviarMedio(par[0]) === abreviarMedio(par[1]), 'o caso de colisão sumiu do exemplo');
+  }],
+  ['elenco inteiro fica sem ambiguidade', () => {
+    for (let semente = 1; semente <= 40; semente += 1) {
+      let st = semente;
+      const r = () => { st = (st * 1664525 + 1013904223) >>> 0; return st / 4294967296; };
+      const nomes = [];
+      for (let i = 0; i < 30; i += 1) {
+        const primeiro = primeiroBase[Math.floor(r() * primeiroBase.length)];
+        const a = sobrenomesBase[Math.floor(r() * sobrenomesBase.length)];
+        const b = sobrenomesBase[Math.floor(r() * sobrenomesBase.length)];
+        nomes.push(r() < 0.5 ? `${primeiro} ${a}` : `${primeiro} ${a} ${b}`);
+      }
+      const distintos = [...new Set(nomes)];
+      const exibidos = abreviarElenco(distintos);
+      const vistos = new Set();
+      for (const nome of exibidos) {
+        assert.ok(!vistos.has(nome), `duplicou na tela: "${nome}"`);
+        vistos.add(nome);
+      }
+    }
+  }],
+  ['abreviação nunca alonga', () => {
+    for (const nome of [
+      'João Silva', 'João Souza Silva', 'José Antônio Ferreira de Oliveira',
+      'Antônio Carlos Soares Pereira Filho', 'Kaká',
+    ]) {
+      assert.ok(abreviarMedio(nome).length <= nome.length, `alongou: "${nome}"`);
+    }
+  }],
+  ['apelido não é abreviado', () => {
+    assert.equal(abreviarMedio('Kaká'), 'Kaká');
+    assert.equal(abreviarMedio('João Silva Júnior'), 'João S. Júnior');
+  }],
+];
+
+let passou = 0;
+let falhou = 0;
+console.log('');
+for (const [nome, fn] of testes) {
+  try {
+    fn();
+    passou += 1;
+    console.log(`✓ ${nome}`);
+  } catch (erro) {
+    falhou += 1;
+    console.log(`✗ ${nome}`);
+    console.log(`    ${erro.message}`);
+  }
+}
+console.log(`\nnome-abreviacao: ${passou} passed, ${falhou} failed`);
+if (falhou) process.exit(1);
