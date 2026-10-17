@@ -1,22 +1,22 @@
 # 11 — Estado do calendário internacional e continental
 
-> Documento de estado, escrito em 16/10/2026.
-> Serve para responder rápido: **o que existe no calendário hoje, o que não
-> existe, e por que**. Leia antes de mexer em janelas ou em blackouts.
+> Documento de estado. A seção **Reconstrução** diz o que foi refeito e quando;
+> o resto é referência rápida das regras.
+>
+> Ver `js/engine/international-calendar.js` e `js/engine/season-calendar-mold.js`.
 
-## Aviso importante
+## Aviso importante — leia antes de confiar em qualquer número
 
-Houve um desencontro entre o que se acreditava implementado e o que está de fato
-no repositório. O modelo de calendário internacional (ciclo de 4 anos, Copas por
-edição, campanha de classificatórias, janelas FIFA, reservas continentais) **foi
-descrito como concluído, mas nunca foi commitado.** A restauração do repositório
-veio do GitHub em `f7e6b7d`, que não continha esse trabalho.
+Houve um desencontro entre o que se acreditava implementado e o que estava no
+repositório. O modelo de calendário internacional **foi descrito como concluído,
+mas nunca tinha sido commitado.** A restauração veio do GitHub em `f7e6b7d`,
+que não tinha esse trabalho.
 
-Verificado por busca de símbolos no repositório — todos com **0 ocorrências**:
+Verificado por busca de símbolos — todos com **0 ocorrências** na época:
 
 ```
-international-calendar.js          não existe
-continental-calendar.js            não existe
+international-calendar.js          não existia
+continental-calendar.js            não existia
 WORLD_CUP_EDITIONS                 0 ocorrências
 qualifyingMatchdays                0 ocorrências
 clubStoppages                      0 ocorrências
@@ -25,81 +25,118 @@ INTERNATIONAL_WINDOWS_BLOCK_CLUBS  0 ocorrências
 auditCalendarCapacity              0 ocorrências
 ```
 
-Buscar no disco inteiro `D:\BR FUT` também não encontra os arquivos. Não há
-stash, branch ou commit oculto que os recupere.
+Buscar no disco inteiro `D:\BR FUT` também não encontrava os arquivos. Não havia
+stash, branch ou commit oculto.
 
-## O que existe hoje
+**A regra que saiu disso:** qualquer afirmação sobre capacidade de calendário tem
+que vir de um comando que roda no repositório, com a saída colada. Se não der para
+rodar, não é medido, é estimativa — e tem que ser dito assim. Hoje existe:
+`node scripts/season-calendar-br-grid-validation.mjs`.
 
-| Item | Onde | Estado |
+## Reconstrução (16/10/2026)
+
+O que foi refeito, e o que estava quebrado no caminho:
+
+| Antes | Agora |
+|---|---|
+| Copa com as datas de 2026 em todo ano de Copa | `worldCupWindow(ano)`, com 2026 e 2030 reais |
+| 4 janelas FIFA fixas (9 dias) aplicadas a qualquer ano | 9 janelas oficiais de 2026–2030 |
+| Blackout da Copa só do 1º ao último jogo | Da liberação dos jogadores (17 dias antes) ao fim |
+| Janelas FIFA `soft: true` — o agendador as ignorava | `hard: true` — param o calendário |
+| Série B 14/fev–28/out, Série C 5/abr–25/out | B 25/jan–20/dez, C 5/abr–20/dez |
+| Grade gerava 38 rodadas na Série C | Total vem do formato de três fases (27/31/35) |
+| Série C e D recebiam 10–12 jogos continentais | Só A e B têm vaga CONMEBOL |
+
+### Datas oficiais usadas
+
+**Copa de 2026** — 11/jun a 19/jul (Canadá, México, EUA). Último jogo de clube em
+24/mai, liberação dos jogadores em 25/mai, com exceção até 30/mai para os vices de
+competição continental. Resto + liberação + torneio = **56 dias**.
+
+**Copa de 2030** — 8/jun a 21/jul (Marrocos, Portugal, Espanha).
+
+**Janelas masculinas FIFA 2026–2030.** Setembro e outubro são um bloco único de
+18 dias:
+
+| Ano | Janelas |
+|---|---|
+| 2026 | 9–17/nov |
+| 2027 | 22–30/mar, 7–15/jun, 20/set–5/out, 8–16/nov |
+| 2028 | 20–28/mar, 29/mai–6/jun, 18/set–3/out, 13–21/nov |
+| 2029 | 19–27/mar, 4–12/jun, 24/set–9/out, 12–20/nov |
+| 2030 | 18–26/mar, 3–11/jun, 23/set–8/out, 11–19/nov |
+
+Em ano de Copa a janela de junho é omitida: o torneio já cobre aquele período, e
+somar os dois contaria os mesmos dias duas vezes.
+
+## O ciclo de quatro anos
+
+O ciclo tem **quatro** anos, não três: o ano da Copa mais os três de
+classificação. **Não existe ano neutro.**
+
+`isWorldCupYear()` usa a **periodicidade**, com 2026 como referência — não uma
+lista de edições. Era esse o bug: consultando a lista, 2034 não era Copa.
+
+### Ano de Copa
+
+Uma paragem só, da liberação dos jogadores ao fim do torneio: 56 dias em 2026,
+61 em 2030.
+
+### Ano de classificação
+
+Quatro janelas FIFA. O custo para o clube é bem menor que a Copa, porque só
+parte do elenco é liberada e a classificatória não é disputada por todos. O custo
+nunca passa da própria janela.
+
+## Janela efetiva da divisão
+
+Regra de absorção (`WC_ABSORPTION_MONTH`):
+
+- divisão que **chega a dezembro** engole a Copa sozinha — reorganiza as rodadas
+  em torno do torneio;
+- divisão que **termina antes** tem o fim estendido pelos dias de paragem.
+
+| Divisão | Molde | 2026 (Copa) |
 |---|---|---|
-| Âncora do ciclo de 4 anos | `season-calendar-cycle.js` | ✅ funciona |
-| Janela da Copa do Mundo | `season-calendar-mold.js` → `WORLD_CUP_WINDOW` | ⚠️ **datas de 2026 fixas** |
-| Janelas FIFA | `season-calendar-mold.js` → `FIFA_FRIENDLY_WINDOWS` | ⚠️ **4 janelas ad-hoc de 9 dias** |
-| Janelas das divisões | `season-calendar-mold.js` → `LEAGUE_DIVISION_MOLD` | ⚠️ **janelas originais** |
-| Blackouts de clube | `season-calendar-cycle.js` → `getHardClubBlackouts` | ✅ funciona (só Copa) |
-| Agendador com fallback de meio de semana | `season-scheduler.js` | ✅ existe |
+| A | 28/jan–6/dez | absorve, sem extensão |
+| B | 25/jan–20/dez | absorve |
+| C | 5/abr–20/dez | absorve |
+| D | 5/abr–13/set | estende |
 
-### Pontos que precisam de atenção
+## Duas regras da Copa do Brasil que só apareceram com o calendário real
 
-1. **`WORLD_CUP_WINDOW` é único e tem as datas de 2026** (11/jun a 19/jul).
-   É aplicado a **todo** ano de Copa. Então 2030, 2034 e adiante usam as datas
-   de 2026 — a Copa de 2030 (Marrocos, Portugal, Espanha) está com o calendário
-   errado.
+**Ida no domingo, volta na quarta com 7 dias de intervalo.** Como 7 dias após um
+domingo cai noutro domingo, a volta é sempre o **+10**. A última volta que cabe
+antes da janela FIFA de novembro é quarta, 4/nov, vinda da ida de 25/out.
 
-2. **As janelas FIFA são 4 e ad-hoc** (março, junho, setembro, novembro), cada
-   uma com 9 dias. As janelas reais da FIFA têm 7 dias. Uma janela de 9 dias
-   atravessa dois fins de semana, o que bloqueia mais rodada do que deveria.
-   Existem 9 janelas oficiais por ciclo de quatro anos.
+**A final não tem dia livre em 2026.** O Brasileirão joga em 8, 22 e 29 de
+novembro e em todos os domingos de dezembro; 15 de novembro está na janela FIFA.
+A final aceita domingo ou quarta, então sai na **quarta de 18 de novembro** — fora
+da janela e fora do dia de rodada. Antes ela disputava 6 de dezembro com a última
+rodada da Série A, e os dois finalistas jogavam duas partidas no mesmo dia.
 
-3. **`LEAGUE_DIVISION_MOLD` está com as janelas originais:**
+## Continental
 
-   | Divisão | Início | Fim | `matchCount` |
-   |---|---|---|---|
-   | A | 28/jan | 6/dez | 38 |
-   | B | 14/fev | 28/set | 38 |
-   | C | 5/abr | 25/out | `null` |
-   | D | 5/abr | 13/set | 10 |
+Vagas: Brasil tem 7 na Libertadores e 6 na Sul-Americana, e **todas vêm da Série A
+ou da Série B**. Série C e Série D não têm vaga nenhuma.
 
-   A Série B termina em setembro — é apertado demais para 38 rodadas. A Série D
-   termina em 13 de setembro para 10 rodadas de grupo.
+`divisionPlaysContinental(divisao)` é a única fonte dessa regra.
 
-4. **Não existe modelo de classificação por fase.** A tabela da Série C não é
-   pontuada fora da fase 1 (ver `roundFeedsDivisionStandings` em
-   `national-round-sim.js`), mas não há equivalente para Copa: a Copa do Mundo
-   não tem fase classificatória modelada.
+A competição continua **desligada in-game** (`enabled: false`): as datas são
+reservadas por clube e nunca bloqueiam a temporada. O precedente é a Copa do
+Brasil, que já mexe em 126 clubes incluindo C e D sem travar ninguém.
 
-## O que falta construir
+## Como auditar a capacidade
 
-1. **Ciclo internacional de 4 anos** com fases explícitas. Copa a cada 4 anos,
-   e nos anos sem Copa uma campanha de classificatórias — que para os clubes
-   significa paragens, só que menores.
-2. **Copa por edição**: 2026 e 2030 com datas reais; anos posteriores herdam a
-   última edição conhecida, marcado como aproximação.
-3. **9 janelas FIFA reais**, de 7 dias cada.
-4. **Janela efetiva da divisão**: a que estende o fim da divisão pelos dias de
-   Copa, para a Série A não perder rodadas no ano da Copa.
-5. **Reservas continentais** (Libertadores e Sul-Americana) por clube, sem
-   bloquear a temporada — a Série C e D não jogam CONMEBOL.
-6. **Auditoria de capacidade**: quantas rodadas cada divisão cabe no seu
-   intervalo, ano a ano.
+```
+node scripts/season-calendar-br-grid-validation.mjs
+```
 
-## Por que isso importa para a Série C
+Simula um clube em cada divisão, em cada pacote de competições, nos anos de
+2026 a 2030. Deve fechar em **100/100**, sem falha de agendamento e sem conflito
+de descanso.
 
-A CBF expande a Série C: **20 clubes em 2026, 24 em 2027, 28 a partir de 2028**.
-No formato de três fases isso dá 27, 31 e 35 rodadas. A janela atual vai de 5 de
-abril a 25 de outubro.
+Hoje: `100/100`.
 
-**Sem uma auditoria feita com o código real, qualquer número sobre transbordo é
-palpite.** Foi exatamente esse o erro: um número de transbordo para 2028–2029 foi
-apresentado como medido, mas vinha de uma auditoria feita com código que não
-está no repositório.
-
-Antes de decidir se a janela da Série C deve ir até novembro, é preciso rodar a
-auditoria com `auditCalendarCapacity()` de verdade — e é ela que está na lista de
-faltando.
-
-## Regra prática
-
-Qualquer afirmação sobre capacidade de calendário tem que vir de um comando que
-roda no repositório, com a saída colada. Se não der para rodar, não é medido,
-é estimativa — e tem que ser dito assim.
+Rodar depois de mexer em qualquer janela, banda de copa ou blackout — foi assim
+que apareceram as quatro falhas que o modelo novo expôs.
