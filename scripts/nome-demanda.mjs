@@ -9,7 +9,7 @@
  */
 import { generatePlayer, buildSquadRoles, pickStarterFlags, rollProfessionalSquadSize } from '../js/engine/player-generation.js';
 import { assignRosterNationalities, FOREIGN_NATIONS } from '../js/engine/player-nationality.js';
-import { PLAYER_NAME_POOLS } from '../js/engine/player-names.js';
+import { PLAYER_NAME_POOLS, PLAYER_NAME_REGIONS } from '../js/engine/player-names.js';
 
 let seed = 31337;
 const rng = () => {
@@ -52,12 +52,14 @@ console.log('');
 
 console.log('demanda por nacionalidade');
 console.log('─'.repeat(74));
-console.log('nacionalidade'.padEnd(20) + 'jogadores'.padStart(11) + 'pool atual'.padStart(14) + 'combinacoes'.padStart(14) + 'cobertura'.padStart(12));
+console.log('nacionalidade'.padEnd(18) + 'pool usada'.padEnd(18) + 'jogadores'.padStart(9) + 'pool'.padStart(12) + 'combinacoes'.padStart(12) + 'cobertura'.padStart(11));
 console.log('─'.repeat(74));
 
 const ordenadas = [...porNacao].sort((a, b) => b[1] - a[1]);
 for (const [nacao, qtd] of ordenadas) {
-  const pool = PLAYER_NAME_POOLS[nacao];
+  // Mesmo fallback do jogo: pool do pais, depois da regiao.
+  const pool = PLAYER_NAME_POOLS[nacao] || PLAYER_NAME_POOLS[PLAYER_NAME_REGIONS[nacao]];
+  const origem = pool ? (PLAYER_NAME_POOLS[nacao] ? nacao : PLAYER_NAME_REGIONS[nacao]) : '-';
   const comb = pool ? pool.first.length * pool.last.length : 0;
   const cobertura = comb ? `${Math.round((qtd / comb) * 100)}x` : 'sem pool';
   console.log(nacao.padEnd(20) + String(qtd).padStart(11) + (pool ? `${pool.first.length}x${pool.last.length}` : '-').padStart(14) + String(comb).padStart(14) + cobertura.padStart(12));
