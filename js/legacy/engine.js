@@ -694,6 +694,8 @@ export async function bootEngine({
   const playerStarterBlocked = player =>
     playerUnavailableForFixture(player, liveMatchGame || nextUserGame) || playerInRestrictedReturn(player);
   const { playerNameCell, playerStatusBadges } = createPlayerCells({
+    getPlayerRoster: (player, clubName) => clubs[clubName]?.roster ||
+      Object.values(clubs).find(club => club.roster?.includes(player))?.roster || [],
     injuryInAcutePhase,
     injuryInRestrictedPhase,
     injurySeverityLabel,

@@ -121,17 +121,13 @@ check('pool nao tem nome com grafia duplicada', () => {
   }
 });
 
-check('patronimico e sobrenome legitimo, nao mecanica', () => {
-  // "Paulo Silva Filho" quer dizer filho de um Silva. Fala dos pais do jogador
-  // e nao exige nenhum "Paulo Silva" no clube — e assim que o IBGE lista, e
-  // assim que o brasileiro fala.
-  //
-  // Ja houve aqui uma leitura errada: o sufixo foi tratado como se apontasse
-  // para um homonimo no elenco, e Filho e Junior sairam dos sobrenomes. Nao
-  // tinha por que. Esta pool os traz de volta.
+check('patronimico e camada independente de homonimo no clube', () => {
+  // A camada preserva a forma real sem usar sufixo como sobrenome-base.
   const br = PLAYER_NAME_POOLS.Brasil;
-  assert.ok(br.last.includes('Filho'), 'Filho e sobrenome brasileiro comum');
-  assert.ok(br.last.includes('Júnior'), 'Júnior e sobrenome brasileiro comum');
+  for (const suffix of ['Filho', 'Júnior', 'Neto']) {
+    assert.ok(!br.last.includes(suffix), `${suffix} nao ocupa sobrenome-base`);
+    assert.ok(br.sufixos.includes(suffix), `${suffix} continua disponivel na camada`);
+  }
 
   // E devem aparecer no sorteio, numa taxa baixa e plausível.
   let comPatronimico = 0;

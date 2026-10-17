@@ -77,6 +77,8 @@ const SUITES = [
   { label: 'player-identity', steps: [['scripts/player-history-rename-tests.mjs']] },
   { label: 'estrangeiros-regras', steps: [['scripts/estrangeiros-regras-tests.mjs']] },
   { label: 'nome-abreviacao', steps: [['scripts/nome-abreviacao.mjs']] },
+  { label: 'player-name-display', steps: [['scripts/player-name-display-tests.mjs']] },
+  { label: 'player-names', steps: [['scripts/player-names-tests.mjs']] },
   { label: 'sufixo-camada', steps: [['scripts/sufixo-camada-tests.mjs']] },
   { label: 'match-ratings', steps: [['scripts/match-ratings-tests.mjs']] },
   { label: 'match-conversion', steps: [['scripts/match-conversion-tests.mjs']] },

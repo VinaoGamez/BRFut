@@ -22,6 +22,7 @@
 // como a suíte roda). O Vite também aceita e embute o JSON no bundle, então o
 // arquivo continua sendo um JSON editável à mão, sem fetch em runtime.
 import NOMES from '../data/nomes-jogadores.json' with { type: 'json' };
+import { nicknameForName } from './player-nicknames.js';
 
 const BRAZIL = 'Brasil';
 
@@ -147,10 +148,9 @@ function montarNome(pool, primeiro, sobrenome, segundoSobrenome = '', sufixo = '
 }
 
 /**
- * Segundo sobrenome: ~55% no Brasil, onde o nome padrão é primeiro + sobrenome
- * da mãe + sobrenome do pai, e a grande maioria leva os dois. No círculo
- * latino é parecido. Antes eram 12%, o que subestimava o espaço de nomes por um
- * fator de quase 5 — ver `scripts/pool-modelo-sufixo.mjs`.
+ * Probabilidades de projeto aprovadas para o jogo: 55% no Brasil (antes 12%)
+ * e 45% nas demais pools que declaram segundo sobrenome. Não são frequências
+ * populacionais verificadas — ver `scripts/pool-modelo-sufixo.mjs`.
  *
  * `segundosSobrenomes` só existe onde isso faz sentido: não inventar segundo
  * sobrenome japonês.
@@ -174,8 +174,7 @@ function segundoSobrenome(pool, nationality, index, random) {
  * "Júnior Júnior" e "Filho Filho" são impossíveis por construção: a base é
  * montada só com componentes de sobrenome, e o sufixo é anexado uma vez.
  *
- * "João Júnior" (só o primeiro + sufixo) também é válido: primeiro nome sem
- * sobrenome é comum em registro civil brasileiro.
+ * "João Júnior" (só o primeiro + sufixo) também é uma forma esportiva aceita.
  */
 function sufixoPatronimico(pool, nationality, index, random) {
   const declarados = pool.sufixos;
@@ -186,17 +185,9 @@ function sufixoPatronimico(pool, nationality, index, random) {
 }
 
 /**
- * "João Júnior" — registrado só com o primeiro nome.
- *
- * O registro civil brasileiro aceita primeiro nome sem sobrenome, e com um
- * sufixo o nome fica inteiro: não é apelido, não é nome genérico sozinho.
- * O sufixo vem dos pais, e é o que dá a forma de sobrenome ao nome.
- *
- * A taxa aqui é o ÚNICO número do gerador sem fonte medida. Procurei no IBGE
- * (403) e na Agência Brasil (404) a fatia de brasileiros registrados sem
- * sobrenome e não consegui. Então está como parâmetro de projeto, não como
- * dado: 10% dos nomes que já têm sufixo ficam sem sobrenome, o que dá ~0,5%
- * do elenco. Se a fonte aparecer, é um número para trocar aqui.
+ * Forma esportiva "João Júnior". Não implica registro civil sem sobrenome.
+ * Parâmetro de projeto: 10% dos nomes brasileiros que já têm sufixo usam
+ * essa forma curta. Não há frequência populacional verificada para a taxa.
  */
 function semSobrenome(sufixo, nationality, random) {
   if (!sufixo) return false;
@@ -207,6 +198,10 @@ function semSobrenome(sufixo, nationality, random) {
 export function rollPlayerName({ nationality = BRAZIL, index = 0, random = Math.random } = {}) {
   const pool = poolDaNacao(nationality);
   const primeiro = pool.first[(index + int(random, 0, pool.first.length - 1)) % pool.first.length];
+  if (chaveNacao(nationality) === chaveNacao(BRAZIL)) {
+    const nickname = nicknameForName(primeiro, random);
+    if (nickname) return nickname;
+  }
   const sobrenome = pool.last[(index * 3 + int(random, 0, pool.last.length - 1)) % pool.last.length];
   const sufixo = sufixoPatronimico(pool, nationality, index, random);
   // Só o primeiro nome + sufixo. Sem sufixo não existe: primeiro nome sozinho
@@ -254,7 +249,8 @@ function pickDistinctFromPool(pool, usedKeys, attempt, salt = 0) {
 export function variantPlayerName(baseName, { nationality = BRAZIL, attempt = 0, random = Math.random } = {}) {
   const pool = poolDaNacao(nationality);
   const cleaned = stripTrailingNumericNameSuffix(baseName);
-  const parts = cleaned.split(' ').filter(Boolean);
+  const parts = cleaned.split(' ').filter(Boolean).filter(part =>
+    !PATRONYMIC_SUFFIXES.some(suffix => chaveNacao(suffix) === chaveNacao(part)));
   // Em `sobrenome-primeiro` a primeira parte é o sobrenome, não o nome.
   const primeiro = pool.forma === 'sobrenome-primeiro'
     ? parts[1] || pool.first[attempt % pool.first.length]
