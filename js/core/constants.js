@@ -115,7 +115,9 @@ export const MODULE_VERSIONS = {
   matchSim: 2,
   matchCore: 1,
   matchLive: 4,
-  calendar: 5,
+  // 6: janelas FIFA reais por ano, Copa por edição e janelas de divisão
+  // alargadas. Save agendado sob o calendário anterior tem as datas erradas.
+  calendar: 6,
   dashboard: 6,
   tactics: 3,
   seasonSummary: 2,
