@@ -5,7 +5,7 @@
 import { WORLD_CUP_COMPETITION } from '../world-cup-calendar.js';
 import { nationalTeamByCode, resolveNationalTeam } from '../national-teams.js';
 import { computeGroupStandings } from '../world-cup-standings.js';
-import { WORLD_CUP_WINDOW } from '../season-calendar-mold.js';
+import { worldCupWindow } from '../international-calendar.js';
 
 const KNOCKOUT_STAGE_SCORE = Object.freeze({
   R32: 62,
@@ -49,8 +49,8 @@ export function isWorldCupCommandWindow(careerCalendarDate) {
   if (Number.isNaN(date.getTime())) return false;
 
   const year = date.getFullYear();
-  const [startMonth, startDay] = WORLD_CUP_WINDOW.start;
-  const [endMonth, endDay] = WORLD_CUP_WINDOW.end;
+  const [startMonth, startDay] = worldCupWindow(year).start;
+  const [endMonth, endDay] = worldCupWindow(year).end;
   const start = new Date(year, startMonth, startDay, 0, 0, 0, 0);
   const end = new Date(year, endMonth, endDay, 23, 59, 59, 999);
   return date >= start && date <= end;

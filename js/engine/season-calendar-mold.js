@@ -8,13 +8,21 @@
  */
 
 import { FEATURES } from '../core/constants.js';
+import {
+  WORLD_CUP_CLUB_RELEASE_LEAD_DAYS,
+  effectiveLeagueWindow,
+  internationalWindowsForYear,
+  isWorldCupYear as isInternationalWorldCupYear,
+  worldCupWindow,
+} from './international-calendar.js';
 
 /** Ano-âncora da Copa do Mundo (ciclo FIFA quadrienal). */
 export const WORLD_CUP_ANCHOR_YEAR = 2026;
 
+// Delegado para o modelo internacional, que é a única fonte da verdade do ciclo.
 export function isWorldCupYear(seasonYear) {
   const y = Number(seasonYear) || WORLD_CUP_ANCHOR_YEAR;
-  return y >= WORLD_CUP_ANCHOR_YEAR && (y - WORLD_CUP_ANCHOR_YEAR) % 4 === 0;
+  return isInternationalWorldCupYear(y);
 }
 
 /** Ano de copa com CMU ligada no build (FEATURES.worldCup). */
@@ -22,19 +30,32 @@ export function isWorldCupSeasonActive(seasonYear) {
   return FEATURES.worldCup === true && isWorldCupYear(seasonYear);
 }
 
-/** Janelas padrão de Data FIFA (amistosos) — bloqueiam calendário de clubes quando ativas. */
-export const FIFA_FRIENDLY_WINDOWS = Object.freeze([
-  Object.freeze({ id: 'fifa_march', start: [2, 20], end: [2, 28] }),
-  Object.freeze({ id: 'fifa_june', start: [5, 1], end: [5, 15] }),
-  Object.freeze({ id: 'fifa_september', start: [8, 1], end: [8, 10] }),
-  Object.freeze({ id: 'fifa_november', start: [10, 10], end: [10, 18] }),
-]);
+/**
+ * Janelas FIFA de um ano, no formato antigo (id + start + end).
+ *
+ * @deprecated Use `internationalWindowsForYear(seasonYear)`: as datas dependem do
+ * ano e o calendário da FIFA muda. Estas quatro eram fixas e aplicadas a todas
+ * as temporadas.
+ */
+export function fifaFriendlyWindows(seasonYear = WORLD_CUP_ANCHOR_YEAR) {
+  return internationalWindowsForYear(seasonYear)
+    .map(window => Object.freeze({
+      id: window.id,
+      start: Object.freeze([...window.start]),
+      end: Object.freeze([...window.end]),
+    }));
+}
 
-/** Janela da Copa do Mundo (clubes parados — a cada 4 anos). FIFA 2026: 11/jun–19/jul. */
+/**
+ * Janela da Copa de 2026.
+ *
+ * @deprecated Use `worldCupWindow(seasonYear)`. Isto fixa 2026 e é o que fazia a
+ * Copa de 2030 rodar com as datas de 2026.
+ */
 export const WORLD_CUP_WINDOW = Object.freeze({
   id: 'world_cup',
-  start: [5, 11],
-  end: [6, 19],
+  start: Object.freeze([5, 11]),
+  end: Object.freeze([6, 19]),
 });
 
 /** Datas salvas — Recopa Nacional (SCB): jogo único pós-estadual. */
@@ -50,42 +71,6 @@ export const RECOPA_SUDAMERICANA_CALENDAR_SLOTS = Object.freeze([
 
 /** Bloqueios globais base (FIFA, recesso, janelas). Use `getSeasonBlackouts(year)` para WC. */
 export const SEASON_BLACKOUTS = Object.freeze([
-  {
-    id: 'fifa_march',
-    code: 'FIF',
-    label: 'Amistosos FIFA (mar)',
-    start: [2, 20],
-    end: [2, 28],
-    blocksClubs: true,
-    soft: true,
-  },
-  {
-    id: 'fifa_june',
-    code: 'FIF',
-    label: 'Amistosos FIFA (jun)',
-    start: [5, 1],
-    end: [5, 15],
-    blocksClubs: true,
-    soft: true,
-  },
-  {
-    id: 'fifa_september',
-    code: 'FIF',
-    label: 'Amistosos FIFA (set)',
-    start: [8, 1],
-    end: [8, 10],
-    blocksClubs: true,
-    soft: true,
-  },
-  {
-    id: 'fifa_november',
-    code: 'FIF',
-    label: 'Amistosos FIFA (nov)',
-    start: [10, 10],
-    end: [10, 18],
-    blocksClubs: true,
-    soft: true,
-  },
   {
     id: 'serie_a_inter',
     code: 'INF',
@@ -123,25 +108,98 @@ export const SEASON_BLACKOUTS = Object.freeze([
 ]);
 
 /** Blackouts efetivos do ano (inclui Mundial travado em anos de copa). */
+/**
+ * As janelas FIFA param o calendário de clubes.
+ *
+ * A FIFA exige a liberação dos jogadores nesses periods, então não é uma
+ * preferência macia: a liga não joga dentro da janela. Antes estas janelas eram
+ * quatro datas fixas aplicadas a qualquer ano, e vinham com `soft: true`, o que
+ * fazia o agendador simplesmente ignorá-las.
+ */
+export const INTERNATIONAL_WINDOWS_BLOCK_CLUBS = true;
+
+/**
+ * Janelas FIFA de um ano, no formato de blackout.
+ *
+ * Vêm do calendário oficial da FIFA, que muda de ano para ano. A janela de
+ * setembro e outubro é um bloco único de 18 dias — dois periods de 9 dias
+ * encostados, não uma janela longa qualquer.
+ */
+export function internationalWindowBlackouts(seasonYear) {
+  return internationalWindowsForYear(seasonYear).map(window => ({
+    id: window.id,
+    code: 'FIF',
+    label: `Janela FIFA (${window.label.toLowerCase()})`,
+    start: [...window.start],
+    end: [...window.end],
+    blocksClubs: INTERNATIONAL_WINDOWS_BLOCK_CLUBS,
+    hard: INTERNATIONAL_WINDOWS_BLOCK_CLUBS,
+    soft: !INTERNATIONAL_WINDOWS_BLOCK_CLUBS,
+    cadence: 'annual',
+  }));
+}
+
 export function getSeasonBlackouts(seasonYear) {
   const year = Number(seasonYear) || WORLD_CUP_ANCHOR_YEAR;
-  const list = [...SEASON_BLACKOUTS];
+  const list = [...SEASON_BLACKOUTS, ...internationalWindowBlackouts(year)];
   if (isWorldCupYear(year)) {
+    // Blackout da Copa vai da liberação dos jogadores ao fim do torneio — 17
+    // dias antes do jogo inicial, que é quando o clube perde o elenco. Não só
+    // do primeiro jogo ao último.
+    const copa = worldCupWindow(year);
+    const liberacao = subtractMoldDays(copa.start, WORLD_CUP_CLUB_RELEASE_LEAD_DAYS);
     list.push({
       id: 'world_cup',
       code: 'CMU',
-      label: 'Copa do Mundo de Seleções (clubes parados)',
-      start: [...WORLD_CUP_WINDOW.start],
-      end: [...WORLD_CUP_WINDOW.end],
+      label: `Copa do Mundo de Seleções ${copa.exact ? '' : '(datas aproximadas)'} (clubes parados)`,
+      start: liberacao,
+      end: [...copa.end],
       blocksClubs: true,
       locked: true,
       hard: true,
       cadence: 'quadrennial',
-      anchorYear: WORLD_CUP_ANCHOR_YEAR,
+      anchorYear: year,
+      exact: copa.exact,
+      hosts: [...copa.hosts],
       soft: false,
     });
   }
   return list;
+}
+
+/** Subtrai dias de um ponto [mês, dia]. Meses em base 0. */
+function subtractMoldDays([month, day], count) {
+  const lengths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  let m = month;
+  let d = day - count;
+  while (d < 1) {
+    m -= 1;
+    if (m < 0) return [0, 1];
+    d += lengths[m];
+  }
+  return [m, d];
+}
+
+/**
+ * Janela efetiva de uma divisão naquele ano.
+ *
+ * A janela do mold é a base. Em ano de Copa, uma divisão que não chega a
+ * dezembro precisa que o fim estenda pelos dias de paragem, senão as últimas
+ * rodadas caem dentro do torneio.
+ */
+export function leagueDivisionWindow(division, seasonYear = WORLD_CUP_ANCHOR_YEAR) {
+  const base = LEAGUE_DIVISION_MOLD[division];
+  if (!base) return null;
+  const efetiva = effectiveLeagueWindow({ start: base.start, end: base.end }, seasonYear);
+  return {
+    ...base,
+    baseStart: base.start,
+    baseEnd: base.end,
+    start: efetiva.start,
+    end: efetiva.end,
+    extended: efetiva.extended,
+    extraDays: efetiva.extraDays,
+  };
 }
 
 /**
@@ -163,8 +221,11 @@ export const LEAGUE_DIVISION_MOLD = Object.freeze({
     code: 'BSB',
     competitionId: 'league_b',
     label: 'Brasileiro Série B',
-    start: [1, 14],
-    end: [9, 28],
+    // Antes 14/fev a 28/out. Com as janelas FIFA reais, a Copa valendo 17 dias
+    // antes do jogo inicial e a Copa do Brasil disputando o mesmo calendário,
+    // 38 rodadas não cabiam nesse intervalo.
+    start: [1, 25],
+    end: [11, 20],
     matchCount: 38,
     weekSlot: 'weekend_b',
     priority: 2,
@@ -174,8 +235,12 @@ export const LEAGUE_DIVISION_MOLD = Object.freeze({
     code: 'BSC',
     competitionId: 'league_c',
     label: 'Brasileiro Série C',
+    // Antes 5/abr a 25/out. A Série C termina a temporada em 27 rodadas (35
+    // quando chega a 28 clubes, em 2028), e precisa caber com o resto do
+    // calendário. `matchCount` fica nulo de propósito: o total depende do
+    // tamanho da divisão naquele ano.
     start: [3, 5],
-    end: [9, 25],
+    end: [11, 20],
     matchCount: null,
     weekSlot: 'weekend_b',
     priority: 2,
@@ -296,7 +361,7 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     competitionId: 'fifa_friendlies',
     label: 'Amistosos de Seleção (Datas FIFA)',
     category: 'international_break',
-    windows: FIFA_FRIENDLY_WINDOWS,
+    windows: fifaFriendlyWindows(WORLD_CUP_ANCHOR_YEAR),
     matchCount: 0,
     weekSlot: null,
     blocksClubCalendar: true,
@@ -311,8 +376,10 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     category: 'international_tournament',
     cadence: 'quadrennial',
     anchorYear: WORLD_CUP_ANCHOR_YEAR,
-    start: [...WORLD_CUP_WINDOW.start],
-    end: [...WORLD_CUP_WINDOW.end],
+    // Datas da edição de 2026. Para outros anos use `worldCupWindow(ano)`: este
+    // molde é a âncora, não a resposta para todo o ciclo.
+    start: [...worldCupWindow(WORLD_CUP_ANCHOR_YEAR).start],
+    end: [...worldCupWindow(WORLD_CUP_ANCHOR_YEAR).end],
     matchCount: 0,
     weekSlot: null,
     blocksClubCalendar: true,
@@ -327,8 +394,16 @@ export const CUP_CALENDAR_BANDS = Object.freeze({
   mid: Object.freeze({ start: [3, 21], end: [4, 14] }),
   knockout_16: Object.freeze({ start: [7, 1], end: [7, 31] }),
   knockout_8: Object.freeze({ start: [7, 20], end: [8, 16] }),
-  semi: Object.freeze({ start: [10, 1], end: [10, 11] }),
-  final: Object.freeze({ start: [11, 6], end: [11, 6] }),
+  // Ida no domingo e volta na quarta com 7 dias de intervalo: como 7 dias após um
+  // domingo cai noutro domingo, a volta é sempre o +10. Então a última volta que
+  // cabe antes da janela FIFA de novembro (9/nov em 2026) é quarta, 4/nov, vinda
+  // da ida de 25/out. A banda antiga terminava em 11/nov, dentro da janela.
+  semi: Object.freeze({ start: [9, 25], end: [10, 7] }),
+  // Depois da janela FIFA de novembro (9–17) não sobrou nenhum domingo: o
+  // Brasileirão joga em 22 e 29 de novembro e em todos os domingos de dezembro.
+  // A final aceita quarta (`getCupLegWeekdays` devolve [dom, qua]), então sai na
+  // quarta de 18 de novembro, fora da janela e fora do dia de rodada.
+  final: Object.freeze({ start: [10, 18], end: [10, 25] }),
 });
 
 export const CUP_PHASE_MOLD = Object.freeze([

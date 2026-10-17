@@ -4,10 +4,10 @@
  */
 import {
   WORLD_CUP_ANCHOR_YEAR,
-  WORLD_CUP_WINDOW,
   isWorldCupYear,
   getSeasonBlackouts,
 } from './season-calendar-mold.js';
+import { worldCupWindow } from './international-calendar.js';
 
 /** Ano-âncora do molde CBF (calendário masculino profissional). */
 export const CALENDAR_ANCHOR_YEAR = WORLD_CUP_ANCHOR_YEAR;
@@ -66,17 +66,21 @@ export function isWorldCupClubCalendarLocked(seasonYear) {
 /** Blackout rígido de clubes na janela CMU. */
 export function worldCupClubBlackoutSpec(seasonYear) {
   if (!isWorldCupClubCalendarLocked(seasonYear)) return null;
+  // Datas da edição daquele ano. Fixar 2026 fazia a Copa de 2030 valer de 11/jun
+  // a 19/jul, que são as datas da Copa de 2026.
+  const copa = worldCupWindow(seasonYear);
   return Object.freeze({
     id: 'world_cup',
     code: 'CMU',
-    label: 'Copa do Mundo de Seleções (clubes parados)',
-    start: [...WORLD_CUP_WINDOW.start],
-    end: [...WORLD_CUP_WINDOW.end],
+    label: `Copa do Mundo de Seleções ${copa.year} (clubes parados)`,
+    start: [...copa.start],
+    end: [...copa.end],
     blocksClubs: true,
     locked: true,
     hard: true,
     cadence: 'quadrennial',
     anchorYear: CALENDAR_ANCHOR_YEAR,
+    exact: copa.exact,
   });
 }
 

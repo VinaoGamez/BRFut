@@ -142,7 +142,13 @@ check('Copa: fases 1–5 em quartas; mata-mata ida dom / volta qua (molde CBF)',
   }
   assert(nominals[6][0].getDay() === WEEKDAY.SUN, 'oitavas ida dom');
   assert(nominals[6][1].getDay() === WEEKDAY.WED, 'oitavas volta qua');
-  assert(nominals[9][0].getDay() === WEEKDAY.SUN, 'final dom');
+  // A final aceita domingo ou quarta (`getCupLegWeekdays`). Em 2026 não sobrou
+  // domingo: o Brasileirão joga em 8, 22 e 29 de novembro e em todos os
+  // domingos de dezembro, e 15 de novembro está dentro da janela FIFA. Sem sair
+  // do domingo ela cairia no mesmo dia da rodada do Brasileirão.
+  const finalSlots = getCupLegWeekdays(9, 'IDA');
+  assert(finalSlots.includes(nominals[9][0].getDay()), `final em ${nominals[9][0]}`);
+  assert(nominals[9][0].getTime() <= new Date(year, 11, 6, 12).getTime(), 'final antes do fim da Série A');
 });
 
 check('Liga + Copa (20 clubes): zero conflitos Qua/Dom', () => {

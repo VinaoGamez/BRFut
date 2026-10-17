@@ -69,7 +69,8 @@ check('simulação completa sem conflitos de descanso', () => {
   assert(report.calendarCounts.state_league === 11);
   assert(report.calendarCounts.league_a === 38);
   assert(report.calendarCounts.league_b === 38);
-  assert(report.calendarCounts.league_c === 38);
+  // A Série C tem três fases: 19 da fase 1 + 6 dos grupos + 2 da final.
+  assert(report.calendarCounts.league_c === 27, `Série C com ${report.calendarCounts.league_c} rodadas`);
   assert(report.calendarCounts.league_d === 10);
   assert(report.calendarCounts.continentalSlots === 13);
   assert(report.quadrennialCycleValid === true);
@@ -86,6 +87,24 @@ check('ciclo quadrienal 2026–2030 (100 cenários)', () => {
   assert(matrix.quadrennialParity.valid === true);
   assert(matrix.calendarByYear[2030].worldCupClubLocked === true);
   assert(matrix.calendarByYear[2027].worldCupClubLocked === false);
+});
+
+check('a auditoria de capacidade fecha o ciclo 2026–2030', () => {
+  const anos = quadrennialSeasonYearsThrough(2030);
+  const matrix = runBrGridValidationMatrix(anos);
+  const falhas = matrix.scenarios.filter(s => !s.pass).map(s => s.id);
+  assert(
+    matrix.allPass === true,
+    `${matrix.passCount}/${matrix.scenarioCount} cenários — falhas: ${falhas.join(' | ')}`,
+  );
+  // Série C e D não recebem vaga continental. Se alguém reintroduzir, a carga
+  // falsa volta a aparecer aqui.
+  ['C', 'D'].forEach(divisao => {
+    const comCON = matrix.scenarios.filter(s => s.division === divisao && s.byCompetition?.CON > 0);
+    assert(comCON.length === 0, `Série ${divisao} com ${comCON.length} cenários usando CONMEBOL`);
+  });
+  const serieC2026 = matrix.scenarios.find(s => s.seasonYear === 2026 && s.division === 'C' && s.packageId === 'national_cup');
+  assert(serieC2026?.byCompetition?.BSC === 27, `Série C 2026 com ${serieC2026?.byCompetition?.BSC} rodadas`);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

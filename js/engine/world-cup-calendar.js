@@ -2,7 +2,8 @@
  * Calendário da Copa do Mundo — fixtures para a grade/agenda (48 seleções, 12 grupos).
  */
 
-import { isWorldCupYear, WORLD_CUP_WINDOW } from './season-calendar-mold.js';
+import { isWorldCupYear } from './season-calendar-mold.js';
+import { worldCupWindow } from './international-calendar.js';
 import { prepareWorldCupEdition, WORLD_CUP_GROUP_LETTERS } from './world-cup-history.js';
 
 export const WORLD_CUP_COMPETITION = 'COPA DO MUNDO';
@@ -151,7 +152,7 @@ export function buildWorldCupGroupFixtures(seasonYear, worldCupHistory = [], ran
     }
   });
 
-  const [endMonth, endDay] = WORLD_CUP_WINDOW.end;
+  const [endMonth, endDay] = worldCupWindow(year).end;
   const endCap = dateInWindow(year, endMonth, endDay);
 
   return fixtures
@@ -196,7 +197,7 @@ export function buildWorldCupLockedDates(seasonYear) {
     });
   });
 
-  const [endMonth, endDay] = WORLD_CUP_WINDOW.end;
+  const [endMonth, endDay] = worldCupWindow(year).end;
   const endCap = dateInWindow(year, endMonth, endDay).getTime();
 
   return [...seen]
