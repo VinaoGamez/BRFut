@@ -74,6 +74,7 @@ const SUITES = [
   { label: 'bank-loan', steps: [['scripts/bank-loan-tests.mjs']] },
   { label: 'season-objectives', steps: [['scripts/season-objectives-tests.mjs']] },
   { label: 'player-history', steps: [['scripts/player-history-tests.mjs']] },
+  { label: 'player-identity', steps: [['scripts/player-history-rename-tests.mjs']] },
   { label: 'match-ratings', steps: [['scripts/match-ratings-tests.mjs']] },
   { label: 'match-conversion', steps: [['scripts/match-conversion-tests.mjs']] },
   { label: 'finance-mood', steps: [['scripts/finance-mood-tests.mjs']] },
