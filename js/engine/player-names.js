@@ -136,35 +136,90 @@ export function normalizePlayerDisplayName(value) {
 }
 
 /** Monta a string final conforme a `forma` declarada pela pool. */
-function montarNome(pool, primeiro, sobrenome, segundoSobrenome = '') {
+function montarNome(pool, primeiro, sobrenome, segundoSobrenome = '', sufixo = '') {
+  const cauda = segundoSobrenome && segundoSobrenome !== sobrenome ? ` ${segundoSobrenome}` : '';
   if (pool.forma === 'sobrenome-primeiro') {
     // Japão/China/Coreia: sobrenome antes do nome.
-    return `${sobrenome} ${primeiro}`;
+    // O sufixo fica na frente da família, onde o leitor espera.
+    return `${sobrenome} ${primeiro}${sufixo ? ` ${sufixo}` : ''}${cauda}`;
   }
-  if (segundoSobrenome && segundoSobrenome !== sobrenome) {
-    return `${primeiro} ${sobrenome} ${segundoSobrenome}`;
-  }
-  return `${primeiro} ${sobrenome}`;
+  return `${primeiro} ${sobrenome}${cauda}${sufixo ? ` ${sufixo}` : ''}`;
 }
 
 /**
- * Segundo sobrenome: ~12% no Brasil (materno), ~45% no círculo latino, onde
- * quase todo mundo tem nome paterno E materno. `segundosSobrenomes` só existe
- * onde isso faz sentido — não inventar segundo sobrenome japonês.
+ * Segundo sobrenome: ~55% no Brasil, onde o nome padrão é primeiro + sobrenome
+ * da mãe + sobrenome do pai, e a grande maioria leva os dois. No círculo
+ * latino é parecido. Antes eram 12%, o que subestimava o espaço de nomes por um
+ * fator de quase 5 — ver `scripts/pool-modelo-sufixo.mjs`.
+ *
+ * `segundosSobrenomes` só existe onde isso faz sentido: não inventar segundo
+ * sobrenome japonês.
  */
 function segundoSobrenome(pool, nationality, index, random) {
   const declarados = pool.segundosSobrenomes;
   if (!Array.isArray(declarados) || !declarados.length) return '';
-  const chance = nationality === BRAZIL ? 0.12 : 0.45;
+  const chance = nationality === BRAZIL ? 0.55 : 0.45;
   if (random() >= chance) return '';
-  return declarados[(index * 7 + int(random, 0, declarados.length - 1)) % declarados.length];
+  const candidato = declarados[(index * 7 + int(random, 0, declarados.length - 1)) % declarados.length];
+  return candidato;
+}
+
+/**
+ * Sufixo patronímico — "filho de alguém com este nome".
+ *
+ * É uma CAMADA sobre o nome, não um sobrenome. "João Silva Júnior" é filho de
+ * um João Silva; o pai não precisa estar no clube. Por isso o sufixo sai dos
+ * sobrenomes da pool e é anexado aqui, no máximo um, nunca empilhado.
+ *
+ * "Júnior Júnior" e "Filho Filho" são impossíveis por construção: a base é
+ * montada só com componentes de sobrenome, e o sufixo é anexado uma vez.
+ *
+ * "João Júnior" (só o primeiro + sufixo) também é válido: primeiro nome sem
+ * sobrenome é comum em registro civil brasileiro.
+ */
+function sufixoPatronimico(pool, nationality, index, random) {
+  const declarados = pool.sufixos;
+  if (!Array.isArray(declarados) || !declarados.length) return '';
+  const taxa = nationality === BRAZIL ? 0.05 : 0.02;
+  if (random() >= taxa) return '';
+  return declarados[(index * 11 + int(random, 0, declarados.length - 1)) % declarados.length];
+}
+
+/**
+ * "João Júnior" — registrado só com o primeiro nome.
+ *
+ * O registro civil brasileiro aceita primeiro nome sem sobrenome, e com um
+ * sufixo o nome fica inteiro: não é apelido, não é nome genérico sozinho.
+ * O sufixo vem dos pais, e é o que dá a forma de sobrenome ao nome.
+ *
+ * A taxa aqui é o ÚNICO número do gerador sem fonte medida. Procurei no IBGE
+ * (403) e na Agência Brasil (404) a fatia de brasileiros registrados sem
+ * sobrenome e não consegui. Então está como parâmetro de projeto, não como
+ * dado: 10% dos nomes que já têm sufixo ficam sem sobrenome, o que dá ~0,5%
+ * do elenco. Se a fonte aparecer, é um número para trocar aqui.
+ */
+function semSobrenome(sufixo, nationality, random) {
+  if (!sufixo) return false;
+  const taxa = nationality === BRAZIL ? 0.1 : 0.02;
+  return random() < taxa;
 }
 
 export function rollPlayerName({ nationality = BRAZIL, index = 0, random = Math.random } = {}) {
   const pool = poolDaNacao(nationality);
-  const first = pool.first[(index + int(random, 0, pool.first.length - 1)) % pool.first.length];
-  const last = pool.last[(index * 3 + int(random, 0, pool.last.length - 1)) % pool.last.length];
-  return montarNome(pool, first, last, segundoSobrenome(pool, nationality, index, random));
+  const primeiro = pool.first[(index + int(random, 0, pool.first.length - 1)) % pool.first.length];
+  const sobrenome = pool.last[(index * 3 + int(random, 0, pool.last.length - 1)) % pool.last.length];
+  const sufixo = sufixoPatronimico(pool, nationality, index, random);
+  // Só o primeiro nome + sufixo. Sem sufixo não existe: primeiro nome sozinho
+  // é nome genérico, e o jogo só admite apelido ("Kaká", "Ronaldinho") como
+  // nome de uma palavra só.
+  if (semSobrenome(sufixo, nationality, random)) return `${primeiro} ${sufixo}`;
+  return montarNome(
+    pool,
+    primeiro,
+    sobrenome,
+    segundoSobrenome(pool, nationality, index, random),
+    sufixo,
+  );
 }
 
 function nameSeed(value) {

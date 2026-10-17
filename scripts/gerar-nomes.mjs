@@ -13,6 +13,16 @@
 
 import { BR_EXTRAS, POOLS_POR_PAIS, POOLS_REGIONAIS } from './nomes-regionais.mjs';
 
+/**
+ * Sobrenomes que tambem funcionam como sufixo patronimico.
+ *
+ * Sao sobrenomes de verdade no IBGE, mas aqui tem funcao propria: sao
+ * aplicados sobre o nome herdado, em vez de ocupar uma vaga na lista. E o
+ * que impede "Junior Junior" e "Filho Filho" — a base e montada so com
+ * componentes de sobrenome, e o sufixo e anexado uma vez.
+ */
+const SOBRENOMES_QUE_SAO_SUFIXO = new Set(['Júnior', 'Junior', 'Filho', 'Neto']);
+
 const WIKI_API = 'https://pt.wikipedia.org/w/api.php';
 const UA = { 'User-Agent': 'brfut-names/1.0 (gerador de pools de nome)' };
 
@@ -39,6 +49,8 @@ const limpar = texto =>
 const ehNome = nome =>
   /^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ' .-]+$/.test(nome) && !/\d/.test(nome);
 
+const chaveSemAcento = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 /**
  * O IBGE publica a mesma grafia mais de uma vez quando o registro aparece com
  * acentuação diferente: `JoséJose`, `Luiz  Luíz`, `André  André`. São linhas
@@ -51,13 +63,43 @@ function ehNomeUtil(nome) {
   if (normalizado !== nome) return false;            // espaço duplo ou borda
   const partes = normalizado.split(' ');
   if (partes.length > 2) return false;               // nome composto demais
-  const comparadas = new Set(partes.map(p => p.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()));
+  const comparadas = new Set(partes.map(chaveSemAcento));
   if (comparadas.size !== partes.length) return false; // "André André"
-  // Grafia sem acento e com acento do mesmo nome, coladas: "JoséJose".
-  const semEspaco = normalizado.replace(/\s/g, '').toLowerCase();
-  const meio = Math.floor(semEspaco.length / 2);
-  if (semEspaco.length % 2 === 0 && semEspaco.slice(0, meio) === semEspaco.slice(meio)) return false;
   return true;
+}
+
+/**
+ * Remove os nomes que a fonte colou: "JoséJose", "José" + "Jose".
+ *
+ * A checagem precisa de duas guardas, e deixar só uma delas custa caro. Medi
+ * as duas formas:
+ *
+ *   - "metade repetida" sozinho pega 6 nomes — e 4 são REAIS: Nenê, Tatá,
+ *     Saša e Anan, que têm metades de 2 letras e não são metade repetida de
+ *     nada. Prova de que a checagem genérica estava medindo a coisa errada.
+ *
+ *   - com acento ignorado, mas sem exigir que as metades existam, Guagua
+ *     (sobrenome equatoriano) entra na conta. Não é artefato.
+ *
+ * Juntando as duas, sobra um alvo só:
+ *
+ *   - metades com 3+ letras  -> descarta Nenê, Tatá, Saša, Anan
+ *   - e as DUAS metades precisam estar na lista -> descarta Guagua
+ *
+ * Comparar sem acento é o que pega o caso, porque "José" e "Jose" só são
+ * iguais depois de tirar o acento. Era esse o bug: a checagem existia, mas
+ * comparava o texto cru, então nunca disparou para o nome que eu escrevi.
+ */
+function semNomeColado(lista) {
+  const presentes = new Set(lista.map(chaveSemAcento));
+  return lista.filter(nome => {
+    const bruto = nome.replace(/\s/g, '');
+    if (bruto.length % 2 !== 0 || bruto.length < 6) return true;
+    const meio = bruto.length / 2;
+    const a = chaveSemAcento(bruto.slice(0, meio));
+    const b = chaveSemAcento(bruto.slice(meio));
+    return !(a === b && presentes.has(a) && presentes.has(b));
+  });
 }
 
 /**
@@ -141,13 +183,19 @@ const HISPANOFONAS = new Set([
  * Colômbia, que é exatamente o defeito que o pool por país veio para evitar.
  */
 function filtrarPorPool(nacao, pool) {
-  // Junior, Filho e Neto ficam nos sobrenomes, e estao certos la.
+  // 'Júnior', 'Filho' e 'Neto' saem dos sobrenomes e viram CAMADA de sufixo.
   //
-  // Sao patronimicos: "Paulo Silva Filho" quer dizer filho de um Silva, sobre
-  // os pais dele. Nao tem a ver com quem esta no clube, e nao exige nenhum
-  // homonimo no elenco para fazer sentido. Ja removalemos daqui achando que
-  // o sufixo apontava para alguem do time; estava errado.
-  const base = { ...pool };
+  // Não é por engano: o sufixo é aplicado sobre o nome do pai
+  // ("João Silva Júnior" = filho de um João Silva), e o pai não precisa estar
+  // no clube. Isso é o que impede "Júnior Júnior" e "Filho Filho" — a base é
+  // montada só com componentes de sobrenome, e o sufixo é anexado uma vez.
+  //
+  // Já fora daqui uma vez achando que o sufixo apontava para um homônimo do
+  // elenco. Estava errado: ele fala dos pais.
+  const base = {
+    ...pool,
+    sobrenomes: pool.sobrenomes.filter(nome => !SOBRENOMES_QUE_SAO_SUFIXO.has(nome)),
+  };
   if (!HISPANOFONAS.has(nacao)) return base;
   return {
     ...base,
@@ -180,8 +228,8 @@ async function main() {
   const pools = {
     Brasil: {
       ...BR,
-      primeiros: dedupe([...prenomesMasc, ...BR_EXTRAS.primeiros].filter(ehNomeUtil)),
-      sobrenomes: dedupe([...sobrenomesBr, ...BR_EXTRAS.sobrenomes].filter(ehNomeUtil)),
+      primeiros: semNomeColado(dedupe([...prenomesMasc, ...BR_EXTRAS.primeiros].filter(ehNomeUtil))),
+      sobrenomes: semNomeColado(dedupe([...sobrenomesBr, ...BR_EXTRAS.sobrenomes].filter(ehNomeUtil))),
     },
     ...POOLS_POR_PAIS,
     ...POOLS_REGIONAIS,
