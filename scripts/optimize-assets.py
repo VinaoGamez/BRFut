@@ -135,13 +135,18 @@ def estimar(p, larg_max, alt_max, qualidade):
 def aplicar(p, larg_max, alt_max, qualidade):
     destino = p.with_suffix(".webp")
     with Image.open(p) as img:
-        img = img.convert("RGB")
+        # Discarding A exposes the hidden RGB matte (magenta/black) behind icons.
+        # Palette PNGs may carry transparency without an explicit alpha band.
+        transparente = "A" in img.getbands() or "transparency" in img.info
+        img = img.convert("RGBA" if transparente else "RGB")
         if larg_max is not None and alt_max is not None:
             img = img.resize(
                 (min(img.width, larg_max), min(img.height, alt_max)),
                 Image.LANCZOS,
             )
-        img.save(destino, "WEBP", quality=qualidade, method=6)
+        # Lossless RGBA keeps both antialiased edges and alpha intact. Opaque
+        # artwork retains the existing lossy optimization.
+        img.save(destino, "WEBP", quality=qualidade, method=6, lossless=transparente)
     return destino
 
 

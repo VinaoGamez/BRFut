@@ -1,0 +1,250 @@
+{
+  "source_revision": "3f433db8a1e3df1cf3cfae0434be0e28e481feaf",
+  "assets": [
+    {
+      "path": "assets/brand/lockup-lg.webp",
+      "source_path": "assets/brand/lockup-lg.png",
+      "source_sha256": "0a95c8f47d9ac965a4c0bc4a3dfd68897f9573308c70d6654c4126fe40d22d46",
+      "size": [
+        1470,
+        220
+      ],
+      "alpha_sha256": "c3a2af982ab52e1fdee2bb4dc28c4a32bd09d66ed09a716567146eb9b268216f",
+      "transparent_pixels": 203036,
+      "partial_alpha_pixels": 30584
+    },
+    {
+      "path": "assets/brand/lockup.webp",
+      "source_path": "assets/brand/lockup.png",
+      "source_sha256": "40c6cdd4fc9721a77d8d1cab8230443c19b4506c8580efbea8eeb06a1eb558fa",
+      "size": [
+        1069,
+        160
+      ],
+      "alpha_sha256": "5eb11563c995eb185fececa59aa05fccf6f4ccbe4e36f53a1195619c6f71d3c0",
+      "transparent_pixels": 107642,
+      "partial_alpha_pixels": 15972
+    },
+    {
+      "path": "assets/brand/mark-lg.webp",
+      "source_path": "assets/brand/mark-lg.png",
+      "source_sha256": "31206af45fefca01449998ba930b1923ebcd9b89be50b68cc37fa74fefdb6a09",
+      "size": [
+        256,
+        256
+      ],
+      "alpha_sha256": "a198c87c8fa63750c63110a8470c8830bfe14686850b685413f185d038cc141f",
+      "transparent_pixels": 45174,
+      "partial_alpha_pixels": 6403
+    },
+    {
+      "path": "assets/competitions/trophies/trophy-world-cup.webp",
+      "source_path": "assets/competitions/trophies/trophy-world-cup.png",
+      "source_sha256": "f2ce6b4c9a4167763a0c3a7fe59ca70c0cff4f24c74ce531895a3f75f5f172df",
+      "size": [
+        229,
+        512
+      ],
+      "alpha_sha256": "94ae68b05b87f463faba9f21813f9c9e2affd41cd3efc967c1edee9fc1f85a6e",
+      "transparent_pixels": 46547,
+      "partial_alpha_pixels": 4444
+    },
+    {
+      "path": "assets/match-view/tokens/away-gk.webp",
+      "source_path": "assets/match-view/tokens/away-gk.png",
+      "source_sha256": "34b01a0bbe2e834aa986f5ab76025fac9a976db2b7715835dcf9afee2bfc7ba0",
+      "edge_treatment": "magenta-boundary-cleanup",
+      "removed_source_pixels": 1970,
+      "size": [
+        248,
+        255
+      ],
+      "alpha_sha256": "8af4bf7061adf484f0917b71752572efc4a7c1b41686bd86b3871cca120eaa35",
+      "transparent_pixels": 18243,
+      "partial_alpha_pixels": 0
+    },
+    {
+      "path": "assets/match-view/tokens/away-outfield.webp",
+      "source_path": "assets/match-view/tokens/away-outfield.png",
+      "source_sha256": "7336807e605dbdb773ee76bd53022c2b09fb957b04a8af56de05681fe4aa9ce2",
+      "edge_treatment": "magenta-boundary-cleanup",
+      "removed_source_pixels": 2022,
+      "size": [
+        256,
+        255
+      ],
+      "alpha_sha256": "e230b998522c486a886045e9bce0a9245913187b685f49e7751c9ee38e622cd8",
+      "transparent_pixels": 19713,
+      "partial_alpha_pixels": 0
+    },
+    {
+      "path": "assets/match-view/tokens/ball.webp",
+      "source_path": "assets/match-view/tokens/ball.png",
+      "source_sha256": "6f8451ec9c0185941a6c7b96d999ba66baee7d4193c9aacea669a2e05eaf1a2c",
+      "edge_treatment": "magenta-boundary-cleanup",
+      "removed_source_pixels": 2490,
+      "size": [
+        248,
+        251
+      ],
+      "alpha_sha256": "0f6ba9b8e4d4e93c742e671a40814b0235a6d17b0f92440928eb57c5a9835be3",
+      "transparent_pixels": 19657,
+      "partial_alpha_pixels": 0
+    },
+    {
+      "path": "assets/match-view/tokens/home-gk.webp",
+      "source_path": "assets/match-view/tokens/home-gk.png",
+      "source_sha256": "e07edf4f7c8931662830ea475b82732e4a202fc5dcee03b126248f7bd78b6917",
+      "edge_treatment": "magenta-boundary-cleanup",
+      "removed_source_pixels": 2060,
+      "size": [
+        249,
+        256
+      ],
+      "alpha_sha256": "6e1c4bec299bd832196d468d345cf5e7df3f493b17dd596f2f7ce4c37afec3c2",
+      "transparent_pixels": 18372,
+      "partial_alpha_pixels": 0
+    },
+    {
+      "path": "assets/match-view/tokens/home-outfield.webp",
+      "source_path": "assets/match-view/tokens/home-outfield.png",
+      "source_sha256": "362b5f769e7c505143c749e02843c0f92f904fdd58d5fa761e444498bb293713",
+      "edge_treatment": "magenta-boundary-cleanup",
+      "removed_source_pixels": 2147,
+      "size": [
+        250,
+        256
+      ],
+      "alpha_sha256": "78ef4469d27ba884646a0c2e4c25989fa81e83e5dc552705d1636f1edf94c930",
+      "transparent_pixels": 18603,
+      "partial_alpha_pixels": 0
+    },
+    {
+      "path": "assets/source/competitions/trophies/trophy-world-cup.webp",
+      "source_path": "assets/source/competitions/trophies/trophy-world-cup.png",
+      "source_sha256": "9c9bfa748fdb4eb6f729abf98cd1057990b8a40ae37bb0fd7337267e3bef82be",
+      "size": [
+        453,
+        1011
+      ],
+      "alpha_sha256": "eefe943cc205b3f2f4ccfc22e3c64f3fa560c3e7ed609e47b3f017fea90fbf79",
+      "transparent_pixels": 190404,
+      "partial_alpha_pixels": 0
+    },
+    {
+      "path": "assets/ui/assist-boot.webp",
+      "source_path": "assets/ui/assist-boot.png",
+      "source_sha256": "8da512dff80f4ba3f7fe4d2f6ae6f71d0923fb783ed01862c9dc05e2f78d082a",
+      "transformation": "monochrome-white-to-alpha",
+      "size": [
+        256,
+        256
+      ],
+      "alpha_sha256": "1ffd96d29f3356c71f3eda1985e013756d8b62feccafcd949cb3603a235a0c6d",
+      "transparent_pixels": 45292,
+      "partial_alpha_pixels": 20244
+    },
+    {
+      "path": "assets/ui/sub-arrows.webp",
+      "source_path": "assets/ui/sub-arrows.png",
+      "source_sha256": "9d6837d13cc63c96183652484de252759b8e7142941be36e9dd592031b3b087a",
+      "size": [
+        256,
+        256
+      ],
+      "alpha_sha256": "eccd46d0987b1f98e65bb64424e71fc2c8979ed87004c8d9074dedc7a2953b99",
+      "transparent_pixels": 52281,
+      "partial_alpha_pixels": 1500
+    },
+    {
+      "path": "brand/transfer-history/mercado-da-bola.webp",
+      "source_path": "brand/transfer-history/mercado-da-bola.png",
+      "source_sha256": "07795f64f17af48ee2a5a9235987dbe696a5153074920d8e47d5667233e6f015",
+      "size": [
+        960,
+        960
+      ],
+      "alpha_sha256": "e47bd00ef2aadaacfe6cdf6d0f92137d4f89e60b33d583ae94df89ab88f2a492",
+      "transparent_pixels": 497436,
+      "partial_alpha_pixels": 392650
+    },
+    {
+      "path": "public/brand/lockup-lg.webp",
+      "source_path": "public/brand/lockup-lg.png",
+      "source_sha256": "0a95c8f47d9ac965a4c0bc4a3dfd68897f9573308c70d6654c4126fe40d22d46",
+      "size": [
+        1470,
+        220
+      ],
+      "alpha_sha256": "c3a2af982ab52e1fdee2bb4dc28c4a32bd09d66ed09a716567146eb9b268216f",
+      "transparent_pixels": 203036,
+      "partial_alpha_pixels": 30584
+    },
+    {
+      "path": "public/brand/lockup.webp",
+      "source_path": "public/brand/lockup.png",
+      "source_sha256": "40c6cdd4fc9721a77d8d1cab8230443c19b4506c8580efbea8eeb06a1eb558fa",
+      "size": [
+        1069,
+        160
+      ],
+      "alpha_sha256": "5eb11563c995eb185fececa59aa05fccf6f4ccbe4e36f53a1195619c6f71d3c0",
+      "transparent_pixels": 107642,
+      "partial_alpha_pixels": 15972
+    },
+    {
+      "path": "public/brand/mark-lg.webp",
+      "source_path": "public/brand/mark-lg.png",
+      "source_sha256": "31206af45fefca01449998ba930b1923ebcd9b89be50b68cc37fa74fefdb6a09",
+      "size": [
+        256,
+        256
+      ],
+      "alpha_sha256": "a198c87c8fa63750c63110a8470c8830bfe14686850b685413f185d038cc141f",
+      "transparent_pixels": 45174,
+      "partial_alpha_pixels": 6403
+    },
+    {
+      "path": "public/brand/stats-assist.webp",
+      "source_path": "public/brand/stats-assist.png",
+      "source_sha256": "256e42b93abaf30f6c7370024e417bafbbcc5a5d4f31001a0341ca604a267ac5",
+      "edge_treatment": "magenta-boundary-cleanup",
+      "removed_source_pixels": 3853,
+      "size": [
+        256,
+        256
+      ],
+      "alpha_sha256": "7260202ced553142f03bf3ecf80202ec249733cdbd001b8f16b07f4b74423a00",
+      "transparent_pixels": 38024,
+      "partial_alpha_pixels": 1866
+    },
+    {
+      "path": "public/brand/stats-overall.webp",
+      "source_path": "public/brand/stats-overall.png",
+      "source_sha256": "1cfd063c8f4992bd976c05a355516bfcce65eb44b8e4031bdc54d56c87fe74b5",
+      "edge_treatment": "magenta-boundary-cleanup",
+      "removed_source_pixels": 4726,
+      "size": [
+        256,
+        256
+      ],
+      "alpha_sha256": "8e3d4bcb960a5443ba362c61a42a26b87b0d5d7c4353a606ce31ce3401a9803d",
+      "transparent_pixels": 32801,
+      "partial_alpha_pixels": 1913
+    },
+    {
+      "path": "public/brand/stats-scorer.webp",
+      "source_path": "public/brand/stats-scorer.png",
+      "source_sha256": "1ce860685527d3e6acdbc3b1bb2c6942aaa65a4e7a55e942c367ba7491055609",
+      "edge_treatment": "magenta-boundary-cleanup",
+      "removed_source_pixels": 3646,
+      "size": [
+        256,
+        256
+      ],
+      "alpha_sha256": "131958fd24311f8822e724349ff423f20ec794e1dd979d37af802398700c35e8",
+      "transparent_pixels": 38555,
+      "partial_alpha_pixels": 1803
+    }
+  ]
+}
