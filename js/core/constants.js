@@ -112,7 +112,7 @@ export const MODULE_VERSIONS = {
   save: 4,
   injury: 4,
   matchTuning: 1,
-  matchSim: 3,
+  matchSim: 4,
   matchCore: 1,
   matchLive: 5,
   // 6: janelas FIFA reais por ano, Copa por edição e janelas de divisão
@@ -136,7 +136,7 @@ export const MODULE_VERSIONS = {
   matchAvailability: 1,
   matchLiveAwaySubs: 1,
   matchLiveOrchestration: 6,
-  matchRatings: 1,
+  matchRatings: 2,
   matchLiveSession: 6,
   liveMatchPersist: 2,
   clubStatus: 10,

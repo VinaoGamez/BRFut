@@ -1,4 +1,5 @@
 import { FORMATION_PERFORMANCE, COMPATIBLE_ROLES, roundTactic } from './match-core.js';
+import { sectorAverage, sectorParticipation } from './match-sectors.js';
 
 /** Sliders padrão do usuário quando a feature de táticas ainda não carregou. */
 export const DEFAULT_USER_TACTICS = { mentality: 50, possession: 50, press: 50, offsideLine: 50 };
@@ -78,7 +79,7 @@ export function createMatchRatingsEngine(deps) {
     factor,
     { improvisation = 0, tacticalRatingExtra = 0 } = {},
   ) => {
-    const avg = key => roster.reduce((sum, p) => sum + matchPlayerStat(p, key), 0) / roster.length;
+    const avg = (key, sector = 'attack') => sectorAverage(roster, key, sector, matchPlayerStat);
     const mentalShift = (tv.mentality - 50) / 50;
     const possessionShift = (tv.possession - 50) / 50;
     const pressShift = tv.press / 100;
@@ -122,8 +123,8 @@ export function createMatchRatingsEngine(deps) {
           homeBoost.attack) *
         factor,
       passing:
-        (avg('passing') * 0.6 +
-          avg('playmaking') * 0.4 +
+        (avg('passing', 'passing') * 0.6 +
+          avg('playmaking', 'passing') * 0.4 +
           formationBonus[1] +
           mentalBonus[1] +
           styleBonus[1] +
@@ -133,8 +134,8 @@ export function createMatchRatingsEngine(deps) {
           homeBoost.passing) *
         factor,
       defense:
-        (avg('marking') * 0.52 +
-          avg('tackling') * 0.48 +
+        (avg('marking', 'defense') * 0.52 +
+          avg('tackling', 'defense') * 0.48 +
           formationBonus[2] +
           mentalBonus[2] +
           styleBonus[2] +
@@ -268,7 +269,7 @@ export function createMatchRatingsEngine(deps) {
           : defensiveAction
             ? ['ZAG', 'LAT', 'VOL', 'MC'].includes(p.pos)
             : action === 'shot'
-              ? ['PE', 'PD', 'ATA', 'MC'].includes(p.pos)
+              ? ['PE', 'PD', 'ATA', 'MEI', 'MC'].includes(p.pos)
               : p.pos !== 'GOL'),
     );
     const available = squadForSide.filter(
@@ -282,7 +283,8 @@ export function createMatchRatingsEngine(deps) {
       const card = cards?.[side]?.[slot];
       const positionalFactor =
         side === 'home' ? clamp(1 - positionMismatch(player, positionAssignments[slot]) * 0.12, 0.75, 1) : 1;
-      if (!defensiveAction || !card?.yellow) return actionWeight(player, action) * positionalFactor;
+      const participation = sectorParticipation(player, action);
+      if (!defensiveAction || !card?.yellow) return actionWeight(player, action) * participation * positionalFactor;
       const cautionFactor = context.lastLine
         ? 0.66
         : safeDefenders
@@ -290,7 +292,7 @@ export function createMatchRatingsEngine(deps) {
             ? 0.12
             : 0.32
           : 0.78;
-      return actionWeight(player, action) * cautionFactor * positionalFactor;
+      return actionWeight(player, action) * participation * cautionFactor * positionalFactor;
     };
     const total = list.reduce((sum, p) => sum + weightFor(p), 0);
     let draw = Math.random() * total;

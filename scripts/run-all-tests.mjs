@@ -86,6 +86,7 @@ const SUITES = [
   { label: 'player-development', steps: [['scripts/smoke-player-development.mjs']] },
   { label: 'player-overall', steps: [['scripts/player-overall-tests.mjs']] },
   { label: 'match-overall-model', steps: [['scripts/match-overall-model-tests.mjs']] },
+  { label: 'match-sectors', steps: [['scripts/match-sectors-tests.mjs']] },
   { label: 'player-generation', steps: [['scripts/player-generation-sim.mjs', '42', '200']] },
   { label: 'finance-mood', steps: [['scripts/finance-mood-tests.mjs']] },
   { label: 'finances-impact', steps: [['scripts/finances-impact-tests.mjs']] },

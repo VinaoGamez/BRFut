@@ -68,7 +68,8 @@ por OVR e impulsos iniciais por OVR do ao vivo. O freio por placar permanece.
 Os perfis de ação ao vivo não recebem novamente a diferença de OVR.
 O OVR efetivo ao vivo aceita a escala 1–99, sem piso artificial de 50.
 
-Não foram alterados setores, curva de desgaste ou IA de seleção/substituição.
+Na etapa de OVR não foram alterados setores, curva de desgaste ou IA de seleção/substituição.
+A integração posterior de setores está em `SETORES-E-PARTICIPANTES.md`.
 O freio adicional por perfil não foi implementado. Não há alegação de que
 os dois motores produzam partidas idênticas: compartilham estes princípios.
 
