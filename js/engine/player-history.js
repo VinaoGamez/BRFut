@@ -29,6 +29,7 @@ const emptyStore = (season = null) => ({
   players: {},
   season: season ?? null,
   matchLogs: [],
+  processedMatches: {},
   seasonArchives: [],
 });
 
@@ -154,58 +155,35 @@ export function buildStatsFixtureId(game, {
   ].join(':');
 }
 
-function applySheetToBucket(bucket, sheet) {
-  bucket.apps += 1;
-  if (sheet.started) bucket.starts += 1;
-  bucket.minutes += Number(sheet.minutes) || 0;
-  bucket.goals += Number(sheet.goals) || 0;
-  bucket.assists += Number(sheet.assists) || 0;
-  if (sheet.yellow) bucket.yellow += 1;
-  if (sheet.red) bucket.red += 1;
-  bucket.passesEst += Number(sheet.passesEst) || 0;
+function applySheetToBucket(bucket, sheet, direction = 1) {
+  delete bucket.avgRating;
+  bucket.apps += direction;
+  if (sheet.started) bucket.starts += direction;
+  bucket.minutes += direction * (Number(sheet.minutes) || 0);
+  bucket.goals += direction * (Number(sheet.goals) || 0);
+  bucket.assists += direction * (Number(sheet.assists) || 0);
+  if (sheet.yellow) bucket.yellow += direction;
+  if (sheet.red) bucket.red += direction;
+  bucket.passesEst += direction * (Number(sheet.passesEst ?? sheet.passes) || 0);
   if (sheet.rating != null) {
-    bucket.ratingSum += Number(sheet.rating) || 0;
-    bucket.ratingCount += 1;
+    bucket.ratingSum += direction * (Number(sheet.rating) || 0);
+    bucket.ratingCount += direction;
   }
 }
 
-function applySheetToSeason(player, year, sheet, competitionId) {
+function applySheetToSeason(player, year, sheet, competitionId, direction = 1) {
   const bucket = ensureSeasonBucket(player, year);
-  applySheetToBucket(bucket, sheet);
+  applySheetToBucket(bucket, sheet, direction);
   if (!bucket.clubs[sheet.club]) bucket.clubs[sheet.club] = emptyStatBucket();
-  applySheetToBucket(bucket.clubs[sheet.club], sheet);
+  applySheetToBucket(bucket.clubs[sheet.club], sheet, direction);
   const key = normalizeStatsCompetitionId(competitionId);
   if (!bucket.competitions[key]) bucket.competitions[key] = { ...emptyStatBucket(), clubs: {} };
   if (!bucket.competitions[key].clubs) bucket.competitions[key].clubs = {};
-  applySheetToBucket(bucket.competitions[key], sheet);
+  applySheetToBucket(bucket.competitions[key], sheet, direction);
   if (!bucket.competitions[key].clubs[sheet.club]) {
     bucket.competitions[key].clubs[sheet.club] = emptyStatBucket();
   }
-  applySheetToBucket(bucket.competitions[key].clubs[sheet.club], sheet);
-}
-
-function rebuildSeasonFromMatchLogs(store, year) {
-  const seasonKey = String(year);
-  Object.keys(store.players || {}).forEach(key => {
-    const player = store.players[key];
-    if (player?.seasons) delete player.seasons[seasonKey];
-    if (!Object.keys(player?.seasons || {}).length) delete store.players[key];
-  });
-  (store.matchLogs || []).forEach(log => {
-    if (Number(log?.season) !== Number(year)) return;
-    (log.players || []).forEach(raw => {
-      if (!raw?.key || !raw?.name || !raw?.club) return;
-      const sheet = { ...raw, passesEst: Number(raw.passesEst ?? raw.passes) || 0 };
-      let player = store.players[sheet.key];
-      if (!player) {
-        player = { name: sheet.name, club: sheet.club, seasons: {} };
-        store.players[sheet.key] = player;
-      }
-      player.name = sheet.name;
-      player.club = sheet.club;
-      applySheetToSeason(player, year, sheet, log.competition || 'LEAGUE');
-    });
-  });
+  applySheetToBucket(bucket.competitions[key].clubs[sheet.club], sheet, direction);
 }
 
 /** Fonte única para card, elenco, dashboard e rankings. */
@@ -559,7 +537,10 @@ export function backfillClubSeasonMatchLogs(
   if (!engine?.recordMatch || !clubName || season == null) return 0;
   const year = Number(season);
   if (!Number.isFinite(year)) return 0;
-  const knownIds = new Set((engine.getStore?.().matchLogs || []).map(entry => entry.id));
+  const knownIds = new Set([
+    ...Object.keys(engine.getStore?.().processedMatches || {}),
+    ...(engine.getStore?.().matchLogs || []).map(entry => entry.id),
+  ]);
   let added = 0;
 
   const ingest = (game, meta) => {
@@ -581,7 +562,7 @@ export function backfillClubSeasonMatchLogs(
       (sum, row) => sum + (Number(row?.goals) || 0) + (Number(row?.assists) || 0),
       0,
     );
-    if (knownIds.has(id) && !(incomingEvents > 0 && existingEvents === 0)) return;
+    if (knownIds.has(id) && !(existing && incomingEvents > 0 && existingEvents === 0)) return;
     const log = engine.recordMatch(
       { ...game, fixtureId: id, completed: game.completed !== false },
       {
@@ -742,6 +723,10 @@ export function loadPlayerHistoryStore() {
     version: Number(raw.version) || SAVE_VERSION.playerHistory || 1,
     statsModelVersion: Number(raw.statsModelVersion) || 1,
     players: raw.players && typeof raw.players === 'object' ? raw.players : {},
+    processedMatches: {
+      ...Object.fromEntries((raw.matchLogs || []).filter(log => log?.id).map(log => [log.id, log.season])),
+      ...(raw.processedMatches || {}),
+    },
     season,
     matchLogs: pruneMatchLogsForSeason(
       Array.isArray(raw.matchLogs) ? raw.matchLogs : [],
@@ -776,6 +761,7 @@ export function savePlayerHistoryStore(store, options = {}) {
     version: SAVE_VERSION.playerHistory || 1,
     statsModelVersion: 2,
     players: store.players,
+    processedMatches: store.processedMatches || {},
     season: store.season ?? null,
     matchLogs: pruneMatchLogsForSeason(store.matchLogs, store.season ?? null, budget),
     seasonArchives: pruneArchives(store.seasonArchives),
@@ -861,11 +847,6 @@ export function createPlayerHistoryEngine(deps = {}) {
     );
     store.seasonArchives = pruneArchives(store.seasonArchives);
     try {
-      localStorage.removeItem(SAVE_KEYS.liveMatch);
-    } catch {
-      /* ignore */
-    }
-    try {
       return savePlayerHistoryStore(store, { matchLogBudget: resolveBudget() });
     } catch (error) {
       console.warn('[brfut] falha ao persistir histórico de jogadores', error);
@@ -916,8 +897,18 @@ export function createPlayerHistoryEngine(deps = {}) {
 
     const duplicateIndex = store.matchLogs.findIndex(entry => entry.id === id);
     if (duplicateIndex >= 0 && !meta.replaceExisting && !meta.apiOnly) return store.matchLogs[duplicateIndex];
+    // The ledger survives report pruning and reload. An evicted report cannot
+    // be replaced safely because its previous contribution is unavailable.
+    if (!meta.apiOnly && duplicateIndex < 0 && Object.hasOwn(store.processedMatches, id)) return null;
 
-    if (duplicateIndex < 0 && !meta.apiOnly) {
+    if (!meta.apiOnly) {
+      if (duplicateIndex >= 0) {
+        const previous = store.matchLogs[duplicateIndex];
+        for (const sheet of previous.players || []) {
+          const player = store.players[sheet.key];
+          if (player) applySheetToSeason(player, previous.season, sheet, previous.competition, -1);
+        }
+      }
       allSheets.forEach(sheet => {
         let player = store.players[sheet.key];
         if (!player) {
@@ -928,6 +919,7 @@ export function createPlayerHistoryEngine(deps = {}) {
         player.club = sheet.club;
         applySheetToSeason(player, season, sheet, competitionId);
       });
+      store.processedMatches[id] = season;
     }
 
     const log = {
@@ -952,7 +944,6 @@ export function createPlayerHistoryEngine(deps = {}) {
     if (!meta.apiOnly) {
       if (duplicateIndex >= 0) store.matchLogs[duplicateIndex] = log;
       else store.matchLogs.push(log);
-      if (duplicateIndex >= 0) rebuildSeasonFromMatchLogs(store, season);
       store.matchLogs = pruneMatchLogsForSeason(
         store.matchLogs,
         store.season ?? season,

@@ -1,8 +1,8 @@
 /**
- * Build pública para testers.
- * Nomenclatura: Alpha V.X.YY — sobe +0.05 a cada publicação (1.00 → 1.05 → …).
+ * Candidato de estabilização desktop. Mesma identificação do package.json.
+ * Não representa aprovação/publicação do instalador.
  */
-export const BUILD_VERSION = 'Alpha V.6.00';
+export const BUILD_VERSION = '0.2.2-alpha.1';
 
 /**
  * Ciclo destrutivo de compatibilidade: invalida saves Alpha anteriores no navegador.

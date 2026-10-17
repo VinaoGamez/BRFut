@@ -35,12 +35,12 @@ export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSe
   ) || resolvePlayerSeasonStats(playerHistory, key, careerSeason);
   const remote = remoteStats?.total
     ? {
-        apps: remote.apps,
-        goals: remote.goals,
-        assists: remote.assists,
-        yellow: remote.yellow,
-        red: remote.red,
-        avgRating: remote.avg_rating,
+        apps: remoteStats.total.apps,
+        goals: remoteStats.total.goals,
+        assists: remoteStats.total.assists,
+        yellow: remoteStats.total.yellow,
+        red: remoteStats.total.red,
+        avgRating: remoteStats.total.avg_rating,
       }
     : null;
   const bucket = resolveCardStatsBucket(localBucket, remote);

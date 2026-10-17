@@ -1,0 +1,8 @@
+.squad-performance { margin-top: 20px; padding: 20px; }
+.squad-performance h2 { margin: 0 0 10px; }
+.squad-performance p, .squad-performance caption { font-size: 12px; line-height: 1.5; opacity: .8; }
+.squad-performance table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.squad-performance caption { text-align: left; padding: 10px 0; }
+.squad-performance th, .squad-performance td { padding: 10px; text-align: right; border-bottom: 1px solid #ffffff18; }
+.squad-performance th:first-child { text-align: left; }
+.squad-performance tbody tr:hover { background: #ffffff08; }

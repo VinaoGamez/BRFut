@@ -43,9 +43,7 @@ nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
-  # Forca o mesmo caminho no registro e na instalacao real. Sem isso o NSIS
-  # cria entradas em Program Files mas instala em LocalAppData, deixando o
-  # Painel de Controle sem o app e a instalacao vazia.
+  # Lifecycle nativo do NSIS; customInstall limpa apenas entradas duplicadas.
   include: electron/installer.nsh
   createDesktopShortcut: true
   createStartMenuShortcut: true

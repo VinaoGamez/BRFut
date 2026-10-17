@@ -1,5 +1,5 @@
 /** Optional desktop UI. All release metadata is rendered as text, never HTML. */
-export function mountDesktopUpdatePanel(document, api) {
+export function mountDesktopUpdatePanel(document, api, { container = null } = {}) {
   if (!api?.getStatus || document.getElementById('desktopUpdates')) return null;
   const make = (tag, id, text, parent) => {
     const element = document.createElement(tag);
@@ -8,8 +8,9 @@ export function mountDesktopUpdatePanel(document, api) {
     parent?.append(element);
     return element;
   };
-  const root = make('section', 'desktopUpdates', '', document.body);
-  root.className = 'desktop-updates';
+  const homeFooter = document.getElementById('homeBuildVersion')?.parentElement;
+  const root = make('section', 'desktopUpdates', '', container || homeFooter || document.body);
+  root.className = container ? 'desktop-updates desktop-updates--options' : 'desktop-updates';
   const toggle = make('button', 'desktopUpdatesToggle', 'Atualizações', root);
   toggle.type = 'button'; toggle.setAttribute('aria-expanded', 'false');
   toggle.setAttribute('aria-controls', 'desktopUpdatesPanel');

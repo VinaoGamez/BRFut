@@ -32,6 +32,7 @@ import { createPlayerCells, outfield, fatigueCell, rosterFatigueCell } from '../
 import { renderTableFootIcon } from '../lab/card-back.js';
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
+import { createSquadPerformance } from '../feature/squad-performance/index.js';
 import { renderTransferHistoryCard } from '../ui/transfer-history-card.js';
 import { SAVE_KEYS, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { getAuthToken, isCloudStorageActive, probeBackend } from '../core/storage-api.js';
@@ -2986,6 +2987,14 @@ export async function bootEngine({
   rankingViews.renderNationalRanking();
   rankingViews.renderManagerRanking();
   const router=createRouter({ $$, onClick });
+  const squadPerformance=createSquadPerformance({
+    root:$('#squadPerformance'),
+    getRoster:()=>squad,
+    getHistory:()=>playerHistory,
+    getSeason:()=>careerSeason,
+    getClub:()=>userClub,
+  });
+  router.onView('squad',()=>{renderRoster();squadPerformance.render();});
   openNavView=viewId=>router.openView(viewId);
   router.onView('ranking',()=>rankingViews.renderNationalRanking());
   router.onView('managers',()=>rankingViews.renderManagerRanking());
@@ -5439,6 +5448,7 @@ export async function bootEngine({
     }
     playerHistory.persist();
   }
+  squadPerformance.render();
   renderTeamStatsCard?.();
   void ensureRemoteClubStats(dashboardStatsClub()).then(result=>{
     if(!result)return;
@@ -5747,6 +5757,7 @@ export async function bootEngine({
       persist:meta.persist!==false,
     });
     if(log){
+      if($('#squad')?.classList.contains('active'))squadPerformance.render();
       syncLeaderboardFromPlayerHistory(game.home);
       syncLeaderboardFromPlayerHistory(game.away);
       renderTeamStatsCard?.();

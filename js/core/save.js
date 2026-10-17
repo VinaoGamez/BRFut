@@ -128,53 +128,16 @@ export function reclaimLocalStorageSpace({ aggressive = false, preserveKeys = []
     }
   };
 
-  removeKey(SAVE_KEYS.liveMatch);
-
-  try {
-    const hist = localStorage.getItem(SAVE_KEYS.playerHistory);
-    const histBytes = hist ? (SAVE_KEYS.playerHistory.length + hist.length) * 2 : 0;
-    if (aggressive || histBytes > 250_000) removeKey(SAVE_KEYS.playerHistory);
-  } catch {
-    /* ignore */
-  }
+  // Career history and an in-progress match are primary data, not caches.
+  // A failed write must never reclaim another save to make room.
 
   if (aggressive) {
     removeKey(SAVE_KEYS.training);
     removeKey(SAVE_KEYS.pace);
   }
 
-  const pressure = getStoragePressure({ fresh: true });
-  if (pressure.level !== 'ok') {
-    let activeSlotId = null;
-    try {
-      activeSlotId = readJson(CAREER_INDEX_KEY, null)?.activeSlotId || null;
-    } catch {
-      /* ignore */
-    }
-    try {
-      const sessionSlot = sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY);
-      if (sessionSlot) activeSlotId = sessionSlot;
-    } catch {
-      /* ignore */
-    }
-
-    const keepSlotKeys = new Set();
-    if (activeSlotId) {
-      Object.values(slotBundleKeys(activeSlotId)).forEach(key => keepSlotKeys.add(key));
-    }
-
-    try {
-      const slotKeysToDrop = [];
-      for (let i = 0; i < localStorage.length; i += 1) {
-        const key = localStorage.key(i);
-        if (!key || !isSlotBundleKey(key) || preserve.has(key)) continue;
-        if (!keepSlotKeys.has(key)) slotKeysToDrop.push(key);
-      }
-      slotKeysToDrop.forEach(removeKey);
-    } catch {
-      /* ignore */
-    }
-  }
+  // Inactive slots also remain playable offline; only explicit slot deletion
+  // may remove their bundles.
 
   try {
     const keysToDrop = [];

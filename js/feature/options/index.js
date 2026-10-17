@@ -1,6 +1,7 @@
 import { MODULE_VERSIONS, FEATURES, SITE_MAINTENANCE, SAVE_KEYS, CAREER_INDEX_KEY, CAREER_SLOT_LIMIT, slotBundleKeys } from '../../core/constants.js';
 import '../../../css/new-career-modal.css';
 import { initReleaseNotesViewer, renderOptionsUpdateSummary } from '../../ui/release-notes-viewer.js';
+import { mountDesktopUpdatePanel } from '../../ui/desktop-update-panel.js';
 import { createTesterHubFeature } from '../tester-hub/index.js';
 import { mountCrestEditor } from '../../ui/crest-editor.js';
 import { getCustomClubByName, retainCustomClubsForCareer, upsertCustomClub } from '../../engine/custom-clubs.js';
@@ -164,6 +165,11 @@ export function createOptionsFeature(deps) {
       'beforeend',
       `<div id="optionsModal" class="modal hidden"><div class="modal-card options-modal"><button id="closeOptions" class="close">×</button><label>CONFIGURAÇÕES</label><h2>Opções do Jogo</h2><section class="option-section"><label>NOVA CARREIRA</label><div class="new-game-action"><div><strong>Criar clube e iniciar carreira</strong><small>${newCareerBlurb}</small></div><button id="openNewGame" type="button">NOVO JOGO</button></div></section><section class="option-section"><label>SALVAMENTO</label><p>Escolha quando o jogo grava automaticamente. O ritmo de jogo também é salvo junto com a carreira.</p><p class="save-prefs-note"><small>Sempre grava neste navegador. Com conta conectada, espelha na nuvem (5081 / BR Fut). “SALVO LOCAL” = só navegador; nuvem não confirmou.</small></p><div class="save-prefs-row"><select id="autosaveMode" autocomplete="off">${autosaveOptionsHtml}</select><button id="manualSaveBtn" type="button">SALVAR</button></div></section><section class="option-section"><label>RITMO DE JOGO</label><p>Define a duração da simulação contínua. Pausas técnicas e decisões do treinador continuam sob seu controle.</p><div id="paceChoices" class="option-choices">${Object.entries(GAME_PACE_CONFIG).map(([key, pace]) => `<button class="pace-choice" data-pace="${key}"><b>${pace.name}</b><small>${pace.detail}</small></button>`).join('')}</div></section><section class="option-section"><label>SONS AO VIVO</label><p>Apito, narração e reação da torcida durante a simulação de partida.</p><div id="liveAudioOptions" class="live-audio-options"></div></section><section class="option-section"><label>INFORMAÇÕES DE ATUALIZAÇÕES</label><div class="updates-info-row"><div class="updates-info-summary"><strong>Última Atualização</strong><span id="optionsLatestUpdate">—</span></div><button id="openReleaseNotes" type="button">CONSULTAR</button></div></section><section class="option-section"><label>CONTA</label><p>Encerra a sessão e volta à tela inicial. Seus dados ficam salvos na nuvem.</p><div class="options-logout-row"><button id="optionsLogout" type="button">SAIR</button></div></section><section class="option-section"><label>TESTERS</label><div class="new-game-action"><div><strong>Guia e feedback</strong><small>Como testar a build e enviar relatório estruturado (GitHub ou copiar texto).</small></div><div class="option-choices" style="flex:none;display:flex;gap:8px;flex-wrap:wrap"><button id="openTesterGuide" type="button">GUIA</button><button id="openTesterFeedback" type="button">FEEDBACK</button><button id="previewSeasonGoalGauge" type="button" title="Abre o balanço com dados fictícios — não altera a carreira">PREVIEW META</button></div></div></section></div></div>${buildNewGameModalHtml()}`,
     );
+    const updatesSection = $('#optionsLatestUpdate')?.closest('.option-section');
+    if (updatesSection) {
+      const updates = mountDesktopUpdatePanel(document, window.brfutDesktop?.updates, { container: updatesSection });
+      if (updates) window.addEventListener('pagehide', () => updates.dispose(), { once: true });
+    }
     const saveRow = $('#optionsModal .save-prefs-row');
     if (saveRow && !$('#saveSyncStatus')) {
       const status = document.createElement('p');
