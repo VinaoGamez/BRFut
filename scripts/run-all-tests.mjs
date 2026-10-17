@@ -43,6 +43,7 @@ const pythonCommand = resolvePythonCommand();
 const SUITES = [
   { label: 'frontend-security', steps: [['scripts/frontend-security-tests.mjs']] },
   { label: 'asset-transparency', steps: [['scripts/asset-transparency-tests.py']] },
+  { label: 'desktop-updates', steps: [['scripts/desktop-updates-tests.mjs']] },
   { label: 'auth-cookie', steps: [['scripts/auth-cookie-tests.mjs']] },
   { label: 'division-information-flow', steps: [['scripts/division-information-flow-tests.mjs']] },
   { label: 'player-card-stats-source', steps: [['scripts/player-card-stats-source-tests.mjs']] },

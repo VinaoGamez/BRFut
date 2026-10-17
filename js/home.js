@@ -1,4 +1,5 @@
 import './security/https-upgrade.js';
+import './ui/desktop-updates.js';
 import './security/tester-hardening.js';
 import { AUTH_REQUIRED, BUILD_VERSION, SAVE_KEYS, SAVE_RESET_EPOCH, SAVE_RESET_MARKER_KEY, BRFUT_API_ORIGIN, SITE_MAINTENANCE } from './core/constants.js';
 import { SPONSOR_EXTERNAL_LINKS } from './core/sponsor-links.js';

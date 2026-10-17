@@ -10,9 +10,11 @@
  * `.cjs` de propósito: o package.json do projeto é `"type": "module"`, e um
  * `main.js` seria interpretado como ESM e quebraria na hora.
  */
-const { app, BrowserWindow, Menu, protocol, net, shell, dialog } = require('electron');
+const { app, BrowserWindow, Menu, protocol, net, shell, dialog, ipcMain } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { readFileSync } = require('node:fs');
+const { createUpdateService, isTrustedDesktopSender } = require('./updates.cjs');
 
 const RAIZ = path.join(__dirname, '..');
 const DIST = path.join(RAIZ, 'dist');
@@ -93,6 +95,62 @@ function registrarProtocolo() {
 }
 
 let janela = null;
+let updates = null;
+
+async function openUpdatePage(kind) {
+  if (kind === 'installer') {
+    const answer = await dialog.showMessageBox(janela, {
+      type: 'info', title: 'Atualização do BR Fut',
+      message: 'Salve sua carreira antes de atualizar.',
+      detail: 'O download será aberto no navegador. Depois de baixar, feche o BR Fut e execute o instalador. O jogo não será fechado nem atualizado automaticamente.',
+      buttons: ['Abrir download', 'Cancelar'], defaultId: 1, cancelId: 1,
+    });
+    if (answer.response !== 0) return false;
+  }
+  await shell.openExternal(updates.getOpenUrl(kind));
+  return true;
+}
+
+async function checkDesktopUpdates() {
+  try {
+    const status = await updates.check();
+    const available = status.state === 'available';
+    const message = available ? `BR Fut ${status.release.version} disponível` :
+      status.state === 'up-to-date' ? 'Você está na versão mais recente disponível.' :
+      status.state === 'no-release' ? 'Ainda não há instalador publicado neste canal.' :
+      'Não foi possível consultar as atualizações. Você pode continuar jogando offline.';
+    const result = await dialog.showMessageBox(janela, {
+      type: 'info', title: `BR Fut ${status.currentVersion}`, message,
+      detail: available ? status.release.notes.slice(0, 4000) : 'A consulta não modifica seus saves nem interrompe sua carreira.',
+      buttons: available ? ['Ver novidades', 'Baixar instalador', 'Depois'] : ['OK'], cancelId: available ? 2 : 0,
+    });
+    if (available && result.response < 2) await openUpdatePage(result.response === 0 ? 'notes' : 'installer');
+  } catch { /* Closing a window or browser failure must never close the game. */ }
+}
+
+function registerDesktopUpdates() {
+  let currentNotes = '';
+  try { currentNotes = readFileSync(path.join(RAIZ, 'docs', 'releases', `${app.getVersion()}.md`), 'utf8'); } catch {}
+  updates = createUpdateService({
+    currentVersion: app.getVersion(), currentNotes,
+    preferencesPath: path.join(app.getPath('userData'), 'update-preferences.json'),
+    fetchImpl: (url, options) => net.fetch(url, options),
+    onChange: status => {
+      if (janela && !janela.isDestroyed()) janela.webContents.send('updates:state', status);
+    },
+  });
+  const handle = (channel, fn) => ipcMain.handle(channel, (event, ...args) => {
+    if (!isTrustedDesktopSender(event, janela?.webContents)) throw new Error('Origem não autorizada');
+    return fn(...args);
+  });
+  handle('updates:status', () => updates.getStatus());
+  handle('updates:check', () => updates.check());
+  handle('updates:preference', value => updates.setAutoCheck(value));
+  handle('updates:notes', () => openUpdatePage('notes'));
+  handle('updates:installer', () => openUpdatePage('installer'));
+  handle('updates:history', () => openUpdatePage('history'));
+  ipcMain.on('app:quit', event => { if (isTrustedDesktopSender(event, janela?.webContents)) app.quit(); });
+}
 
 /**
  * Menu do Windows, em português.
@@ -114,13 +172,15 @@ function montarMenu() {
     {
       label: 'Ajuda',
       submenu: [
+        { label: 'Verificar atualizações…', click: () => { void checkDesktopUpdates(); } },
+        { type: 'separator' },
         {
           label: 'Sobre o BR Fut',
           click: () => dialog.showMessageBox({
             type: 'info',
             title: 'BR Fut',
             message: `BR Fut ${app.getVersion()}`,
-            detail: 'Simulador de gestão. Versão desktop.',
+            detail: 'Simulador de gestão offline. Atualizações opcionais pelo GitHub Releases, sem instalação automática.',
           }),
         },
       ],
@@ -177,8 +237,11 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     registrarProtocolo();
+    registerDesktopUpdates();
     montarMenu();
     criarJanela();
+    // Explicit opt-in. Never await a network operation during startup.
+    if (updates.getStatus().autoCheck) void updates.check();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) criarJanela();
     });

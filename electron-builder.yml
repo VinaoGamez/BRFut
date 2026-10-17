@@ -16,6 +16,8 @@ files:
   - dist/**/*
   - electron/main.cjs
   - electron/preload.cjs
+  - electron/updates.cjs
+  - docs/releases/*.md
   - package.json
 
 # Chromium já traz o assar; não vale zipar 63 MB de PNG de novo.

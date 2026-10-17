@@ -1,6 +1,6 @@
 {
     "name":  "brfut-alpha",
-    "version":  "0.2.0-alpha",
+    "version":  "0.2.1",
     "private":  true,
     "description":  "BR Fut - simulador de gestão (Alpha modular)",
     "type":  "module",
@@ -11,6 +11,8 @@
                     "preview":  "vite preview",
                     "desktop:start":  "electron .",
                     "desktop:dist":  "node scripts/build-desktop.mjs",
+                    "release:check":  "node scripts/desktop-release-check.mjs",
+                    "release:checksums":  "node scripts/desktop-release-check.mjs --checksums",
                     "desktop:dir":  "node scripts/build-desktop.mjs --dir",
                     "desktop:verify":  "node scripts/verifica-assets-instalado.mjs",
                     "desktop:verify:assets":  "node scripts/verifica-assets-instalado.mjs",
