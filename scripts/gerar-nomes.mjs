@@ -140,12 +140,31 @@ const HISPANOFONAS = new Set([
  * brasileiros vazam do material de origem e produzem "Marcelinho Soares" na
  * Colômbia, que é exatamente o defeito que o pool por país veio para evitar.
  */
+/**
+ * Sobrenomes que tambem sao sufixo no jogo.
+ *
+ * Sao sobrenomes de verdade no IBGE — "Silva Filho" existe. Mas aqui eles
+ * tem funcao propria: herdam o nome do pai. Ver `youth-inheritance.js`.
+ */
+const SOBRENOMES_QUE_SAO_SUFIXO = new Set(['Júnior', 'Junior', 'Filho', 'Neto']);
+
 function filtrarPorPool(nacao, pool) {
-  if (!HISPANOFONAS.has(nacao)) return pool;
-  return {
+  // O IBGE lista 'Júnior' e 'Filho' entre os sobrenomes, e são sobrenomes de
+  // verdade. Mas aqui eles já têm função própria — são a lista de `sufixos`,
+  // e significam "filho de alguém com esse nome".
+  //
+  // Deixá-los nos dois lugares produz "Paulo Silva Filho" sem nenhum "Paulo
+  // Silva" no clube, o que não diz nada ao jogador. Nos sobrenomes eles só
+  // entram acompanhados do nome que herdam.
+  const base = {
     ...pool,
+    sobrenomes: pool.sobrenomes.filter(nome => !SOBRENOMES_QUE_SAO_SUFIXO.has(nome)),
+  };
+  if (!HISPANOFONAS.has(nacao)) return base;
+  return {
+    ...base,
     primeiros: pool.primeiros.filter(nome => !SO_BRASILEIROS.has(nome)),
-    sobrenomes: pool.sobrenomes.filter(nome => !SOBRENOMES_LUSOFONOS.has(nome)),
+    sobrenomes: base.sobrenomes.filter(nome => !SOBRENOMES_LUSOFONOS.has(nome)),
   };
 }
 

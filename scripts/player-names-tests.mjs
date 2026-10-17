@@ -121,16 +121,33 @@ check('pool nao tem nome com grafia duplicada', () => {
   }
 });
 
-check('sufixo patronímico so em pool que declara', () => {
-  // 'Tanaka Hiroshi Júnior' não existe. O pool japonês não declara sufixos,
-  // então a estratégia que os aplica tem de cair para reroll.
-  for (const nome of varios(60, 'Japão')) {
-    assert.ok(!/Júnior|Neto|Filho/.test(nome), `sufixo em nome japones: ${nome}`);
+check('sufixo nunca aparece sozinho no sorteio', () => {
+  // "Paulo Silva Filho" sem nenhum "Paulo Silva" no clube nao diz nada ao
+  // jogador. O sufixo so tem sentido quando herda um nome que existe, e quem
+  // aplica e a herdanca da base - nao o sorteio.
+  for (const nacionalidade of ['Brasil', 'Colombia', 'Japão', 'Nigéria']) {
+    for (const nome of varios(300, nacionalidade, 41)) {
+      const semSufixo = nome.replace(/ (Júnior|Neto|Filho)$/i, '');
+      assert.equal(semSufixo, nome, nacionalidade + ': sufixo sem nome herdado - ' + nome);
+    }
   }
-  // E no Brasil os sufixos existem, mas são raros — eram 0% antes do pool maior.
-  const br = varios(400, 'Brasil').filter(n => /Júnior|Neto|Filho/.test(n));
-  assert.ok(br.length > 0, 'nenhum sufixo em 400 nomes brasileiros — o código virou morto de novo');
-  assert.ok(br.length < 60, `sufixo demais: ${br.length}/400`);
+});
+
+check('pool que nao declara sufixo nao gera sufixo', () => {
+  // "Tanaka Hiroshi Júnior" nao existe. So o Brasil tem patronimico, e o
+  // sorteio nunca o aplica.
+  for (const [pais, pool] of Object.entries(PLAYER_NAME_POOLS)) {
+    if (pool.sufixos && pool.sufixos.length) continue;
+    for (const nome of varios(200, pais, 53)) {
+      assert.ok(!/ (Júnior|Neto|Filho)$/.test(nome), pais + ' gerou sufixo: ' + nome);
+    }
+  }
+});
+
+check('so o Brasil declara sufixo', () => {
+  const comSufixo = Object.entries(PLAYER_NAME_POOLS).filter(([, p]) => p.sufixos && p.sufixos.length);
+  assert.deepEqual(comSufixo.map(([k]) => k), ['Brasil'], 'patronimico so existe onde a cultura tem');
+  assert.deepEqual(PLAYER_NAME_POOLS.Brasil.sufixos, ['Júnior', 'Neto', 'Filho']);
 });
 
 check('stripTrailingNumericNameSuffix removes legacy suffix', () => {
