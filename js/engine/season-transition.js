@@ -10,6 +10,7 @@ import {
   serieDFormationSummary,
 } from './serie-d-formation.js';
 import { resolveSerieCOutcome } from './serie-c-standings.js';
+import { SAVE_VERSION } from '../core/constants.js';
 
 function seasonPrizeCreditedTotal(club) {
   const ledger = Array.isArray(club?.budgetLedger) ? club.budgetLedger : [];
@@ -579,7 +580,7 @@ export function createSeasonTransitionEngine(deps) {
       retiredPool: savedNewGame.retiredPool || [],
       seasonIndex: Array.isArray(savedNewGame.seasonIndex) ? [...savedNewGame.seasonIndex] : [],
       createdAt: new Date().toISOString(),
-      version: 7,
+      version: SAVE_VERSION.career,
     };
 
     // Garante archive do ano que fecha antes de limpar a season viva.

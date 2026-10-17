@@ -2,7 +2,7 @@
  * Candidato de estabilização desktop. Mesma identificação do package.json.
  * Não representa aprovação/publicação do instalador.
  */
-export const BUILD_VERSION = '0.2.2';
+export const BUILD_VERSION = '0.2.3';
 
 /**
  * Ciclo destrutivo de compatibilidade: invalida saves Alpha anteriores no navegador.

@@ -806,6 +806,36 @@ export function clearPlayerHistoryStore() {
   }
 }
 
+/** Recover exact saved match sheets; never simulate replacement statistics. */
+export function restorePlayerHistoryMatches(store, matches) {
+  store.processedMatches ||= {};
+  for (const log of store.matchLogs || []) if (log?.id) store.processedMatches[log.id] = log.season;
+  let restored = 0;
+  for (const match of matches || []) {
+    const id = match?.fixtureId;
+    if (!id || !Number.isFinite(Number(match.season)) || Object.hasOwn(store.processedMatches, id)) continue;
+    const sheets = (match.players || []).filter(row => row.playerId && row.clubId).map(row => ({
+      key: row.playerId, name: row.name, club: row.clubId, started: !!row.started,
+      minutes: Number(row.minutes) || 0, goals: Number(row.goals) || 0, assists: Number(row.assists) || 0,
+      ownGoals: Number(row.ownGoals) || 0, yellow: !!row.yellow, red: !!row.red,
+      passesEst: Number(row.passes) || 0, rating: row.rating ?? null,
+    }));
+    if (!sheets.length) continue;
+    const competition = normalizeStatsCompetitionId(match.competitionId);
+    for (const sheet of sheets) {
+      const player = store.players[sheet.key] ||= { name: sheet.name, club: sheet.club, seasons: {} };
+      applySheetToSeason(player, match.season, sheet, competition);
+    }
+    store.processedMatches[id] = match.season;
+    store.season = Math.max(Number(store.season) || 0, Number(match.season));
+    store.matchLogs.push({ id, fixtureId: id, season: Number(match.season), competition,
+      round: match.round, date: match.playedAt, home: match.homeClub, away: match.awayClub,
+      homeGoals: match.homeGoals, awayGoals: match.awayGoals, players: sheets });
+    restored++;
+  }
+  return restored;
+}
+
 export function createPlayerHistoryEngine(deps = {}) {
   const getClub = typeof deps.getClub === 'function' ? deps.getClub : () => null;
   const getMatchLogBudget =

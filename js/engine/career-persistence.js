@@ -28,6 +28,7 @@ export function createCareerPersistence({
   getClubs,
   getUserClub,
   collectWorldRosters,
+  persistPlayerHistory = () => true,
 } = {}) {
   const careerReset = { blockWrites: false };
   let persistSeasonTimer = null;
@@ -51,6 +52,13 @@ export function createCareerPersistence({
 
   const persistCareer = payload => {
     if (careerReset.blockWrites) return true;
+    const runtime = safeRuntime();
+    const roster = runtime?.clubs?.[runtime.userClub]?.roster;
+    if (payload?.clubName === runtime?.userClub && Array.isArray(roster) && roster.length) {
+      payload = { ...payload, userRoster: roster.map(player => ({
+        ...player, injuryHistory: pruneInjuryHistory(player.injuryHistory),
+      })) };
+    }
     const slimSteps = [
       data => data,
       data => {
@@ -158,20 +166,25 @@ export function createCareerPersistence({
     if (!getSavedNewGame?.()) return { ok: false, cloud: false, localOk: false };
     // Reativa nuvem antes de gravar (token pode existir com cloudActive=false após reload).
     await ensureCloudReady().catch(() => false);
+    flushLiveMatchPersist();
+    const historyLocalOk = persistPlayerHistory();
     const seasonLocalOk = persistSeason(true, { flush: false });
-    syncCareerRosters();
+    const rosterLocalOk = syncCareerRosters();
     const careerLocalOk = persistCareer({ ...getSavedNewGame() });
-    syncActiveSlotFromCache();
+    const slotLocalOk = syncActiveSlotFromCache();
     const slotId = getActiveSlotId();
     const forceLocalKeys = [SAVE_KEYS.career, SAVE_KEYS.season, SAVE_KEYS.playerHistory, CAREER_INDEX_KEY];
     if (slotId) forceLocalKeys.push(...Object.values(slotBundleKeys(slotId)));
     const cloud = await flushCloudSyncAsync({ forceLocalKeys });
-    const localOk = seasonLocalOk && careerLocalOk;
+    const localOk = seasonLocalOk && careerLocalOk && rosterLocalOk && historyLocalOk && slotLocalOk;
     return {
       ok: localOk,
       localOk,
       seasonLocalOk,
       careerLocalOk,
+      rosterLocalOk,
+      historyLocalOk,
+      slotLocalOk,
       cloud: cloud.ok,
       cloudMode: cloud.mode,
       cloudReason: cloud.reason,

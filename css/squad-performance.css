@@ -1,4 +1,7 @@
 .squad-performance { margin-top: 20px; padding: 20px; }
+#squad.view.active.squad-view { overflow-y: auto !important; }
+#squad .card.roster { flex: 0 0 auto; max-height: 60vh; min-height: 240px; }
+#squad .squad-performance { flex: 0 0 auto; }
 .squad-performance h2 { margin: 0 0 10px; }
 .squad-performance p, .squad-performance caption { font-size: 12px; line-height: 1.5; opacity: .8; }
 .squad-performance table { width: 100%; min-width: 720px; border-collapse: collapse; }

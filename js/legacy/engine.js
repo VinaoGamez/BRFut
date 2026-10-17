@@ -34,7 +34,7 @@ import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
 import { createSquadPerformance } from '../feature/squad-performance/index.js';
 import { renderTransferHistoryCard } from '../ui/transfer-history-card.js';
-import { SAVE_KEYS, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
+import { SAVE_KEYS, SAVE_VERSION, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { getAuthToken, isCloudStorageActive, probeBackend } from '../core/storage-api.js';
 import { fetchClubSeasonStats } from '../core/player-stats-sync.js';
 import { consumePrefetchedStateLeagueSnapshot } from '../core/state-league-sync.js';
@@ -455,6 +455,7 @@ export async function bootEngine({
     getClubs: () => clubs,
     getUserClub: () => persistenceCtx.userClub || userClub,
     collectWorldRosters,
+    persistPlayerHistory: () => playerHistory?.persist?.() ?? false,
   });
   careerPersistence.consumeBootSkip();
   const persistCareer = payload => careerPersistence.persistCareer(payload);
@@ -6341,7 +6342,7 @@ export async function bootEngine({
       for(let index=0;index<sample;index++){const fixture=fixtures[index%fixtures.length],result=simulateRoundMatch(fixture.home,fixture.away,fixture),goals=result.homeGoals+result.awayGoals;totals.goals+=goals;totals.shots+=result.data.homeShots+result.data.awayShots;totals.onTarget+=result.data.homeOnTarget+result.data.awayOnTarget;totals.draws+=result.homeGoals===result.awayGoals?1:0;totals.scoreless+=goals===0?1:0;totals.overFour+=goals>=5?1:0;totals.homeWins+=result.homeGoals>result.awayGoals?1:0;totals.awayWins+=result.awayGoals>result.homeGoals?1:0;totals.maxGoals=Math.max(totals.maxGoals,goals);}
       return {...totals,goalsPerMatch:Number((totals.goals/sample).toFixed(3)),shotsPerMatch:Number((totals.shots/sample).toFixed(3)),onTargetPerMatch:Number((totals.onTarget/sample).toFixed(3)),drawRate:Number((totals.draws/sample*100).toFixed(1)),scorelessRate:Number((totals.scoreless/sample*100).toFixed(1)),overFourRate:Number((totals.overFour/sample*100).toFixed(1)),homeWinRate:Number((totals.homeWins/sample*100).toFixed(1)),awayWinRate:Number((totals.awayWins/sample*100).toFixed(1))};
     };
-    window.__brfutEngineExports={clubs,simulateRoundMatch,savedNewGame:!!savedNewGame,userDivision,createInjuryRecord,normalizeInjury,injuryCatalog,calculateEventInjuryChance,injuryMechanismFromEvent,workloadRisk,recoveryRisk,recordPlayerMatchWorkload,ensureWorkload,injuryInRestrictedPhase,matchPlayerStat,playerRehabMaxMinutes,beginRestrictedReturn,advanceRestrictedRehab,clearInjuryFully,clubMedicalQuality,medicalRecoveryModifier,medicalPreventionModifier,resolveInjuryTreatment,summarizeMatchInjuries,engineTuning,buildSimLineup,engineFoulRisk,engineBlowoutDamp};
+    window.__brfutEngineExports={clubs,simulateRoundMatch,recordPlayerHistoryMatch,savedNewGame:!!savedNewGame,userDivision,createInjuryRecord,normalizeInjury,injuryCatalog,calculateEventInjuryChance,injuryMechanismFromEvent,workloadRisk,recoveryRisk,recordPlayerMatchWorkload,ensureWorkload,injuryInRestrictedPhase,matchPlayerStat,playerRehabMaxMinutes,beginRestrictedReturn,advanceRestrictedRehab,clearInjuryFully,clubMedicalQuality,medicalRecoveryModifier,medicalPreventionModifier,resolveInjuryTreatment,summarizeMatchInjuries,engineTuning,buildSimLineup,engineFoulRisk,engineBlowoutDamp};
     window.__matchdayEngineBenchmark=window.__brfutEngineBenchmark;
     window.__matchdayEngineExports=window.__brfutEngineExports;
   }
@@ -7096,7 +7097,7 @@ export async function bootEngine({
       seasonObjectives:nextObjectives,
       seasonObjectivesResult:null,
       createdAt:new Date().toISOString(),
-      version:7,
+      version:SAVE_VERSION.career,
     };
     persistCareer(nextCareer);
     managerJobCrisis=null;

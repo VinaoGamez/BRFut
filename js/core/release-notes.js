@@ -9,6 +9,21 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: '0.2.3',
+    date: '2026-10-17',
+    title: 'Correções de saves e estatísticas',
+    promptUpdate: false,
+    topics: [{
+      label: 'Carreira offline',
+      items: [
+        'Carreiras compatíveis que ficaram ocultas na versão 0.2.2 voltam a aparecer no carregamento.',
+        'Salvar preserva o elenco e as estatísticas; falhas de gravação deixam de ser confirmadas como sucesso.',
+        'O histórico disponível no computador pode ser recuperado sem login.',
+        'O desempenho do elenco permite consultar registros de jogadores que já não estão no plantel atual.',
+      ],
+    }],
+  },
+  {
     version: 'Alpha V.6.00',
     date: '2026-08-11',
     publishedAt: '2026-08-11T12:00:00-04:00',

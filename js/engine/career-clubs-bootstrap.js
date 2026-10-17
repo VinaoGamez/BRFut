@@ -324,7 +324,8 @@ export function bootstrapCareerClubs({
       savedNewGame.worldRosters = collectWorldRosters(clubs, { skipClub: userClub, merge: savedNewGame.worldRosters || {} });
       if (Array.isArray(clubs[userClub]?.roster)) savedNewGame.userRoster = clubs[userClub].roster;
       persistCareer({ ...savedNewGame });
-    } else if (userDivisionMembershipRepaired) {
+    } else if (userDivisionMembershipRepaired || !Array.isArray(savedNewGame.userRoster)) {
+      savedNewGame.userRoster = clubs[userClub]?.roster;
       persistCareer({ ...savedNewGame });
     }
   }

@@ -168,32 +168,18 @@ export function persistSeasonPayload(seasonPayload, context = {}) {
   const slimSteps = isCloudLocalTrimEnabled()
     ? [
         payload => slimSeasonPayloadLevel2(payload, context),
-        payload => {
-          try {
-            localStorage.removeItem(SAVE_KEYS.playerHistory);
-          } catch {
-            /* ignore */
-          }
-          return slimSeasonPayloadLevel3(payload, context);
-        },
+        payload => slimSeasonPayloadLevel3(payload, context),
         payload => slimSeasonPayloadLevel4(payload, context),
       ]
     : [
         payload => slimSeasonPayloadLevel1(payload, context),
         payload => slimSeasonPayloadLevel2(payload, context),
-        payload => {
-          try {
-            localStorage.removeItem(SAVE_KEYS.playerHistory);
-          } catch {
-            /* ignore */
-          }
-          return slimSeasonPayloadLevel3(payload, context);
-        },
+        payload => slimSeasonPayloadLevel3(payload, context),
         payload => slimSeasonPayloadLevel4(payload, context),
       ];
 
   return writeJsonResilient(SAVE_KEYS.season, seasonPayload, {
-    preserveKeys: [SAVE_KEYS.season, SAVE_KEYS.career],
+    preserveKeys: [SAVE_KEYS.season, SAVE_KEYS.career, SAVE_KEYS.playerHistory],
     slimSteps,
   });
 }

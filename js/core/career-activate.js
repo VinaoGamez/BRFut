@@ -15,6 +15,7 @@ import {
   mergeSlotBundleFromCloud,
 } from './storage-api.js';
 import { repairSlotFromLocalStorage } from './career-storage-health.js';
+import { recoverMislabeledCareerVersions, careerRecoveryAliases } from './career-version-recovery.js';
 
 let bootMigrationDone = false;
 
@@ -28,6 +29,7 @@ export function runCareerBootMigration() {
   if (bootMigrationDone) return;
   bootMigrationDone = true;
   migrateLegacyStorageKeys();
+  recoverMislabeledCareerVersions();
   migrateLegacySingleSaveToSlots();
 }
 
@@ -38,6 +40,7 @@ export function runCareerBootMigration() {
  */
 export function recoverCareerSlotsAfterHydration() {
   migrateLegacyStorageKeys();
+  recoverMislabeledCareerVersions();
   const index = migrateLegacySingleSaveToSlots();
   const active = index.activeSlotId
     ? index.slots.find(slot => slot.id === index.activeSlotId)
@@ -94,6 +97,15 @@ export async function prepareGameSession({
       reason: 'game-session-slot',
       allowSeedFromActive,
     });
+    // Older desktop saves erased the history during season compaction. The
+    // pending IndexedDB matches retain the actual sheets and player IDs.
+    const { readQueuedPlayerStatsMatches } = await import('./player-stats-sync.js');
+    const matches = await readQueuedPlayerStatsMatches(careerRecoveryAliases(resolvedSlotId));
+    if (matches.length) {
+      const { loadPlayerHistoryStore, restorePlayerHistoryMatches, savePlayerHistoryStore } = await import('../engine/player-history.js');
+      const history = loadPlayerHistoryStore();
+      if (restorePlayerHistoryMatches(history, matches)) savePlayerHistoryStore(history);
+    }
   }
   return { ...storage, slotId: resolvedSlotId || null };
 }

@@ -1,4 +1,4 @@
-import { MODULE_VERSIONS, FEATURES, SITE_MAINTENANCE, SAVE_KEYS, CAREER_INDEX_KEY, CAREER_SLOT_LIMIT, slotBundleKeys } from '../../core/constants.js';
+import { MODULE_VERSIONS, FEATURES, SITE_MAINTENANCE, SAVE_KEYS, SAVE_VERSION, CAREER_INDEX_KEY, CAREER_SLOT_LIMIT, slotBundleKeys } from '../../core/constants.js';
 import '../../../css/new-career-modal.css';
 import { initReleaseNotesViewer, renderOptionsUpdateSummary } from '../../ui/release-notes-viewer.js';
 import { mountDesktopUpdatePanel } from '../../ui/desktop-update-panel.js';
@@ -417,12 +417,12 @@ export function createOptionsFeature(deps) {
         replacementMode: 'cascade',
         stateCompetitionId: stateCompetitionIdForUf(selectedOriginUf),
         regionalBaseClubs: [],
-        version: 7,
+        version: SAVE_VERSION.career,
       });
     } else {
       selectedCareerDivision = $('#careerDivision')?.value || 'A';
       if (!['A', 'B', 'C', 'D'].includes(selectedCareerDivision)) selectedCareerDivision = 'A';
-      Object.assign(careerPayloadExtra, { version: 7 });
+      Object.assign(careerPayloadExtra, { version: SAVE_VERSION.career });
     }
 
     const seed = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
@@ -445,6 +445,10 @@ export function createOptionsFeature(deps) {
         return;
       }
       activeSlot = createNewSlot();
+      if (!activeSlot) {
+        error.textContent = 'Não foi possível criar o espaço desta carreira. Verifique o armazenamento e tente novamente.';
+        return;
+      }
     }
     prepareForNewCareer?.();
     markSkipPersistOnce?.();
@@ -530,15 +534,18 @@ export function createOptionsFeature(deps) {
       btn.disabled = true;
       btn.textContent = 'SALVANDO…';
     }
-    const result = await onManualSave?.();
+    let result;
+    try { result = await onManualSave?.(); }
+    catch { result = { localOk: false, saveError: true }; }
     renderOptions();
     const localOk = result?.localOk ?? result?.seasonLocalOk ?? (result === true);
     const cloudOk = result?.cloud === true;
     const cloudHint = (() => {
+      if (result?.saveError) return 'FALHA AO SALVAR';
       if (!localOk) return 'MEMÓRIA CHEIA';
       if (cloudOk && result?.careerOk && result?.seasonOk) return 'SALVO!';
       if (result?.cloudReason === 'cloud_inactive') {
-        return getAuthToken() ? 'LOCAL (SEM NUVEM)' : 'ENTRE NA CONTA';
+        return 'SALVO LOCAL';
       }
       if (result?.cloudReason === 'auth_rejected') return 'LOCAL (SESSÃO)';
       if (result?.cloudReason === 'cloud_unreachable') return 'LOCAL (REDE)';

@@ -136,9 +136,9 @@ export async function prefetchStateLeagueSnapshot(season) {
   const careerId = activeCareerId();
   const year = Number(season);
   prefetchedSnapshot = null;
-  if (!careerId || !year || !authSessionSignal()) return null;
+  if (!careerId || !year) return null;
   const pending = await pendingStateLeagueSnapshot(careerId, year);
-  if (!(await stateLeagueApiAvailable())) {
+  if (!authSessionSignal() || !(await stateLeagueApiAvailable())) {
     prefetchedSnapshot = pending;
     return prefetchedSnapshot;
   }
@@ -147,7 +147,10 @@ export async function prefetchStateLeagueSnapshot(season) {
       apiUrl(`/api/careers/${encodeURIComponent(careerId)}/state-leagues/${year}`),
       authenticatedFetchOptions({ cache: 'no-store' }),
     );
-    if (!response.ok) return null;
+    if (!response.ok) {
+      prefetchedSnapshot = pending;
+      return pending;
+    }
     const data = await response.json();
     prefetchedSnapshot = data?.snapshot || pending || null;
     return prefetchedSnapshot;
