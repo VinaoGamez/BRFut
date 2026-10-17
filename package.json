@@ -1,6 +1,6 @@
 {
     "name":  "brfut-alpha",
-    "version":  "0.2.2-alpha.1",
+    "version":  "0.2.2",
     "private":  true,
     "description":  "BR Fut - simulador de gestão (Alpha modular)",
     "type":  "module",
