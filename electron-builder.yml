@@ -1,7 +1,7 @@
 # Empacotamento desktop do BR Fut.
 #
-# Só o `dist/` e o `electron/` entram no pacote. O repositório tem 167 MB — com
-# node_modules, fontes e páginas de laboratório — e nada disso deve ir para o
+# So o dist/ e o electron/ entram no pacote. O repositorio tem 167 MB — com
+# node_modules, fontes e paginas de laboratorio — e nada disso deve ir para o
 # instalador.
 
 appId: br.com.brfut.desktop
@@ -17,10 +17,11 @@ files:
   - electron/main.cjs
   - electron/preload.cjs
   - electron/updates.cjs
+  - electron/installer.nsh
   - docs/releases/*.md
   - package.json
 
-# Chromium já traz o assar; não vale zipar 63 MB de PNG de novo.
+# Chromium ja traz o asar; nao vale zipar 63 MB de PNG de novo.
 asar: true
 
 win:
@@ -29,31 +30,32 @@ win:
       arch:
         - x64
   artifactName: BR-Fut-${version}-instalador.${ext}
-  # Ícone próprio: sem isso o Windows usa o ícone padrão do Electron.
+  # Icone proprio: sem isso o Windows usa o icone padrao do Electron.
   icon: electron/build/icon.ico
-  # O passo de assinar/editar o executável baixa o cache `winCodeSign`, que só
-  # descompacta com privilégio de symlink — bloqueado sem Developer Mode ou
-  # administrador. Como o app não é assinado, esse passo é desnecessário.
-  # Preço: o .exe sai sem ícone embutido e sem metadados de versão. Ligar o
-  # Developer Mode em Configurações > Atualização e Segurança > Para
-  # desenvolvedores devolve os dois, e é o caminho para a versão polida.
+  # O passo de assinar/editar o executavel baixa o cache winCodeSign, que so
+  # descompacta com privilegio de symlink — bloqueado sem Developer Mode ou
+  # administrador. Como o app nao e assinado, esse passo e desnecessario.
   signAndEditExecutable: false
 
 nsis:
-  # Assistente em vez de instalação silenciosa: o usuário escolhe a pasta e
+  # Assistente em vez de instalacao silenciosa: o usuario escolhe a pasta e
   # desinstala pelo Painel de Controle.
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
+  # Forca o mesmo caminho no registro e na instalacao real. Sem isso o NSIS
+  # cria entradas em Program Files mas instala em LocalAppData, deixando o
+  # Painel de Controle sem o app e a instalacao vazia.
+  include: electron/installer.nsh
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: BR Fut
   installerLanguages:
-    - pt_BR
+    - pt-BR
   language: '1026'
   displayLanguageSelector: false
   deleteAppDataOnUninstall: false
 
-# Sem repositório, sem updates automáticos e sem download de código em tempo de
-# execução: o instalador é a fonte, e o que roda é o que foi empacotado.
+# Sem repositorio, sem updates automaticos e sem download de codigo em tempo de
+# execucao: o instalador e a fonte, e o que roda e o que foi empacotado.
 publish: null
