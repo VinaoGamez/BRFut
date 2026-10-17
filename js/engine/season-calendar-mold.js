@@ -15,6 +15,7 @@ import {
   isWorldCupYear as isInternationalWorldCupYear,
   worldCupWindow,
 } from './international-calendar.js';
+import { CONMEBOL_BERTHS, CONMEBOL_EDITIONS } from './continental-calendar.js';
 
 /** Ano-âncora da Copa do Mundo (ciclo FIFA quadrienal). */
 export const WORLD_CUP_ANCHOR_YEAR = 2026;
@@ -298,9 +299,12 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     competitionId: 'libertadores',
     label: 'Copa Libertadores',
     category: 'continental',
-    start: [1, 1],
-    end: [10, 30],
+    // Datas reais de 2026 (3/fev a 28/nov). Antes eram [1/1] a 30/out,
+    // placeholders que não correspondiam a nada.
+    start: CONMEBOL_EDITIONS[2026].libertadores.start,
+    end: CONMEBOL_EDITIONS[2026].libertadores.end,
     matchCount: 13,
+    eligibleDivisions: CONMEBOL_BERTHS.libertadores.eligibleDivisions,
     weekSlot: 'continental_conmebol',
     idaSlot: 'continental_conmebol',
     voltaSlot: 'continental_conmebol',
@@ -309,15 +313,16 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     enabled: false,
     skipsWhen: ['world_cup'], // clubes liberados em anos de copa — ajustável
   }),
-  /** CONMEBOL Sudamericana (CBF: fev – out) — mesmo slot que Libertadores. */
+  /** CONMEBOL Sudamericana (3/mar a 21/nov de 2026) — mesmo slot que Libertadores. */
   sudamericana: Object.freeze({
     code: 'CSU',
     competitionId: 'sudamericana',
     label: 'Copa Sul-Americana',
     category: 'continental',
-    start: [1, 1],
-    end: [10, 15],
+    start: CONMEBOL_EDITIONS[2026].sudamericana.start,
+    end: CONMEBOL_EDITIONS[2026].sudamericana.end,
     matchCount: 13,
+    eligibleDivisions: CONMEBOL_BERTHS.sudamericana.eligibleDivisions,
     weekSlot: 'continental_conmebol',
     idaSlot: 'continental_conmebol',
     voltaSlot: 'continental_conmebol',
