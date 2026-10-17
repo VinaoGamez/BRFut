@@ -41,11 +41,17 @@ export const FOREIGNER_LIMITS = {
     tetoLegal: 9,
     fonte:
       'CBF — regulamento do Campeonato Brasileiro de Futebol 2026: "cada equipe pode colocar na súmula da partida um máximo de nove jogadores de outras nacionalidades".',
-    // Verificado: teto idêntico nas quatro divisões, conforme o mesmo regulamento.
+    // `tetoRealista` da Série A é o próprio dado: footystats.org mediu 9,35
+    // estrangeiros por clube na Série A 2026, que bate no teto legal. Duas
+    // fontes independentes no mesmo número.
+    // Série B tem 7,7% de estrangeiros (medido) contra 31,2% da A — a queda é de
+    // quatro vezes entre divisões irmãs.
+    // Série C, D e estadual não têm dado publicado; os valores seguem a ordem de
+    // grandeza do gradiente, não uma estatística.
     A: { tetoLegal: 9, tetoRealista: 9 },
-    B: { tetoLegal: 9, tetoRealista: 7 },
-    C: { tetoLegal: 9, tetoRealista: 3 },
-    D: { tetoLegal: 9, tetoRealista: 2 },
+    B: { tetoLegal: 9, tetoRealista: 2 },
+    C: { tetoLegal: 9, tetoRealista: 1 },
+    D: { tetoLegal: 9, tetoRealista: 1 },
     REG: { tetoLegal: 9, tetoRealista: 1 },
   },
 };
@@ -87,22 +93,54 @@ export const MAX_FOREIGNERS_PER_SQUAD = 9;
  * Ásia / África são raros. Com peso uniforme, Equador gerava tantos jogadores
  * quanto Argentina (medido: 121 e 120).
  */
+/**
+ * Nacionalidade estrangeira por peso real.
+ *
+ * Peso = participação de cada país nos 187 estrangeiros da Série A 2026,
+ * medidos em footystats.org (ver `public/data/estrangeiros-por-liga.json`):
+ *
+ *   Argentina 74 (39,6%) | Colômbia 41 (21,9%) | Uruguai 28 (15,0%)
+ *   Equador 9 (4,8%) | Paraguai 6 (3,2%) | Portugal 5 (2,7%) | Chile 5 (2,7%)
+ *   Venezuela 4 (2,1%) | Itália 4 (2,1%) | Cabo Verde 2 | Marrocos 2 | Panamá 2
+ *   Bolívia, Espanha, Angola, Camarões, Peru 1 cada
+ *
+ * Duas leituras que os números sustentam:
+ *
+ *  - O eixo CONMEBOL responde por 84% do estrangeiro brasileiro. A Europa, a
+ *    África e a Ásia são cauda longa, com 1-2 jogadores cada.
+ *  - A-share da África não é genérica: Cabo Verde e Angola são Atlântico/Norte,
+ *    Camarões é Central. É para isso que a pool resolve por região.
+ */
 const FOREIGN_NATION_WEIGHTS = {
-  Argentina: 26,
-  Uruguai: 18,
-  Paraguai: 16,
-  Colombia: 14,
-  Chile: 8,
-  Equador: 7,
-  Venezuela: 5,
-  Portugal: 2,
-  Espanha: 1,
-  Alemanha: 1,
-  França: 1,
-  Inglaterra: 1,
+  // As chaves usam EXATAMENTE a grafia que o resto do jogo já usa
+  // (FOREIGN_NATIONS: 'Uruguai', 'Colombia', 'Equador'...). Misturar com a
+  // grafia da fonte ('Uruguay') faria o jogador nascer com nacionalidade que
+  // nada mais no jogo reconhece.
+  Argentina: 396,
+  Colombia: 219,
+  Uruguai: 150,
+  Equador: 48,
+  Paraguai: 32,
+  Portugal: 27,
+  Chile: 27,
+  Venezuela: 21,
+  Itália: 21,
+  'Cabo Verde': 11,
+  Marrocos: 11,
+  Panamá: 11,
+  Bolívia: 5,
+  Espanha: 5,
+  Angola: 5,
+  Camarões: 5,
+  Peru: 5,
+  Inglaterra: 2,
+  Alemanha: 2,
+  França: 2,
+  Holanda: 1,
+  Bélgica: 1,
+  Croácia: 1,
   Nigéria: 1,
   Gana: 1,
-  'Costa do Marfim': 1,
   Senegal: 1,
   Japão: 1,
   'Coreia do Sul': 1,

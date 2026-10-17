@@ -60,16 +60,19 @@ const POOLS_DADOS = Object.fromEntries(
 const REGION_POR_PAIS = {
   // CONMEBOL
   Argentina: null, Brasil: null, Chile: null, Colombia: null, Equador: null,
-  Paraguai: null, Uruguai: null, Venezuela: null, Bolívia: 'América Latina',
-  Peru: 'América Latina', México: 'América Latina', 'Costa Rica': 'Concacaf',
+  Paraguai: null, Uruguai: null, Venezuela: null,
+  Bolívia: 'América Latina', Peru: 'América Latina', México: 'América Latina',
   // Europa
   Portugal: null, Espanha: null, Alemanha: null, França: null, Inglaterra: null,
   Itália: null, Holanda: null, Bélgica: null, Croácia: null, Sérvia: null,
+  Polônia: null, Turquia: null, Grécia: null,Sverige: null, Noruega: null, Dinamarca: null,
   // África
   Nigéria: 'África Ocidental', Gana: 'África Ocidental', 'Costa do Marfim': 'África Ocidental',
   Senegal: 'África Ocidental', Mali: 'África Ocidental', 'Serra Leoa': 'África Ocidental',
+  'Cabo Verde': 'África Ocidental', Benin: 'África Ocidental', Togo: 'África Ocidental',
   Camarões: 'África Central', 'Congo': 'África Central', Gabão: 'África Central',
-  Chade: 'África Central', Quênia: 'África Oriental', Tanzânia: 'África Oriental',
+  Chade: 'África Central', 'Angola': 'África Austral', 'Congo': 'África Central',
+  Quênia: 'África Oriental', Tanzânia: 'África Oriental',
   Uganda: 'África Oriental', Ruanda: 'África Oriental', Etiópia: 'África Oriental',
   Egito: 'África Setentrional', Marrocos: 'África Setentrional', Argélia: 'África Setentrional',
   Tunísia: 'África Setentrional', Líbia: 'África Setentrional', Sudão: 'África Setentrional',
@@ -78,16 +81,14 @@ const REGION_POR_PAIS = {
   'Arábia Saudita': 'Ásia Ocidental', Emirados: 'Ásia Ocidental', Qatar: 'Ásia Ocidental',
   Kuwait: 'Ásia Ocidental', Omã: 'Ásia Ocidental', Bahrein: 'Ásia Ocidental',
   Iraque: 'Ásia Ocidental', Jordânia: 'Ásia Ocidental', Irã: 'Ásia Ocidental',
-  Índia: 'Sul da Ásia', Paquistão: 'Sul da Ásia', Bangladesh: 'Sul da Ásia',
-  'Sri Lanka': 'Sul da Ásia', Nepal: 'Sul da Ásia',
-  Japão: 'Leste Asiático', 'Coreia do Sul': 'Leste Asiático', China: 'Leste Asiático',
-  Indonésia: 'Sudeste Asiático', Tailândia: 'Sudeste Asiático', Vietnã: 'Sudeste Asiático',
-  Filipinas: 'Sudeste Asiático', Malásia: 'Sudeste Asiático', Singapura: 'Sudeste Asiático',
+  Uzbequistão: 'Leste Asiático',
+  México: 'América Latina',
   // América do Norte e Caribe
-  Estados: 'Concacaf', 'Estados Unidos': 'Concacaf', Canadá: 'Concacaf',
+  'Estados Unidos': 'Concacaf', Canadá: 'Concacaf',
   Jamaica: 'Concacaf', Haiti: 'Concacaf', Trinidad: 'Concacaf', Panamá: 'Concacaf',
   Honduras: 'Concacaf', Guatemala: 'Concacaf', 'El Salvador': 'Concacaf',
-  'República Dominicana': 'Concacaf', Cuba: 'Concacaf',
+  'República Dominicana': 'Concacaf', Cuba: 'Concacaf', 'Costa Rica': 'Concacaf',
+  Nicarágua: 'Concacaf', 'Costa Rica': 'Concacaf', Jamaica: 'Concacaf',
 };
 
 /**

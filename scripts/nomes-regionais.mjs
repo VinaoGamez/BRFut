@@ -282,6 +282,32 @@ export const POOLS_REGIONAIS = {
     nota: 'Indonésia, Tailândia, Vietnã, Filipinas, Malásia, Singapura',
   },
 
+  // ------------------------------------------------------- América Latina
+  // Não é CONMEBOL: serve Peru, Bolívia e México, que jogam no Brasil muito
+  // menos do que Argentina. Sem esta pool eles caíam no Brasil — jogador
+  // peruano com nome brasileiro, que é o defeito que o pool por país veio
+  // justamente para evitar.
+  'América Latina': {
+    forma: 'primeiro-sobrenome-sobrenome',
+    primeiros: [
+      'Adrián', 'Alejandro', 'Álvaro', 'Andrés', 'Ángel', 'Antonio', 'Arturo', 'Carlos', 'César', 'Cristian',
+      'Daniel', 'Diego', 'Eduardo', 'Emilio', 'Enzo', 'Fernando', 'Francisco', 'Gabriel', 'Gerardo', 'Gustavo',
+      'Hugo', 'Ignacio', 'Javier', 'Jesús', 'Joel', 'Jorge', 'José', 'Juan', 'Julio', 'Leonardo',
+      'Luis', 'Manuel', 'Marco', 'Mario', 'Martín', 'Mateo', 'Mauricio', 'Miguel', 'Nelinho', 'Nicolás',
+      'Óscar', 'Pablo', 'Patricio', 'Pedro', 'Rafael', 'Raúl', 'Renzo', 'Ricardo', 'Roberto', 'Rodrigo',
+      'Rubén', 'Salvador', 'Santiago', 'Sebastián', 'Sergio', 'Tomás', 'Valentín', 'Víctor', 'Wilder', 'Yordy',
+    ],
+    sobrenomes: [
+      'Aguilar', 'Alarcón', 'Ayoví', 'Benavides', 'Burbano', 'Campos', 'Cárdenas', 'Carrasco', 'Castro', 'Chávez',
+      'Cortés', 'Cruz', 'Delgado', 'Díaz', 'Domínguez', 'Espinoza', 'Flores', 'Fuentes', 'Gallardo', 'García',
+      'Gonzales', 'Guerrero', 'Gutiérrez', 'Herrera', 'Huamán', 'Inca', 'Juárez', 'Loayza', 'López', 'Medina',
+      'Mendoza', 'Montero', 'Morales', 'Navarro', 'Ortega', 'Paredes', 'Peralta', 'Quispe', 'Ramírez', 'Reyes',
+      'Ríos', 'Rivera', 'Rodríguez', 'Rojas', 'Romero', 'Salazar', 'Sandoval', 'Soto', 'Tapia', 'Torres',
+      'Ugarte', 'Valdivia', 'Vargas', 'Vega', 'Vera', 'Vílchez', 'Zamora', 'Zúñiga',
+    ],
+    nota: 'Peru, Bolivia, Mexico. Hispano-americano de dois sobrenomes.',
+  },
+
   // ------------------------------------------------------------- CONCACAF
   'Concacaf': {
     forma: 'primeiro-sobrenome',
