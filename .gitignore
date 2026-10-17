@@ -1,5 +1,7 @@
 node_modules/
 dist/
+release/
+electron/build/
 *.log
 .env.local
 .env.production
