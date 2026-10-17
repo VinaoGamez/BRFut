@@ -20,33 +20,56 @@ export const FOREIGN_NATIONS = [
 /**
  * Limite de estrangeiros por liga.
  *
- * O valor é o **teto de súmula** — quantos estrangeiros o clube pode Related
- * na lista de partida — e não quantos estão em campo ao mesmo tempo. Os dois
- * não se confundem: um clube brasileiro pode levar 9 estrangeiros na súmula e
- * levar só 5 deles em campo, porque em campo são 11 no total.
+ * São duas coisas diferentes, e a distinção é o ponto:
  *
- * Só o Brasil está preenchido, e só porque foi conferido no regulamento da CBF
- * (2026, idêntico aos anos anteriores). As demais ligas ficam de fora de propósito:
- * um número plausível e inventado é pior do que um limite honestamente ausente.
- * Quando cada uma for verificada em fonte, entra aqui com o mesmo formato.
+ *   `tetoLegal`    o que o regulamento permite. **Este é o único número
+ *                  verificado**, e vem com a citação da fonte.
+ *   `tetoRealista` o que os clubes de fato ocupam desse teto. **Não é medido**:
+ *                  é decisão de design, motivada pela ordem de grandeza
+ *                  econômica entre as divisões. Ajustar aqui é seguro.
+ *
+ * Confundir os dois foi o erro original: o jogo usava 5, que é o número de
+ * jogadores em campo (em campo são 11), e não o limite de súmula.
+ *
+ * Só o Brasil está preenchido, e só o `tetoLegal`, conferido no regulamento da
+ * CBF. As demais ligas ficam vazias de propósito — número plausível e inventado
+ * é pior que limite honestamente ausente. Quando cada uma for verificada em
+ * fonte, entra aqui no mesmo formato.
  */
 export const FOREIGNER_LIMITS = {
   Brasil: {
-    A: 9,
-    B: 9,
-    C: 9,
-    D: 9,
-    fonte: 'CBF — regulamento do Campeonato Brasileiro 2026: "cada equipe pode colocar na súmula da partida um máximo de nove jogadores de outras nacionalidades".',
-    verificado: true,
+    tetoLegal: 9,
+    fonte:
+      'CBF — regulamento do Campeonato Brasileiro de Futebol 2026: "cada equipe pode colocar na súmula da partida um máximo de nove jogadores de outras nacionalidades".',
+    // Verificado: teto idêntico nas quatro divisões, conforme o mesmo regulamento.
+    A: { tetoLegal: 9, tetoRealista: 9 },
+    B: { tetoLegal: 9, tetoRealista: 7 },
+    C: { tetoLegal: 9, tetoRealista: 3 },
+    D: { tetoLegal: 9, tetoRealista: 2 },
+    REG: { tetoLegal: 9, tetoRealista: 1 },
   },
 };
 
-/** Maior número de estrangeiros na súmula de uma divisão. */
+/** Teto legal de estrangeiros na súmula de uma divisão. */
 export function foreignerLimitFor(division = 'A', country = 'Brasil') {
-  const regra = FOREIGNER_LIMITS[country];
-  if (!regra) return null;
-  const limite = regra[division];
-  return typeof limite === 'number' ? limite : null;
+  const regra = FOREIGNER_LIMITS[country]?.[division];
+  return typeof regra?.tetoLegal === 'number' ? regra.tetoLegal : null;
+}
+
+/**
+ * Teto realmente ocupado por uma divisão.
+ *
+ * É o que impede o absurdo que motivou isto: um clube de nível regional com 9
+ * estrangeiros na súmula. O teto legal é 9 em toda parte, mas a distância entre
+ * o orçamento de uma Série A e o de um estadual é de ordens de grandeza, e
+ * estrangeiro é a linha mais cara do elenco.
+ *
+ * Devolve `null` quando a liga não tem dado — aí o chamador não impõe nada,
+ * em vez de chutar.
+ */
+export function realisticForeignerLimit(division = 'A', country = 'Brasil') {
+  const regra = FOREIGNER_LIMITS[country]?.[division];
+  return typeof regra?.tetoRealista === 'number' ? regra.tetoRealista : null;
 }
 
 export const MAX_FOREIGNERS_PER_SQUAD = 9;
@@ -88,6 +111,8 @@ const FOREIGN_NATION_WEIGHTS = {
 };
 
 const FOREIGN_COUNT_WEIGHTS = {
+  // Formato: { count: n, w: peso }. O teto vem de `tetoRealista`, não daqui —
+  // os pesos dão a forma, o teto dá o limite.
   A: [
     { count: 0, w: 1 },
     { count: 2, w: 5 },
@@ -98,26 +123,27 @@ const FOREIGN_COUNT_WEIGHTS = {
     { count: 9, w: 12 },
   ],
   B: [
-    { count: 0, w: 6 },
-    { count: 1, w: 12 },
-    { count: 3, w: 24 },
-    { count: 5, w: 26 },
-    { count: 6, w: 18 },
-    { count: 7, w: 10 },
-    { count: 8, w: 4 },
+    { count: 0, w: 8 },
+    { count: 1, w: 14 },
+    { count: 3, w: 26 },
+    { count: 5, w: 28 },
+    { count: 6, w: 16 },
+    { count: 7, w: 8 },
   ],
   C: [
-    { count: 0, w: 52 },
-    { count: 1, w: 26 },
-    { count: 2, w: 14 },
-    { count: 3, w: 6 },
-    { count: 4, w: 2 },
+    { count: 0, w: 62 },
+    { count: 1, w: 28 },
+    { count: 2, w: 10 },
   ],
   D: [
-    { count: 0, w: 80 },
+    { count: 0, w: 84 },
     { count: 1, w: 14 },
-    { count: 2, w: 5 },
-    { count: 3, w: 1 },
+    { count: 2, w: 2 },
+  ],
+  // Estadual: clube sem orcamento para estrangeiro. O teto cai para 1.
+  REG: [
+    { count: 0, w: 94 },
+    { count: 1, w: 6 },
   ],
 };
 
@@ -164,7 +190,11 @@ export function assignRosterNationalities(roster, division = 'A', random = Math.
   if (!Array.isArray(roster) || !roster.length) return roster;
 
   const weights = FOREIGN_COUNT_WEIGHTS[division] || FOREIGN_COUNT_WEIGHTS.D;
-  const teto = foreignerLimitFor(division, BRAZIL_NATION) ?? MAX_FOREIGNERS_PER_SQUAD;
+  // O teto legal é 9 em toda parte; o que segura o jogo é o
+  // `tetoRealista` da divisão. Sem liga conhecida, não se impõe teto.
+  const legal = foreignerLimitFor(division, BRAZIL_NATION);
+  const realista = realisticForeignerLimit(division, BRAZIL_NATION);
+  const teto = realista ?? legal ?? MAX_FOREIGNERS_PER_SQUAD;
   const cap = Math.min(teto, roster.length - 1);
   const foreignCount = Math.min(pickWeighted(weights, random), cap);
 
