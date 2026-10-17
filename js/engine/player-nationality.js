@@ -41,20 +41,22 @@ export const FOREIGNER_LIMITS = {
     tetoLegal: 9,
     fonte:
       'CBF — regulamento do Campeonato Brasileiro de Futebol 2026: "cada equipe pode colocar na súmula da partida um máximo de nove jogadores de outras nacionalidades".',
-    // `tetoRealista` da Série A é o próprio dado: footystats.org mediu 9,35
-    // estrangeiros por clube na Série A 2026, que bate no teto legal. Duas
-    // fontes independentes no mesmo número.
-    // Série B tem 7,7% de estrangeiros (medido) contra 31,2% da A — a queda é de
-    // quatro vezes entre divisões irmãs.
-    // Série C, D e estadual não têm dado publicado; os valores seguem a ordem de
-    // grandeza do gradiente, não uma estatística.
-    A: { tetoLegal: 9, tetoRealista: 9 },
-    B: { tetoLegal: 9, tetoRealista: 2 },
-    C: { tetoLegal: 9, tetoRealista: 1 },
-    D: { tetoLegal: 9, tetoRealista: 1 },
-    REG: { tetoLegal: 9, tetoRealista: 1 },
+    A: { tetoLegal: 9, tetoRealista: 9, mediaReal: 9.35, fonte: 'medido' },
+    B: { tetoLegal: 9, tetoRealista: 2, mediaReal: 1.3, fonte: 'medido' },
+    C: { tetoLegal: 9, tetoRealista: 1, mediaAlvo: 0.88, fonte: 'extrapolado' },
+    D: { tetoLegal: 9, tetoRealista: 1, mediaAlvo: 0.57, fonte: 'extrapolado' },
+    REG: { tetoLegal: 9, tetoRealista: 1, mediaAlvo: 0.38, fonte: 'extrapolado' },
   },
 };
+
+/**
+ * Orçamento inicial por divisão, em milhões.
+ *
+ * Espelha `INITIAL_BUDGET_BY_DIVISION` de `economy.js`, que é a curva
+ * econômica que o jogo já usa para tudo. Está aqui só para a extrapolação
+ * abaixo — se a curva mudar em economy.js, este número precisa mudar junto.
+ */
+const ORCAMENTO_MILHOES = { A: 9.5, B: 6.2, C: 4.2, D: 2.7, REG: 1.8 };
 
 /** Teto legal de estrangeiros na súmula de uma divisão. */
 export function foreignerLimitFor(division = 'A', country = 'Brasil') {
@@ -62,20 +64,54 @@ export function foreignerLimitFor(division = 'A', country = 'Brasil') {
   return typeof regra?.tetoLegal === 'number' ? regra.tetoLegal : null;
 }
 
-/**
- * Teto realmente ocupado por uma divisão.
- *
- * É o que impede o absurdo que motivou isto: um clube de nível regional com 9
- * estrangeiros na súmula. O teto legal é 9 em toda parte, mas a distância entre
- * o orçamento de uma Série A e o de um estadual é de ordens de grandeza, e
- * estrangeiro é a linha mais cara do elenco.
- *
- * Devolve `null` quando a liga não tem dado — aí o chamador não impõe nada,
- * em vez de chutar.
- */
+/** Teto que a divisão nunca ultrapassa, seja legal ou realista. */
 export function realisticForeignerLimit(division = 'A', country = 'Brasil') {
   const regra = FOREIGNER_LIMITS[country]?.[division];
-  return typeof regra?.tetoRealista === 'number' ? regra.tetoRealista : null;
+  if (typeof regra?.tetoRealista === 'number') return regra.tetoRealista;
+  const legal = foreignerLimitFor(division, country);
+  return typeof legal === 'number' ? legal : null;
+}
+
+/**
+ * Média de estrangeiros por clube que a divisão deveria ter.
+ *
+ * Para Série A e B, o número é medido (footystats.org, temporada 2026).
+ *
+ * Para C, D e estadual, é extrapolado por orçamento:
+ *
+ *     mediaAlvo = mediaB × (orcamento_divisao / orcamento_B)
+ *
+ * A âncora é B, e não A, por um motivo que a própria medição mostra:
+ *
+ *     orçamento   A/B = 1,53×
+ *     poder       A/B = 1,27×
+ *     estrangeiros A/B = 7,19×
+ *
+ * Se a relação fosse linear em orçamento ou em poder, a Série B teria cerca
+ * de 6 estrangeiros; ela tem 1,3. Ou seja, a Série A **não** explica a B, e
+ * usar A como âncora para baixo superestimaria C, D e estadual em várias
+ * vezes. B é a última divisão com dado real, então é de onde se desce.
+ *
+ * Ainda assim, extrapolação com um ponto só não é estatística — é uma
+ * tendência plausível ancorada no orçamento. Por isso `mediaAlvo` fica
+ * separado de `mediaReal` no `FOREIGNER_LIMITS`, e dá para trocar por número
+ * medido sem tocar em mais nada.
+ *
+ * Devolve `null` quando a divisão não tem nem medição nem extrapolação.
+ */
+export function foreignerAverageFor(division = 'A', country = 'Brasil') {
+  const regra = FOREIGNER_LIMITS[country]?.[division];
+  if (typeof regra?.mediaReal === 'number') return regra.mediaReal;
+  if (typeof regra?.mediaAlvo === 'number') return regra.mediaAlvo;
+  return null;
+}
+
+/** Extrapolação explícita, exposta para o teste poder conferir a conta. */
+export function extrapolateFromBudget(division, country = 'Brasil') {
+  const base = FOREIGNER_LIMITS[country]?.B?.mediaReal;
+  const orc = ORCAMENTO_MILHOES[division];
+  if (typeof base !== 'number' || typeof orc !== 'number') return null;
+  return Number(((base * orc) / ORCAMENTO_MILHOES.B).toFixed(3));
 }
 
 export const MAX_FOREIGNERS_PER_SQUAD = 9;
@@ -168,22 +204,31 @@ const FOREIGN_COUNT_WEIGHTS = {
     { count: 6, w: 16 },
     { count: 7, w: 8 },
   ],
+  // Pesos calibrados para a media extrapolada de cada divisao. Com contagem
+  // inteira, media alvo de 0,88 em Serie C significa ~90% dos clubes com um
+  // estrangeiro. E o que o modelo linear entrega, e provavelmente demais: a
+  // relacao real entre A e B e mais ingreme que o orcamento (ver
+  // `foreignerAverageFor`). O valor gerado e um TETO, nao uma previsao.
+  //   C: (0*20 + 1*70 + 2*10)/100 = 0,90   alvo 0,88
+  //   D: (0*55 + 1*35 + 2*10)/100 = 0,55   alvo 0,57
+  //   REG: (0*70 + 1*24 + 2*6)/100 = 0,36  alvo 0,38
   C: [
-    { count: 0, w: 62 },
-    { count: 1, w: 28 },
+    { count: 0, w: 20 },
+    { count: 1, w: 70 },
     { count: 2, w: 10 },
   ],
   D: [
-    { count: 0, w: 84 },
-    { count: 1, w: 14 },
-    { count: 2, w: 2 },
+    { count: 0, w: 55 },
+    { count: 1, w: 35 },
+    { count: 2, w: 10 },
   ],
-  // Estadual: clube sem orcamento para estrangeiro. O teto cai para 1.
   REG: [
-    { count: 0, w: 94 },
-    { count: 1, w: 6 },
+    { count: 0, w: 70 },
+    { count: 1, w: 24 },
+    { count: 2, w: 6 },
   ],
 };
+
 
 function pickWeighted(items, random) {
   const total = items.reduce((sum, row) => sum + row.w, 0);
