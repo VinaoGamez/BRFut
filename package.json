@@ -1,40 +1,43 @@
 {
-  "name": "brfut-alpha",
-  "version": "0.2.0-alpha",
-  "private": true,
-  "description": "BR Fut - simulador de gestão (Alpha modular)",
-  "type": "module",
-  "main": "electron/main.cjs",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "desktop:start": "electron .",
-    "desktop:dist": "node scripts/build-desktop.mjs",
-    "desktop:dir": "node scripts/build-desktop.mjs --dir",
-    "test:match-view": "node scripts/match-view-play-tests.mjs",
-    "test:world-pitch": "node scripts/match-view-world-tests.mjs",
-    "test:match-view-all": "npm run test:world-pitch && npm run test:match-view",
-    "test:all": "node scripts/run-all-tests.mjs",
-    "test:ao-vivo-2d": "node modules/ao-vivo-2d/scripts/run-tests.mjs lab",
-    "test:ao-vivo-2d:frozen": "node modules/ao-vivo-2d/scripts/run-tests.mjs frozen",
-    "test:knockout-shootout": "node scripts/knockout-shootout-tests.mjs",
-    "test:season-goal-live": "node scripts/season-goal-live-tests.mjs",
-    "test:player-history": "node scripts/player-history-tests.mjs",
-    "test:own-goal-report": "node scripts/own-goal-report-tests.mjs",
-    "security:secrets": "node scripts/secret-scan.mjs",
-    "security:audit": "npm run security:secrets && npm audit --audit-level=moderate",
-    "test:auth-cookie": "node scripts/auth-cookie-tests.mjs",
-    "test:security-input": "node scripts/frontend-security-tests.mjs",
-    "test:market-balance": "node scripts/market-balance-tests.mjs"
-  },
-  "allowScripts": {
-    "electron": true,
-    "esbuild": true
-  },
-  "devDependencies": {
-    "electron": "^33.4.11",
-    "electron-builder": "^25.1.8",
-    "vite": "^6.3.5"
-  }
+    "name":  "brfut-alpha",
+    "version":  "0.2.0-alpha",
+    "private":  true,
+    "description":  "BR Fut - simulador de gestão (Alpha modular)",
+    "type":  "module",
+    "main":  "electron/main.cjs",
+    "scripts":  {
+                    "dev":  "vite",
+                    "build":  "vite build",
+                    "preview":  "vite preview",
+                    "desktop:start":  "electron .",
+                    "desktop:dist":  "node scripts/build-desktop.mjs",
+                    "desktop:dir":  "node scripts/build-desktop.mjs --dir",
+                    "desktop:verify":  "node scripts/verifica-assets-instalado.mjs",
+                    "desktop:verify:assets":  "node scripts/verifica-assets-instalado.mjs",
+                    "desktop:verify:boot":  "node scripts/verifica-boot-instalado.mjs",
+                    "test:match-view":  "node scripts/match-view-play-tests.mjs",
+                    "test:world-pitch":  "node scripts/match-view-world-tests.mjs",
+                    "test:match-view-all":  "npm run test:world-pitch \u0026\u0026 npm run test:match-view",
+                    "test:all":  "node scripts/run-all-tests.mjs",
+                    "test:ao-vivo-2d":  "node modules/ao-vivo-2d/scripts/run-tests.mjs lab",
+                    "test:ao-vivo-2d:frozen":  "node modules/ao-vivo-2d/scripts/run-tests.mjs frozen",
+                    "test:knockout-shootout":  "node scripts/knockout-shootout-tests.mjs",
+                    "test:season-goal-live":  "node scripts/season-goal-live-tests.mjs",
+                    "test:player-history":  "node scripts/player-history-tests.mjs",
+                    "test:own-goal-report":  "node scripts/own-goal-report-tests.mjs",
+                    "security:secrets":  "node scripts/secret-scan.mjs",
+                    "security:audit":  "npm run security:secrets \u0026\u0026 npm audit --audit-level=moderate",
+                    "test:auth-cookie":  "node scripts/auth-cookie-tests.mjs",
+                    "test:security-input":  "node scripts/frontend-security-tests.mjs",
+                    "test:market-balance":  "node scripts/market-balance-tests.mjs"
+                },
+    "allowScripts":  {
+                         "electron":  true,
+                         "esbuild":  true
+                     },
+    "devDependencies":  {
+                            "electron":  "^33.4.11",
+                            "electron-builder":  "^25.1.8",
+                            "vite":  "^6.3.5"
+                        }
 }

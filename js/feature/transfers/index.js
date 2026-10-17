@@ -7,7 +7,7 @@ import {
 import { wageMonthlyFromRound } from '../../engine/player-contracts.js';
 import { BRAZIL_NATION, FOREIGN_NATIONS } from '../../engine/player-nationality.js';
 import { getTransferWindowBounds } from '../../engine/transfers.js';
-import mercadoDaBolaUrl from '../../../brand/transfer-history/mercado-da-bola.png?url';
+import mercadoDaBolaUrl from '../../../brand/transfer-history/mercado-da-bola.webp?url';
 import {
   formatSellerRejectLetter,
   formatLoanLevelPlayerReply,

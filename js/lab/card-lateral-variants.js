@@ -2,14 +2,14 @@
  * Banco de artes PNG — lateral (693×1024).
  */
 
-import art01 from '../../assets/cards/lateral/card-lateral-01.png';
-import art02 from '../../assets/cards/lateral/card-lateral-02.png';
-import art03 from '../../assets/cards/lateral/card-lateral-03.png';
-import art05 from '../../assets/cards/lateral/card-lateral-05.png';
-import art06 from '../../assets/cards/lateral/card-lateral-06.png';
-import art07 from '../../assets/cards/lateral/card-lateral-07.png';
-import art08 from '../../assets/cards/lateral/card-lateral-08.png';
-import art10 from '../../assets/cards/lateral/card-lateral-10.png';
+import art01 from '../../assets/cards/lateral/card-lateral-01.webp';
+import art02 from '../../assets/cards/lateral/card-lateral-02.webp';
+import art03 from '../../assets/cards/lateral/card-lateral-03.webp';
+import art05 from '../../assets/cards/lateral/card-lateral-05.webp';
+import art06 from '../../assets/cards/lateral/card-lateral-06.webp';
+import art07 from '../../assets/cards/lateral/card-lateral-07.webp';
+import art08 from '../../assets/cards/lateral/card-lateral-08.webp';
+import art10 from '../../assets/cards/lateral/card-lateral-10.webp';
 
 export const LATERAL_CARD_VARIANTS = [
   { id: 'lat-01', label: '01 · Sprint laranja', art: art01 },

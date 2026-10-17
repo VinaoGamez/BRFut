@@ -183,7 +183,7 @@ export function createOptionsFeature(deps) {
     }
     document.body.insertAdjacentHTML(
       'beforeend',
-      '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.png" alt="BR Fut" width="480" height="72"></div><div class="career-welcome-actions"><button id="welcomeLogin" type="button">ENTRAR</button><button id="welcomeNewGame" type="button" class="primary hidden">NOVO JOGO</button></div><p id="welcomeHint" class="career-welcome-hint hidden"></p></div></section>',
+      '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.webp" alt="BR Fut" width="480" height="72"></div><div class="career-welcome-actions"><button id="welcomeLogin" type="button">ENTRAR</button><button id="welcomeNewGame" type="button" class="primary hidden">NOVO JOGO</button></div><p id="welcomeHint" class="career-welcome-hint hidden"></p></div></section>',
     );
   };
 

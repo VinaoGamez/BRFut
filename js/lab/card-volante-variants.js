@@ -2,14 +2,14 @@
  * Banco de artes PNG — volante (693×1024).
  */
 
-import art01 from '../../assets/cards/volante/card-volante-01.png';
-import art02 from '../../assets/cards/volante/card-volante-02.png';
-import art04 from '../../assets/cards/volante/card-volante-04.png';
-import art05 from '../../assets/cards/volante/card-volante-05.png';
-import art06 from '../../assets/cards/volante/card-volante-06.png';
-import art07 from '../../assets/cards/volante/card-volante-07.png';
-import art09 from '../../assets/cards/volante/card-volante-09.png';
-import art10 from '../../assets/cards/volante/card-volante-10.png';
+import art01 from '../../assets/cards/volante/card-volante-01.webp';
+import art02 from '../../assets/cards/volante/card-volante-02.webp';
+import art04 from '../../assets/cards/volante/card-volante-04.webp';
+import art05 from '../../assets/cards/volante/card-volante-05.webp';
+import art06 from '../../assets/cards/volante/card-volante-06.webp';
+import art07 from '../../assets/cards/volante/card-volante-07.webp';
+import art09 from '../../assets/cards/volante/card-volante-09.webp';
+import art10 from '../../assets/cards/volante/card-volante-10.webp';
 
 export const VOLANTE_CARD_VARIANTS = [
   { id: 'vol-01', label: '01 · Carrinho amarelo', art: art01 },

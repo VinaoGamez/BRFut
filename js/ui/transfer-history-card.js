@@ -1,4 +1,4 @@
-import mercadoDaBolaUrl from '../../brand/transfer-history/mercado-da-bola.png?url';
+import mercadoDaBolaUrl from '../../brand/transfer-history/mercado-da-bola.webp?url';
 
 export const TRANSFER_HISTORY_LAYOUT_KEY = 'brfut-transfer-history-card-layout-v1';
 export const TRANSFER_HISTORY_LAYOUT_DEFAULTS = Object.freeze({

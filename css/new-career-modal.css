@@ -238,7 +238,7 @@ body.dark-mode .modal-card.new-career-v2 {
   z-index: 28;
   pointer-events: none;
   background:
-    url('../public/brand/home-stadium.png') center right / cover no-repeat,
+    url('../public/brand/home-stadium.webp') center right / cover no-repeat,
     #050c17;
 }
 

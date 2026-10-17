@@ -502,7 +502,7 @@ body.career-locked .game-shell {
   inset: 0;
   pointer-events: none;
   background:
-    url('../public/brand/home-stadium.png') center right / cover no-repeat,
+    url('../public/brand/home-stadium.webp') center right / cover no-repeat,
     transparent;
   opacity: 0.22;
 }

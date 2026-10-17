@@ -118,7 +118,9 @@ prepararIcone();
 
 if (!SKIP_BUILD) {
   console.log('\n[1/2] build do jogo (modo offline embutido)');
-  rodarNo(join('node_modules', 'vite', 'bin', 'vite.js'), ['build'], OFFLINE);
+  // BRFUT_BUILD_LABS fica explicitamente desligado: as páginas de laboratório
+  // são ferramenta de dev e arrastariam ~100 PNGs de card que o jogo não usa.
+  rodarNo(join('node_modules', 'vite', 'bin', 'vite.js'), ['build'], { ...OFFLINE, BRFUT_BUILD_LABS: 'false' });
   const dist = join(RAIZ, 'dist', 'home.html');
   if (!existsSync(dist)) {
     console.error(`\nO build não gerou ${dist}.`);

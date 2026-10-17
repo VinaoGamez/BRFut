@@ -20,7 +20,7 @@ import {
 } from '../../engine/match-clock.js';
 import goalBallUrl from '../../../assets/ui/goal-ball.png?url';
 import ownGoalBallUrl from '../../../assets/ui/goal-ball-own.png?url';
-import subArrowsUrl from '../../../assets/ui/sub-arrows.png?url';
+import subArrowsUrl from '../../../assets/ui/sub-arrows.webp?url';
 
 /**
  * Fatia de UI da partida ao vivo — modal do adversário, relógio, placar,

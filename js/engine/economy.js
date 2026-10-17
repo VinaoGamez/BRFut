@@ -2379,7 +2379,7 @@ export const SPONSOR_PARTNER_WEIGHTS = Object.fromEntries(
 const SPONSOR_OFFER_HISTORY_KEY = 'brfut-sponsor-offer-history';
 const SPONSOR_OFFER_HISTORY_LIMIT = 28;
 
-/** Slug do arquivo em assets/sponsors/icons/{slug}.png */
+/** Slug do arquivo em assets/sponsors/icons/{slug}.webp */
 export const SPONSOR_LOGO_SLUG = {
   'Tekno Cursos': 'tekno-cursos',
   Nubanco: 'nubanco',

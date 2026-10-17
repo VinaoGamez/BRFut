@@ -31,7 +31,7 @@ body {
   inset: 0;
   pointer-events: none;
   background:
-    url('../public/brand/home-stadium.png') center right / cover no-repeat,
+    url('../public/brand/home-stadium.webp') center right / cover no-repeat,
     var(--md-night);
 }
 

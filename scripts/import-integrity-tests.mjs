@@ -174,5 +174,132 @@ check('nenhum módulo importa símbolo que não existe', () => {
   assert(total > 150, `só ${total} imports locais encontrados — a varredura pode estar errada`);
 });
 
+check('todo asset referenciado existe em disco', () => {
+  // Cobre o caminho `assets/...` e `brand/...` dentro de import/export. O check
+  // de módulos acima pegaria o arquivo ausente, mas aqui a mensagem diz qual
+  // imagem — o conversor de PNG para WebP reescreve referência por basename e
+  // basta dois arquivos com o mesmo nome em pastas diferentes para um deles
+  // quebrar em silêncio.
+  const semArquivo = [];
+  const vistos = new Set();
+  for (const arquivo of arquivos) {
+    const fonte = readFileSync(arquivo, 'utf8');
+    const re = /(?:from|import)\s*['"]([^'"]+)['"]/g;
+    let m;
+    while ((m = re.exec(fonte))) {
+      const spec = m[1];
+      if (!/^(?:\.{1,2}\/)*(?:assets|brand)\//.test(spec)) continue;
+      if (spec.includes('?')) continue;
+      const caminho = spec.replace(/\?.*$/, '');
+      const alvo = resolve(dirname(arquivo), caminho);
+      vistos.add(`${relative(ROOT, arquivo)} -> ${spec}`);
+      try {
+        statSync(alvo);
+      } catch {
+        semArquivo.push(`${relative(ROOT, arquivo)} -> ${spec}`);
+      }
+    }
+  }
+  assert(
+    semArquivo.length === 0,
+    `${semArquivo.length} asset(s) ausente(s): ${semArquivo.slice(0, 8).join(' | ')}`,
+  );
+  assert(vistos.size > 5, `só ${vistos.size} referências de asset — a varredura pode estar errada`);
+});
+
+check('todo glob e caminho montado bate com um arquivo existente', () => {
+  // O check acima só enxerga import estático. Duas formas de referenciar
+  // imagem escapam dele e quebram sem erro de build:
+  //
+  //   import.meta.glob('../../assets/sponsors/icons/*.png', ...)
+  //   `../sponsors/icons/${slug}.png`
+  //
+  // Quando a conversão de formato troca `.png` por `.webp`, o import estático
+  // é reescrito por basename, mas o glob e o template literal não são — e o
+  // sintoma em execução é só um `<img>` vazio, sem exceção no console.
+  //
+  // A checagem aqui não resolve o arquivo (o nome é runtime), e sim confirma
+  // que a extensão pedida existe em algum lugar do diretório alvo.
+  const varridos = new Set();
+  const semAcerto = [];
+
+  // A varredura de módulos é só `js/`, mas referência de imagem montada à mão
+  // também existe fora dela — `assets/match-view/live-bridge.js` monta
+  // `../sponsors/icons/${slug}.webp`. Aqui a checagem é só de caminho de asset,
+  // sem analisar export, então vale varrer `assets/` também.
+  const arquivosParaAsset = [
+    ...arquivos,
+    ...(statSync(join(ROOT, 'assets')).isDirectory() ? andar(join(ROOT, 'assets')) : []),
+  ];
+
+  const registrar = (origem, dirAlvo, extensao) => {
+    let itens;
+    try {
+      itens = readdirSync(dirAlvo);
+    } catch (erro) {
+      // Só ENOENT é esperado: o prefixo pode não ser asset nenhum (código de
+      // demonstração, caminho de rede). Qualquer outro erro é bug neste próprio
+      // checker e precisa aparecer — engolir aqui faz o check passar em
+      // silêncio, que é a pior falha possível num teste de integridade.
+      if (erro?.code === 'ENOENT') return;
+      throw erro;
+    }
+    varridos.add(origem);
+    if (itens.filter(n => n.toLowerCase().endsWith(extensao)).length === 0) {
+      semAcerto.push(`${origem}: nada em ${relative(ROOT, dirAlvo)} termina em ${extensao}`);
+    }
+  };
+
+  for (const arquivo of arquivosParaAsset) {
+    const fonte = readFileSync(arquivo, 'utf8');
+    const base = dirname(arquivo);
+    const reGlob = /import\.meta\.glob\(\s*['"]([^'"]+)['"]/g;
+    let g;
+    while ((g = reGlob.exec(fonte))) {
+      const padrao = g[1];
+      if (!/\.(png|webp|jpg|jpeg|svg|mp3|json)/i.test(padrao)) continue;
+      const semWildcard = padrao.replace(/\*[^/]*/, '');
+      const extensao = (padrao.match(/\*\.([a-z0-9]+)$/i) || [])[1];
+      if (!extensao) continue;
+      registrar(
+        `${relative(ROOT, arquivo)}: ${padrao}`,
+        resolve(base, semWildcard === padrao ? '.' : semWildcard),
+        `.${extensao}`,
+      );
+    }
+
+    // `../sponsors/icons/${slug}.webp`
+    // Sem allowlist de pastas: o prefixo pode apontar para qualquer lugar e a
+    // checagem se basta em resolver o diretório. Filtrar por nome de pasta
+    // deixaria passar justamente o caso que este teste existe para pegar.
+    //
+    // Limitação conhecida: prefixo que começa com `./` é resolvido pelo
+    // navegador em relação à *página*, não ao módulo (`./flags/${iso}.png` em
+    // `js/lab/` aponta para `public/flags/`). Esses caem em ENOENT e são
+    // ignorados aqui — ficam de fora da contagem.
+    const reTpl = /`([^`$\n]*\/)\$\{[^}]*\}(\.[a-z0-9]+)`/gi;
+    let t;
+    while ((t = reTpl.exec(fonte))) {
+      const [, prefixo, extensao] = t;
+      registrar(
+        `${relative(ROOT, arquivo)}: \`${prefixo}\${...}${extensao}\``,
+        resolve(base, prefixo),
+        extensao,
+      );
+    }
+  }
+
+  assert(
+    semAcerto.length === 0,
+    `${semAcerto.length} referência(s) sem arquivo correspondente: ${semAcerto.slice(0, 8).join(' | ')}`,
+  );
+  // 2 é o número real de referências resolvíveis hoje (o glob de patrocinadores
+  // e o de estádios). Abaixo disso a varredura parou de funcionar.
+  assert(
+    varridos.size >= 2,
+    `só ${varridos.size} glob/template varridos — a varredura pode estar errada`,
+  );
+});
+
 console.log(`\nimport-integrity: ${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);

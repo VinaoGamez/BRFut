@@ -83,7 +83,7 @@
   function sponsorIconUrl(name) {
     const slug = sponsorLogoSlug(name);
     if (!slug) return null;
-    return `../sponsors/icons/${slug}.png`;
+    return `../sponsors/icons/${slug}.webp`;
   }
 
   /** Posição tática % → UV do gramado (câmera lateral). */
