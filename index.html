@@ -467,12 +467,12 @@
             <label class="transfers-field"><span>Divisão</span><select id="transfersFilterDivision"></select></label>
             <label class="transfers-field"><span>Pé dominante</span><select id="transfersFilterFoot"></select></label>
             <label class="transfers-field"><span>Nacionalidade</span><select id="transfersFilterNationality"></select></label>
-            <label class="transfers-field"><span>OVR mín.</span><input id="transfersFilterOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
-            <label class="transfers-field"><span>OVR máx.</span><input id="transfersFilterMaxOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
-            <label class="transfers-field"><span>Idade mín.</span><input id="transfersFilterMinAge" type="number" min="15" max="45" placeholder="Qualquer" /></label>
-            <label class="transfers-field"><span>Idade máx.</span><input id="transfersFilterMaxAge" type="number" min="15" max="45" placeholder="Qualquer" /></label>
-            <label class="transfers-field"><span>Passe máx.</span><input id="transfersFilterMaxPrice" type="number" min="0" step="1000" placeholder="R$" /></label>
-            <label class="transfers-field"><span>Salário máx.</span><input id="transfersFilterMaxWage" type="number" min="0" step="100" placeholder="R$" /></label>
+            <label class="transfers-field"><span>OVR mín.</span><input id="transfersFilterOvr" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>OVR máx.</span><input id="transfersFilterMaxOvr" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>Idade mín.</span><input id="transfersFilterMinAge" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>Idade máx.</span><input id="transfersFilterMaxAge" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>Passe máx.</span><input id="transfersFilterMaxPrice" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="R$" /></label>
+            <label class="transfers-field"><span>Salário máx.</span><input id="transfersFilterMaxWage" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="R$" /></label>
           </div>
           <div class="transfers-search-options">
             <label class="transfers-filter-check"><input id="transfersFilterListed" type="checkbox" /> Só mostrar jogadores à venda</label>
@@ -513,12 +513,12 @@
           <div class="transfers-search-grid">
             <label class="transfers-field"><span>Nome</span><input id="transfersSellFilterQuery" type="search" placeholder="Jogador" /></label>
             <label class="transfers-field"><span>Posição</span><select id="transfersSellFilterPos"></select></label>
-            <label class="transfers-field"><span>OVR mín.</span><input id="transfersSellFilterOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
-            <label class="transfers-field"><span>OVR máx.</span><input id="transfersSellFilterMaxOvr" type="number" min="0" max="99" placeholder="Qualquer" /></label>
-            <label class="transfers-field"><span>Idade mín.</span><input id="transfersSellFilterMinAge" type="number" min="15" max="45" placeholder="Qualquer" /></label>
-            <label class="transfers-field"><span>Idade máx.</span><input id="transfersSellFilterMaxAge" type="number" min="15" max="45" placeholder="Qualquer" /></label>
-            <label class="transfers-field"><span>Valor máx.</span><input id="transfersSellFilterMaxPrice" type="number" min="0" step="1000" placeholder="R$" /></label>
-            <label class="transfers-field"><span>Salário máx.</span><input id="transfersSellFilterMaxWage" type="number" min="0" step="100" placeholder="R$" /></label>
+            <label class="transfers-field"><span>OVR mín.</span><input id="transfersSellFilterOvr" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>OVR máx.</span><input id="transfersSellFilterMaxOvr" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>Idade mín.</span><input id="transfersSellFilterMinAge" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>Idade máx.</span><input id="transfersSellFilterMaxAge" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Qualquer" /></label>
+            <label class="transfers-field"><span>Valor máx.</span><input id="transfersSellFilterMaxPrice" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="R$" /></label>
+            <label class="transfers-field"><span>Salário máx.</span><input id="transfersSellFilterMaxWage" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="R$" /></label>
           </div>
           <div class="transfers-search-options">
             <label class="transfers-filter-check"><input id="transfersSellFilterListed" type="checkbox" /> Só à venda</label>

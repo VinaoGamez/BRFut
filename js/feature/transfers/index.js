@@ -20,6 +20,19 @@ const DOMINANT_FEET = ['Direito', 'Esquerdo', 'Ambidestro'];
 const NATIONALITIES = [BRAZIL_NATION, ...FOREIGN_NATIONS];
 const BUY_PAGE_SIZE = 30;
 
+/**
+ * Campos numéricos do mercado aceitam valores digitados com separadores
+ * brasileiros (por exemplo, "R$ 1.500.000"). A normalização só acontece ao
+ * pesquisar para não apagar nem deslocar o cursor durante a digitação.
+ */
+const readFilterNumber = (value, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) => {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  if (!digits) return 0;
+  const parsed = Number(digits);
+  if (!Number.isSafeInteger(parsed)) return 0;
+  return Math.max(min, Math.min(max, parsed));
+};
+
 const escapeHtml = value =>
   String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -622,12 +635,12 @@ export function createTransfersFeature(deps) {
     foot: $('#transfersFilterFoot')?.value || '',
     nationality: $('#transfersFilterNationality')?.value || '',
     query: String($('#transfersFilterQuery')?.value || '').trim(),
-    minOvr: Number($('#transfersFilterOvr')?.value) || 0,
-    maxOvr: Number($('#transfersFilterMaxOvr')?.value) || 0,
-    minAge: Number($('#transfersFilterMinAge')?.value) || 0,
-    maxAge: Number($('#transfersFilterMaxAge')?.value) || 0,
-    maxPrice: Number($('#transfersFilterMaxPrice')?.value) || 0,
-    maxWage: Number($('#transfersFilterMaxWage')?.value) || 0,
+    minOvr: readFilterNumber($('#transfersFilterOvr')?.value, { max: 99 }),
+    maxOvr: readFilterNumber($('#transfersFilterMaxOvr')?.value, { max: 99 }),
+    minAge: readFilterNumber($('#transfersFilterMinAge')?.value, { min: 15, max: 45 }),
+    maxAge: readFilterNumber($('#transfersFilterMaxAge')?.value, { min: 15, max: 45 }),
+    maxPrice: readFilterNumber($('#transfersFilterMaxPrice')?.value),
+    maxWage: readFilterNumber($('#transfersFilterMaxWage')?.value),
     listedOnly: Boolean($('#transfersFilterListed')?.checked),
     loanOnly: Boolean($('#transfersFilterLoan')?.checked),
     specialistOnly: Boolean($('#transfersFilterSpecialist')?.checked),
@@ -741,12 +754,12 @@ export function createTransfersFeature(deps) {
   const readSellFiltersFromDom = () => ({
     pos: $('#transfersSellFilterPos')?.value || '',
     query: String($('#transfersSellFilterQuery')?.value || '').trim(),
-    minOvr: Number($('#transfersSellFilterOvr')?.value) || 0,
-    maxOvr: Number($('#transfersSellFilterMaxOvr')?.value) || 0,
-    minAge: Number($('#transfersSellFilterMinAge')?.value) || 0,
-    maxAge: Number($('#transfersSellFilterMaxAge')?.value) || 0,
-    maxPrice: Number($('#transfersSellFilterMaxPrice')?.value) || 0,
-    maxWage: Number($('#transfersSellFilterMaxWage')?.value) || 0,
+    minOvr: readFilterNumber($('#transfersSellFilterOvr')?.value, { max: 99 }),
+    maxOvr: readFilterNumber($('#transfersSellFilterMaxOvr')?.value, { max: 99 }),
+    minAge: readFilterNumber($('#transfersSellFilterMinAge')?.value, { min: 15, max: 45 }),
+    maxAge: readFilterNumber($('#transfersSellFilterMaxAge')?.value, { min: 15, max: 45 }),
+    maxPrice: readFilterNumber($('#transfersSellFilterMaxPrice')?.value),
+    maxWage: readFilterNumber($('#transfersSellFilterMaxWage')?.value),
     listedOnly: Boolean($('#transfersSellFilterListed')?.checked),
     loanOnly: Boolean($('#transfersSellFilterLoan')?.checked),
     sortBy: sellFilters.sortBy || 'ovr',
@@ -2222,20 +2235,21 @@ export function createTransfersFeature(deps) {
       $('#transfersBuyPanel .transfers-table-wrap')?.scrollTo({ top: 0, behavior: 'smooth' });
     });
     onClick('#transfersSellApplyFilters', () => applySellSearch());
-    const queryInput = $('#transfersFilterQuery');
-    queryInput?.addEventListener('keydown', event => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        applySearch();
-      }
-    });
-    const sellQueryInput = $('#transfersSellFilterQuery');
-    sellQueryInput?.addEventListener('keydown', event => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        applySellSearch();
-      }
-    });
+    const bindSearchInputs = (selector, apply) => {
+      document.querySelectorAll(selector).forEach(input => {
+        // Filtros são sempre editáveis: nenhuma atualização de tela pode
+        // transformá-los em controles bloqueados.
+        input.readOnly = false;
+        input.disabled = false;
+        input.addEventListener('keydown', event => {
+          if (event.key !== 'Enter') return;
+          event.preventDefault();
+          apply();
+        });
+      });
+    };
+    bindSearchInputs('#transfersBuyPanel input, #transfersBuyPanel select', applySearch);
+    bindSearchInputs('#transfersSellPanel input, #transfersSellPanel select', applySellSearch);
 
     onClick('#transfersOfferClose', () => closeOfferModal());
     onClick('#transfersOfferCancel', () => closeOfferModal());

@@ -41,6 +41,7 @@ const pythonCommand = resolvePythonCommand();
 
 /** @type {{ label: string, steps: string[][] }[]} */
 const SUITES = [
+  { label: 'form-editability', steps: [['scripts/form-editability-tests.mjs']] },
   { label: 'offline-save-history', steps: [['scripts/offline-save-history-tests.mjs']] },
   { label: 'career-slots', steps: [['scripts/career-slot-tests.mjs']] },
   { label: 'frontend-security', steps: [['scripts/frontend-security-tests.mjs']] },

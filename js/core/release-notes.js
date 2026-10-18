@@ -9,6 +9,19 @@
  */
 export const RELEASE_NOTES = [
   {
+    version: '0.2.4',
+    date: '2026-10-17',
+    title: 'Filtros do Mercado corrigidos',
+    promptUpdate: true,
+    topics: [{
+      label: 'Busca de jogadores',
+      items: [
+        'Os campos de Overall, idade, valor de passe e salário aceitam digitação manual novamente.',
+        'Valores como R$ 1.500.000 podem ser usados na busca; pressione Enter ou PROCURAR para aplicar o filtro.',
+      ],
+    }],
+  },
+  {
     version: '0.2.3',
     date: '2026-10-17',
     title: 'Correções de saves e estatísticas',
