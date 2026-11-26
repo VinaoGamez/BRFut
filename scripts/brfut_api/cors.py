@@ -1,4 +1,4 @@
-"""CORS para API em produção (front GitHub Pages + api.brfut.com.br)."""
+"""CORS da API (front e API na mesma origem na Vercel; app mobile/desktop via lista explícita)."""
 from __future__ import annotations
 
 import os
@@ -12,11 +12,8 @@ def allowed_origins() -> list[str]:
 def _origin_allowed(origin: str, allowed: list[str]) -> bool:
     if origin in allowed:
         return True
-    # Front ainda em HTTP enquanto HTTPS propaga no domínio customizado.
-    if origin.startswith('http://'):
-        https_alt = 'https://' + origin[7:]
-        if https_alt in allowed:
-            return True
+    # Origens HTTP não herdam a permissão da versão HTTPS: com credenciais,
+    # isso permitiria que um atacante na rede (MITM) usasse a sessão do jogador.
     # Cloudflare Pages preview: https://*.pages.dev
     if origin.endswith('.pages.dev') and origin.startswith('https://'):
         return 'https://*.pages.dev' in allowed
@@ -33,7 +30,7 @@ def cors_headers(origin: str | None) -> dict[str, str]:
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Credentials': 'true',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-BRFut-Request',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type, Content-Encoding, X-BRFut-Request',
         'Access-Control-Max-Age': '86400',
         'Vary': 'Origin',
     }

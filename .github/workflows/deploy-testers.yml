@@ -1,8 +1,8 @@
 name: Deploy testers (GitHub Pages)
 
+# Desativado no push: o jogo agora roda na Vercel (acesso restrito até o
+# lançamento). Este fluxo só publica no GitHub Pages se disparado manualmente.
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
           # Somente valores públicos entram no Vite. Segredos nunca devem ser
           # adicionados a este job, pois seriam incorporados ao bundle.
           GITHUB_PAGES: 'true'
-          BRFUT_API_ORIGIN: ${{ vars.BRFUT_API_ORIGIN || 'https://api.brfut.com.br' }}
+          BRFUT_API_ORIGIN: ${{ vars.BRFUT_API_ORIGIN || '' }}
           BRFUT_AUTH_REQUIRED: ${{ vars.BRFUT_AUTH_REQUIRED || 'true' }}
 
       - uses: actions/upload-pages-artifact@v3

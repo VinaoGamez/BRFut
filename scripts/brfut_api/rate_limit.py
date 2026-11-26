@@ -13,6 +13,9 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Callable
 
+from pathlib import Path
+
+from . import db
 from .auth import ApiError
 
 LOGGER = logging.getLogger('brfut.security')
@@ -97,9 +100,109 @@ class RateLimiter:
 RATE_LIMITER = RateLimiter()
 
 
+db.register_schema('rate_limits', """
+CREATE TABLE IF NOT EXISTS rate_counters (
+  scope TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  window_start INTEGER NOT NULL,
+  hits INTEGER NOT NULL,
+  PRIMARY KEY (scope, subject, window_start)
+);
+CREATE TABLE IF NOT EXISTS auth_failures (
+  subject TEXT PRIMARY KEY,
+  attempts INTEGER NOT NULL,
+  blocked_until REAL NOT NULL,
+  last_failure REAL NOT NULL
+)
+""")
+
+_FAILURE_DELAYS = (0, 0, 5, 15, 60, 300)
+
+
+class PersistentAuthGuard:
+    """Limites de login gravados no banco.
+
+    Em funções serverless cada instância tem a própria memória, então o
+    ``RateLimiter`` acima sozinho não segura ataques distribuídos entre
+    instâncias. Esta camada guarda janelas fixas e bloqueio progressivo por
+    conta no banco; só é consultada nas rotas de autenticação.
+    """
+
+    def __init__(self, clock: Callable[[], float] = time.time) -> None:
+        self.clock = clock
+
+    @staticmethod
+    def _subject(value: str) -> str:
+        return RateLimiter._subject(value)
+
+    def _hit(self, conn: db.Connection, scope: str, subject: str, limit: int, seconds: int) -> None:
+        now = self.clock()
+        window = int(now // seconds) * seconds
+        key = self._subject(subject)
+        conn.execute(
+            '''INSERT INTO rate_counters (scope, subject, window_start, hits) VALUES (?,?,?,1)
+               ON CONFLICT(scope, subject, window_start) DO UPDATE SET hits=rate_counters.hits+1''',
+            (scope, key, window),
+        )
+        hits = conn.execute(
+            'SELECT hits FROM rate_counters WHERE scope=? AND subject=? AND window_start=?',
+            (scope, key, window),
+        ).fetchone()[0]
+        if int(hits) > limit:
+            retry_after = max(1, int(window + seconds - now) + 1)
+            LOGGER.warning('rate_limit_db scope=%s subject=%s retry_after=%s', scope, key, retry_after)
+            raise ApiError(429, 'rate_limited', 'Muitas tentativas. Aguarde e tente novamente.', retry_after)
+
+    def check_auth(self, root: Path, ip: str, account: str = '') -> None:
+        now = self.clock()
+        with db.connect(root) as conn:
+            if int(now) % 50 == 0:
+                conn.execute('DELETE FROM rate_counters WHERE window_start<?', (int(now) - 3600,))
+            self._hit(conn, 'auth_ip', ip, 20, 60)
+            if not account:
+                return
+            row = conn.execute(
+                'SELECT blocked_until FROM auth_failures WHERE subject=?', (self._subject(account),),
+            ).fetchone()
+            if row and float(row['blocked_until']) > now:
+                retry_after = max(1, int(float(row['blocked_until']) - now) + 1)
+                raise ApiError(429, 'login_temporarily_blocked', 'Muitas tentativas para esta conta.', retry_after)
+            self._hit(conn, 'auth_account', account, 12, 15 * 60)
+
+    def record_login_failure(self, root: Path, account: str) -> None:
+        now = self.clock()
+        key = self._subject(account)
+        with db.connect(root) as conn:
+            row = conn.execute('SELECT attempts, last_failure FROM auth_failures WHERE subject=?', (key,)).fetchone()
+            attempts = 1
+            if row and now - float(row['last_failure']) <= 30 * 60:
+                attempts = int(row['attempts']) + 1
+            delay = _FAILURE_DELAYS[min(attempts, len(_FAILURE_DELAYS)) - 1]
+            conn.execute(
+                '''INSERT INTO auth_failures (subject, attempts, blocked_until, last_failure) VALUES (?,?,?,?)
+                   ON CONFLICT(subject) DO UPDATE SET attempts=excluded.attempts,
+                     blocked_until=excluded.blocked_until, last_failure=excluded.last_failure''',
+                (key, attempts, now + delay, now),
+            )
+
+    def record_login_success(self, root: Path, account: str) -> None:
+        with db.connect(root) as conn:
+            conn.execute('DELETE FROM auth_failures WHERE subject=?', (self._subject(account),))
+
+
+AUTH_GUARD = PersistentAuthGuard()
+
+
 def request_ip(headers: dict[str, str]) -> str:
     lowered = {str(key).lower(): str(value) for key, value in headers.items()}
-    value = lowered.get('x-real-ip') or lowered.get('x-forwarded-for', '').split(',', 1)[0] or 'unknown'
+    # Na Vercel, x-vercel-forwarded-for/x-real-ip são definidos pela plataforma
+    # (o cliente não consegue forjá-los); x-forwarded-for fica como último recurso.
+    value = (
+        lowered.get('x-vercel-forwarded-for', '').split(',', 1)[0]
+        or lowered.get('x-real-ip')
+        or lowered.get('x-forwarded-for', '').split(',', 1)[0]
+        or 'unknown'
+    )
     value = value.strip()
     return value[:64] if value else 'unknown'
 

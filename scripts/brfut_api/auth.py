@@ -1,17 +1,17 @@
-"""Autenticação local simples (PBKDF2 + sessões em disco)."""
+"""Autenticação (PBKDF2 + sessões opacas) persistida no banco (db.py)."""
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
-import json
 import re
 import secrets
 import time
-import binascii
 import unicodedata
 from pathlib import Path
 from typing import Any
 
-from .paths import ensure_layout
+from . import db
 
 USERNAME_RE = re.compile(r'^[a-zA-Z0-9_]{3,24}$')
 SESSION_TTL_SEC = 60 * 60 * 24 * 30  # 30 dias
@@ -19,7 +19,51 @@ SESSION_ABSOLUTE_TTL_SEC = 60 * 60 * 24 * 90  # novo login obrigatório em 90 di
 MAX_SESSIONS_PER_USER = 5
 ONLINE_WINDOW_SEC = 300  # 5 min — jogador "ON" se teve atividade recente
 SESSION_TOUCH_MIN_SEC = 60  # throttle de gravação lastSeenAt
-PBKDF2_ITERS = 260_000
+PBKDF2_ITERS = 600_000  # OWASP 2023+ para PBKDF2-HMAC-SHA256
+LEGACY_PBKDF2_ITERS = 260_000  # contas criadas antes da migração
+MAX_AVATAR_BYTES = 512_000
+
+db.register_schema('accounts', """
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  salt TEXT,
+  password_hash TEXT,
+  pbkdf2_iters INTEGER,
+  google_sub TEXT UNIQUE,
+  email TEXT,
+  auth_provider TEXT NOT NULL DEFAULT 'password',
+  created_at TEXT NOT NULL,
+  avatar BLOB,
+  avatar_mime TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL DEFAULT 'password',
+  created_at TEXT NOT NULL,
+  last_seen_at REAL NOT NULL,
+  expires_at REAL NOT NULL,
+  absolute_expires_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
+""")
+
+
+class ApiError(Exception):
+    def __init__(self, status: int, code: str, message: str, retry_after: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
+        self.code = code
+        self.message = message
+        self.retry_after = retry_after
+
+
+def _now_iso() -> str:
+    return time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
 
 
 def validate_display_name(value: Any, fallback: str | None = None) -> str:
@@ -35,286 +79,189 @@ def validate_display_name(value: Any, fallback: str | None = None) -> str:
     return name
 
 
-class ApiError(Exception):
-    def __init__(self, status: int, code: str, message: str, retry_after: int | None = None) -> None:
-        super().__init__(message)
-        self.status = status
-        self.code = code
-        self.message = message
-        self.retry_after = retry_after
+# --- senhas -----------------------------------------------------------------
 
-
-def _profiles_path(root: Path) -> Path:
-    return root / 'profiles' / 'index.json'
-
-
-def _load_profiles(root: Path) -> dict[str, Any]:
-    path = _profiles_path(root)
-    if not path.is_file():
-        return {'users': []}
-    try:
-        data = json.loads(path.read_text(encoding='utf-8'))
-        if isinstance(data, dict) and isinstance(data.get('users'), list):
-            return data
-    except (OSError, json.JSONDecodeError):
-        pass
-    return {'users': []}
-
-
-def _save_profiles(root: Path, data: dict[str, Any]) -> None:
-    path = _profiles_path(root)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-
-
-def _hash_password(password: str, salt: bytes | None = None) -> tuple[str, str]:
+def _hash_password(password: str, salt: bytes | None = None, iterations: int = PBKDF2_ITERS) -> tuple[str, str]:
     salt = salt or secrets.token_bytes(16)
-    digest = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, PBKDF2_ITERS)
+    digest = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, iterations)
     return salt.hex(), digest.hex()
 
 
-def _verify_password(password: str, salt_hex: str, hash_hex: str) -> bool:
+def _verify_password(password: str, salt_hex: str, hash_hex: str, iterations: int) -> bool:
     try:
-        salt = bytes.fromhex(salt_hex)
-        _, candidate = _hash_password(password, salt)
+        salt = bytes.fromhex(salt_hex or '')
+        if not salt or not hash_hex:
+            return False
+        _, candidate = _hash_password(password, salt, iterations)
         return secrets.compare_digest(candidate, hash_hex)
     except (TypeError, ValueError):
         return False
 
 
-def _session_path(root: Path, token: str) -> Path:
-    session_id = hashlib.sha256(token.encode('utf-8')).hexdigest()
-    return root / 'sessions' / f'{session_id}.json'
+# --- usuários ---------------------------------------------------------------
+
+_USER_COLUMNS = (
+    'id, username, display_name, salt, password_hash, pbkdf2_iters, google_sub, email, '
+    'auth_provider, created_at, avatar_mime'
+)
 
 
-def _legacy_session_path(root: Path, token: str) -> Path:
-    """Formato usado antes de os nomes das sessões passarem a ser hashes."""
-    safe = re.sub(r'[^a-zA-Z0-9_-]', '', token)
-    return root / 'sessions' / f'{safe}.json'
+def _user_from_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not row:
+        return None
+    return {
+        'id': row['id'],
+        'username': row['username'],
+        'displayName': row['display_name'] or row['username'],
+        'salt': row['salt'],
+        'passwordHash': row['password_hash'],
+        'pbkdf2Iters': row['pbkdf2_iters'] or LEGACY_PBKDF2_ITERS,
+        'googleSub': row['google_sub'],
+        'email': row['email'],
+        'authProvider': row['auth_provider'],
+        'createdAt': row['created_at'],
+        'hasAvatar': bool(row['avatar_mime']),
+    }
 
 
-def _resolve_session_path(root: Path, token: str) -> Path:
-    path = _session_path(root, token)
-    if path.is_file():
-        return path
-    legacy = _legacy_session_path(root, token)
-    if not legacy.is_file():
-        return path
-    try:
-        legacy.replace(path)
-        return path
-    except OSError:
-        return legacy
+def find_user(conn: db.Connection, *, user_id: str | None = None, username: str | None = None,
+              google_sub: str | None = None, email: str | None = None) -> dict[str, Any] | None:
+    if user_id is not None:
+        clause, value = 'id=?', user_id
+    elif username is not None:
+        clause, value = 'username=?', username
+    elif google_sub is not None:
+        clause, value = 'google_sub=?', google_sub
+    elif email is not None:
+        clause, value = 'lower(email)=?', email.lower()
+    else:
+        return None
+    row = conn.execute(f'SELECT {_USER_COLUMNS} FROM users WHERE {clause} LIMIT 1', (value,)).fetchone()
+    return _user_from_row(row)
 
 
-def create_session(root: Path, user: dict[str, Any], provider: str = 'password') -> str:
-    """Cria uma sessão opaca; o token secreto nunca é persistido em disco."""
+def username_exists(conn: db.Connection, username: str) -> bool:
+    return conn.execute('SELECT 1 FROM users WHERE username=? LIMIT 1', (username,)).fetchone() is not None
+
+
+def insert_user(conn: db.Connection, user: dict[str, Any]) -> None:
+    conn.execute(
+        '''INSERT INTO users (id, username, display_name, salt, password_hash, pbkdf2_iters,
+                              google_sub, email, auth_provider, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?)''',
+        (
+            user['id'], user['username'], user['displayName'], user.get('salt'), user.get('passwordHash'),
+            user.get('pbkdf2Iters'), user.get('googleSub'), user.get('email'),
+            user.get('authProvider') or 'password', user.get('createdAt') or _now_iso(),
+        ),
+    )
+
+
+def _profile_from_user(user: dict[str, Any]) -> dict[str, Any]:
+    return {
+        'id': user['id'],
+        'username': user['username'],
+        'displayName': user.get('displayName') or user['username'],
+        'hasAvatar': bool(user.get('hasAvatar')),
+    }
+
+
+def count_users(root: Path) -> int:
+    with db.connect(root) as conn:
+        row = conn.execute('SELECT COUNT(*) FROM users').fetchone()
+    return int(row[0] if row else 0)
+
+
+# --- sessões ----------------------------------------------------------------
+
+def session_id_for_token(token: str) -> str:
+    """O token secreto nunca é persistido: o banco guarda apenas o SHA-256."""
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+
+def _cleanup_expired_sessions(conn: db.Connection, now: float | None = None) -> None:
+    now = time.time() if now is None else now
+    conn.execute('DELETE FROM sessions WHERE expires_at<=? OR absolute_expires_at<=?', (now, now))
+
+
+def create_session_in(conn: db.Connection, user: dict[str, Any], provider: str = 'password') -> str:
     token = secrets.token_urlsafe(32)
     now = time.time()
-    session = {
-        'userId': user['id'],
-        'username': user['username'],
-        'expiresAt': now + SESSION_TTL_SEC,
-        'absoluteExpiresAt': now + SESSION_ABSOLUTE_TTL_SEC,
-        'createdAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-        'lastSeenAt': now,
-        'provider': provider,
-    }
-    path = _session_path(root, token)
-    tmp = path.with_name(f'.{path.name}.{secrets.token_hex(6)}.tmp')
-    tmp.write_text(json.dumps(session), encoding='utf-8')
-    tmp.replace(path)
-    _cleanup_expired_sessions(root)
-    sessions = []
-    for candidate in (root / 'sessions').glob('*.json'):
-        try:
-            data = json.loads(candidate.read_text(encoding='utf-8'))
-            if data.get('userId') == user['id']:
-                sessions.append((float(data.get('lastSeenAt', 0)), candidate))
-        except (OSError, json.JSONDecodeError, TypeError, ValueError):
-            continue
-    for _, stale_path in sorted(sessions, reverse=True)[MAX_SESSIONS_PER_USER:]:
-        stale_path.unlink(missing_ok=True)
+    conn.execute(
+        '''INSERT INTO sessions (id, user_id, provider, created_at, last_seen_at, expires_at, absolute_expires_at)
+           VALUES (?,?,?,?,?,?,?)''',
+        (session_id_for_token(token), user['id'], provider, _now_iso(), now,
+         now + SESSION_TTL_SEC, now + SESSION_ABSOLUTE_TTL_SEC),
+    )
+    _cleanup_expired_sessions(conn, now)
+    stale = conn.execute(
+        'SELECT id FROM sessions WHERE user_id=? ORDER BY last_seen_at DESC',
+        (user['id'],),
+    ).fetchall()[MAX_SESSIONS_PER_USER:]
+    for row in stale:
+        conn.execute('DELETE FROM sessions WHERE id=?', (row['id'],))
     return token
 
 
-def _session_last_seen(session: dict[str, Any]) -> float:
-    if session.get('lastSeenAt'):
-        try:
-            return float(session['lastSeenAt'])
-        except (TypeError, ValueError):
-            pass
-    created = session.get('createdAt')
-    if isinstance(created, str) and created:
-        try:
-            from datetime import datetime, timezone
-
-            dt = datetime.strptime(created, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
-            return dt.timestamp()
-        except ValueError:
-            pass
-    try:
-        return float(session.get('expiresAt', 0)) - SESSION_TTL_SEC
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def _touch_session_last_seen(root: Path, path: Path, session: dict[str, Any]) -> None:
-    now = time.time()
-    try:
-        last = float(session.get('lastSeenAt', 0))
-    except (TypeError, ValueError):
-        last = 0.0
-    if now - last < SESSION_TOUCH_MIN_SEC:
-        return
-    session['lastSeenAt'] = now
-    session['expiresAt'] = now + SESSION_TTL_SEC
-    try:
-        tmp = path.with_name(f'.{path.name}.{secrets.token_hex(6)}.tmp')
-        tmp.write_text(json.dumps(session), encoding='utf-8')
-        tmp.replace(path)
-    except OSError:
-        pass
+def create_session(root: Path, user: dict[str, Any], provider: str = 'password') -> str:
+    with db.connect(root) as conn:
+        return create_session_in(conn, user, provider)
 
 
 def get_player_stats(root: Path, online_window_sec: int = ONLINE_WINDOW_SEC) -> dict[str, Any]:
-    _cleanup_expired_sessions(root)
-    registered = len(_load_profiles(root).get('users', []))
     now = time.time()
-    online_user_ids: set[str] = set()
-    sessions_dir = root / 'sessions'
-    if sessions_dir.is_dir():
-        for file in sessions_dir.glob('*.json'):
-            try:
-                session = json.loads(file.read_text(encoding='utf-8'))
-            except (OSError, json.JSONDecodeError):
-                continue
-            try:
-                if float(session.get('expiresAt', 0)) <= now:
-                    continue
-            except (TypeError, ValueError):
-                continue
-            user_id = session.get('userId')
-            if not user_id:
-                continue
-            if now - _session_last_seen(session) <= online_window_sec:
-                online_user_ids.add(str(user_id))
+    with db.connect(root) as conn:
+        registered = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
+        online = conn.execute(
+            '''SELECT COUNT(DISTINCT user_id) FROM sessions
+               WHERE expires_at>? AND absolute_expires_at>? AND last_seen_at>=?''',
+            (now, now, now - online_window_sec),
+        ).fetchone()[0]
     return {
-        'registered': registered,
-        'online': len(online_user_ids),
+        'registered': int(registered or 0),
+        'online': int(online or 0),
         'onlineWindowSec': online_window_sec,
     }
 
 
-def _cleanup_expired_sessions(root: Path) -> None:
-    sessions_dir = root / 'sessions'
-    if not sessions_dir.is_dir():
-        return
+def resolve_session(root: Path, token: str | None) -> dict[str, Any]:
+    if not token or not isinstance(token, str) or len(token) > 512:
+        raise ApiError(401, 'missing_token', 'Sessão não informada.')
+    session_id = session_id_for_token(token)
     now = time.time()
-    for file in sessions_dir.glob('*.json'):
-        try:
-            data = json.loads(file.read_text(encoding='utf-8'))
-            if (
-                float(data.get('expiresAt', 0)) <= now
-                or float(data.get('absoluteExpiresAt', data.get('expiresAt', 0))) <= now
-            ):
-                file.unlink(missing_ok=True)
-        except (OSError, json.JSONDecodeError, TypeError, ValueError):
-            file.unlink(missing_ok=True)
-
-
-def _avatars_dir(root: Path) -> Path:
-    return root / 'profiles' / 'avatars'
-
-
-def _avatar_path_for_user(root: Path, user_id: str) -> Path | None:
-    avatars = _avatars_dir(root)
-    for ext in ('.jpg', '.jpeg', '.png', '.webp'):
-        path = avatars / f'{user_id}{ext}'
-        if path.is_file():
-            return path
-    return None
-
-
-def user_has_avatar(root: Path, user_id: str) -> bool:
-    return _avatar_path_for_user(root, user_id) is not None
-
-
-def _profile_from_user(root: Path, user: dict[str, Any]) -> dict[str, Any]:
-    return {
-        'id': user['id'],
-        'username': user['username'],
-        'displayName': user.get('displayName', user['username']),
-        'hasAvatar': user_has_avatar(root, user['id']),
-    }
-
-
-def _decode_avatar_data_url(data_url: str) -> tuple[bytes, str]:
-    import base64
-    import re
-
-    if not isinstance(data_url, str):
-        raise ApiError(400, 'invalid_avatar', 'Imagem em formato inválido.')
-    match = re.match(r'^data:image/(jpeg|jpg|png|webp);base64,(.+)$', (data_url or '').strip(), re.I)
-    if not match:
-        raise ApiError(400, 'invalid_avatar', 'Imagem inválida (use JPEG, PNG ou WebP).')
-    ext = match.group(1).lower()
-    if ext == 'jpeg':
-        ext = 'jpg'
-    try:
-        raw = base64.b64decode(match.group(2), validate=True)
-    except (ValueError, binascii.Error) as error:
-        raise ApiError(400, 'invalid_avatar', 'Imagem inválida.') from error
-    if len(raw) > 512_000:
-        raise ApiError(400, 'avatar_too_large', 'Imagem muito grande (máx. 500 KB).')
-    return raw, ext
-
-
-def update_user_profile(
-    root: Path,
-    user_id: str,
-    display_name: str | None = None,
-    avatar_data_url: str | None = None,
-) -> dict[str, Any]:
-    data = _load_profiles(root)
-    user = next((u for u in data['users'] if u.get('id') == user_id), None)
-    if not user:
-        raise ApiError(404, 'user_not_found', 'Usuário não encontrado.')
-
-    if display_name is not None:
-        user['displayName'] = validate_display_name(display_name)
-
-    if avatar_data_url is not None:
-        if avatar_data_url == '':
-            avatars = _avatars_dir(root)
-            for ext in ('.jpg', '.jpeg', '.png', '.webp'):
-                (avatars / f'{user_id}{ext}').unlink(missing_ok=True)
+    with db.connect(root) as conn:
+        session = conn.execute(
+            'SELECT user_id, last_seen_at, expires_at, absolute_expires_at FROM sessions WHERE id=?',
+            (session_id,),
+        ).fetchone()
+        if not session:
+            raise ApiError(401, 'invalid_session', 'Sessão expirada ou inválida.')
+        if float(session['expires_at']) <= now or float(session['absolute_expires_at']) <= now:
+            conn.execute('DELETE FROM sessions WHERE id=?', (session_id,))
+            expired = True
         else:
-            raw, ext = _decode_avatar_data_url(avatar_data_url)
-            avatars = _avatars_dir(root)
-            avatars.mkdir(parents=True, exist_ok=True)
-            for old_ext in ('.jpg', '.jpeg', '.png', '.webp'):
-                if old_ext != f'.{ext}':
-                    (avatars / f'{user_id}{old_ext}').unlink(missing_ok=True)
-            (avatars / f'{user_id}.{ext}').write_bytes(raw)
+            expired = False
+            if now - float(session['last_seen_at'] or 0) >= SESSION_TOUCH_MIN_SEC:
+                conn.execute(
+                    'UPDATE sessions SET last_seen_at=?, expires_at=? WHERE id=?',
+                    (now, min(now + SESSION_TTL_SEC, float(session['absolute_expires_at'])), session_id),
+                )
+            user = find_user(conn, user_id=session['user_id'])
+    if expired:
+        raise ApiError(401, 'session_expired', 'Sessão expirada.')
+    if not user:
+        raise ApiError(401, 'invalid_session', 'Usuário não encontrado.')
+    return _profile_from_user(user)
 
-    _save_profiles(root, data)
-    return _profile_from_user(root, user)
+
+def logout_user(root: Path, token: str | None) -> None:
+    if not token:
+        return
+    with db.connect(root) as conn:
+        conn.execute('DELETE FROM sessions WHERE id=?', (session_id_for_token(token),))
 
 
-def get_user_avatar(root: Path, user_id: str) -> tuple[bytes, str] | None:
-    path = _avatar_path_for_user(root, user_id)
-    if not path:
-        return None
-    ext = path.suffix.lower().lstrip('.')
-    mime = {
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'png': 'image/png',
-        'webp': 'image/webp',
-    }.get(ext, 'application/octet-stream')
-    return path.read_bytes(), mime
-
+# --- cadastro / login -------------------------------------------------------
 
 def register_user(root: Path, username: str, password: str, display_name: str | None = None) -> dict[str, Any]:
     if not isinstance(username, str) or not isinstance(password, str):
@@ -324,69 +271,103 @@ def register_user(root: Path, username: str, password: str, display_name: str | 
         raise ApiError(400, 'invalid_username', 'Usuário: 3–24 caracteres (letras, números, _).')
     if len(password or '') < 10 or len(password or '') > 256:
         raise ApiError(400, 'weak_password', 'Senha deve ter entre 10 e 256 caracteres.')
-
-    data = _load_profiles(root)
-    users: list[dict[str, Any]] = data['users']
-    if any(u.get('username') == username for u in users):
-        raise ApiError(409, 'username_taken', 'Este usuário já existe.')
-
+    name = validate_display_name(display_name, username)
     salt_hex, hash_hex = _hash_password(password)
-    user_id = secrets.token_hex(8)
     user = {
-        'id': user_id,
+        'id': secrets.token_hex(8),
         'username': username,
-        'displayName': validate_display_name(display_name, username),
+        'displayName': name,
         'salt': salt_hex,
         'passwordHash': hash_hex,
-        'createdAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        'pbkdf2Iters': PBKDF2_ITERS,
+        'authProvider': 'password',
+        'createdAt': _now_iso(),
     }
-    users.append(user)
-    _save_profiles(root, data)
-    return _profile_from_user(root, user)
+    with db.connect(root) as conn:
+        if username_exists(conn, username):
+            raise ApiError(409, 'username_taken', 'Este usuário já existe.')
+        insert_user(conn, user)
+    return _profile_from_user(user)
 
 
 def login_user(root: Path, username: str, password: str) -> tuple[str, dict[str, Any]]:
     if not isinstance(username, str) or not isinstance(password, str):
         raise ApiError(400, 'invalid_credentials_format', 'Usuário ou senha em formato inválido.')
     username = (username or '').strip().lower()
-    data = _load_profiles(root)
-    user = next((u for u in data['users'] if u.get('username') == username), None)
-    if len(password or '') > 256 or not user or not _verify_password(password, user.get('salt', ''), user.get('passwordHash', '')):
+    with db.connect(root) as conn:
+        user = find_user(conn, username=username) if USERNAME_RE.match(username) else None
+    valid = bool(
+        user
+        and len(password or '') <= 256
+        and _verify_password(password, user.get('salt') or '', user.get('passwordHash') or '', user['pbkdf2Iters'])
+    )
+    if not valid or not user:
         raise ApiError(401, 'invalid_credentials', 'Usuário ou senha inválidos.')
+    with db.connect(root) as conn:
+        if user['pbkdf2Iters'] < PBKDF2_ITERS:
+            # Atualiza o hash legado de forma transparente no próximo login válido.
+            salt_hex, hash_hex = _hash_password(password)
+            conn.execute(
+                'UPDATE users SET salt=?, password_hash=?, pbkdf2_iters=? WHERE id=?',
+                (salt_hex, hash_hex, PBKDF2_ITERS, user['id']),
+            )
+        token = create_session_in(conn, user)
+    return token, _profile_from_user(user)
 
-    token = create_session(root, user)
-    profile = _profile_from_user(root, user)
-    return token, profile
 
+# --- perfil e avatar --------------------------------------------------------
 
-def resolve_session(root: Path, token: str | None) -> dict[str, Any]:
-    if not token:
-        raise ApiError(401, 'missing_token', 'Sessão não informada.')
-    path = _resolve_session_path(root, token)
-    if not path.is_file():
-        raise ApiError(401, 'invalid_session', 'Sessão expirada ou inválida.')
+def _decode_avatar_data_url(data_url: Any) -> tuple[bytes, str]:
+    if not isinstance(data_url, str):
+        raise ApiError(400, 'invalid_avatar', 'Imagem em formato inválido.')
+    match = re.match(r'^data:image/(jpeg|jpg|png|webp);base64,(.+)$', data_url.strip(), re.I)
+    if not match:
+        raise ApiError(400, 'invalid_avatar', 'Imagem inválida (use JPEG, PNG ou WebP).')
+    ext = match.group(1).lower()
+    mime = {'jpeg': 'image/jpeg', 'jpg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}[ext]
     try:
-        session = json.loads(path.read_text(encoding='utf-8'))
-    except (OSError, json.JSONDecodeError):
-        raise ApiError(401, 'invalid_session', 'Sessão inválida.') from None
-    now = time.time()
-    if (
-        float(session.get('expiresAt', 0)) <= now
-        or float(session.get('absoluteExpiresAt', session.get('expiresAt', 0))) <= now
-    ):
-        path.unlink(missing_ok=True)
-        raise ApiError(401, 'session_expired', 'Sessão expirada.')
-    _touch_session_last_seen(root, path, session)
-    data = _load_profiles(root)
-    user = next((u for u in data['users'] if u.get('id') == session.get('userId')), None)
-    if not user:
-        path.unlink(missing_ok=True)
-        raise ApiError(401, 'invalid_session', 'Usuário não encontrado.')
-    return _profile_from_user(root, user)
+        raw = base64.b64decode(match.group(2), validate=True)
+    except (ValueError, binascii.Error) as error:
+        raise ApiError(400, 'invalid_avatar', 'Imagem inválida.') from error
+    if len(raw) > MAX_AVATAR_BYTES:
+        raise ApiError(400, 'avatar_too_large', 'Imagem muito grande (máx. 500 KB).')
+    signatures = {
+        'image/jpeg': (b'\xff\xd8\xff',),
+        'image/png': (b'\x89PNG\r\n\x1a\n',),
+        'image/webp': (b'RIFF',),
+    }
+    if not raw.startswith(signatures[mime]):
+        raise ApiError(400, 'invalid_avatar', 'O conteúdo da imagem não corresponde ao formato informado.')
+    return raw, mime
 
 
-def logout_user(root: Path, token: str | None) -> None:
-    if not token:
-        return
-    _session_path(root, token).unlink(missing_ok=True)
-    _legacy_session_path(root, token).unlink(missing_ok=True)
+def update_user_profile(
+    root: Path,
+    user_id: str,
+    display_name: str | None = None,
+    avatar_data_url: Any = None,
+) -> dict[str, Any]:
+    with db.connect(root) as conn:
+        user = find_user(conn, user_id=user_id)
+        if not user:
+            raise ApiError(404, 'user_not_found', 'Usuário não encontrado.')
+        if display_name is not None:
+            user['displayName'] = validate_display_name(display_name)
+            conn.execute('UPDATE users SET display_name=? WHERE id=?', (user['displayName'], user_id))
+        if avatar_data_url is not None:
+            if avatar_data_url == '':
+                conn.execute('UPDATE users SET avatar=NULL, avatar_mime=NULL WHERE id=?', (user_id,))
+                user['hasAvatar'] = False
+            else:
+                raw, mime = _decode_avatar_data_url(avatar_data_url)
+                conn.execute('UPDATE users SET avatar=?, avatar_mime=? WHERE id=?', (raw, mime, user_id))
+                user['hasAvatar'] = True
+    return _profile_from_user(user)
+
+
+def get_user_avatar(root: Path, user_id: str) -> tuple[bytes, str] | None:
+    with db.connect(root) as conn:
+        row = conn.execute('SELECT avatar, avatar_mime FROM users WHERE id=?', (user_id,)).fetchone()
+    if not row or not row['avatar'] or not row['avatar_mime']:
+        return None
+    return bytes(row['avatar']), str(row['avatar_mime'])

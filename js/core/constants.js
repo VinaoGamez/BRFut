@@ -181,7 +181,7 @@ export const SITE_MAINTENANCE = {
   message: 'SERVIDOR EM MANUTENÇÃO',
 };
 
-/** Origem da API em produção (ex.: https://api.brfut.com.br). Vazio = mesma origem (5081). */
+/** Origem da API. Vazio = mesma origem (Vercel e servidor local 5081); apps mobile/desktop definem no build. */
 export const BRFUT_API_ORIGIN =
   typeof __BRFUT_API_ORIGIN__ !== 'undefined' && __BRFUT_API_ORIGIN__ ? __BRFUT_API_ORIGIN__ : '';
 

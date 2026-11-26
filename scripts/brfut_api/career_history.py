@@ -4,24 +4,16 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import sqlite3
 import time
 import unicodedata
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from . import db
 from .auth import ApiError
 
 
-@contextmanager
-def _db(root: Path):
-    conn = sqlite3.connect(root / 'career-history.sqlite3')
-    conn.row_factory = sqlite3.Row
-    conn.execute('PRAGMA journal_mode=WAL')
-    conn.execute('PRAGMA foreign_keys=ON')
-    conn.executescript(
-        """
+db.register_schema('career_history', """
         CREATE TABLE IF NOT EXISTS career_seasons (
           username TEXT NOT NULL, career_id TEXT NOT NULL, season INTEGER NOT NULL,
           user_club TEXT, user_division TEXT, checksum TEXT NOT NULL,
@@ -52,16 +44,11 @@ def _db(root: Path):
           ON club_season_history(username, career_id, club_id, season);
         CREATE INDEX IF NOT EXISTS idx_manager_history
           ON manager_season_history(username, career_id, manager_id, season);
-        """
-    )
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+        """)
+
+
+def _db(root: Path):
+    return db.connect(root)
 
 
 def _text(value: Any, label: str, required: bool = True) -> str | None:
@@ -294,8 +281,6 @@ def delete_career_history(root: Path, username: str, career_id: str) -> int:
 
 
 def delete_user_history(root: Path, username: str) -> int:
-    if not (root / 'career-history.sqlite3').is_file():
-        return 0
     with _db(root) as conn:
         count = conn.execute(
             'SELECT COUNT(*) FROM career_seasons WHERE username=?',

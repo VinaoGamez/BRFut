@@ -1,5 +1,5 @@
 /**
- * Cliente da API BR Fut (porta 5081 / api.brfut.com.br).
+ * Cliente da API BR Fut (servidor local 5081 ou /api/* na Vercel).
  * Espelha saves do localStorage em Documentos/BR Fut quando o usuário está logado.
  */
 import {
@@ -189,7 +189,7 @@ function markDeleteComplete(key) {
   writePendingDeleteState(state);
 }
 
-/** Testers locais (5081) usam API embutida — evita CORS com api.brfut.com.br em build de produção. */
+/** Testers locais (5081) e Vercel usam a API na mesma origem do site. */
 function resolveApiOrigin() {
   try {
     const host = window.location.hostname;
@@ -200,20 +200,8 @@ function resolveApiOrigin() {
     /* ignore */
   }
   if (BRFUT_API_ORIGIN) return BRFUT_API_ORIGIN;
-  // Builds públicos sem BRFUT_API_ORIGIN (ex.: Cloudflare Pages) — API fica na VPS.
-  try {
-    const host = String(window.location.hostname || '');
-    if (
-      host === 'brfut.com.br' ||
-      host === 'www.brfut.com.br' ||
-      host.endsWith('.pages.dev') ||
-      host.endsWith('github.io')
-    ) {
-      return 'https://api.brfut.com.br';
-    }
-  } catch {
-    /* ignore */
-  }
+  // Vercel: site e API (/api/*) na mesma origem. Apps mobile/desktop definem
+  // BRFUT_API_ORIGIN no build para apontar para o servidor.
   return window.location.origin;
 }
 
@@ -472,11 +460,30 @@ function sleep(ms) {
   return new Promise(resolve => window.setTimeout(resolve, ms));
 }
 
+/** Acima disso o corpo JSON vai comprimido (a Vercel limita requisições a 4,5 MB). */
+const GZIP_BODY_MIN_BYTES = 64 * 1024;
+
+async function gzipRequestBody(body) {
+  if (typeof body !== 'string' || body.length < GZIP_BODY_MIN_BYTES) return null;
+  if (typeof CompressionStream !== 'function' || typeof Response !== 'function') return null;
+  try {
+    const stream = new Blob([body]).stream().pipeThrough(new CompressionStream('gzip'));
+    return await new Response(stream).arrayBuffer();
+  } catch {
+    return null;
+  }
+}
+
 async function authedFetch(path, options = {}) {
   const { retry, ...fetchOptions } = options;
   const headers = { ...(fetchOptions.headers || {}) };
   if (fetchOptions.body != null && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
+  }
+  const compressed = await gzipRequestBody(fetchOptions.body);
+  if (compressed) {
+    fetchOptions.body = compressed;
+    headers['Content-Encoding'] = 'gzip';
   }
   const requestOptions = authenticatedFetchOptions({ ...fetchOptions, headers });
   const maxAttempts = retry === false ? 1 : 3;

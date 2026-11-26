@@ -1,28 +1,19 @@
-"""Estatísticas normalizadas e idempotentes por carreira (SQLite)."""
+"""Estatísticas normalizadas e idempotentes por carreira (SQLite local / Postgres na Vercel)."""
 from __future__ import annotations
 
 import json
 import hashlib
 import math
-import sqlite3
 import time
 import unicodedata
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from . import db
 from .auth import ApiError
 
 
-@contextmanager
-def _db(root: Path):
-    path = root / 'player-stats.sqlite3'
-    conn = sqlite3.connect(path)
-    conn.row_factory = sqlite3.Row
-    conn.execute('PRAGMA journal_mode=WAL')
-    conn.execute('PRAGMA foreign_keys=ON')
-    conn.executescript(
-        """
+db.register_schema('player_stats', """
         CREATE TABLE IF NOT EXISTS stats_matches (
           username TEXT NOT NULL,
           career_id TEXT NOT NULL,
@@ -82,16 +73,11 @@ def _db(root: Path):
           ON player_match_stats(username, career_id, season, club_id, competition_id);
         CREATE INDEX IF NOT EXISTS idx_manager_match_lookup
           ON manager_match_stats(username, career_id, season, manager_id);
-        """
-    )
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+        """)
+
+
+def _db(root: Path):
+    return db.connect(root)
 
 
 def _safe_id(value: Any, label: str) -> str:
@@ -276,7 +262,7 @@ def get_club_history(root: Path, username: str, career_id: str, club_id: str) ->
 
 
 _AGG_SQL = """
-SELECT player_id, competition_id, MAX(player_name) player_name, MAX(club_id) club_id,
+SELECT player_id, {competition} competition_id, MAX(player_name) player_name, MAX(club_id) club_id,
        COUNT(*) apps, SUM(started) starts, SUM(minutes) minutes,
        SUM(goals) goals, SUM(assists) assists, SUM(own_goals) own_goals,
        SUM(yellow) yellow, SUM(red) red, SUM(passes) passes,
@@ -284,6 +270,11 @@ SELECT player_id, competition_id, MAX(player_name) player_name, MAX(club_id) clu
 FROM player_match_stats
 WHERE username=? AND career_id=? AND season=?
 """
+
+
+def _agg_sql(by_competition: bool = False) -> str:
+    # Postgres exige que colunas fora do GROUP BY sejam agregadas.
+    return _AGG_SQL.replace('{competition}', 'competition_id' if by_competition else 'MAX(competition_id)')
 
 
 def _competition_clause(competition: str | None) -> tuple[str, list[Any]]:
@@ -298,11 +289,11 @@ def get_player(
     args: tuple[Any, ...] = (username, career_id, season, player_id, *([club_id] if club_id else []))
     with _db(root) as conn:
         rows = conn.execute(
-            _AGG_SQL + ' AND player_id=?' + club_clause + ' GROUP BY competition_id ORDER BY competition_id',
+            _agg_sql(by_competition=True) + ' AND player_id=?' + club_clause + ' GROUP BY player_id, competition_id ORDER BY competition_id',
             args,
         ).fetchall()
         total = conn.execute(
-            _AGG_SQL + ' AND player_id=?' + club_clause + ' GROUP BY player_id',
+            _agg_sql() + ' AND player_id=?' + club_clause + ' GROUP BY player_id',
             args,
         ).fetchone()
     return {
@@ -318,7 +309,7 @@ def get_club_squad(
     root: Path, username: str, career_id: str, club_id: str, season: int, competition: str | None,
 ) -> dict[str, Any]:
     clause, args = _competition_clause(competition)
-    sql = _AGG_SQL + ' AND club_id=?' + clause + ' GROUP BY player_id ORDER BY apps DESC, player_name'
+    sql = _agg_sql() + ' AND club_id=?' + clause + ' GROUP BY player_id ORDER BY apps DESC, player_name'
     with _db(root) as conn:
         rows = conn.execute(sql, (username, career_id, season, club_id, *args)).fetchall()
     return {'clubId': club_id, 'season': season, 'competitionId': competition, 'players': [dict(r) for r in rows]}
@@ -331,7 +322,7 @@ def get_leaders(
     if metric not in allowed:
         raise ApiError(400, 'invalid_metric', 'Métrica inválida.')
     clause, args = _competition_clause(competition)
-    sql = _AGG_SQL + clause + f' GROUP BY player_id ORDER BY {metric} DESC, apps ASC LIMIT 100'
+    sql = _agg_sql() + clause + f' GROUP BY player_id ORDER BY {metric} DESC NULLS LAST, apps ASC, player_id LIMIT 100'
     with _db(root) as conn:
         rows = conn.execute(sql, (username, career_id, season, *args)).fetchall()
     return {'season': season, 'competitionId': competition, 'metric': metric, 'leaders': [dict(r) for r in rows]}
@@ -370,8 +361,6 @@ def delete_career_stats(root: Path, username: str, career_id: str) -> int:
 
 
 def delete_user_stats(root: Path, username: str) -> int:
-    if not (root / 'player-stats.sqlite3').is_file():
-        return 0
     with _db(root) as conn:
         count = conn.execute(
             'SELECT COUNT(*) FROM stats_matches WHERE username=?',

@@ -1,7 +1,9 @@
 """Roteador HTTP JSON da API local BR Football."""
 from __future__ import annotations
 
+import gzip
 import json
+import zlib
 from http.cookies import SimpleCookie
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
@@ -9,6 +11,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 from .auth import ApiError, get_user_avatar, get_player_stats, login_user, logout_user, register_user, resolve_session, update_user_profile
 from .google_auth import google_auth_enabled, google_client_id, login_with_google_id_token
 from .paths import default_data_root, ensure_layout
+from . import db
 from .saves import (
     delete_all_saves,
     delete_save,
@@ -31,7 +34,7 @@ from .player_stats import (
 )
 from .career_history import delete_career_history, delete_user_history, get_club_seasons, get_manager_history, get_season_history, put_season_history
 from .state_leagues import delete_career_state_leagues, delete_user_state_leagues, get_state_leagues, put_state_leagues
-from .rate_limit import RATE_LIMITER, request_ip
+from .rate_limit import AUTH_GUARD, RATE_LIMITER, request_ip
 from .validation import query_int, reject_unknown_fields, require_object, validate_json_structure
 
 
@@ -48,6 +51,9 @@ SESSION_COOKIE_NAME = '__Host-brfut_session'
 LOCAL_SESSION_COOKIE_NAME = 'brfut_session'
 CSRF_HEADER_NAME = 'x-brfut-request'
 MAX_REQUEST_BODY_BYTES = 10_000_000
+# Corpo comprimido aceito na borda (a Vercel limita requisições a 4,5 MB).
+MAX_COMPRESSED_BODY_BYTES = 4_400_000
+GZIP_MIN_BYTES = 1024
 
 
 def _purge_obsolete_user_data(root, username: str) -> dict[str, int]:
@@ -120,7 +126,17 @@ def _secure_cookie_request(headers: dict[str, str]) -> bool:
     forwarded = _header(headers, 'x-forwarded-proto').lower()
     origin = _header(headers, 'origin').lower()
     host = _header(headers, 'host').lower()
-    return forwarded == 'https' or origin.startswith('https://') or host == 'api.brfut.com.br'
+    if forwarded:
+        return forwarded == 'https'
+    if origin.startswith('https://'):
+        return True
+    return bool(host) and not host.split(':', 1)[0] in {'localhost', '127.0.0.1', '[::1]'} and _env_flag('BRFUT_FORCE_SECURE_COOKIE')
+
+
+def _env_flag(name: str) -> bool:
+    import os
+
+    return (os.environ.get(name) or '').strip().lower() in {'1', 'true', 'yes'}
 
 
 def _session_cookie(token: str, headers: dict[str, str], remember: bool) -> str:
@@ -150,15 +166,59 @@ def _with_cookie(response, cookie: str):
     return status, {**response_headers, 'Set-Cookie': cookie}, payload
 
 
+def decode_request_body(headers: dict[str, str], body: bytes) -> bytes:
+    """Valida tamanho e descomprime corpo gzip com teto (evita zip bomb)."""
+    encoding = _header(headers, 'content-encoding').strip().lower()
+    if not encoding or encoding == 'identity':
+        if len(body) > MAX_REQUEST_BODY_BYTES:
+            raise ApiError(413, 'request_too_large', 'Requisição excede o limite permitido.')
+        return body
+    if encoding != 'gzip':
+        raise ApiError(415, 'unsupported_encoding', 'Codificação de corpo não suportada.')
+    if len(body) > MAX_COMPRESSED_BODY_BYTES:
+        raise ApiError(413, 'request_too_large', 'Requisição excede o limite permitido.')
+    try:
+        inflater = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        raw = inflater.decompress(body, MAX_REQUEST_BODY_BYTES + 1)
+        if len(raw) > MAX_REQUEST_BODY_BYTES or inflater.unconsumed_tail:
+            raise ApiError(413, 'request_too_large', 'Requisição excede o limite permitido.')
+        raw += inflater.flush()
+    except zlib.error as error:
+        raise ApiError(400, 'invalid_body_encoding', 'Corpo comprimido inválido.') from error
+    if len(raw) > MAX_REQUEST_BODY_BYTES:
+        raise ApiError(413, 'request_too_large', 'Requisição excede o limite permitido.')
+    return raw
+
+
+def finalize_response(
+    response: tuple[int, dict[str, str], bytes],
+    request_headers: dict[str, str],
+) -> tuple[int, dict[str, str], bytes]:
+    """Comprime respostas JSON grandes quando o cliente aceita gzip."""
+    status, headers, payload = response
+    accepts = _header(request_headers, 'accept-encoding').lower()
+    content_type = next((v for k, v in headers.items() if k.lower() == 'content-type'), '')
+    already = any(k.lower() == 'content-encoding' for k in headers)
+    if 'gzip' not in accepts or already or len(payload) < GZIP_MIN_BYTES or 'json' not in content_type:
+        return response
+    compressed = gzip.compress(payload, compresslevel=6)
+    if len(compressed) >= len(payload):
+        return response
+    out = {k: v for k, v in headers.items() if k.lower() != 'content-length'}
+    out['Content-Encoding'] = 'gzip'
+    out['Content-Length'] = str(len(compressed))
+    vary = out.get('Vary')
+    out['Vary'] = f'{vary}, Accept-Encoding' if vary else 'Accept-Encoding'
+    return status, out, compressed
+
+
 def handle_api(
     method: str,
     path: str,
     headers: dict[str, str],
     body: bytes,
 ) -> tuple[int, dict[str, str], bytes]:
-    root = ensure_layout(default_data_root())
-    if len(body) > MAX_REQUEST_BODY_BYTES:
-        raise ApiError(413, 'request_too_large', 'Requisição excede o limite permitido.')
+    root = default_data_root() if db.backend() == 'postgres' else ensure_layout(default_data_root())
     method = method.upper()
     split = urlsplit(path)
     query = parse_qs(split.query)
@@ -171,6 +231,7 @@ def handle_api(
     client_ip = request_ip(headers)
 
     try:
+        body = decode_request_body(headers, body)
         RATE_LIMITER.check_request(client_ip)
         # Falha fechada: qualquer rota não declarada pública exige uma sessão válida.
         user = None
@@ -211,6 +272,7 @@ def handle_api(
             data = require_object(_parse_json(body) or {})
             reject_unknown_fields(data, {'idToken', 'remember'})
             RATE_LIMITER.check_auth(client_ip)
+            AUTH_GUARD.check_auth(root, client_ip)
             token, profile = login_with_google_id_token(root, data.get('idToken', ''))
             response = _json_response(200, {'user': profile})
             return _with_cookie(response, _session_cookie(token, headers, bool(data.get('remember'))))
@@ -222,6 +284,7 @@ def handle_api(
             data = require_object(_parse_json(body) or {})
             reject_unknown_fields(data, {'username', 'password', 'displayName', 'remember'})
             RATE_LIMITER.check_auth(client_ip, data.get('username', ''))
+            AUTH_GUARD.check_auth(root, client_ip, str(data.get('username', '')))
             profile = register_user(root, data.get('username', ''), data.get('password', ''), data.get('displayName'))
             token, logged = login_user(root, profile['username'], data.get('password', ''))
             response = _json_response(201, {'user': logged})
@@ -232,13 +295,16 @@ def handle_api(
             reject_unknown_fields(data, {'username', 'password', 'remember'})
             account = data.get('username', '')
             RATE_LIMITER.check_auth(client_ip, account)
+            AUTH_GUARD.check_auth(root, client_ip, str(account))
             try:
                 token, profile = login_user(root, account, data.get('password', ''))
             except ApiError as error:
                 if error.code == 'invalid_credentials':
                     RATE_LIMITER.record_login_failure(account)
+                    AUTH_GUARD.record_login_failure(root, str(account))
                 raise
             RATE_LIMITER.record_login_success(account)
+            AUTH_GUARD.record_login_success(root, str(account))
             response = _json_response(200, {'user': profile})
             return _with_cookie(response, _session_cookie(token, headers, bool(data.get('remember'))))
 

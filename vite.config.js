@@ -107,12 +107,14 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: process.env.BRFUT_LOCAL_API_TARGET || 'https://api.brfut.com.br',
+        // Padrão: API local (py scripts/tester-server.py --port 5081). Para usar a
+        // API da Vercel no dev, defina BRFUT_LOCAL_API_TARGET=https://<projeto>.vercel.app
+        target: process.env.BRFUT_LOCAL_API_TARGET || 'http://127.0.0.1:5081',
         changeOrigin: false,
         secure: true,
         configure(proxy) {
           proxy.on('proxyReq', (proxyReq, req) => {
-            // A VPS deve emitir o cookie local (SameSite=Lax, sem Secure) para
+            // A API deve emitir o cookie local (SameSite=Lax, sem Secure) para
             // que o login funcione em http://localhost e no IP da rede local.
             proxyReq.setHeader('host', req.headers.host || '127.0.0.1:5080');
             proxyReq.setHeader('x-forwarded-proto', 'http');

@@ -23,7 +23,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from brfut_api.cors import cors_headers  # noqa: E402
-from brfut_api.router import handle_api  # noqa: E402
+from brfut_api.router import finalize_response, handle_api  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / 'dist'
@@ -179,9 +179,13 @@ class TesterHandler(SimpleHTTPRequestHandler):
         return merged
 
     def _dispatch_api(self, method: str) -> None:
-        parsed = urlparse(self.path)
+        request_headers = self._header_map()
         try:
-            status, headers, body = handle_api(method, parsed.path, self._header_map(), self._read_body())
+            # Passa o caminho completo: a API lê a query string (ex.: ?season=2027).
+            status, headers, body = finalize_response(
+                handle_api(method, self.path, request_headers, self._read_body()),
+                request_headers,
+            )
         except Exception as error:  # pragma: no cover — fallback seguro
             self.log_error('API internal error: %s', type(error).__name__)
             payload = json.dumps({
