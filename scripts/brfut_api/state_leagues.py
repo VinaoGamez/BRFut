@@ -3,12 +3,11 @@ from __future__ import annotations
 
 import json
 import re
-import sqlite3
 import time
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from . import db
 from .auth import ApiError
 from .validation import validate_json_structure
 
@@ -16,13 +15,7 @@ UF_RE = re.compile(r'^[A-Z]{2}$')
 MAX_SNAPSHOT_BYTES = 8_000_000
 
 
-@contextmanager
-def _db(root: Path):
-    conn = sqlite3.connect(root / 'state-leagues.sqlite3')
-    conn.row_factory = sqlite3.Row
-    conn.execute('PRAGMA journal_mode=WAL')
-    conn.executescript(
-        """
+db.register_schema('state_leagues', """
         CREATE TABLE IF NOT EXISTS state_league_snapshots (
           username TEXT NOT NULL,
           career_id TEXT NOT NULL,
@@ -34,16 +27,11 @@ def _db(root: Path):
         );
         CREATE INDEX IF NOT EXISTS idx_state_league_career
           ON state_league_snapshots(username, career_id, season);
-        """
-    )
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+        """)
+
+
+def _db(root: Path):
+    return db.connect(root)
 
 
 def _season(value: Any) -> int:
@@ -144,8 +132,6 @@ def get_state_leagues(
 
 
 def delete_career_state_leagues(root: Path, username: str, career_id: str) -> int:
-    if not (root / 'state-leagues.sqlite3').is_file():
-        return 0
     with _db(root) as conn:
         count = conn.execute(
             'SELECT COUNT(*) FROM state_league_snapshots WHERE username=? AND career_id=?',
@@ -159,8 +145,6 @@ def delete_career_state_leagues(root: Path, username: str, career_id: str) -> in
 
 
 def delete_user_state_leagues(root: Path, username: str) -> int:
-    if not (root / 'state-leagues.sqlite3').is_file():
-        return 0
     with _db(root) as conn:
         count = conn.execute(
             'SELECT COUNT(*) FROM state_league_snapshots WHERE username=?', (username,),

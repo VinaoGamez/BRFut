@@ -1,0 +1,10 @@
+# Não enviados à Vercel (não fazem parte do site nem da API)
+promo/
+release/
+electron/
+modules/ao-vivo-2d/frozen/
+docs/*.docx
+deploy/
+*.log
+.env*
+scripts/brfut-local.env

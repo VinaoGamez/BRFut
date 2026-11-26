@@ -9,6 +9,8 @@ import { rollSquadAge, rollPotential, POT_CAPS } from './player-development.js';
 import { assignRosterNationalities } from './player-nationality.js';
 import { ensureCardVariantId } from './player-card-variant-id.js';
 import { SHOOTOUT_TUNING } from './match-tuning.js';
+import { calculatePlayerOverall, syncPlayerOverall, limitAttributesToOverall, raiseAttributesToOverall } from './player-overall.js';
+import { rollPlayerName } from './player-names.js';
 
 /** Mínimo na geração inicial do elenco (sorteio 22–30). */
 export const ROSTER_PRO_MIN = 22;
@@ -157,12 +159,12 @@ function ensureSpecialistAboveField(player, attrKey, division, margin = 2) {
   player[attrKey] = Math.max(0, Math.min(cap, next));
 }
 
-export function rollSpecialistAttr(overall, division = 'A', random = Math.random) {
-  const ovr = Math.round(Number(overall) || 50);
+export function rollSpecialistAttr(attributeLevel, division = 'A', random = Math.random) {
+  const ovr = Math.round(Number(attributeLevel) || 5);
   const roll = SPECIALIST_ROLL[division] || SPECIALIST_ROLL.D;
   const [bLo, bHi] = roll.bonus;
   const raw = ovr + int(random, bLo, bHi);
-  return clamp(raw, ovr + 8, roll.cap);
+  return Math.min(roll.cap, raw);
 }
 
 export function applySetPieceSpecialists(player, division = 'A', random = Math.random) {
@@ -171,14 +173,14 @@ export function applySetPieceSpecialists(player, division = 'A', random = Math.r
   let freeKickSpec = false;
   let penaltySpec = false;
   if (FREE_KICK_ROLES.includes(player.pos) && random() < chance.freeKick) {
-    player.freeKick = Math.max(Number(player.freeKick) || 0, rollSpecialistAttr(player.overall, division, random));
+    player.freeKick = Math.max(Number(player.freeKick) || 0, rollSpecialistAttr(player.freeKick, division, random));
     ensureSpecialistAboveField(player, 'freeKick', division);
     freeKickSpec = true;
   }
   if (PENALTY_ROLES.includes(player.pos) && random() < chance.penalty) {
     player.penaltyTaking = Math.max(
       Number(player.penaltyTaking) || 0,
-      rollSpecialistAttr(player.overall, division, random),
+      rollSpecialistAttr(player.penaltyTaking, division, random),
     );
     ensureSpecialistAboveField(player, 'penaltyTaking', division);
     penaltySpec = true;
@@ -196,7 +198,7 @@ export function applyPenaltySavingSpecialist(player, division = 'A', random = Ma
   if (random() < rollChance) {
     player.penaltySaving = Math.max(
       Number(player.penaltySaving) || 0,
-      rollSpecialistAttr(player.overall, division, random),
+      rollSpecialistAttr(player.penaltySaving, division, random),
     );
     ensureSpecialistAboveField(player, 'penaltySaving', division);
     player.penaltySavingSpecialist = true;
@@ -456,95 +458,10 @@ export function topAttributeKeys(player, count = 3) {
     .map(([key]) => key);
 }
 
-export const generatedOverall = (role, a) => {
-  const weighted = {
-    GOL:
-      a.positioning * 0.32 +
-      a.reflexes * 0.36 +
-      a.penaltySaving * 0.18 +
-      a.passing * 0.06 +
-      a.speed * 0.04 +
-      a.playmaking * 0.04,
-    ZAG:
-      a.marking * 0.25 +
-      a.tackling * 0.25 +
-      a.heading * 0.18 +
-      a.speed * 0.1 +
-      a.passing * 0.09 +
-      a.dribble * 0.04 +
-      a.overallBase * 0.09,
-    LAT:
-      a.speed * 0.22 +
-      a.marking * 0.17 +
-      a.tackling * 0.17 +
-      a.passing * 0.14 +
-      a.dribble * 0.13 +
-      a.heading * 0.05 +
-      a.finishing * 0.04 +
-      a.overallBase * 0.08,
-    VOL:
-      a.tackling * 0.2 +
-      a.marking * 0.18 +
-      a.passing * 0.18 +
-      a.heading * 0.11 +
-      a.speed * 0.08 +
-      a.dribble * 0.07 +
-      a.finishing * 0.05 +
-      a.overallBase * 0.13,
-    MC:
-      a.passing * 0.24 +
-      a.dribble * 0.15 +
-      a.tackling * 0.12 +
-      a.finishing * 0.11 +
-      a.speed * 0.1 +
-      a.marking * 0.08 +
-      a.heading * 0.05 +
-      a.overallBase * 0.15,
-    MEI:
-      a.passing * 0.23 +
-      a.dribble * 0.22 +
-      a.finishing * 0.16 +
-      a.speed * 0.12 +
-      a.heading * 0.05 +
-      a.marking * 0.03 +
-      a.tackling * 0.03 +
-      a.overallBase * 0.16,
-    PE:
-      a.dribble * 0.23 +
-      a.speed * 0.22 +
-      a.finishing * 0.2 +
-      a.passing * 0.13 +
-      a.heading * 0.05 +
-      a.marking * 0.03 +
-      a.tackling * 0.02 +
-      a.overallBase * 0.12,
-    PD:
-      a.dribble * 0.23 +
-      a.speed * 0.22 +
-      a.finishing * 0.2 +
-      a.passing * 0.13 +
-      a.heading * 0.05 +
-      a.marking * 0.03 +
-      a.tackling * 0.02 +
-      a.overallBase * 0.12,
-    ATA:
-      a.finishing * 0.29 +
-      a.heading * 0.18 +
-      a.speed * 0.16 +
-      a.dribble * 0.14 +
-      a.passing * 0.07 +
-      a.marking * 0.02 +
-      a.tackling * 0.02 +
-      a.overallBase * 0.12,
-  };
-  return Math.round(weighted[role] ?? a.overallBase);
-};
-
-const clampStat = (n, min, max) => Math.max(min, Math.min(max, n));
+export const generatedOverall = (role, attributes) => Math.round(calculatePlayerOverall({ ...attributes, pos: role }));
 
 /** Atributos do jogador no formato esperado por generatedOverall. */
 export function playerAttributesForOverall(player) {
-  const overallBase = Math.round(Number(player?.overall) || 50);
   return {
     positioning: Number(player?.positioning) || 0,
     reflexes: Number(player?.reflexes) || 0,
@@ -557,24 +474,18 @@ export function playerAttributesForOverall(player) {
     heading: Number(player?.heading) || 0,
     dribble: Number(player?.dribble) || 0,
     finishing: Number(player?.finishing) || 0,
-    overallBase,
+    freeKick: Number(player?.freeKick) || 0,
+    penaltyTaking: Number(player?.penaltyTaking) || 0,
   };
 }
 
 /**
  * Recalcula OVR a partir dos atributos (Opção A — treino).
- * Nunca reduz OVR; respeita POT.
+ * OVR acompanha os atributos, inclusive regressão. POT é aplicado antes dos ganhos.
  * @returns {{ before: number, after: number, applied: number }}
  */
 export function syncOverallFromAttributes(player) {
-  if (!player?.pos) return { before: 0, after: 0, applied: 0 };
-  const before = Math.round(Number(player.overall) || 50);
-  const pot = Math.max(before, Number(player.potential) || before);
-  const computed = generatedOverall(player.pos, playerAttributesForOverall(player));
-  const after = clampStat(Math.max(computed, before), 1, pot);
-  const applied = after - before;
-  if (applied > 0) player.overall = after;
-  return { before, after: Number(player.overall) || before, applied };
+  return syncPlayerOverall(player);
 }
 
 /**
@@ -641,8 +552,9 @@ export function generatePlayer({
   clubPower,
   division = 'A',
   random = Math.random,
-  firstNames = ['João', 'Pedro', 'Lucas', 'Gabriel', 'Rafael'],
-  lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Lima'],
+  firstNames,
+  lastNames,
+  nationality = 'Brasil',
   starterBoost = true,
 } = {}) {
   const limits = DIVISION_OVR_LIMITS[division] || DIVISION_OVR_LIMITS.D;
@@ -651,7 +563,7 @@ export function generatePlayer({
   const ageModifier =
     age <= 19 ? -2 : age <= 21 ? -1 : age <= 26 ? 1 : age <= 29 ? 2 : age <= 32 ? 0 : age <= 34 ? -2 : -5;
   const slotBoost = starterBoost ? 1 : -3;
-  const overallBase = clamp(
+  const attributeLevel = clamp(
     int(random, clubPower - 6, clubPower + 6) + ageModifier + slotBoost,
     limits[0],
     limits[1],
@@ -659,24 +571,19 @@ export function generatePlayer({
   const attacking = ['PE', 'PD', 'ATA', 'MEI', 'MC'].includes(role);
   const defensive = ['ZAG', 'LAT', 'VOL'].includes(role);
   const keeper = role === 'GOL';
-  // Piso proporcional ao OVR — em Série D evita chuva de "1" nos secundários.
-  const attrFloor = Math.max(5, Math.round(overallBase * 0.55));
-  const lineFloor = Math.max(5, Math.round(overallBase * 0.4));
-  /** delta relativo ao overallBase; gap fraco máx. ~8 (antes −15…−45 → clamp 1). */
+  // Faixa de geração de atributos do clube; não é um OVR pré-atribuído.
+  const attrFloor = Math.max(5, Math.round(attributeLevel * 0.55));
+  const lineFloor = Math.max(5, Math.round(attributeLevel * 0.4));
+  /** Variação de atributo relativa à faixa de capacidade sorteada. */
   const value = (delta, spread = 5, floor = attrFloor) =>
-    clamp(int(random, overallBase + delta - spread, overallBase + delta + spread), floor, 99);
+    clamp(int(random, attributeLevel + delta - spread, attributeLevel + delta + spread), floor, 99);
 
-  const first = firstNames[(index + int(random, 0, firstNames.length - 1)) % firstNames.length];
-  const last = lastNames[(index * 3 + int(random, 0, lastNames.length - 1)) % lastNames.length];
-  const secondLast =
-    random() < 0.16
-      ? ` ${lastNames[(index * 7 + int(random, 0, lastNames.length - 1)) % lastNames.length]}`
-      : '';
+  // Legacy caller lists no longer bypass national name forms/suffix rules.
+  const name = rollPlayerName({ nationality, index, random });
 
   let attributes;
   if (keeper) {
     attributes = {
-      overallBase,
       reflexes: value(7, 4),
       positioning: value(5, 4),
       penaltySaving: value(3, 4),
@@ -693,7 +600,7 @@ export function generatePlayer({
     const metaKeys = ['reflexes', 'positioning', 'penaltySaving'];
     const secondaryKeys = ['passing', 'speed', 'playmaking'];
     metaKeys.forEach(key => {
-      attributes[key] = Math.max(attributes[key], overallBase + 2);
+      attributes[key] = Math.max(attributes[key], attributeLevel + 2);
     });
     // Secundários abaixo da meta, mas acima do piso natural.
     const metaMin = Math.min(...metaKeys.map(k => attributes[k]));
@@ -704,7 +611,6 @@ export function generatePlayer({
     attributes[signature] = clamp(attributes[signature] + int(random, 3, 6), attrFloor, 99);
   } else {
     attributes = {
-      overallBase,
       dribble: value(attacking ? 3 : -6),
       speed: value(['LAT', 'PE', 'PD', 'ATA'].includes(role) ? 6 : -3),
       marking: value(defensive ? 5 : -7),
@@ -733,18 +639,14 @@ export function generatePlayer({
     attributes[signature] = clamp(attributes[signature] + int(random, 3, 6), attrFloor, 99);
   }
 
-  let overall = clamp(generatedOverall(role, attributes), limits[0], limits[1]);
-  let potential = rollPotential(overall, age, division, random);
-  const potCap = GENERATION_POT_CAPS[division] || 90;
-  potential = clamp(potential, overall, potCap);
-
-  // C — jóia rara (≤19, POT perto do cap): OVR inicial mais alto p/ poder chegar a 90.
-  if (age <= 19 && potential >= potCap - 4 && random() < 0.32) {
-    const floor = age <= 18 ? 65 : 67;
-    const bumped = Math.max(overall, int(random, floor, Math.min(limits[1], floor + 2)));
-    overall = clamp(bumped, limits[0], limits[1]);
-    potential = clamp(Math.max(potential, overall), overall, potCap);
-  }
+  const profiles = keeper ? ['reflexes', 'positioning', 'passing'] : {
+    ZAG: ['marking', 'heading', 'passing'], LAT: ['speed', 'marking', 'passing'],
+    VOL: ['tackling', 'passing', 'heading'], MC: ['passing', 'playmaking', 'tackling'],
+    MEI: ['playmaking', 'dribble', 'finishing'], PE: ['speed', 'dribble', 'passing'],
+    PD: ['speed', 'dribble', 'passing'], ATA: ['finishing', 'heading', 'speed'],
+  }[role];
+  const profile = profiles[int(random, 0, profiles.length - 1)];
+  attributes[profile] = Math.min(99, attributes[profile] + 3);
 
   const peak = PEAK_PLATEAU[role] || PEAK_PLATEAU.MC;
   const plateauYears = int(random, peak.plateau[0], peak.plateau[1]);
@@ -790,17 +692,18 @@ export function generatePlayer({
     ? clamp(attributes.playmaking, 5, 45)
     : clamp(
         attributes.playmaking ||
-          (role === 'ZAG' ? Math.min(40, overall - 28) : role === 'VOL' ? overall - 4 : overall - 8),
+          (role === 'ZAG' ? Math.min(40, attributeLevel - 28) : role === 'VOL' ? attributeLevel - 4 : attributeLevel - 8),
         5,
         role === 'ZAG' ? 40 : 100,
       );
 
   const player = {
-    name: `${first} ${last}${secondLast}`,
+    name,
+    nationality,
+    nameNationalityKey: nationality,
+    generationProfile: profile,
     pos: role,
     age,
-    overall,
-    potential,
     height,
     preferredFoot,
     personality: personalities[int(random, 0, personalities.length - 1)],
@@ -840,6 +743,13 @@ export function generatePlayer({
   };
   if (keeper) applyPenaltySavingSpecialist(player, division, random);
   else applySetPieceSpecialists(player, division, random);
+  // All attributes, including specialist skills, exist BEFORE deriving OVR.
+  limitAttributesToOverall(player, limits[1]);
+  if (player.overallRaw < limits[0]) {
+    raiseAttributesToOverall(player, limits[0]);
+  }
+  const potCap = GENERATION_POT_CAPS[division] || 90;
+  player.potential = Math.max(Math.ceil(player.overallRaw), Math.min(potCap, rollPotential(player.overall, age, division, random)));
   return player;
 }
 

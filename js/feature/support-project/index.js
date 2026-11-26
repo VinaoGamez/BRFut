@@ -10,7 +10,7 @@ const MODAL_HTML = `
       <div class="support-project-options">
         <section class="support-project-pix">
           <span>CONTRIBUA VIA PIX</span>
-          <img src="./brand/support-qrcode.png" alt="QR Code PIX para apoiar o BR Fut" width="240" height="240">
+          <img src="./brand/support-qrcode.webp" alt="QR Code PIX para apoiar o BR Fut" width="240" height="240">
           <small>APONTE A CÂMERA DO CELULAR</small>
         </section>
         <a class="support-project-discord" href="${DISCORD_URL}" target="_blank" rel="noopener noreferrer" aria-label="Entrar na comunidade BR Fut no Discord">

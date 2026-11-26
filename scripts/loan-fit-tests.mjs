@@ -11,6 +11,11 @@ import {
 import { createTransfersEngine } from '../js/engine/transfers.js';
 import { ensurePlayerId } from '../js/engine/player-identity.js';
 import { ensureMarketFields } from '../js/engine/player-value.js';
+import { PLAYER_WAGE_MODEL } from '../js/engine/economy.js';
+
+// Elenco com posições variadas: uma folha cheia de ATA dispara pos_depth, que
+// derruba a avaliação antes do gate de divisão ser exercitado.
+const SQUAD_POSITIONS = ['GOL', 'ZAG', 'ZAG', 'LAT', 'LAT', 'VOL', 'MC', 'MC', 'MC', 'MEI', 'PE', 'PD', 'ATA'];
 
 let passed = 0;
 let failed = 0;
@@ -50,6 +55,10 @@ const player = (ovr, age = 24, overrides = {}) =>
         overall: ovr,
         potential: ovr + 5,
         wage: Math.max(2000, ovr * 400),
+        // Sem o marcador de modelo, `ensureMarketFields` entende como migração
+        // e recalcula o salário pela divisão — a folha dispara antes do gate de
+        // divisão e o teste mede a coisa errada.
+        wageModel: PLAYER_WAGE_MODEL,
         loanListed: true,
         ...overrides,
       },
@@ -115,6 +124,7 @@ check('motor: usuário D não toma estrela A listada', () => {
         name: `${div}${i}`,
         loanListed: false,
         wage: 3000,
+        pos: SQUAD_POSITIONS[i % SQUAD_POSITIONS.length],
       }),
     );
   const clubs = {
@@ -155,7 +165,12 @@ check('motor: usuário C toma jogador C (mesma série)', () => {
   const target = player(34, 23, { playerId: 'c-loan', name: 'C Loan', loanListed: true, wage: 4000 });
   const mk = (id, n, ovr) =>
     Array.from({ length: n }, (_, i) =>
-      player(ovr, 24, { playerId: `${id}-${i}`, name: `${id}${i}`, wage: 3000 }),
+      player(ovr, 24, {
+        playerId: `${id}-${i}`,
+        name: `${id}${i}`,
+        wage: 3000,
+        pos: SQUAD_POSITIONS[i % SQUAD_POSITIONS.length],
+      }),
     );
   const clubs = {
     'Meu C': club('Meu C', 'C', 34, {

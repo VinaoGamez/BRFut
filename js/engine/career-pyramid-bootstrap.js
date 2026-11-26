@@ -116,6 +116,7 @@ export function bootstrapCareerDivisionTeams({
           userClub,
           replacedHostClub: careerHostMeta.hostName,
           hostDivision: careerHostMeta.hostDivision,
+          protectedNames: Object.values(officialBrazilWorld?.divisionTeams || {}).flat(),
         }),
       );
     } else {
@@ -181,7 +182,7 @@ export function bootstrapCareerDivisionTeams({
   }
 
   divisionRules.C.clubs = serieCClubsForSeason(careerSeason);
-  divisionRules.C.relegation = serieCRelegationSlots();
+  divisionRules.C.relegation = serieCRelegationSlots(careerSeason);
   Object.keys(divisionRules).forEach(division => {
     if (division === 'C') return;
     divisionRules[division].clubs = divisionTeams[division].length;

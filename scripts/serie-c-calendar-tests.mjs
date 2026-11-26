@@ -33,9 +33,17 @@ check('CBF sizes by season', () => {
   assert(serieCClubsForSeason(2030) === 28, '2030 → 28');
 });
 
-check('rebaixamento fixo para Série D', () => {
-  assert(serieCRelegationSlots() === SERIE_C_RELEGATION_TO_D, 'Z4 fixo');
-  assert(serieCRelegationCountForTransition(20, 2027) === SERIE_C_RELEGATION_TO_D, 'transição 4');
+check('rebaixamento acompanha o tamanho da Série C', () => {
+  // A CBF fixa a vaga garantida na Série D por temporada, e ela muda com o
+  // tamanho da divisão: 20 clubes -> Z2, 24 -> Z4, 28 -> Z6. A constante fixa
+  // de 4 não fechava com o tamanho da divisão nem com a Série D (promove 6).
+  assert(serieCRelegationSlots(2026) === 2, '2026 (20 clubes) -> Z2');
+  assert(serieCRelegationSlots(2027) === 4, '2027 (24 clubes) -> Z4');
+  assert(serieCRelegationSlots(2028) === 6, '2028 (28 clubes) -> Z6');
+  assert(serieCRelegationSlots(2030) === 6, '2030 (28 clubes) -> Z6');
+  assert(serieCRelegationCountForTransition(20, 2027) === 4, 'transição usa a temporada destino');
+  // A regra exibida e a executada precisam sair da mesma função.
+  assert(serieCRelegationSlots() === serieCRelegationSlots(2026), 'sem argumento = temporada atual');
 });
 
 check('normalize skipD nao repoe D automaticamente', () => {

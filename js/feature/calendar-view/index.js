@@ -14,7 +14,7 @@ import { tipKey, buildPlayerTipIndex, ownGoalTipCount } from './match-report-tip
 import { DEVELOPMENT_FOCUSES, formatTrainingWeeklyReportHtml } from '../../engine/training-development.js';
 import goalBallUrl from '../../../assets/ui/goal-ball.png?url';
 import ownGoalBallUrl from '../../../assets/ui/goal-ball-own.png?url';
-import assistBootUrl from '../../../assets/ui/assist-boot.png?url';
+import assistBootUrl from '../../../assets/ui/assist-boot.webp?url';
 
 /**
  * Calendário de carreira — grade mensal, agenda diária e relatório de partida.

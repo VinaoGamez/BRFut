@@ -1,5 +1,21 @@
 import { MEMORY_LIMITS } from '../core/save.js';
 import { clamp } from '../ui/dom.js';
+import { isSerieCPhaseOneRound } from './serie-c-standings.js';
+
+/**
+ * Uma rodada alimenta a tabela da divisão?
+ *
+ * Nem toda rodada nacional soma na tabela da competição. A Série D só pontua na
+ * fase de grupos (as 10 primeiras) — o mata-mata não conta. A Série C é igual,
+ * só que a fase que pontua é a primeira: os grupos e a final têm tabelas
+ * próprias, e somá-los na tabela única daria ao campeão do torneo uma
+ * classificação que não existe no regulamento.
+ */
+export function roundFeedsDivisionStandings(division, round, serieCClubs) {
+  if (division === 'D') return Number(round) <= 10;
+  if (division === 'C') return isSerieCPhaseOneRound(round, serieCClubs);
+  return true;
+}
 
 function applySecondaryResult(deps, game, competition) {
   const homeRow = competition.standings.find(row => row.club === game.home);
@@ -56,7 +72,7 @@ export function createNationalRoundSimulator(deps) {
         const playable = fixtures.filter(game => game?.home && game?.away && clubs[game.home] && clubs[game.away]);
         const results = roundPreviewResults[previewKey] || playable.map(game => deps.simulateRoundMatch(game.home, game.away, game));
         results.forEach(deps.recordGameLeaders);
-        if (division !== 'D' || currentRound <= 10) {
+        if (roundFeedsDivisionStandings(division, currentRound, deps.getSerieCClubs?.())) {
           results.forEach(game => applySecondaryResult(deps, game, competition));
         }
         deps.creditLeagueHomeTvForGames(results, division);

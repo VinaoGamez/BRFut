@@ -7,6 +7,7 @@ import {
 import {
   applyCareerHostNameSwap,
   divisionFixturesIncludeClub,
+  ensureCascadePyramidIntegrity,
   finalizeHostReplacementCascade,
   hasCareerOriginReplacement,
   injectRealClubsIntoPyramid,
@@ -244,6 +245,64 @@ check('injectRealClubsIntoPyramid posiciona clubes reais', () => {
     protectedNames: [],
   });
   assert(next.B.includes('Ponte Preta'), 'Ponte Preta entra na B');
+});
+
+// Regressão: a pirâmide oficial da Série C tem 20 clubes. Quando career-pyramid-bootstrap
+// já trocou o anfitrião pelo clube do jogador, career-clubs-bootstrap chamava
+// ensureCascadePyramidIntegrity de novo. O anfitrião já não existia, o guard caía e o
+// fallback de applyCareerHostNameSwap sobrescrevia um clube real que faltava no registry
+// Brasfoot (Barra). A divisão ficava com 19 → prepareClubListForFixtures arredondava
+// para 18 e a Série C perdia rodada no formato CBF.
+const OFFICIAL_C = [
+  'Amazonas', 'Anápolis', 'Barra', 'Botafogo-PB', 'Brusque', 'Caxias', 'Confiança',
+  'Ferroviária', 'Figueirense', 'Floresta', 'Guarani', 'Inter de Limeira', 'Itabaiana',
+  'Ituano', 'Maranhão', 'Maringá', 'Paysandu', 'Santa Cruz', 'Volta Redonda', 'Ypiranga',
+];
+
+check('swap não repetido preserva os 20 clubes da Série C', () => {
+  const divisionTeams = {
+    A: ['Palmeiras', 'Flamengo'],
+    B: ['Ponte Preta'],
+    C: OFFICIAL_C.map(name => (name === 'Floresta' ? 'Teste FC' : name)),
+    D: [],
+  };
+  const fix = ensureCascadePyramidIntegrity({
+    divisionTeams,
+    clubs: {},
+    regionalBaseClubs: [],
+    userClub: 'Teste FC',
+    victimClub: 'Floresta',
+    startDivision: 'C',
+    cascadeSeed: 7,
+    protectedNames: OFFICIAL_C,
+  });
+  assert(!fix.applied, 'cascade não reaplica o swap já feito');
+  assert(fix.divisionTeams.C.length === 20, `Série C mantém 20 (veio ${fix.divisionTeams.C.length})`);
+  assert(fix.divisionTeams.C.includes('Barra'), 'Barra não é expulsa');
+  assert(!fix.divisionTeams.C.includes('Floresta'), 'anfitrião continua fora');
+  const prepared = prepareClubListForFixtures(fix.divisionTeams.C, {
+    targetSize: 20,
+    userClub: 'Teste FC',
+  });
+  assert(prepared.length === 20, `fixtures com 20 clubes (veio ${prepared.length})`);
+});
+
+check('swap nunca sobrescreve clube real da pirâmide oficial', () => {
+  const divisionTeams = {
+    A: [],
+    B: [],
+    C: OFFICIAL_C,
+    D: [],
+  };
+  const next = applyCareerHostNameSwap(divisionTeams, {
+    userClub: 'Teste FC',
+    replacedHostClub: 'Floresta',
+    hostDivision: 'C',
+    protectedNames: OFFICIAL_C,
+  });
+  assert(next.C.includes('Barra'), 'Barra sobrevive ao host ausente');
+  assert(next.C.includes('Volta Redonda'), 'Volta Redonda sobrevive ao host ausente');
+  assert(next.C.includes('Teste FC'), 'clube do jogador entrou');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

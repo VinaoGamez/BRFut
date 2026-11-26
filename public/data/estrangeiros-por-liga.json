@@ -1,0 +1,65 @@
+{
+  "_meta": {
+    "descricao": "Nacionalidade dos jogadores por liga, medido em footystats.org.",
+    "consultadoEm": "2026-10-16",
+    "temporada": "2026",
+    "metodo": "Contagem dos slugs /pt/players/{nacionalidade}/... na pagina de jogadores de cada liga.",
+    "aviso": "FootyStats publica essa tabela apenas para as ligas de maiorprojilo. Serie C, Serie D e estaduais abriram a pagina mas nao renderizam a tabela de jogadores, entao nao ha numero medido para elas. O que vale aqui e so Serie A e Serie B."
+  },
+  "Brasil": {
+    "Serie A": {
+      "jogadores": 600,
+      "clubes": 20,
+      "jogadoresPorClube": 30,
+      "brasileiros": 413,
+      "estrangeiros": 187,
+      "percentualEstrangeiros": 31.2,
+      "extrangeirosPorClube": 9.35,
+      "porNacionalidade": {
+        "Argentina": 74,
+        "Colombia": 41,
+        "Uruguay": 28,
+        "Equador": 9,
+        "Paraguai": 6,
+        "Portugal": 5,
+        "Chile": 5,
+        "Venezuela": 4,
+        "Italia": 4,
+        "CaboVerde": 2,
+        "Marrocos": 2,
+        "Panama": 2,
+        "Bolivia": 1,
+        "Espanha": 1,
+        "Angola": 1,
+        "Cameroes": 1,
+        "Peru": 1
+      },
+      "nota": "A media de 9,35 estrangeiros por clube cai exatamente no teto legal de 9 na sumula. Sao as duas coisas independentes batendo no mesmo numero, o que da confianca no teto."
+    },
+    "Serie B": {
+      "jogadores": 339,
+      "brasileiros": 313,
+      "estrangeiros": 26,
+      "percentualEstrangeiros": 7.7,
+      "porNacionalidade": {
+        "Argentina": 5,
+        "Colombia": 5,
+        "Portugal": 4,
+        "Uruguay": 4,
+        "Paraguai": 3,
+        "Venezuela": 2,
+        "Equador": 1,
+        "Senegal": 1,
+        "Nigeria": 1
+      },
+      "nota": "7,7% contra 31,2% da Serie A. A queda e de quatro vezes entre divisoes irmas, o que torna qualquer valor alto em Serie C/D implausivel por construcao."
+    }
+  },
+  "gradiente": [
+    { "divisao": "Serie A", "pctEstrangeiros": 31.2, "medido": true },
+    { "divisao": "Serie B", "pctEstrangeiros": 7.7, "medido": true },
+    { "divisao": "Serie C", "pctEstrangeiros": null, "medido": false },
+    { "divisao": "Serie D", "pctEstrangeiros": null, "medido": false },
+    { "divisao": "Estadual", "pctEstrangeiros": null, "medido": false }
+  ]
+}

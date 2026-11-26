@@ -10,10 +10,11 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from .auth import ApiError, _profile_from_user, _load_profiles, _save_profiles, create_session, validate_display_name
+from . import db
+from .auth import ApiError, _profile_from_user, create_session_in, find_user, insert_user, username_exists, validate_display_name
 
 USERNAME_RE = re.compile(r'^[a-zA-Z0-9_]{3,24}$')
-SESSION_TTL_SEC = 60 * 60 * 24 * 30
+GOOGLE_ISSUERS = frozenset({'accounts.google.com', 'https://accounts.google.com'})
 
 
 def google_client_id() -> str | None:
@@ -34,6 +35,13 @@ def _verify_id_token(id_token: str, client_id: str) -> dict[str, Any]:
     except Exception as error:
         raise ApiError(401, 'google_verify_failed', 'Não foi possível validar o login Google.') from error
 
+    if payload.get('iss') not in GOOGLE_ISSUERS:
+        raise ApiError(401, 'invalid_google_iss', 'Token Google com emissor inválido.')
+    try:
+        if float(payload.get('exp') or 0) <= time.time():
+            raise ApiError(401, 'google_token_expired', 'Login Google expirado. Tente novamente.')
+    except (TypeError, ValueError):
+        raise ApiError(401, 'google_token_expired', 'Login Google expirado. Tente novamente.') from None
     if payload.get('aud') != client_id:
         raise ApiError(401, 'invalid_google_aud', 'Token Google inválido para este site.')
     if str(payload.get('email_verified', '')).lower() not in ('true', '1'):
@@ -43,23 +51,23 @@ def _verify_id_token(id_token: str, client_id: str) -> dict[str, Any]:
     return payload
 
 
-def _unique_username(data: dict[str, Any], base: str) -> str:
+def _unique_username(conn: db.Connection, base: str) -> str:
     base = (base or 'jogador').lower()[:20]
     base = re.sub(r'[^a-z0-9_]', '', base) or 'jogador'
     if len(base) < 3:
         base = f'user_{base}'
     candidate = base[:24]
-    if USERNAME_RE.match(candidate) and not any(u.get('username') == candidate for u in data['users']):
+    if USERNAME_RE.match(candidate) and not username_exists(conn, candidate):
         return candidate
     for i in range(2, 100):
         suffix = f'_{i}'
         trimmed = base[: 24 - len(suffix)] + suffix
-        if USERNAME_RE.match(trimmed) and not any(u.get('username') == trimmed for u in data['users']):
+        if USERNAME_RE.match(trimmed) and not username_exists(conn, trimmed):
             return trimmed
     return f'g_{secrets.token_hex(4)}'
 
 
-def _find_or_create_google_user(root, payload: dict[str, Any]) -> dict[str, Any]:
+def _find_or_create_google_user(conn: db.Connection, payload: dict[str, Any]) -> dict[str, Any]:
     sub = str(payload['sub'])
     email = (payload.get('email') or '').strip().lower()
     raw_display = payload.get('name') or email.split('@')[0] or 'Jogador'
@@ -68,36 +76,32 @@ def _find_or_create_google_user(root, payload: dict[str, Any]) -> dict[str, Any]
     except ApiError:
         display = 'Jogador'
 
-    data = _load_profiles(root)
-    users: list[dict[str, Any]] = data['users']
-    user = next((u for u in users if u.get('googleSub') == sub), None)
+    user = find_user(conn, google_sub=sub)
     if not user and email:
-        user = next((u for u in users if (u.get('email') or '').lower() == email), None)
-        if user:
+        # Só vincula por e-mail contas que já vieram do Google: contas com senha
+        # não têm e-mail verificado e não podem ser assumidas por outro login.
+        linked = find_user(conn, email=email)
+        if linked and linked.get('googleSub') is None and linked.get('authProvider') == 'google':
+            user = linked
+            conn.execute('UPDATE users SET google_sub=? WHERE id=?', (sub, user['id']))
             user['googleSub'] = sub
-            if email:
-                user['email'] = email
 
     if not user:
         local_part = email.split('@')[0] if email else f'google_{sub[:8]}'
-        username = _unique_username(data, local_part)
+        username = _unique_username(conn, local_part)
         user = {
             'id': secrets.token_hex(8),
             'username': username,
             'displayName': display or username,
             'googleSub': sub,
-            'email': email,
+            'email': email or None,
             'createdAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
             'authProvider': 'google',
         }
-        users.append(user)
-
-    if display and not user.get('displayName'):
-        user['displayName'] = display
-    if email:
+        insert_user(conn, user)
+    elif email and user.get('email') != email:
+        conn.execute('UPDATE users SET email=? WHERE id=?', (email, user['id']))
         user['email'] = email
-
-    _save_profiles(root, data)
     return user
 
 
@@ -105,11 +109,11 @@ def login_with_google_id_token(root, id_token: str) -> tuple[str, dict[str, Any]
     client_id = google_client_id()
     if not client_id:
         raise ApiError(503, 'google_disabled', 'Login Google não configurado neste servidor.')
-    if not isinstance(id_token, str) or not id_token.strip():
+    if not isinstance(id_token, str) or not id_token.strip() or len(id_token) > 8192:
         raise ApiError(400, 'missing_id_token', 'Token Google não informado.')
 
     payload = _verify_id_token(id_token.strip(), client_id)
-    user = _find_or_create_google_user(root, payload)
-
-    token = create_session(root, user, provider='google')
-    return token, _profile_from_user(root, user)
+    with db.connect(root) as conn:
+        user = _find_or_create_google_user(conn, payload)
+        token = create_session_in(conn, user, provider='google')
+    return token, _profile_from_user(user)

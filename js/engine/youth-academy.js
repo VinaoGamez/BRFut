@@ -10,6 +10,7 @@ import { ensurePlayerContract, buildPlayerContract, syncPlayerWageFromContract, 
 import { getRealClub } from './brazilian-clubs-by-uf.js';
 import { bumpLegacyMeta, maybeRollLegacyYouthPlayer } from './youth-legacy-regen.js';
 import { estimatePlayerValue } from './player-value.js';
+import { ensurePlayerOverall } from './player-overall.js';
 
 export const YOUTH_STRUCTURE_UNLOCK = 3;
 export const YOUTH_ROSTER_MAX = 15;
@@ -479,7 +480,7 @@ export function rollScoutedTalentStars(scoutGrade = 'D', random = Math.random) {
 export function applyTalentStarProfile(player, targetStars, division = 'A') {
   if (!player) return player;
   const stars = Math.max(1, Math.min(5, Number(targetStars) || 1));
-  const ovr = Number(player.overall) || 50;
+  const ovr = Math.max(Number(player.overall) || 50, Math.ceil(Number(player.overallRaw) || 0));
   const cap = POT_CAPS[division] ?? POT_CAPS.D;
   const room = Math.max(1, cap - ovr);
 
@@ -554,7 +555,7 @@ export function generateYouthPlayer({
     player.destaque = true;
     potential = clamp(Math.max(potential, player.overall + 8), player.overall, potCap);
   }
-  player.potential = potential;
+  player.potential = Math.max(Math.ceil(Number(player.overallRaw) || player.overall), potential);
   player.originUf = uf || resolveClubUf(club, clubName);
   player.fatigue = 100;
   ensurePlayerId(player, { club: clubName, index: Math.floor(random() * 1e6) });
@@ -577,6 +578,7 @@ export function hydrateYouthPlayer(raw, context = {}) {
   if (!raw || typeof raw !== 'object') return null;
   const player = { injuryHistory: [], workload: {}, ...raw, isYouth: true, youthCategory: 'U20' };
   ensurePlayerId(player, context);
+  ensurePlayerOverall(player);
   return player;
 }
 

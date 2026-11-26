@@ -2,18 +2,18 @@
  * Banco de artes PNG — atacante (693×1024).
  */
 
-import art04 from '../../assets/cards/atacante/card-atacante-04.png';
-import art05 from '../../assets/cards/atacante/card-atacante-05.png';
-import art06 from '../../assets/cards/atacante/card-atacante-06.png';
-import art07 from '../../assets/cards/atacante/card-atacante-07.png';
-import art08 from '../../assets/cards/atacante/card-atacante-08.png';
-import art09 from '../../assets/cards/atacante/card-atacante-09.png';
-import art10 from '../../assets/cards/atacante/card-atacante-10.png';
-import art11 from '../../assets/cards/atacante/card-atacante-11.png';
-import art12 from '../../assets/cards/atacante/card-atacante-12.png';
-import art13 from '../../assets/cards/atacante/card-atacante-13.png';
-import art14 from '../../assets/cards/atacante/card-atacante-14.png';
-import art15 from '../../assets/cards/atacante/card-atacante-15.png';
+import art04 from '../../assets/cards/atacante/card-atacante-04.webp';
+import art05 from '../../assets/cards/atacante/card-atacante-05.webp';
+import art06 from '../../assets/cards/atacante/card-atacante-06.webp';
+import art07 from '../../assets/cards/atacante/card-atacante-07.webp';
+import art08 from '../../assets/cards/atacante/card-atacante-08.webp';
+import art09 from '../../assets/cards/atacante/card-atacante-09.webp';
+import art10 from '../../assets/cards/atacante/card-atacante-10.webp';
+import art11 from '../../assets/cards/atacante/card-atacante-11.webp';
+import art12 from '../../assets/cards/atacante/card-atacante-12.webp';
+import art13 from '../../assets/cards/atacante/card-atacante-13.webp';
+import art14 from '../../assets/cards/atacante/card-atacante-14.webp';
+import art15 from '../../assets/cards/atacante/card-atacante-15.webp';
 
 export const ATACANTE_CARD_VARIANTS = [
   { id: 'ata-04', label: '04 · Chute amarelo', art: art04 },

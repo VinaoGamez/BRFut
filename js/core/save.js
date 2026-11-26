@@ -1,6 +1,12 @@
 import { SAVE_KEYS, LEGACY_SAVE_KEYS, SAVE_VERSION, CAREER_INDEX_KEY, ACTIVE_SLOT_SESSION_KEY, isSlotBundleKey, slotBundleKeys } from './constants.js';
 import { isCareerSaveKey, isCompatibleCareerPayload } from './save-compatibility.js';
 import { normalizeWorldCupHistory } from '../engine/world-cup-history.js';
+import { SERIE_C_MAX_CLUBS } from '../engine/serie-c-calendar.js';
+import { serieCTotalRounds } from '../engine/serie-c-format.js';
+
+// Maior temporada possível da Série C (28 clubes) — teto do detector de save
+// incompatível, para rejeitar-carreiras do antigo turno e returno.
+const SERIE_C_MAX_ROUNDS = serieCTotalRounds(SERIE_C_MAX_CLUBS);
 import { stampSyncableSave, isLocalStorageCheckpoint } from './save-sync.js';
 import { isCloudStorageActive, queueCloudDelete, queueCloudSave } from './storage-api.js';
 import { migrateLegacyStorageKeysInPlace } from './save-key-normalizer.js';
@@ -122,53 +128,16 @@ export function reclaimLocalStorageSpace({ aggressive = false, preserveKeys = []
     }
   };
 
-  removeKey(SAVE_KEYS.liveMatch);
-
-  try {
-    const hist = localStorage.getItem(SAVE_KEYS.playerHistory);
-    const histBytes = hist ? (SAVE_KEYS.playerHistory.length + hist.length) * 2 : 0;
-    if (aggressive || histBytes > 250_000) removeKey(SAVE_KEYS.playerHistory);
-  } catch {
-    /* ignore */
-  }
+  // Career history and an in-progress match are primary data, not caches.
+  // A failed write must never reclaim another save to make room.
 
   if (aggressive) {
     removeKey(SAVE_KEYS.training);
     removeKey(SAVE_KEYS.pace);
   }
 
-  const pressure = getStoragePressure({ fresh: true });
-  if (pressure.level !== 'ok') {
-    let activeSlotId = null;
-    try {
-      activeSlotId = readJson(CAREER_INDEX_KEY, null)?.activeSlotId || null;
-    } catch {
-      /* ignore */
-    }
-    try {
-      const sessionSlot = sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY);
-      if (sessionSlot) activeSlotId = sessionSlot;
-    } catch {
-      /* ignore */
-    }
-
-    const keepSlotKeys = new Set();
-    if (activeSlotId) {
-      Object.values(slotBundleKeys(activeSlotId)).forEach(key => keepSlotKeys.add(key));
-    }
-
-    try {
-      const slotKeysToDrop = [];
-      for (let i = 0; i < localStorage.length; i += 1) {
-        const key = localStorage.key(i);
-        if (!key || !isSlotBundleKey(key) || preserve.has(key)) continue;
-        if (!keepSlotKeys.has(key)) slotKeysToDrop.push(key);
-      }
-      slotKeysToDrop.forEach(removeKey);
-    } catch {
-      /* ignore */
-    }
-  }
+  // Inactive slots also remain playable offline; only explicit slot deletion
+  // may remove their bundles.
 
   try {
     const keysToDrop = [];
@@ -431,7 +400,14 @@ export function seasonSaveLooksCorrupt(season, careerYear) {
   const currentRound = Number(season.currentRound) || 0;
 
   for (const [division, rows] of Object.entries(standings)) {
-    const maxPlayed = division === 'D' ? 10 : 38;
+    // Teto por divisão. A Série C tem 27 rodadas com 20 clubes, então aceitar
+    // 38 deixaria passar um save do formato antigo em vez de marcar como
+    // incompatível.
+    const maxPlayed = division === 'D'
+      ? 10
+      : division === 'C'
+        ? SERIE_C_MAX_ROUNDS
+        : 38;
     if (!Array.isArray(rows)) continue;
     for (const row of rows) {
       const played = Number(row?.played) || 0;

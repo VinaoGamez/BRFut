@@ -1,11 +1,17 @@
 /**
- * Build pública para testers.
- * Nomenclatura: Alpha V.X.YY — sobe +0.05 a cada publicação (1.00 → 1.05 → …).
+ * Candidato de estabilização desktop. Mesma identificação do package.json.
+ * Não representa aprovação/publicação do instalador.
  */
-export const BUILD_VERSION = 'Alpha V.6.00';
+export const BUILD_VERSION = '0.2.4';
 
-/** Ciclo destrutivo de compatibilidade: invalida saves Alpha anteriores no navegador. */
-export const SAVE_RESET_EPOCH = '2026-08-09-v7';
+/**
+ * Ciclo destrutivo de compatibilidade: invalida saves Alpha anteriores no navegador.
+ *
+ * v8: a Série C passou de turno e returno (38 rodadas) para o formato CBF em
+ * três fases. As posições de uma tabela não batem com as da outra, então save
+ * antigo não é migrável — tem de ser rejeitado junto com o restante.
+ */
+export const SAVE_RESET_EPOCH = '2026-08-09-v8';
 export const SAVE_RESET_MARKER_KEY = 'brfut-save-reset-epoch';
 
 /** Nome público do jogo (UI, títulos, alertas de update). */
@@ -95,20 +101,23 @@ export function saveKeyVariants(key) {
 }
 
 export const SAVE_VERSION = {
-  career: 7,
+  career: 8,
   season: 1,
   playerHistory: 1,
 };
 
 export const MODULE_VERSIONS = {
+  serieC: 1,
   messages: 1,
   save: 4,
   injury: 4,
   matchTuning: 1,
-  matchSim: 2,
+  matchSim: 4,
   matchCore: 1,
-  matchLive: 4,
-  calendar: 5,
+  matchLive: 5,
+  // 6: janelas FIFA reais por ano, Copa por edição e janelas de divisão
+  // alargadas. Save agendado sob o calendário anterior tem as datas erradas.
+  calendar: 6,
   dashboard: 6,
   tactics: 3,
   seasonSummary: 2,
@@ -119,15 +128,15 @@ export const MODULE_VERSIONS = {
   sponsorPicker: 4,
   liveDayMatches: 1,
   fatigue: 1,
-  trainingDevelopment: 1,
+  trainingDevelopment: 2,
   matchLiveUi: 9,
   matchLiveAudio: 6,
   playerRename: 1,
   testerHub: 1,
   matchAvailability: 1,
   matchLiveAwaySubs: 1,
-  matchLiveOrchestration: 5,
-  matchRatings: 1,
+  matchLiveOrchestration: 6,
+  matchRatings: 2,
   matchLiveSession: 6,
   liveMatchPersist: 2,
   clubStatus: 10,
@@ -144,7 +153,7 @@ export const MODULE_VERSIONS = {
   clubFinancialRestriction: 1,
   playerHistory: 1,
   playerMatchStats: 1,
-  playerDevelopment: 1,
+  playerDevelopment: 2,
   transfers: 5,
 };
 
@@ -172,7 +181,7 @@ export const SITE_MAINTENANCE = {
   message: 'SERVIDOR EM MANUTENÇÃO',
 };
 
-/** Origem da API em produção (ex.: https://api.brfut.com.br). Vazio = mesma origem (5081). */
+/** Origem da API. Vazio = mesma origem (Vercel e servidor local 5081); apps mobile/desktop definem no build. */
 export const BRFUT_API_ORIGIN =
   typeof __BRFUT_API_ORIGIN__ !== 'undefined' && __BRFUT_API_ORIGIN__ ? __BRFUT_API_ORIGIN__ : '';
 

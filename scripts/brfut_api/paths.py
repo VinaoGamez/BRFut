@@ -20,8 +20,7 @@ def default_data_root() -> Path:
 
 
 def ensure_layout(root: Path | None = None) -> Path:
+    """Garante a pasta de dados local (SQLite). No Postgres nada é gravado em disco."""
     root = root or default_data_root()
-    (root / 'profiles').mkdir(parents=True, exist_ok=True)
-    (root / 'saves').mkdir(parents=True, exist_ok=True)
-    (root / 'sessions').mkdir(parents=True, exist_ok=True)
+    root.mkdir(parents=True, exist_ok=True)
     return root

@@ -65,6 +65,12 @@ const player = {
   dribble: 70,
   finishing: 70,
   speed: 70,
+  marking: 70,
+  tackling: 70,
+  heading: 70,
+  playmaking: 70,
+  freeKick: 70,
+  penaltyTaking: 70,
 };
 assert(applyOverallDelta(player, 2), 'apply +2');
 assert(player.overall === 72, `ovr ${player.overall}`);

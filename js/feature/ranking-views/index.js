@@ -27,7 +27,7 @@ const managerCardArtUrl = manager => {
     hash = Math.imul(hash, 16777619);
   }
   const artIndex = (hash >>> 0) % MANAGER_CARD_ART_COUNT + 1;
-  return `./manager-cards/manager-${String(artIndex).padStart(2, '0')}.png`;
+  return `./manager-cards/manager-${String(artIndex).padStart(2, '0')}.webp`;
 };
 
 /** Rankings nacionais de clubes e técnicos (views Ranking / Técnicos). */

@@ -32,8 +32,9 @@ import { createPlayerCells, outfield, fatigueCell, rosterFatigueCell } from '../
 import { renderTableFootIcon } from '../lab/card-back.js';
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
+import { createSquadPerformance } from '../feature/squad-performance/index.js';
 import { renderTransferHistoryCard } from '../ui/transfer-history-card.js';
-import { SAVE_KEYS, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
+import { SAVE_KEYS, SAVE_VERSION, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { getAuthToken, isCloudStorageActive, probeBackend } from '../core/storage-api.js';
 import { fetchClubSeasonStats } from '../core/player-stats-sync.js';
 import { consumePrefetchedStateLeagueSnapshot } from '../core/state-league-sync.js';
@@ -194,6 +195,16 @@ import {
   serieCRelegationSlots,
   normalizeDivisionTeamsSerieC,
 } from '../engine/serie-c-calendar.js';
+import { serieCTotalRounds, serieCPhaseRounds, SERIE_C_PROMOTION_SLOTS } from '../engine/serie-c-format.js';
+import {
+  detectSerieCGroups,
+  serieCChampion,
+  serieCFinalGames,
+  serieCGroupStandings,
+  serieCGroupWinners,
+  serieCPhaseOneStandings,
+} from '../engine/serie-c-standings.js';
+import { createSerieCPhaseAdvance } from '../engine/serie-c-phase-advance.js';
 import {
   getAllRealClubs,
   getRealClub,
@@ -444,6 +455,7 @@ export async function bootEngine({
     getClubs: () => clubs,
     getUserClub: () => persistenceCtx.userClub || userClub,
     collectWorldRosters,
+    persistPlayerHistory: () => playerHistory?.persist?.() ?? false,
   });
   careerPersistence.consumeBootSkip();
   const persistCareer = payload => careerPersistence.persistCareer(payload);
@@ -684,6 +696,8 @@ export async function bootEngine({
   const playerStarterBlocked = player =>
     playerUnavailableForFixture(player, liveMatchGame || nextUserGame) || playerInRestrictedReturn(player);
   const { playerNameCell, playerStatusBadges } = createPlayerCells({
+    getPlayerRoster: (player, clubName) => clubs[clubName]?.roster ||
+      Object.values(clubs).find(club => club.roster?.includes(player))?.roster || [],
     injuryInAcutePhase,
     injuryInRestrictedPhase,
     injurySeverityLabel,
@@ -824,9 +838,20 @@ export async function bootEngine({
   const divisionRules={
     A:{name:'Série A',clubs:20,power:DIVISION_CLUB_POWER.A,format:'38 rodadas em turno e returno',promotion:0,relegation:4},
     B:{name:'Série B',clubs:20,power:DIVISION_CLUB_POWER.B,format:'38 rodadas; 1º e 2º sobem, 3º–6º disputam playoffs',promotion:4,relegation:4},
-    C:{name:'Série C',clubs:serieCClubsForSeason(careerSeason),power:DIVISION_CLUB_POWER.C,format:'pontos corridos em turno e returno',promotion:4,relegation:serieCRelegationSlots()},
+    C:{name:'Série C',clubs:serieCClubsForSeason(careerSeason),power:DIVISION_CLUB_POWER.C,format:`turno único de ${serieCClubsForSeason(careerSeason) - 1} rodadas; 8 avançam; dois grupos de 4; final em dois jogos; vencedores de grupo sobem`,promotion:SERIE_C_PROMOTION_SLOTS,relegation:serieCRelegationSlots(careerSeason)},
     D:{name:'Série D',clubs:SERIE_D_CLUBS,power:DIVISION_CLUB_POWER.D,format:'16 grupos de 6; fase de grupos; 4 avançam por grupo; mata-mata e playoffs em ida e volta',promotion:SERIE_D_PROMOTIONS,relegation:0}
   };
+  // Rodadas que a divisão realmente disputa. A Série C não é turno e returno:
+  // são 27 com 20 clubes (31 com 24, 35 com 28). Fixar 38 fazia a IA calibrar
+  // ambição e risco para uma temporada que não existe, e o patrocínio pagar por
+  // 11 rodadas que nunca acontecem. A Série D mantém a contagem própria porque
+  // o mata-mata é um bracket separado das 10 rodadas de grupo.
+  const divisionSeasonRounds=div=>{
+    if(div==='D')return SERIE_D_GROUP_ROUNDS;
+    if(div==='C')return serieCTotalRounds(serieCClubsForSeason(careerSeason));
+    return Math.max(1,(Number(divisionRules?.[div]?.clubs)||20)-1)*2;
+  };
+  const divisionSponsorInstallments=div=>div==='D'?22:divisionSeasonRounds(div);
   function generatedPlayer(role,index,clubPower,division='A',starterBoost=true){
     return generatePlayerCore({
       role,
@@ -879,6 +904,7 @@ export async function bootEngine({
     useCareerOriginFlow,
     careerHostMeta,
     careerPyramidFreshlyGenerated,
+    officialBrazilWorld,
     gameRandom,
     int,
     initialEnvironmentRanges,
@@ -1192,7 +1218,7 @@ export async function bootEngine({
     const reputation=manager?.reputation??60;
     clubs[userClub].managerReputation=reputation;
     clubs[userClub].managerName=manager?.name||careerProfile.managerName||clubs[userClub].managerName;
-    const installments=userDivision==='D'?22:38;
+    const installments=divisionSponsorInstallments(userDivision);
     const result=chargeRoundCosts(clubs[userClub],{
       division:userDivision,
       round,
@@ -1275,7 +1301,22 @@ export async function bootEngine({
   };
   const serieAFixtures=resolveDivisionFixtures('A',divisionTeams.A,'brasileirao',38);
   const serieBFixtures=savedNewGame?resolveDivisionFixtures('B',divisionTeams.B,'brasileirao',38):[];
-  const serieCFixtures=savedNewGame?resolveDivisionFixtures('C',divisionTeams.C,'brasileirao',null):[];
+  // A Série C usa a política de turno único (formato CBF). O expectedRounds
+  // deixa de ser null: um save com as 38 rodadas antigas precisa ser rejeitado,
+  // senão a temporada vira um híbrido de formatos.
+  const serieCRoundsExpected=serieCTotalRounds(serieCClubsForSeason(careerSeason));
+  const serieCFixtures=savedNewGame?resolveDivisionFixtures('C',divisionTeams.C,'serie-c-phase1',serieCRoundsExpected):[];
+  // Estado das fases da Série C (grupos instalados, vencedores). Vive fora dos
+  // fixtures porque quem decide se a fase já avançou é a máquina, não o array.
+  let serieCPhaseState=null;
+  if(savedSeason?.serieCPhases&&savedSeason.seed===savedNewGame?.seed)serieCPhaseState=savedSeason.serieCPhases;
+  const serieCPhases=createSerieCPhaseAdvance({
+    getNationalCompetitions:()=>nationalCompetitions,
+    getSerieCClubs:()=>serieCClubsForSeason(careerSeason),
+    getSerieCState:()=>serieCPhaseState,
+    setSerieCState:next=>{serieCPhaseState=next;},
+    rebuildCalendarGames:()=>rebuildCalendarGames(),
+  });
   const restoredSerieDGroups=!!(!officialBrazilWorld&&!serieDLayoutRepaired&&savedNewGame&&!serieCSizeRepaired&&savedSeason&&savedSeason.seed===savedNewGame.seed&&Array.isArray(savedSeason.serieDGroups)&&savedSeason.serieDGroups.length===16)?savedSeason.serieDGroups:null;
   const buildSerieDGroups=()=>{
     if(officialBrazilWorld){
@@ -1621,7 +1662,7 @@ export async function bootEngine({
         random:Math.random,
         savedSponsors,
         creditPackage:false,
-        installments:userDivision==='D'?22:38,
+        installments:divisionSponsorInstallments(userDivision),
       });
     }
     const savedTvRights=validSavedSeason?savedSeason?.userTvRights:null;
@@ -1909,7 +1950,7 @@ export async function bootEngine({
       form,
       serieDPhase:serieDPhase||'group',
       promoted,
-      seasonRounds:userDivision==='D'?SERIE_D_GROUP_ROUNDS:38,
+      seasonRounds:divisionSeasonRounds(userDivision),
       division:userDivision,
     };
   };
@@ -2447,7 +2488,7 @@ export async function bootEngine({
     const relegation=Number(divisionRules?.[div]?.relegation)||4;
     return {
       standings:competition?.standings||[],
-      seasonRounds:div==='D'?SERIE_D_GROUP_ROUNDS:38,
+      seasonRounds:divisionSeasonRounds(div),
       currentRound:game?.round??currentRound,
       relegationZone:Math.max(0,relegation),
       division:div,
@@ -2671,7 +2712,14 @@ export async function bootEngine({
   }else rescheduleAllCupFixtures();
   restConflictCount=calculateRestConflicts();
   if(restConflictCount)console.warn(`Calendário gerado com ${restConflictCount} conflito(s) de descanso.`);
-  const seasonMaxRound=()=>userDivision==='D'?22:38;
+  // A última rodada vem dos fixtures reais da divisão do usuário. Fixar 38
+  // quebrava a Série C no formato CBF, que termina em 27 rodadas com 20 clubes.
+  const seasonMaxRound=()=>{
+    if(userDivision==='D')return SERIE_D_GROUP_ROUNDS;
+    const fixtures=championshipFixtures;
+    const total=Array.isArray(fixtures)?fixtures.length:0;
+    return total>0?total:38;
+  };
   const seasonComplete=()=>currentRound>seasonMaxRound();
   const hasPendingUserFixtures=()=>pendingUserSchedule().length>0;
   const dashboardLeagueRoundLabel=()=>{
@@ -2940,6 +2988,14 @@ export async function bootEngine({
   rankingViews.renderNationalRanking();
   rankingViews.renderManagerRanking();
   const router=createRouter({ $$, onClick });
+  const squadPerformance=createSquadPerformance({
+    root:$('#squadPerformance'),
+    getRoster:()=>squad,
+    getHistory:()=>playerHistory,
+    getSeason:()=>careerSeason,
+    getClub:()=>userClub,
+  });
+  router.onView('squad',()=>{renderRoster();squadPerformance.render();});
   openNavView=viewId=>router.openView(viewId);
   router.onView('ranking',()=>rankingViews.renderNationalRanking());
   router.onView('managers',()=>rankingViews.renderManagerRanking());
@@ -3547,6 +3603,9 @@ export async function bootEngine({
     fixtureDate,
     getUserSerieDGroupIndex:()=>userSerieDGroupIndex,
     getSerieDGroups:()=>serieDGroups,
+    // Máquina de fases da Série C (formato CBF): grupos ao fim da rodada 19,
+    // final ao fim da 25.
+    updateSerieCPhases:round=>serieCPhases.updateSerieCPhases(round),
     SERIE_D_GROUP_ROUNDS,
     isSponsorChoicePending:()=>!!pendingSponsorChoice,
     onRequestSponsorPicker:()=>openSponsorPickerIfPending?.(),
@@ -4885,7 +4944,7 @@ export async function bootEngine({
   document.body.insertAdjacentHTML('beforeend',`<div id="competitionRulesModal" class="modal hidden"><div class="modal-card competition-rules-modal"><button id="closeCompetitionRules" class="close" type="button">×</button><label id="competitionRulesKicker">REGULAMENTO</label><h2 id="competitionRulesTitle">Regras</h2><div id="competitionRulesBody" class="competition-rules-body"></div></div></div>`);
   document.body.insertAdjacentHTML('beforeend',`<div id="championshipModal" class="modal hidden"><div class="modal-card championship-modal"><button id="closeChampionship" class="close">×</button><label id="championshipDivisionLabel">CAMPEONATO BRASILEIRO · SÉRIE A</label><h2>Brasileirão 2026</h2><small id="championshipFormat" class="championship-format"></small><div id="divisionTabs" class="division-tabs">${Object.keys(divisionRules).map(division=>`<button data-division="${division}">SÉRIE ${division}</button>`).join('')}<button data-competition="CUP">COPA DO BRASIL</button></div><div id="serieDModeTabs" class="serie-d-mode-tabs hidden" role="tablist" aria-label="Fase da Série D"><button type="button" data-serie-d-mode="groups">GRUPOS</button><button type="button" data-serie-d-mode="knockout">MATA-MATA</button></div><div class="championship-grid"><section><h3>Tabela</h3><div class="champ-head"><span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span></div><div id="championshipTable"></div></section><aside class="championship-sidebar"></aside></div></div></div>`);
   let championshipRoundView=currentRound,championshipGroupView=userSerieDGroupIndex,championshipLeaderMode='scorers';
-  const serieCRelegationZone=serieCRelegationSlots();
+  const serieCRelegationZone=serieCRelegationSlots(careerSeason);
   const leagueClassificationZone=(division,index,total)=>classificationZone(division,index,total,serieCRelegationZone);
   const championshipRoundLimit=division=>{
     if(String(division||'').startsWith('EST:'))return stateLeagueEngine.getRoundLimit(division);
@@ -5048,6 +5107,34 @@ export async function bootEngine({
     else if(game.homeGoals<game.awayGoals){awayRow.wins++;homeRow.losses++;awayRow.points+=3;}
     else{homeRow.draws++;awayRow.draws++;homeRow.points++;awayRow.points++;}
     return next;
+  };
+  // Visão por fase da Série C para a tela de campeonatos. A primeira fase é a
+  // tabela da divisão; os grupos e a final só existem depois de instalados, e
+  // cada um tem a sua tabela — somados na tabela única dariam uma classificação
+  // que não existe no regulamento da CBF.
+  const serieCView=()=>{
+    const competition=nationalCompetitions.C;
+    const fixtures=competition?.fixtures;
+    const clubs=[...(divisionTeams.C||[])];
+    const clubsCount=clubs.length||serieCClubsForSeason(careerSeason);
+    const groups=detectSerieCGroups(fixtures);
+    const tables=groups?serieCGroupStandings({fixtures,groups,clubsCount}):{A:[],B:[]};
+    const finalGames=serieCFinalGames(fixtures);
+    const phase1=serieCPhaseOneStandings({fixtures,clubs,clubsCount});
+    const available=[1];
+    if(tables.A.length||tables.B.length)available.push(2);
+    if(finalGames.length)available.push(3);
+    return {
+      available,
+      phase1,
+      groups:[
+        {id:'A',label:'GRUPO A',rows:tables.A},
+        {id:'B',label:'GRUPO B',rows:tables.B},
+      ],
+      groupWinners:serieCGroupWinners(tables),
+      finalGames,
+      champion:serieCChampion({fixtures}).champion,
+    };
   };
   const standingsRowsForDisplay=(division)=>{
     const competition=nationalCompetitions[division];
@@ -5362,6 +5449,7 @@ export async function bootEngine({
     }
     playerHistory.persist();
   }
+  squadPerformance.render();
   renderTeamStatsCard?.();
   void ensureRemoteClubStats(dashboardStatsClub()).then(result=>{
     if(!result)return;
@@ -5670,6 +5758,7 @@ export async function bootEngine({
       persist:meta.persist!==false,
     });
     if(log){
+      if($('#squad')?.classList.contains('active'))squadPerformance.render();
       syncLeaderboardFromPlayerHistory(game.home);
       syncLeaderboardFromPlayerHistory(game.away);
       renderTeamStatsCard?.();
@@ -6140,6 +6229,7 @@ export async function bootEngine({
     leagueClassificationZone,
     serieCRelegationZone,
     standingsRowsForDisplay,
+    getSerieCView: () => serieCView(),
     seriesDGroupRows,
     stateGroupRows,
     applyTablePreviewToRows,
@@ -6252,7 +6342,7 @@ export async function bootEngine({
       for(let index=0;index<sample;index++){const fixture=fixtures[index%fixtures.length],result=simulateRoundMatch(fixture.home,fixture.away,fixture),goals=result.homeGoals+result.awayGoals;totals.goals+=goals;totals.shots+=result.data.homeShots+result.data.awayShots;totals.onTarget+=result.data.homeOnTarget+result.data.awayOnTarget;totals.draws+=result.homeGoals===result.awayGoals?1:0;totals.scoreless+=goals===0?1:0;totals.overFour+=goals>=5?1:0;totals.homeWins+=result.homeGoals>result.awayGoals?1:0;totals.awayWins+=result.awayGoals>result.homeGoals?1:0;totals.maxGoals=Math.max(totals.maxGoals,goals);}
       return {...totals,goalsPerMatch:Number((totals.goals/sample).toFixed(3)),shotsPerMatch:Number((totals.shots/sample).toFixed(3)),onTargetPerMatch:Number((totals.onTarget/sample).toFixed(3)),drawRate:Number((totals.draws/sample*100).toFixed(1)),scorelessRate:Number((totals.scoreless/sample*100).toFixed(1)),overFourRate:Number((totals.overFour/sample*100).toFixed(1)),homeWinRate:Number((totals.homeWins/sample*100).toFixed(1)),awayWinRate:Number((totals.awayWins/sample*100).toFixed(1))};
     };
-    window.__brfutEngineExports={clubs,simulateRoundMatch,savedNewGame:!!savedNewGame,userDivision,createInjuryRecord,normalizeInjury,injuryCatalog,calculateEventInjuryChance,injuryMechanismFromEvent,workloadRisk,recoveryRisk,recordPlayerMatchWorkload,ensureWorkload,injuryInRestrictedPhase,matchPlayerStat,playerRehabMaxMinutes,beginRestrictedReturn,advanceRestrictedRehab,clearInjuryFully,clubMedicalQuality,medicalRecoveryModifier,medicalPreventionModifier,resolveInjuryTreatment,summarizeMatchInjuries,engineTuning,buildSimLineup,engineFoulRisk,engineBlowoutDamp};
+    window.__brfutEngineExports={clubs,simulateRoundMatch,recordPlayerHistoryMatch,savedNewGame:!!savedNewGame,userDivision,createInjuryRecord,normalizeInjury,injuryCatalog,calculateEventInjuryChance,injuryMechanismFromEvent,workloadRisk,recoveryRisk,recordPlayerMatchWorkload,ensureWorkload,injuryInRestrictedPhase,matchPlayerStat,playerRehabMaxMinutes,beginRestrictedReturn,advanceRestrictedRehab,clearInjuryFully,clubMedicalQuality,medicalRecoveryModifier,medicalPreventionModifier,resolveInjuryTreatment,summarizeMatchInjuries,engineTuning,buildSimLineup,engineFoulRisk,engineBlowoutDamp};
     window.__matchdayEngineBenchmark=window.__brfutEngineBenchmark;
     window.__matchdayEngineExports=window.__brfutEngineExports;
   }
@@ -6537,6 +6627,7 @@ export async function bootEngine({
     getCompetitionRoundHistory: () => competitionRoundHistory,
     getRoundPreviewResults: () => roundPreviewResults,
     getClubs: () => clubs,
+    getSerieCClubs: () => serieCClubsForSeason(careerSeason),
     simulateRoundMatch,
     recordGameLeaders,
     creditLeagueHomeTvForGames,
@@ -6581,6 +6672,8 @@ export async function bootEngine({
     getNationalCompetitions: () => nationalCompetitions,
     getDKnockout: () => dKnockout,
     getCupCompetition: () => cupCompetition,
+    getDivisionTeams: () => divisionTeams,
+    getSerieCClubs: () => serieCClubsForSeason(careerSeason),
     accumulateNationalRankingLeaguePoints,
     awardNationalRankingTitles,
     getRankingViews: () => rankingViews,
@@ -7004,7 +7097,7 @@ export async function bootEngine({
       seasonObjectives:nextObjectives,
       seasonObjectivesResult:null,
       createdAt:new Date().toISOString(),
-      version:7,
+      version:SAVE_VERSION.career,
     };
     persistCareer(nextCareer);
     managerJobCrisis=null;
@@ -7085,7 +7178,7 @@ export async function bootEngine({
         secondaries,
         division:userDivision,
         season:careerSeason,
-        installments:userDivision==='D'?22:38,
+        installments:divisionSponsorInstallments(userDivision),
       });
       if(!applied)return;
       // Fecha pendência antes de esconder o modal — evita ghost-click reabrir o picker.
@@ -7160,6 +7253,7 @@ export async function bootEngine({
     getCareerCalendarDate:()=>careerCalendarDate,
     getCurrentRound:()=>currentRound,
     setCurrentRound:value=>{currentRound=value;},
+    getSerieCClubs:()=>serieCClubsForSeason(careerSeason),
     getLiveMatchGame:()=>liveMatchGame,
     setLiveMatchGame:value=>{liveMatchGame=value;},
     getRoundCommitted:()=>roundCommitted,

@@ -69,8 +69,13 @@ export function balanceHomeAwayStreaks(fixtures, maxStreak = DEFAULT_MAX_HOME_AW
 
 /**
  * Round-robin clássico (Berger) + returno espelhado + balanceamento opcional.
+ *
+ * `singleLeg: true` devolve só o turno — é o que a primeira fase da Série C usa
+ * no formato CBF. A segunda fase (grupos) e a final entram depois, montadas a
+ * partir de quem terminou o turno em cada posição.
+ *
  * @param {string[]} clubList
- * @param {{ maxHomeAwayStreak?: number, balanceHomeAway?: boolean, balanceScope?: 'first-leg-only'|'full' }} [options]
+ * @param {{ maxHomeAwayStreak?: number, balanceHomeAway?: boolean, balanceScope?: 'first-leg-only'|'full', singleLeg?: boolean }} [options]
  */
 export function buildBrazilianLeagueFixtures(clubList, options = {}) {
   const clubs = [...clubList];
@@ -106,6 +111,9 @@ export function buildBrazilianLeagueFixtures(clubList, options = {}) {
       )
       : balanceHomeAwayStreaks(firstLeg, maxStreak);
   }
+
+  // Turno único: só o primeiro turno, já balanceado.
+  if (options.singleLeg) return balancedFirstLeg;
 
   const secondLeg = balancedFirstLeg.map((games, index) =>
     games.map(game => ({

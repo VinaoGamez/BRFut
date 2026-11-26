@@ -1,4 +1,5 @@
 import { clamp } from '../../ui/dom.js';
+import { playerDisplayName } from '../../engine/player-display-names.js';
 import { resolvePlayerId } from '../../engine/player-identity.js';
 import { isPenaltySavingSpecialist, isSetPieceSpecialist, setPieceSpecialistTitle, isCraque, isDestaque } from '../../engine/player-generation.js';
 
@@ -60,6 +61,7 @@ function projectInjuryReturnDate(injury, careerDate, injuryInRestrictedPhase) {
 }
 
 export function createPlayerCells({
+  getPlayerRoster,
   injuryInAcutePhase,
   injuryInRestrictedPhase,
   injurySeverityLabel,
@@ -197,6 +199,7 @@ export function createPlayerCells({
     player,
     { prefix = '', liveState = null, allCompetitions = false, showLoan = false, openCard = false, clubName = '' } = {},
   ) => {
+    const displayName = playerDisplayName(name, getPlayerRoster?.(player, clubName) || []);
     const loanLine = showLoan ? playerLoanLine(player) : '';
     const injuryLine = playerInjuryLine(player);
     const badges = playerStatusBadges(player, liveState, { allCompetitions, showLoan: false });
@@ -206,7 +209,7 @@ export function createPlayerCells({
       openCard && playerId
         ? ` role="button" tabindex="0" class="player-name-text is-card-trigger" data-open-player-card data-player-id="${escapeAttr(playerId)}"${clubName ? ` data-player-club="${escapeAttr(clubName)}"` : ''}`
         : ' class="player-name-text"';
-    return `<b class="player-name-cell${cellMods ? ` ${cellMods}` : ''}"><span class="player-name-line">${prefix ? `<span class="player-name-prefix">${prefix}</span>` : ''}<span${cardAttrs}>${name}</span>${playerStarBadge(player)}${badges}</span>${injuryLine}${loanLine}</b>`;
+    return `<b class="player-name-cell${cellMods ? ` ${cellMods}` : ''}"><span class="player-name-line">${prefix ? `<span class="player-name-prefix">${prefix}</span>` : ''}<span${cardAttrs} title="${escapeAttr(name)}">${escapeAttr(displayName)}</span>${playerStarBadge(player)}${badges}</span>${injuryLine}${loanLine}</b>`;
   };
 
   return { playerNameCell, playerStatusBadges, playerInjuryLine };

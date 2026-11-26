@@ -2,14 +2,14 @@
  * Cards — arte PNG + rodapé dinâmico (OVR, nome, país, verso).
  */
 
-import cardGoleiro from '../../assets/cards/card-goleiro.png';
-import cardLateral from '../../assets/cards/card-lateral.png';
-import cardMei from '../../assets/cards/card-mei.png';
-import cardZagueiro from '../../assets/cards/card-zagueiro.png';
-import cardPonta from '../../assets/cards/card-ponta.png';
-import cardVolante from '../../assets/cards/card-volante.png';
-import cardAtacante from '../../assets/cards/card-atacante.png';
-import cardMc from '../../assets/cards/card-mc.png';
+import cardGoleiro from '../../assets/cards/card-goleiro.webp';
+import cardLateral from '../../assets/cards/card-lateral.webp';
+import cardMei from '../../assets/cards/card-mei.webp';
+import cardZagueiro from '../../assets/cards/card-zagueiro.webp';
+import cardPonta from '../../assets/cards/card-ponta.webp';
+import cardVolante from '../../assets/cards/card-volante.webp';
+import cardAtacante from '../../assets/cards/card-atacante.webp';
+import cardMc from '../../assets/cards/card-mc.webp';
 import { renderCardBack } from './card-back.js';
 import { hydrateCardBadgeImages } from './card-badges.js';
 import { applyLayoutToCard, fitCardFootNames, loadLayout } from './card-layout.js';

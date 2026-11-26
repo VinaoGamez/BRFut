@@ -17,6 +17,7 @@ import {
 import { createTransfersEngine } from '../js/engine/transfers.js';
 import { ensurePlayerId } from '../js/engine/player-identity.js';
 import { ensureMarketFields } from '../js/engine/player-value.js';
+import { PLAYER_WAGE_MODEL } from '../js/engine/economy.js';
 
 let passed = 0;
 let failed = 0;
@@ -37,6 +38,10 @@ const assert = (cond, message) => {
   if (!cond) throw new Error(message || 'assertion failed');
 };
 
+// Elenco de 20+: a profundidade por posição precisa ser crível, senão o motor
+// penaliza (pos_depth) e a compra morre por preço antes da divisão importar.
+const SQUAD_POSITIONS = ['GOL', 'ZAG', 'ZAG', 'LAT', 'LAT', 'VOL', 'MC', 'MC', 'MC', 'MEI', 'PE', 'PD', 'ATA'];
+
 const mkPlayer = (ovr, overrides = {}) =>
   ensureMarketFields(
     ensurePlayerId(
@@ -47,6 +52,11 @@ const mkPlayer = (ovr, overrides = {}) =>
         overall: ovr,
         potential: ovr + 4,
         wage: 4000,
+        // Marca o modelo junto com o salário. Sem isso `ensureMarketFields`
+        // entende que é migração e recalcula o salário pela divisão — o
+        // gate de folha dispara antes do gate de divisão e o teste mede a
+        // coisa errada.
+        wageModel: PLAYER_WAGE_MODEL,
         listed: false,
         ...overrides,
       },
@@ -155,6 +165,7 @@ check('motor: estrela A→D sempre division_gap (mesmo listada)', () => {
         name: `${prefix}${i}`,
         wage: 800,
         listed: false,
+        pos: SQUAD_POSITIONS[i % SQUAD_POSITIONS.length],
       }),
     );
   const clubs = {
@@ -190,21 +201,39 @@ check('motor: estrela A→D sempre division_gap (mesmo listada)', () => {
   });
   const fit = engine.getBuyDivisionFit(star.playerId);
   assert(!fit.ok, 'Fase 1 fechada para estrela');
+  // O gate de divisão é o que este teste verifica. Ele aparece em
+  // `getBuyDivisionFit`; em `buyPlayer` a folha vem antes na ordem de checagem,
+  // porque uma eventual oferta de rescisão (atalho caro para a diferença de
+  // divisão) exige que o clube dê conta do salário. Os dois recusam — o motivo
+  // reportado é o que a casa encara primeiro.
+  assert(fit.reason === 'division_gap', `fit ${fit.reason}`);
+  assert(fit.phase === 'blocked', `fase ${fit.phase}`);
   const result = engine.buyPlayer(star.playerId, 5_000_000);
-  assert(result.reason === 'division_gap', `got ${result.reason}`);
+  assert(!result.ok, 'estrela A não pode ser comprada por um clube da D');
 });
 
 check('motor: mesma série C compra C listado', () => {
   const target = mkPlayer(34, {
     playerId: 'c-buy',
     name: 'Alvo C',
+    pos: 'ATA',
     listed: true,
-    askingPrice: 400_000,
+    // Contrato curto: o motor penaliza contract_long, e aqui o que está em
+    // teste é a janela de divisão, não a vigência.
+    contract: { until: 2027, wagePerRound: 3000 },
     wage: 3000,
   });
   const filler = (prefix, n, ovr) =>
     Array.from({ length: n }, (_, i) =>
-      mkPlayer(ovr, { playerId: `${prefix}-${i}`, name: `${prefix}${i}`, wage: 2500 }),
+      mkPlayer(ovr, {
+        playerId: `${prefix}-${i}`,
+        name: `${prefix}${i}`,
+        wage: 2500,
+        // Elenco com posições variadas. 20 atacantes num clube dispara pos_depth,
+        // que derruba a avaliação e rejeita a compra por preço — antes da
+        // janela de divisão ser exercitada.
+        pos: SQUAD_POSITIONS[i % SQUAD_POSITIONS.length],
+      }),
     );
   const clubs = {
     'Meu C': {
@@ -240,7 +269,8 @@ check('motor: mesma série C compra C listado', () => {
     canAfford: (club, amount) => (club.budget || 0) >= amount,
     isMarketOpen: () => true,
   });
-  const result = engine.buyPlayer(target.playerId, 400_000);
+  // Preço acima da avaliação: o que está em teste é a divisão, não a negociação.
+  const result = engine.buyPlayer(target.playerId, Math.ceil(target.marketValue * 1.05));
   assert(result.ok, result.reason || JSON.stringify(result.reasons));
 });
 

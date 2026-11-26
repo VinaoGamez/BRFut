@@ -1,7 +1,7 @@
 import {
   SERIE_D_CLUBS,
   SERIE_D_PROMOTIONS,
-  SERIE_C_RELEGATION_TO_D,
+  serieCRelegationSlots,
   normalizeDivisionTeamsSerieC,
 } from './serie-c-calendar.js';
 import {
@@ -9,6 +9,8 @@ import {
   collectSerieDSecondPhaseClubs,
   serieDFormationSummary,
 } from './serie-d-formation.js';
+import { resolveSerieCOutcome } from './serie-c-standings.js';
+import { SAVE_VERSION } from '../core/constants.js';
 
 function seasonPrizeCreditedTotal(club) {
   const ledger = Array.isArray(club?.budgetLedger) ? club.budgetLedger : [];
@@ -53,12 +55,21 @@ export function createSeasonTransitionEngine(deps) {
   const finishRemainingNationalRounds = (fromRound, throughRound = 38) => {
     const nationalCompetitions = deps.getNationalCompetitions();
     const competitionRoundHistory = deps.getCompetitionRoundHistory();
-    const lastRound = Math.min(38, Math.max(fromRound, Number(throughRound) || 38));
-    for (let round = fromRound; round <= lastRound; round++) {
-      ['A', 'B', 'C'].forEach(division => {
+    // O corte deixa de ser 38 fixo: cada divisão termina na própria contagem de
+    // rodadas. Com a Série C no formato CBF isso é 27, não 38 — e cortar em 38
+    // deixava a última rodada da C semGames.
+    const lastRoundOf = division => {
+      const fixtures = nationalCompetitions?.[division]?.fixtures;
+      const total = Array.isArray(fixtures) ? fixtures.length : 0;
+      return total || 38;
+    };
+    for (const division of ['A', 'B', 'C']) {
+      const defaultLast = lastRoundOf(division);
+      const lastRound = Math.min(defaultLast, Math.max(fromRound, Number(throughRound) || defaultLast));
+      for (let round = fromRound; round <= lastRound; round++) {
         const history = competitionRoundHistory[division] || [];
         // Idempotente: não reaplicar rodada já no histórico (evita J>38 / J=42).
-        if (history.some(entry => Number(entry?.round) === round)) return;
+        if (history.some(entry => Number(entry?.round) === round)) continue;
         const competition = nationalCompetitions[division];
         const fixtures = (Array.isArray(competition?.fixtures) ? competition.fixtures : [])[round - 1] || [];
         const clubs = deps.getClubs();
@@ -67,7 +78,7 @@ export function createSeasonTransitionEngine(deps) {
           if (game.completed) return false;
           return true;
         });
-        if (!playable.length) return;
+        if (!playable.length) continue;
         const results = playable.map(game => deps.simulateRoundMatch(game.home, game.away, game));
         results.forEach(deps.recordGameLeaders);
         results.forEach(game => deps.applySecondaryResult(game, competition));
@@ -81,7 +92,7 @@ export function createSeasonTransitionEngine(deps) {
           round,
           games: results.map(game => deps.compactMatchResult(game, { keepData: false })),
         });
-      });
+      }
     }
     Object.values(nationalCompetitions).forEach(competition => {
       if (Array.isArray(competition?.standings)) {
@@ -144,8 +155,22 @@ export function createSeasonTransitionEngine(deps) {
     const relA = a.slice(-4);
     const promB = [b[0], b[1], playoffEdge(b[2], b[5], 'B'), playoffEdge(b[3], b[4], 'B')];
     const relB = b.slice(-4);
-    const promC = c.slice(0, 4);
-    const relC = c.slice(-SERIE_C_RELEGATION_TO_D);
+    // A Série C não promove os 4 primeiros da tabela: no formato CBF quem sobe é
+    // o vencedor de cada um dos dois grupos da segunda fase. `ranked('C')` já é só
+    // a fase 1 — os pontos dos grupos e da final não entram nessa tabela.
+    const serieCOutcome = resolveSerieCOutcome({
+      fixtures: nationalCompetitions.C?.fixtures,
+      clubs: divisionTeams.C,
+      clubsCount: divisionTeams.C.length,
+      relegationSlots: serieCRelegationSlots(careerSeason),
+    });
+    const promC = [...serieCOutcome.promoted];
+    // A mesma função que gera o regulamento mostrado na tela: 20 clubes -> Z2,
+    // 24 -> Z4, 28 -> Z6. Antes o corte usava uma constante fixa de 4 e a regra
+    // exibida dizia outra coisa.
+    const relC = serieCOutcome.relegated.length
+      ? serieCOutcome.relegated
+      : c.slice(-serieCRelegationSlots(careerSeason));
     let promD = [...deps.serieDPromotedClubs()];
     if (promD.length < SERIE_D_PROMOTIONS) {
       const groupWinners = serieDGroups
@@ -555,7 +580,7 @@ export function createSeasonTransitionEngine(deps) {
       retiredPool: savedNewGame.retiredPool || [],
       seasonIndex: Array.isArray(savedNewGame.seasonIndex) ? [...savedNewGame.seasonIndex] : [],
       createdAt: new Date().toISOString(),
-      version: 7,
+      version: SAVE_VERSION.career,
     };
 
     // Garante archive do ano que fecha antes de limpar a season viva.

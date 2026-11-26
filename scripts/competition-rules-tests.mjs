@@ -19,6 +19,34 @@ const assert = (cond, message) => {
   if (!cond) throw new Error(message || 'assertion failed');
 };
 
+check('Série C descreve as três fases da CBF', () => {
+  const { sections } = buildCompetitionRules('C', 2026);
+  const texto = sections.flatMap(s => s.items).join(' | ');
+  assert(texto.includes('turno único'), `fase 1 em turno único: ${texto}`);
+  assert(texto.includes('19 rodadas'), `19 rodadas: ${texto}`);
+  assert(texto.includes('dois grupos de 4'), `grupos: ${texto}`);
+  assert(texto.includes('final em dois jogos'), `final: ${texto}`);
+  assert(texto.includes('27 rodadas no total'), `total: ${texto}`);
+});
+
+check('Série C não promete acesso por posição', () => {
+  const { sections } = buildCompetitionRules('C', 2026);
+  const acesso = sections.find(s => /Acesso/.test(s.heading));
+  assert(acesso, 'tem seção de acesso');
+  const texto = acesso.items.join(' ');
+  assert(acesso.items.length === 1, `só o texto do vencedor de grupo: ${texto}`);
+  assert(texto.includes('vencedor de cada grupo'), `vencedores de grupo: ${texto}`);
+  assert(!/\b4 primeiros\b/.test(texto), `não promete G4: ${texto}`);
+});
+
+check('Série C rebaixa os últimos da fase 1', () => {
+  const { sections } = buildCompetitionRules('C', 2026);
+  const rebaixamento = sections.find(s => /Rebaixamento/.test(s.heading));
+  const texto = rebaixamento.items.join(' ');
+  assert(texto.includes('FASE 1'), `rebaixamento vem da fase 1: ${texto}`);
+  assert(texto.includes('Z2'), `Z2: ${texto}`);
+});
+
 check('Série C 2026 rules mention 20 clubs and Z2', () => {
   const rules = buildCompetitionRules('C', 2026);
   const text = JSON.stringify(rules);

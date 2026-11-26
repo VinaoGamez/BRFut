@@ -107,6 +107,19 @@ export async function queuePlayerStatsMatch(log) {
   }
 }
 
+/** Read the durable local ledger without requiring a server or login. */
+export async function readQueuedPlayerStatsMatches(careerIds) {
+  let db;
+  try {
+    db = await openDb();
+    if (!db) return [];
+    const ids = new Set(careerIds);
+    const rows = await requestResult(db.transaction(STORE).objectStore(STORE).getAll());
+    return rows.filter(row => ids.has(row.careerId)).map(row => row.match);
+  } catch { return []; }
+  finally { db?.close(); }
+}
+
 export async function queuePlayerStatsHistory(logs) {
   const careerId = activeCareerId();
   if (!careerId || !Array.isArray(logs) || !logs.length) return 0;

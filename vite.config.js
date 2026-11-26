@@ -3,6 +3,14 @@ import { resolve } from 'node:path';
 
 const isGithubPages = process.env.GITHUB_PAGES === 'true';
 
+/**
+ * Páginas de laboratório no build.
+ *
+ * Ligado por padrão, porque `npm run dev` as serve da fonte e develop precisa
+ * delas. Desligado por quem empacota: ver `build.rollupOptions.input`.
+ */
+const buildLabs = process.env.BRFUT_BUILD_LABS === 'true' && !isGithubPages;
+
 /** Mercado ativo em todos os builds (local + GitHub Pages). */
 const enableTransfers = process.env.BRFUT_DISABLE_TRANSFERS !== 'true' && process.env.MATCHDAY_DISABLE_TRANSFERS !== 'true';
 /** Origem estadual / campeonato estadual — local e GitHub Pages (opt-out via env). */
@@ -76,9 +84,12 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         home: resolve(__dirname, 'home.html'),
-        ...(isGithubPages
-          ? {}
-          : {
+        // Só entram as duas telas do jogo. As páginas de laboratório são
+        // ferramenta de desenvolvimento e `npm run dev` as serve direto da
+        // fonte, sem build. Empacotá-las arrastava ~100 PNGs de card
+        // (~15,7 MB) que o jogo não usa em lugar nenhum.
+        ...(buildLabs
+          ? {
               cardLab: resolve(__dirname, 'card-lab.html'),
               cardPreview: resolve(__dirname, 'card-preview.html'),
               teamLab: resolve(__dirname, 'team-lab.html'),
@@ -86,7 +97,8 @@ export default defineConfig({
               seasonSummaryLab: resolve(__dirname, 'season-summary-lab.html'),
               transferHistoryCardLab: resolve(__dirname, 'transfer-history-card-lab.html'),
               storageDiag: resolve(__dirname, 'storage-diag.html'),
-            }),
+            }
+          : {}),
       },
     },
   },
@@ -95,12 +107,14 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: process.env.BRFUT_LOCAL_API_TARGET || 'https://api.brfut.com.br',
+        // Padrão: API local (py scripts/tester-server.py --port 5081). Para usar a
+        // API da Vercel no dev, defina BRFUT_LOCAL_API_TARGET=https://<projeto>.vercel.app
+        target: process.env.BRFUT_LOCAL_API_TARGET || 'http://127.0.0.1:5081',
         changeOrigin: false,
         secure: true,
         configure(proxy) {
           proxy.on('proxyReq', (proxyReq, req) => {
-            // A VPS deve emitir o cookie local (SameSite=Lax, sem Secure) para
+            // A API deve emitir o cookie local (SameSite=Lax, sem Secure) para
             // que o login funcione em http://localhost e no IP da rede local.
             proxyReq.setHeader('host', req.headers.host || '127.0.0.1:5080');
             proxyReq.setHeader('x-forwarded-proto', 'http');

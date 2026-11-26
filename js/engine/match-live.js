@@ -1,5 +1,5 @@
 import { MODULE_VERSIONS } from '../core/constants.js';
-import { conditionalGoalChanceFromXg, engineDominanceModifiers } from './match-tuning.js';
+import { conditionalGoalChanceFromXg, engineScoreDamp as defaultScoreDamp } from './match-tuning.js';
 import { ownGoalChance } from './match-clock.js';
 import { isFreeKickSpecialist, isPenaltySpecialist, penaltyGoalChanceRate, resolveShootoutKickOutcome, SPECIALIST_BONUS } from './player-generation.js';
 
@@ -30,7 +30,7 @@ export function createLiveMatchActions(deps) {
     influencePossession,
     engineTuning,
     engineBlowoutDamp,
-    engineScoreDamp = () => 1,
+    engineScoreDamp = defaultScoreDamp,
     engineFoulRisk,
     engineProgressiveFoulRisk,
     tacticFor,
@@ -208,13 +208,11 @@ export function createLiveMatchActions(deps) {
       matchLiveAudio?.playGoal?.();
       return;
     }
-    let goalChance=options.penalty || options.shootout ? penaltyGoalChance(options.penaltySkill ?? attackerData.penaltyTaking, keeperData.penaltySaving, { ...attackerData, penaltyTaking: options.penaltySkill ?? attackerData.penaltyTaking }, keeperData) : options.freeKick ? (freeKickSpecialist ? clamp(.20+(attackerData.freeKick-60)/220+(attackerData.freeKick-keeperData.positioning)/500+(current.attack-other.defense)/900+SPECIALIST_BONUS.freeKick,.18,.34) : clamp(.11+(attackerData.freeKick-65)/600+(attackerData.freeKick-keeperData.positioning)/650,.115,.15)) : (()=>{const xgBase=engineTuning.xgOpenBase??.118,xgDiv=engineTuning.xgOpenDivisor??210,xgCeil=engineTuning.xgOpenCeil??.27,xgFloor=engineTuning.xgOpenFloor??.062,ovrDiv=engineTuning.xgOverallGapDivisor??720;const xg=clamp(xgBase+(finishing+current.attack-keeperData.reflexes-other.defense)/xgDiv+(current.overall-other.overall)/ovrDiv+rnd(-.028,.028),xgFloor,xgCeil);return conditionalGoalChanceFromXg(xg,onTargetChance);})();
+    let goalChance=options.penalty || options.shootout ? penaltyGoalChance(options.penaltySkill ?? attackerData.penaltyTaking, keeperData.penaltySaving, { ...attackerData, penaltyTaking: options.penaltySkill ?? attackerData.penaltyTaking }, keeperData) : options.freeKick ? (freeKickSpecialist ? clamp(.20+(attackerData.freeKick-60)/220+(attackerData.freeKick-keeperData.positioning)/500+(current.attack-other.defense)/900+SPECIALIST_BONUS.freeKick,.18,.34) : clamp(.11+(attackerData.freeKick-65)/600+(attackerData.freeKick-keeperData.positioning)/650,.115,.15)) : (()=>{const xgBase=engineTuning.xgOpenBase??.118,xgDiv=engineTuning.xgOpenDivisor??210,xgCeil=engineTuning.xgOpenCeil??.27,xgFloor=engineTuning.xgOpenFloor??.062;const xg=clamp(xgBase+(finishing+current.attack-keeperData.reflexes-other.defense)/xgDiv+rnd(-.028,.028),xgFloor,xgCeil);return conditionalGoalChanceFromXg(xg,onTargetChance);})();
     if(!options.penalty&&!options.freeKick&&!options.corner&&!options.shootout){
-      const gap=current.overall-other.overall;
       const hg=(getGoals()?.home||[]).length, ag=(getGoals()?.away||[]).length;
       const lead=side==='home'?hg-ag:ag-hg;
-      const dom=engineDominanceModifiers({gap,lead,ownShots:s.shots,rivalShots:otherStats.shots,minute:getMinute()});
-      goalChance*=engineBlowoutDamp(gap,lead)*engineScoreDamp(lead)*dom.conversionBoost;
+      goalChance*=engineScoreDamp(lead);
     }
     const scores = forcedOutcome
       ? forcedOutcome === 'goal'
@@ -277,11 +275,7 @@ export function createLiveMatchActions(deps) {
     const creatorName=playerFor(side,'pass'), creator=actorData(side,creatorName);
     const attackerName=playerFor(side,'shot'), attacker=actorData(side,attackerName);
     const defenderName=playerFor(otherSide,'tackle'), defender=actorData(otherSide,defenderName);
-    const gap=current.overall-other.overall;
-    const hg=(getGoals()?.home||[]).length, ag=(getGoals()?.away||[]).length;
-    const lead=side==='home'?hg-ag:ag-hg;
-    const dom=engineDominanceModifiers({gap,lead,ownShots:s.shots,rivalShots:o.shots,minute:getMinute()});
-    const creation = clamp((engineTuning.creationBase+(creator.passing*.46+creator.playmaking*.34+attacker.dribble*.12+attacker.speed*.08-defender.marking*.45-defender.tackling*.45)/130+(current.passing-other.defense)/130+(s.momentum-o.momentum)/100+openingBoost)*dom.creationBoost,.22,.92);
+    const creation = clamp((engineTuning.creationBase+(creator.passing*.46+creator.playmaking*.34+attacker.dribble*.12+attacker.speed*.08-defender.marking*.45-defender.tackling*.45)/130+(current.passing-other.defense)/130+(s.momentum-o.momentum)/100+openingBoost),.22,.92);
     s.attacks++;
     if(random() > creation){
       // O futebol brasileiro tem uma taxa alta de interrupções. A falta nasce

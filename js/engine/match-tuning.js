@@ -1,5 +1,9 @@
 import { clamp } from '../ui/dom.js';
 
+/** OVR is a bounded collective-control hint, never an extra finishing skill. */
+export const overallControlContribution = (own, rival) =>
+  clamp(((Number(own) || 0) - (Number(rival) || 0)) * .075, -1.5, 1.5);
+
 /** Parâmetros calibrados do motor de partida (P1/P2). */
 export const ENGINE_TUNING = {
   foulRiskBase: 0.54,
@@ -54,7 +58,6 @@ export const ENGINE_TUNING = {
   xgOpenDivisor: 198,
   xgOpenCeil: 0.275,
   xgOpenFloor: 0.07,
-  xgOverallGapDivisor: 500,
   liveShotAttackBoost: 8,
   liveShotCreationBoost: 8,
   liveCornerAttackBoost: 10,

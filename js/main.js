@@ -1,4 +1,5 @@
 import './security/https-upgrade.js';
+import './ui/desktop-updates.js';
 import './security/tester-hardening.js';
 import '../css/release-notes-viewer.css';
 import '../css/live-volume.css';

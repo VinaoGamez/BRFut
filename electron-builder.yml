@@ -1,0 +1,59 @@
+# Empacotamento desktop do BR Fut.
+#
+# So o dist/ e o electron/ entram no pacote. O repositorio tem 167 MB — com
+# node_modules, fontes e paginas de laboratorio — e nada disso deve ir para o
+# instalador.
+
+appId: br.com.brfut.desktop
+productName: BR Fut
+copyright: BR Fut
+
+directories:
+  output: release
+  buildResources: electron/build
+
+files:
+  - dist/**/*
+  - electron/main.cjs
+  - electron/preload.cjs
+  - electron/updates.cjs
+  - electron/installer.nsh
+  - docs/releases/*.md
+  - package.json
+
+# Chromium ja traz o asar; nao vale zipar 63 MB de PNG de novo.
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: BR-Fut-${version}-instalador.${ext}
+  # Icone proprio: sem isso o Windows usa o icone padrao do Electron.
+  icon: electron/build/icon.ico
+  # O passo de assinar/editar o executavel baixa o cache winCodeSign, que so
+  # descompacta com privilegio de symlink — bloqueado sem Developer Mode ou
+  # administrador. Como o app nao e assinado, esse passo e desnecessario.
+  signAndEditExecutable: false
+
+nsis:
+  # Assistente em vez de instalacao silenciosa: o usuario escolhe a pasta e
+  # desinstala pelo Painel de Controle.
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  # Lifecycle nativo do NSIS; customInstall limpa apenas entradas duplicadas.
+  include: electron/installer.nsh
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: BR Fut
+  installerLanguages:
+    - pt-BR
+  language: '1026'
+  displayLanguageSelector: false
+  deleteAppDataOnUninstall: false
+
+# Sem repositorio, sem updates automaticos e sem download de codigo em tempo de
+# execucao: o instalador e a fonte, e o que roda e o que foi empacotado.
+publish: null

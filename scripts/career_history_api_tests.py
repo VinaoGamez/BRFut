@@ -5,11 +5,15 @@ from brfut_api.career_history import get_club_seasons, get_manager_history, get_
 from brfut_api.player_stats import get_club_history, get_manager_match_history, get_match_manifest, put_match_batch
 from brfut_api.state_leagues import get_state_leagues, put_state_leagues
 from brfut_api.auth import ApiError
+from brfut_api import db
 
 
 def main() -> None:
     with TemporaryDirectory() as temporary:
         root = Path(temporary)
+        db.reset_for_tests()
+        if db.backend() == 'postgres':
+            db.drop_all_for_tests(root)
         assert get_state_leagues(root, 'tester', 'slot-1', 2028)['snapshot'] is None
         match = {
             'fixtureId': '2028:C:1:A:B', 'season': 2028, 'competitionId': 'C',

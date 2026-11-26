@@ -15,6 +15,7 @@ import {
   findClubDivision,
 } from './career-club-replacement.js';
 import { applyWorldRosters, collectWorldRosters, stampWorldPlayers } from './world-rosters.js';
+import { ensurePlayerOverall } from './player-overall.js';
 
 const FORMATIONS_FOR_CLUBS = ['4-3-3', '4-4-2', '3-5-2', '4-2-3-1', '4-1-4-1', '5-3-2', '4-3-1-2', '3-4-3'];
 const FIRST_NAMES = ['Adriano', 'André', 'Arthur', 'Breno', 'Bruno', 'Caio', 'Carlos', 'Cristian', 'Daniel', 'Davi', 'Diego', 'Douglas', 'Eduardo', 'Enzo', 'Erick', 'Fábio', 'Felipe', 'Fernando', 'Gabriel', 'Guilherme', 'Gustavo', 'Heitor', 'Henrique', 'Hugo', 'Igor', 'Ítalo', 'João', 'Kaique', 'Leandro', 'Leonardo', 'Lucas', 'Luiz', 'Marcelo', 'Marcos', 'Matheus', 'Miguel', 'Murilo', 'Nathan', 'Nicolas', 'Otávio', 'Paulo', 'Pedro', 'Rafael', 'Renan', 'Rodrigo', 'Samuel', 'Thiago', 'Vitor', 'Victor', 'Wesley'];
@@ -51,6 +52,7 @@ export function bootstrapCareerClubs({
   useCareerOriginFlow,
   careerHostMeta,
   careerPyramidFreshlyGenerated,
+  officialBrazilWorld,
   gameRandom,
   int,
   initialEnvironmentRanges,
@@ -154,6 +156,7 @@ export function bootstrapCareerClubs({
           victimClub: careerHostMeta.hostName,
           startDivision: savedNewGame.targetDivision || userDivision,
           cascadeSeed: savedNewGame.seed || 0,
+          protectedNames: Object.values(officialBrazilWorld?.divisionTeams || {}).flat(),
         });
         if (cascadeFix.applied) {
           Object.keys(divisionRules).forEach(division => {
@@ -243,7 +246,7 @@ export function bootstrapCareerClubs({
     }
     let userSetPieceRepaired = 0;
     user.roster.forEach(player => {
-      if (sanitizeSetPieceForDivision(player, user.division || userDivision)) userSetPieceRepaired += 1;
+      ensurePlayerOverall(player);
     });
     user._setPieceRepaired = userSetPieceRepaired;
     assignSquadJerseyNumbers(user.roster);
@@ -321,7 +324,8 @@ export function bootstrapCareerClubs({
       savedNewGame.worldRosters = collectWorldRosters(clubs, { skipClub: userClub, merge: savedNewGame.worldRosters || {} });
       if (Array.isArray(clubs[userClub]?.roster)) savedNewGame.userRoster = clubs[userClub].roster;
       persistCareer({ ...savedNewGame });
-    } else if (userDivisionMembershipRepaired) {
+    } else if (userDivisionMembershipRepaired || !Array.isArray(savedNewGame.userRoster)) {
+      savedNewGame.userRoster = clubs[userClub]?.roster;
       persistCareer({ ...savedNewGame });
     }
   }

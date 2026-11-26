@@ -304,6 +304,21 @@ body.transfer-window-alert-open { overflow: hidden; }
   box-sizing: border-box;
 }
 
+/* Busca é um formulário editável, inclusive em builds desktop com atalhos globais. */
+.transfers-field input {
+  cursor: text;
+  caret-color: #b6ff38;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.transfers-field input:focus,
+.transfers-field select:focus {
+  outline: none;
+  border-color: #63d9ff;
+  box-shadow: 0 0 0 1px #63d9ff66;
+}
+
 .transfers-search-options {
   display: flex;
   flex-wrap: wrap;

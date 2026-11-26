@@ -117,6 +117,7 @@ export function createChampionshipPageFeature(deps) {
     knockoutShootoutLabel,
     recopaNationalEmptyMessage,
     serieCClubsForSeason,
+    getSerieCView,
     leagueClassificationZone,
     serieCRelegationZone,
     standingsRowsForDisplay,
@@ -159,6 +160,8 @@ export function createChampionshipPageFeature(deps) {
   let pageStateFixturesOpen = false;
   let pageSerieDGroup = Math.max(0, getUserSerieDGroupIndex());
   let pageSerieDMode = 'groups';
+  // Série C tem três fases com tabelas próprias (fase 1, grupos, final).
+  let pageSerieCPhase = 1;
   let pageCupPhase = 1;
   let pageSerieDPhase = 1;
   let pageWorldCupGroup = 0;
@@ -1138,6 +1141,18 @@ export function createChampionshipPageFeature(deps) {
       subText = 'COMPETIÇÃO NACIONAL';
       titleText = `BRASILEIRÃO SÉRIE ${pageCompetition}`;
       if (competition?.format) subText = `${clubsCount} CLUBES · PONTOS CORRIDOS`;
+      if (pageCompetition === 'C') {
+        const phases = (getSerieCView?.()?.available || [1]);
+        pageSerieCPhase = phases.includes(pageSerieCPhase) ? pageSerieCPhase : phases[0];
+        const label = { 1: 'FASE 1', 2: 'GRUPOS', 3: 'FINAL' }[pageSerieCPhase];
+        const index = phases.indexOf(pageSerieCPhase);
+        subText = phases.length > 1
+          ? `${clubsCount} CLUBES · ${label}`
+          : `${clubsCount} CLUBES · TURNO ÚNICO`;
+        titleText = `BRASILEIRÃO SÉRIE C · ${label}`;
+        canPrev = index > 0;
+        canNext = index < phases.length - 1;
+      }
     }
 
     if (sub) sub.textContent = subText;
@@ -1347,6 +1362,37 @@ export function createChampionshipPageFeature(deps) {
       }
     } else {
       if (head) head.innerHTML = '<span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
+      const tableRowHtml = (row, pos, zone) => `<div class="league-row ${zone} ${row.club === userClub ? 'highlight' : ''}" data-club="${row.club}" role="button" tabindex="0"><span>${pos}</span><span class="club-link">${row.club}</span><span>${row.played}</span><span>${row.wins}</span><span>${row.draws}</span><span>${row.losses}</span><span>${row.goalDiff >= 0 ? '+' : ''}${row.goalDiff}</span><span>${row.points}</span></div>`;
+
+      // Série C: cada fase tem a sua tabela, e a legenda muda junto.
+      if (pageCompetition === 'C' && pageSerieCPhase > 1) {
+        const view = getSerieCView?.() || {};
+        if (pageSerieCPhase === 2) {
+          const tables = (view.groups || [])
+            .map(group => {
+              const rows = (group.rows || []).map((row, index) => tableRowHtml(row, index + 1, index === 0 ? 'promotion' : '')).join('');
+              if (!rows) return '';
+              return `<div class="championship-page-standings-block"><h4 class="championship-page-group-title">${group.label}</h4>${rows}</div>`;
+            })
+            .join('');
+          body.innerHTML = tables
+            + '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>1º de cada grupo · Acesso à Série B</span></div>'
+            || '<div class="championship-page-empty">Os grupos são formados ao fim da primeira fase.</div>';
+        } else {
+          const jogos = (view.finalGames || []).map(game => {
+            const placar = game.completed ? `${game.homeGoals ?? 0} × ${game.awayGoals ?? 0}` : '×';
+            return `<div class="league-row"><span>${game.leg === 'VOLTA' ? 'VOLTA' : 'IDA'}</span><span class="club-link">${game.home}</span><span>${placar}</span><span class="club-link">${game.away}</span></div>`;
+          }).join('');
+          const campeao = view.champion
+            ? `<div class="championship-page-zone-legend"><span>★ Campeão: ${view.champion}</span></div>`
+            : '';
+          body.innerHTML = (jogos || '<div class="championship-page-empty">A final começa ao fim dos grupos.</div>') + campeao;
+        }
+        setChampionshipPagePickerOpen(false);
+        setChampionshipPageStateTierPickerOpen(false);
+        return;
+      }
+
       const rows = ['A', 'B', 'C'].includes(pageCompetition)
         ? standingsRowsForDisplay(pageCompetition)
         : pageCompetition === 'D'
@@ -1357,14 +1403,16 @@ export function createChampionshipPageFeature(deps) {
         const zone = pageCompetition === 'D'
           ? (index < 4 ? 'promotion' : '')
           : leagueClassificationZone(pageCompetition, index, rows.length);
-        return `<div class="league-row ${zone} ${row.club === userClub ? 'highlight' : ''}" data-club="${row.club}" role="button" tabindex="0"><span>${pos}</span><span class="club-link">${row.club}</span><span>${row.played}</span><span>${row.wins}</span><span>${row.draws}</span><span>${row.losses}</span><span>${row.goalDiff >= 0 ? '+' : ''}${row.goalDiff}</span><span>${row.points}</span></div>`;
+        return tableRowHtml(row, pos, zone);
       }).join('') || '<div class="championship-page-empty">Sem classificação disponível.</div>';
+      // Na Série C quem avança aos grupos são os 8 primeiros — não há acesso
+      // direto. A promoção para a B sai dos vencedores de grupo.
       const zoneLegend = pageCompetition === 'A'
         ? '<div class="championship-page-zone-legend"><span><i class="relegation" aria-hidden="true"></i>Z4 · Rebaixamento</span></div>'
         : pageCompetition === 'B'
           ? '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>G4 · Acesso</span><span><i class="relegation" aria-hidden="true"></i>Z4 · Rebaixamento</span></div>'
           : pageCompetition === 'C'
-            ? `<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>G4 · Acesso</span><span><i class="relegation" aria-hidden="true"></i>Z${serieCRelegationZone} · Rebaixamento</span></div>`
+            ? `<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>G8 · Avançam aos grupos</span><span><i class="relegation" aria-hidden="true"></i>Z${serieCRelegationZone} · Rebaixamento</span></div>`
             : pageCompetition === 'D'
               ? `<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>4 primeiros · Avançam do grupo</span>${isSerieDKnockoutUiActive() && pageSerieDGroup === Math.max(0, serieDGroups.length - 1) ? '<span>› Mata-mata disponível</span>' : ''}</div>`
               : '';
@@ -1533,6 +1581,11 @@ export function createChampionshipPageFeature(deps) {
       }
     } else if (pageCompetition === 'CUP') {
       pageCupPhase = clamp(pageCupPhase + step, 1, cupPhaseDefinitions.length);
+    } else if (pageCompetition === 'C') {
+      const phases = getSerieCView?.()?.available || [1];
+      const index = phases.indexOf(pageSerieCPhase);
+      const next = clamp((index < 0 ? 0 : index) + step, 0, phases.length - 1);
+      pageSerieCPhase = phases[next];
     } else if (pageCompetition === 'D') {
       const lastGroup = Math.max(0, serieDGroups.length - 1);
       const serieDKnockoutPhaseDefs = getSerieDKnockoutPhaseDefs();

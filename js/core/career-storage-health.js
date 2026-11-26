@@ -8,7 +8,7 @@ import {
   isSlotBundleKey,
 } from './constants.js';
 import { readJson } from './save.js';
-import { readCareerIndex, getSlotById, copyActiveKeysToBundle, copyBundleToActiveKeys, preferActiveOverStaleBundle } from './career-slot-manager.js';
+import { readCareerIndex, getActiveSlotId, getSlotById, copyActiveKeysToBundle, copyBundleToActiveKeys, preferActiveOverStaleBundle } from './career-slot-manager.js';
 
 function readRaw(key) {
   try {
@@ -25,6 +25,7 @@ function payloadChars(key) {
 
 /** Há objeto de carreira jogável (ativo, bundle ou legado). */
 export function hasPlayableCareerSave(slotId = null) {
+  if (slotId && slotId !== getActiveSlotId()) return !!readJson(slotBundleKeys(slotId).career, null);
   if (readJson(SAVE_KEYS.career, null)) return true;
   if (readJson(LEGACY_SAVE_KEYS.career, null)) return true;
 
@@ -76,21 +77,20 @@ export function repairSlotFromLocalStorage(slotId, { forceBundleCopy = true } = 
   if (!slotId) return false;
 
   const bundle = slotBundleKeys(slotId);
-  if (readJson(bundle.career, null)) {
-    preferActiveOverStaleBundle(slotId);
-    copyBundleToActiveKeys(slotId);
-    return true;
+  const bundleCareer = readJson(bundle.career, null);
+  const activeCareer = readJson(SAVE_KEYS.career, null);
+  if (bundleCareer) {
+    const sameCareer = getActiveSlotId() === slotId && activeCareer?.seed === bundleCareer.seed;
+    if (sameCareer) preferActiveOverStaleBundle(slotId);
+    return copyBundleToActiveKeys(slotId, { preserveNewer: sameCareer, clearMissing: !sameCareer });
   }
 
-  const activeCareer = readJson(SAVE_KEYS.career, null);
-  if (activeCareer) {
-    copyActiveKeysToBundle(slotId, { force: forceBundleCopy });
-    copyBundleToActiveKeys(slotId);
-    return true;
+  if (activeCareer && getActiveSlotId() === slotId) {
+    return copyActiveKeysToBundle(slotId, { force: forceBundleCopy });
   }
 
   const legacyCareer = readJson(LEGACY_SAVE_KEYS.career, null);
-  if (legacyCareer) {
+  if (legacyCareer && getActiveSlotId() === slotId) {
     try {
       localStorage.setItem(SAVE_KEYS.career, JSON.stringify(legacyCareer));
     } catch {
@@ -102,6 +102,8 @@ export function repairSlotFromLocalStorage(slotId, { forceBundleCopy = true } = 
   }
 
   const manifest = getSlotById(slotId);
+  // Club names are not identities: two independent careers can use the same club.
+  if (manifest?.seed == null) return false;
   const clubHint = manifest?.clubName && manifest.clubName !== '—' ? manifest.clubName : null;
 
   try {
@@ -110,6 +112,7 @@ export function repairSlotFromLocalStorage(slotId, { forceBundleCopy = true } = 
       if (!key || !isSlotBundleKey(key) || !key.endsWith('-career')) continue;
       const career = readJson(key, null);
       if (!career?.clubName) continue;
+      if (career.seed !== manifest.seed) continue;
       if (clubHint && career.clubName !== clubHint && career.foundingClubName !== clubHint) continue;
       const match = key.match(/^brfut-slot-(.+)-career$/);
       if (!match) continue;

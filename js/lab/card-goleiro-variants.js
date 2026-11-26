@@ -6,22 +6,22 @@
 
 
 
-import art01 from '../../assets/cards/goleiro/card-goleiro-01-sean-murphy.png';
+import art01 from '../../assets/cards/goleiro/card-goleiro-01-sean-murphy.webp';
 
-import art02 from '../../assets/cards/goleiro/card-goleiro-02-milan-petrovic.png';
+import art02 from '../../assets/cards/goleiro/card-goleiro-02-milan-petrovic.webp';
 
-import art02Clean from '../../assets/cards/goleiro/card-goleiro-02-milan-petrovic-clean.png';
+import art02Clean from '../../assets/cards/goleiro/card-goleiro-02-milan-petrovic-clean.webp';
 
-import art03 from '../../assets/cards/goleiro/card-goleiro-03-yann-dubois.png';
+import art03 from '../../assets/cards/goleiro/card-goleiro-03-yann-dubois.webp';
 
-import art04 from '../../assets/cards/goleiro/card-goleiro-04-connor-frost.png';
+import art04 from '../../assets/cards/goleiro/card-goleiro-04-connor-frost.webp';
 
-import art05 from '../../assets/cards/goleiro/card-goleiro-05-rafael-santos.png';
-import art06 from '../../assets/cards/goleiro/card-goleiro-06-mergulho-teal.png';
-import art07 from '../../assets/cards/goleiro/card-goleiro-07-min-jun-park.png';
-import art08 from '../../assets/cards/goleiro/card-goleiro-08-mateo-vega.png';
-import art09 from '../../assets/cards/goleiro/card-goleiro-09-daichi-mori.png';
-import art10 from '../../assets/cards/goleiro/card-goleiro-10-pega-alta-azul.png';
+import art05 from '../../assets/cards/goleiro/card-goleiro-05-rafael-santos.webp';
+import art06 from '../../assets/cards/goleiro/card-goleiro-06-mergulho-teal.webp';
+import art07 from '../../assets/cards/goleiro/card-goleiro-07-min-jun-park.webp';
+import art08 from '../../assets/cards/goleiro/card-goleiro-08-mateo-vega.webp';
+import art09 from '../../assets/cards/goleiro/card-goleiro-09-daichi-mori.webp';
+import art10 from '../../assets/cards/goleiro/card-goleiro-10-pega-alta-azul.webp';
 
 export const GOLEIRO_CARD_VARIANTS = [
   { id: 'gol-01', label: '01 · Defesa esquerda', art: art01 },

@@ -2,16 +2,16 @@
  * Banco de artes PNG — zagueiro (693×1024).
  */
 
-import art01 from '../../assets/cards/zagueiro/card-zagueiro-01.png';
-import art02 from '../../assets/cards/zagueiro/card-zagueiro-02.png';
-import art05 from '../../assets/cards/zagueiro/card-zagueiro-05.png';
-import art06 from '../../assets/cards/zagueiro/card-zagueiro-06.png';
-import art07 from '../../assets/cards/zagueiro/card-zagueiro-07.png';
-import art10 from '../../assets/cards/zagueiro/card-zagueiro-10.png';
-import art11 from '../../assets/cards/zagueiro/card-zagueiro-11.png';
-import art12 from '../../assets/cards/zagueiro/card-zagueiro-12.png';
-import art13 from '../../assets/cards/zagueiro/card-zagueiro-13.png';
-import art14 from '../../assets/cards/zagueiro/card-zagueiro-14.png';
+import art01 from '../../assets/cards/zagueiro/card-zagueiro-01.webp';
+import art02 from '../../assets/cards/zagueiro/card-zagueiro-02.webp';
+import art05 from '../../assets/cards/zagueiro/card-zagueiro-05.webp';
+import art06 from '../../assets/cards/zagueiro/card-zagueiro-06.webp';
+import art07 from '../../assets/cards/zagueiro/card-zagueiro-07.webp';
+import art10 from '../../assets/cards/zagueiro/card-zagueiro-10.webp';
+import art11 from '../../assets/cards/zagueiro/card-zagueiro-11.webp';
+import art12 from '../../assets/cards/zagueiro/card-zagueiro-12.webp';
+import art13 from '../../assets/cards/zagueiro/card-zagueiro-13.webp';
+import art14 from '../../assets/cards/zagueiro/card-zagueiro-14.webp';
 
 export const ZAGUEIRO_CARD_VARIANTS = [
   { id: 'zag-01', label: '01 · Marcação azul', art: art01 },

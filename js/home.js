@@ -1,11 +1,11 @@
 import './security/https-upgrade.js';
+import './ui/desktop-updates.js';
 import './security/tester-hardening.js';
 import { AUTH_REQUIRED, BUILD_VERSION, SAVE_KEYS, SAVE_RESET_EPOCH, SAVE_RESET_MARKER_KEY, BRFUT_API_ORIGIN, SITE_MAINTENANCE } from './core/constants.js';
 import { SPONSOR_EXTERNAL_LINKS } from './core/sponsor-links.js';
 import { showUpdateAlertIfNeeded } from './ui/update-alert.js';
 import { showSaveResetLoginAlert } from './ui/save-reset-login-alert.js';
 import { createTesterHubFeature } from './feature/tester-hub/index.js';
-import { fetchPlayerStats, probeBackend } from './core/storage-api.js';
 import { ensureAccountModals } from './feature/account/inject-modals.js';
 import { mountAccountPanel } from './feature/account/index.js';
 import { endBrowserSession, getAuthToken } from './core/storage-api.js';
@@ -25,60 +25,29 @@ import {
   recoverCareerSlotsAfterHydration,
 } from './core/career-activate.js';
 import { hasPlayableCareerSave } from './core/career-storage-health.js';
-
-function renderMaintenanceShell() {
-  document.body.classList.add('home-maintenance-mode');
-  document.title = 'BR Fut · Manutenção';
-  applyHomeMeta();
-  const banner = document.getElementById('homeMaintenanceMsg');
-  if (banner) {
-    banner.textContent = SITE_MAINTENANCE.message;
-    banner.hidden = false;
-  }
-  initSponsorRail();
-}
 import { mountCareerSlotsUi, lastSaveHintText } from './feature/career-slots/index.js';
 
+// Bootstrap restored from a0e1392: bf25779 had removed all button bindings.
 const SPONSOR_ORDER = [
-  'tekno-cursos',
-  'nubanco',
-  'petrobraz',
-  'magazine-luizao',
-  'ifome',
-  'betregional',
-  'picpaga',
-  'sheinpee',
-  'amazonia-com',
-  'googol',
-  'metagol',
-  'starbox-coffee',
-  'havaianinhas',
-  'naike',
-  'pumba-sport',
-  'perdigol',
-  'poweraid',
-  'playstacao',
-  'fedexpressao',
+  'tekno-cursos', 'nubanco', 'petrobraz', 'magazine-luizao', 'ifome',
+  'betregional', 'picpaga', 'sheinpee', 'amazonia-com', 'googol', 'metagol',
+  'starbox-coffee', 'havaianinhas', 'naike', 'pumba-sport', 'perdigol',
+  'poweraid', 'playstacao', 'fedexpressao',
 ];
 
 const formatUpdateTime = value => {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Sao_Paulo',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
   });
 };
 
 function applyHomeMeta() {
   const updateEl = document.getElementById('lastUpdate');
   if (updateEl) {
-    const buildMeta = document.querySelector('meta[name="build-time"]');
-    const stamp = buildMeta?.content || new Date().toISOString();
+    const stamp = document.querySelector('meta[name="build-time"]')?.content || new Date().toISOString();
     updateEl.textContent = `Última atualização: ${formatUpdateTime(stamp)}`;
   }
   const buildEl = document.getElementById('homeBuildVersion');
@@ -89,36 +58,22 @@ function initSponsorRail() {
   const track = document.getElementById('homeSponsorsTrack');
   const viewport = track?.parentElement;
   if (!track || !viewport) return;
-
   const logos = SPONSOR_ORDER.map(slug => ({
-    slug,
     url: SPONSOR_LOGO_URLS[slug],
     href: SPONSOR_EXTERNAL_LINKS[slug] || '',
     label: slug.replace(/-/g, ' '),
   })).filter(item => item.url);
-
   if (!logos.length) return;
-
-  const slotMarkup = item => {
+  track.innerHTML = [...logos, ...logos].map(item => {
     const img = `<img src="${item.url}" alt="${item.label}" width="72" height="72" decoding="async">`;
-    if (item.href) {
-      return `<a class="home-sponsor-slot" href="${item.href}" target="_blank" rel="noopener noreferrer" title="${item.label}" aria-label="Abrir site de ${item.label}">${img}</a>`;
-    }
-    return `<span class="home-sponsor-slot" title="${item.label}">${img}</span>`;
-  };
-
-  const sequence = [...logos, ...logos];
-  track.innerHTML = sequence.map(slotMarkup).join('');
-
+    return item.href
+      ? `<a class="home-sponsor-slot" href="${item.href}" target="_blank" rel="noopener noreferrer" title="${item.label}" aria-label="Abrir site de ${item.label}">${img}</a>`
+      : `<span class="home-sponsor-slot" title="${item.label}">${img}</span>`;
+  }).join('');
   const gap = 10;
-  const visible = 4;
-  let index = 0;
-  let slotSize = 0;
-  let timer = 0;
-
+  let index = 0, slotSize = 0, timer = 0;
   const measure = () => {
-    const width = viewport.clientWidth;
-    slotSize = (width - gap * (visible - 1)) / visible;
+    slotSize = (viewport.clientWidth - gap * 3) / 4;
     track.querySelectorAll('.home-sponsor-slot').forEach(slot => {
       slot.style.flex = `0 0 ${slotSize}px`;
       slot.style.width = `${slotSize}px`;
@@ -126,42 +81,34 @@ function initSponsorRail() {
     });
     track.style.transform = `translate3d(-${index * (slotSize + gap)}px,0,0)`;
   };
-
   const step = () => {
     index += 1;
     track.classList.remove('is-resetting');
     track.style.transform = `translate3d(-${index * (slotSize + gap)}px,0,0)`;
-    if (index >= logos.length) {
-      window.setTimeout(() => {
-        track.classList.add('is-resetting');
-        index = 0;
-        track.style.transform = 'translate3d(0,0,0)';
-      }, 560);
-    }
+    if (index >= logos.length) window.setTimeout(() => {
+      track.classList.add('is-resetting');
+      index = 0;
+      track.style.transform = 'translate3d(0,0,0)';
+    }, 560);
   };
-
   measure();
   window.addEventListener('resize', measure);
   timer = window.setInterval(step, 2800);
-
-  document.addEventListener(
-    'visibilitychange',
-    () => {
-      if (document.hidden) {
-        window.clearInterval(timer);
-        timer = 0;
-      } else if (!timer) {
-        timer = window.setInterval(step, 2800);
-      }
-    },
-    { passive: true },
-  );
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { window.clearInterval(timer); timer = 0; }
+    else if (!timer) timer = window.setInterval(step, 2800);
+  }, { passive: true });
 }
 
 if (SITE_MAINTENANCE.enabled) {
   purgeAllCareerStorage();
   endBrowserSession();
-  renderMaintenanceShell();
+  document.body.classList.add('home-maintenance-mode');
+  document.title = 'BR Fut · Manutenção';
+  applyHomeMeta();
+  const banner = document.getElementById('homeMaintenanceMsg');
+  if (banner) { banner.textContent = SITE_MAINTENANCE.message; banner.hidden = false; }
+  initSponsorRail();
 } else {
   applySaveResetMigration(SAVE_RESET_EPOCH, SAVE_RESET_MARKER_KEY);
   runCareerBootMigration();
@@ -169,160 +116,60 @@ if (SITE_MAINTENANCE.enabled) {
 
 (() => {
   if (SITE_MAINTENANCE.enabled) return;
-
   ensureAccountModals();
-  showUpdateAlertIfNeeded(BUILD_VERSION);
+  void showUpdateAlertIfNeeded(BUILD_VERSION);
   const $ = selector => document.querySelector(selector);
-
   applyHomeMeta();
-
+  const continueBtn = $('#continueBtn');
+  const newGameBtn = $('#newGameBtn');
+  const loadCareerBtn = $('#loadCareerBtn');
+  const lastSaveHint = $('#lastSaveHint');
+  const loginBtn = $('#loginBtn');
+  const storageHint = $('#homeStorageHint');
   const hasCareer = () => {
-    try {
-      return !!localStorage.getItem(SAVE_KEYS.career) || careerSlots.hasAnySlot();
-    } catch {
-      return false;
-    }
+    try { return !!localStorage.getItem(SAVE_KEYS.career) || careerSlots.hasAnySlot(); }
+    catch { return false; }
   };
-
   const goToGame = ({ novo = false } = {}) => {
     const url = new URL('index.html', location.href);
     if (novo) url.searchParams.set('novo', '1');
     markSkipSessionEndOnce();
     location.href = `${url.pathname}${url.search}`;
   };
-
-  let authUiState = {
-    loggedIn: false,
-    hasBackend: AUTH_REQUIRED || !!BRFUT_API_ORIGIN,
-  };
-
+  let authUiState = { loggedIn: false, hasBackend: AUTH_REQUIRED || !!BRFUT_API_ORIGIN };
   const careerSlots = mountCareerSlotsUi({
     onSlotsChanged: () => syncCareerActions(authUiState),
     onStartSlot: () => goToGame(),
     onNewCareer: () => goToGame({ novo: true }),
   });
-
   const syncCareerActions = (state = authUiState) => {
     const { loggedIn = null, hasBackend = null } = state || {};
     const last = careerSlots.getLastPlayedSlot();
     const lastPlayable = last ? hasPlayableCareerSave(last.id) : false;
-    const hasSlot = careerSlots.hasAnySlot();
-    // No build público, indisponibilidade da API nunca libera os saves locais.
     const requiresLogin = AUTH_REQUIRED || hasBackend === true;
-    const showCareer = hasSlot && (!requiresLogin || loggedIn === true);
-
+    const showCareer = careerSlots.hasAnySlot() && (!requiresLogin || loggedIn === true);
     continueBtn?.classList.toggle('hidden', !showCareer || !last || !lastPlayable);
-    loadCareerBtn?.classList.toggle('hidden', !showCareer && requiresLogin);
-    if (requiresLogin) {
-      loadCareerBtn?.classList.toggle('hidden', !loggedIn);
-    }
-
-    if (continueBtn && last) {
-      continueBtn.href = 'index.html';
-    }
+    loadCareerBtn?.classList.toggle('hidden', requiresLogin && !loggedIn);
+    if (continueBtn && last) continueBtn.href = 'index.html';
     if (lastSaveHint) {
-      if (last && showCareer && lastPlayable) {
-        lastSaveHint.textContent = lastSaveHintText(last);
-        lastSaveHint.classList.remove('hidden');
-      } else if (last && showCareer && !lastPlayable) {
-        lastSaveHint.textContent =
-          'Não foi possível restaurar esta carreira. Tente novamente ou inicie uma nova carreira.';
-        lastSaveHint.classList.remove('hidden');
-      } else {
-        lastSaveHint.textContent = '';
-        lastSaveHint.classList.add('hidden');
-      }
+      lastSaveHint.textContent = last && showCareer
+        ? lastPlayable ? lastSaveHintText(last) : 'Não foi possível restaurar esta carreira. Tente novamente ou inicie uma nova carreira.'
+        : '';
+      lastSaveHint.classList.toggle('hidden', !(last && showCareer));
     }
   };
-
-  const continueBtn = $('#continueBtn');
-  const newGameBtn = $('#newGameBtn');
-  const loadCareerBtn = $('#loadCareerBtn');
-  const lastSaveHint = $('#lastSaveHint');
-  const loginBtn = $('#loginBtn');
-  const careerHint = $('#careerHint');
-  const storageHint = $('#homeStorageHint');
-  const playerStatsEl = $('#homePlayerStats');
-  let playerStatsTimer = 0;
-
-  /**
-   * Indicador promocional da comunidade: uma base de vitrine discreta somada
-   * aos números reais da API. Não deve ser apresentado como métrica analítica
-   * de cadastros ou de usuários simultâneos.
-   */
-  const displayPlayerStats = stats => {
-    const now = new Date();
-    const hour = now.getHours();
-    const daySeed = Math.floor(now.getTime() / 86_400_000);
-    // Âncora: 29/jul/2026; +~0,7 cadastro fictício/dia.
-    const launchDay = Math.floor(Date.UTC(2026, 6, 29) / 86_400_000);
-    const daysSince = Math.max(0, daySeed - launchDay);
-    const registeredBase = 55 + Math.floor(daysSince * 0.7) + (daySeed % 3); // ~55–57 hoje
-    const eveningBoost = hour >= 19 && hour <= 23 ? 3 : hour >= 12 && hour <= 18 ? 2 : 1;
-    const onlineBase = 8 + eveningBoost + ((daySeed + hour) % 2); // ~9–13
-    const realRegistered = Math.max(0, Number.isFinite(Number(stats?.registered)) ? Number(stats.registered) : 0);
-    const realOnline = Math.max(0, Number.isFinite(Number(stats?.online)) ? Number(stats.online) : 0);
-    return {
-      registered: registeredBase + realRegistered,
-      online: onlineBase + realOnline,
-    };
-  };
-
-  const renderPlayerStats = stats => {
-    if (!playerStatsEl) return;
-    const { online, registered } = displayPlayerStats(stats);
-    playerStatsEl.innerHTML =
-      `<span class="stat-on">${online} EM CAMPO</span> · ${registered} NA COMUNIDADE`;
-    playerStatsEl.setAttribute(
-      'aria-label',
-      `${online} pessoas em campo e ${registered} pessoas na comunidade — indicador promocional`,
-    );
-    playerStatsEl.title = 'Indicador promocional da comunidade BR Fut';
-    playerStatsEl.classList.remove('hidden');
-  };
-
-  const refreshPlayerStats = async () => {
-    if (!(await probeBackend())) {
-      renderPlayerStats(null);
-      return;
-    }
-    renderPlayerStats(await fetchPlayerStats());
-  };
-
-  const startPlayerStatsPolling = () => {
-    if (playerStatsTimer || typeof window === 'undefined') return;
-    void refreshPlayerStats();
-    playerStatsTimer = window.setInterval(refreshPlayerStats, 60_000);
-  };
-
-  const syncStorageHint = ({ loggedIn, hasBackend }) => {
-    if (!storageHint) return;
-    if (loggedIn) {
-      storageHint.classList.add('hidden');
-      return;
-    }
-    storageHint.classList.remove('hidden');
-    storageHint.textContent = hasBackend
-      ? 'Entre para salvar sua carreira'
-      : 'Carreira salva neste navegador';
-  };
-
   const syncHeroActions = ({ loggedIn, hasBackend }) => {
     authUiState = { loggedIn: loggedIn === true, hasBackend: hasBackend === true };
     const wantsLogin = AUTH_REQUIRED || hasBackend || !!BRFUT_API_ORIGIN;
-    if (wantsLogin) {
-      loginBtn?.classList.toggle('hidden', loggedIn);
-      newGameBtn?.classList.toggle('hidden', !loggedIn);
-      loadCareerBtn?.classList.toggle('hidden', !loggedIn);
-    } else {
-      loginBtn?.classList.add('hidden');
-      newGameBtn?.classList.remove('hidden');
-      loadCareerBtn?.classList.remove('hidden');
+    loginBtn?.classList.toggle('hidden', !wantsLogin || loggedIn);
+    newGameBtn?.classList.toggle('hidden', !!wantsLogin && !loggedIn);
+    loadCareerBtn?.classList.toggle('hidden', !!wantsLogin && !loggedIn);
+    if (storageHint) {
+      storageHint.classList.toggle('hidden', !!loggedIn);
+      storageHint.textContent = wantsLogin && hasBackend ? 'Entre para salvar sua carreira' : 'Carreira salva neste navegador';
     }
-    syncStorageHint({ loggedIn, hasBackend: wantsLogin && hasBackend });
     syncCareerActions({ loggedIn, hasBackend: wantsLogin && hasBackend });
   };
-
   const account = mountAccountPanel({
     modal: document.getElementById('accountModal'),
     hasCareer,
@@ -333,30 +180,15 @@ if (SITE_MAINTENANCE.enabled) {
       await showSaveResetLoginAlert();
     },
   });
-
-  // Estado inicial fechado enquanto /api/auth/me ainda está sendo validado.
-  syncHeroActions({
-    loggedIn: false,
-    hasBackend: AUTH_REQUIRED || !!BRFUT_API_ORIGIN,
-  });
-
+  syncHeroActions(authUiState);
   account.refresh().then(state => {
-    // Produção exige sessão confirmada; desenvolvimento ainda pode preservar login local.
-    const loggedIn = AUTH_REQUIRED
-      ? state.mode === 'cloud'
-      : state.mode === 'cloud' ||
-        (!state.authRejected && (!!getAuthToken() || !!state.tokenPreserved));
+    const loggedIn = AUTH_REQUIRED ? state.mode === 'cloud'
+      : state.mode === 'cloud' || (!state.authRejected && (!!getAuthToken() || !!state.tokenPreserved));
     recoverCareerSlotsAfterHydration();
-    syncHeroActions({
-      loggedIn,
-      hasBackend: !!state.backend || state.mode === 'cloud' || !!BRFUT_API_ORIGIN,
-    });
-    startPlayerStatsPolling();
+    syncHeroActions({ loggedIn, hasBackend: !!state.backend || state.mode === 'cloud' || !!BRFUT_API_ORIGIN });
     careerSlots.renderList();
   });
-
   loginBtn?.addEventListener('click', () => account.openLogin());
-
   newGameBtn?.addEventListener('click', () => void careerSlots.startNewCareer());
   loadCareerBtn?.addEventListener('click', () => careerSlots.openLoadModal());
   continueBtn?.addEventListener('click', async event => {
@@ -364,24 +196,17 @@ if (SITE_MAINTENANCE.enabled) {
     const last = careerSlots.getLastPlayedSlot();
     if (!last || !hasPlayableCareerSave(last.id)) return;
     markSkipSessionEndOnce();
-    try {
-      await activateSlot(last.id, { skipProbe: true, reason: 'home-continue' });
-    } catch {
-      /* local */
-    }
+    try { await activateSlot(last.id, { skipProbe: true, reason: 'home-continue' }); }
+    catch { /* local */ }
     goToGame();
   });
-
   initSponsorRail();
-
   const testerHub = createTesterHubFeature();
   document.getElementById('openTesterGuide')?.addEventListener('click', () => testerHub.openGuide());
   document.getElementById('openTesterFeedback')?.addEventListener('click', () => testerHub.openFeedback());
-
   window.addEventListener('beforeunload', () => {
     if (hasCareer() || getAuthToken()) markSkipSessionEndOnce();
   });
-
   window.addEventListener('pagehide', event => {
     if (event.persisted) return;
     if (hasCareer() || hasLocalCareerSave() || getAuthToken()) {

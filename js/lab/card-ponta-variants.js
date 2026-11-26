@@ -3,16 +3,16 @@
  * Pool único: qualquer arte serve PD, PE ou PONTA no jogo.
  */
 
-import art01 from '../../assets/cards/ponta/card-ponta-01.png';
-import art02 from '../../assets/cards/ponta/card-ponta-02.png';
-import art03 from '../../assets/cards/ponta/card-ponta-03.png';
-import art04 from '../../assets/cards/ponta/card-ponta-04.png';
-import art05 from '../../assets/cards/ponta/card-ponta-05.png';
-import art06 from '../../assets/cards/ponta/card-ponta-06.png';
-import art07 from '../../assets/cards/ponta/card-ponta-07.png';
-import art08 from '../../assets/cards/ponta/card-ponta-08.png';
-import art09 from '../../assets/cards/ponta/card-ponta-09.png';
-import art10 from '../../assets/cards/ponta/card-ponta-10.png';
+import art01 from '../../assets/cards/ponta/card-ponta-01.webp';
+import art02 from '../../assets/cards/ponta/card-ponta-02.webp';
+import art03 from '../../assets/cards/ponta/card-ponta-03.webp';
+import art04 from '../../assets/cards/ponta/card-ponta-04.webp';
+import art05 from '../../assets/cards/ponta/card-ponta-05.webp';
+import art06 from '../../assets/cards/ponta/card-ponta-06.webp';
+import art07 from '../../assets/cards/ponta/card-ponta-07.webp';
+import art08 from '../../assets/cards/ponta/card-ponta-08.webp';
+import art09 from '../../assets/cards/ponta/card-ponta-09.webp';
+import art10 from '../../assets/cards/ponta/card-ponta-10.webp';
 
 export const PONTA_CARD_VARIANTS = [
   { id: 'pon-01', label: '01 · Chute teal', art: art01 },

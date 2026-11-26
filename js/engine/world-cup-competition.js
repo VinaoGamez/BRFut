@@ -4,7 +4,7 @@
 
 import { prepareWorldCupEdition } from './world-cup-history.js';
 import { buildWorldCupGroupFixtures, WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
-import { WORLD_CUP_WINDOW } from './season-calendar-mold.js';
+import { worldCupWindow } from './international-calendar.js';
 import {
   computeAllGroupStandings,
   isGroupStageComplete,
@@ -349,13 +349,13 @@ function tryAdvanceKnockoutStage(competition) {
 
 export function worldCupWindowEndDate(year) {
   const y = Number(year);
-  const [month, day] = WORLD_CUP_WINDOW.end;
+  const [month, day] = worldCupWindow(y).end;
   return new Date(y, month, day, 12, 0, 0, 0);
 }
 
 export function worldCupWindowStartDate(year) {
   const y = Number(year);
-  const [month, day] = WORLD_CUP_WINDOW.start;
+  const [month, day] = worldCupWindow(y).start;
   return new Date(y, month, day, 12, 0, 0, 0);
 }
 

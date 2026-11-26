@@ -51,6 +51,11 @@ const starter = {
   heading: 55,
 };
 
+// Fixtures need a derived starting rating: stale OVR is not capacity.
+syncOverallFromAttributes(reserve);
+syncOverallFromAttributes(starter);
+const startingOverall = reserve.overall;
+
 ok(normalizeTrainingRules({}).freeMode === 'load', 'default freeMode load');
 ok(DEVELOPMENT_FOCUSES.finishing.label === 'Finalização', 'focus label');
 
@@ -86,7 +91,7 @@ for (let i = 0; i < daysNeeded; i += 1) {
   if (day.gains?.length) gained = true;
 }
 ok(gained || reserve.finishing > beforeFin, 'reserve gains finishing over sessions');
-ok(reserve.overall >= 62, 'ovr never drops from training');
+ok(reserve.overall >= startingOverall, 'positive attribute training never lowers derived OVR');
 
 const sync = syncOverallFromAttributes({ ...reserve });
 ok(sync.applied >= 0, 'sync non-negative');

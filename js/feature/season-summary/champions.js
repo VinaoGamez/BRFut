@@ -217,8 +217,8 @@ function championTournamentStatsMarkup(entry, deps = {}) {
     <label>ESTATÍSTICAS DO TORNEIO</label>
     <small class="season-champions-tournament-stats-sub">${competitionLabel}</small>
     <div class="dashboard-team-stats-list">
-      ${statRow('scorer', 'ARTILHEIRO', scorer, 'goals', scorer?.goals === 1 ? 'gol' : 'gols', './brand/stats-scorer.png')}
-      ${statRow('assist', 'ASSISTÊNCIAS', assistant, 'assists', assistant?.assists === 1 ? 'assistência' : 'assistências', './brand/stats-assist.png')}
+      ${statRow('scorer', 'ARTILHEIRO', scorer, 'goals', scorer?.goals === 1 ? 'gol' : 'gols', './brand/stats-scorer.webp')}
+      ${statRow('assist', 'ASSISTÊNCIAS', assistant, 'assists', assistant?.assists === 1 ? 'assistência' : 'assistências', './brand/stats-assist.webp')}
     </div>
   </article>`;
 }

@@ -4,6 +4,7 @@
  */
 import {
   SAVE_KEYS,
+  SAVE_VERSION,
   CAREER_INDEX_KEY,
   slotBundleKeys,
   isSlotBundleKey,
@@ -77,7 +78,7 @@ check('isSyncableSaveKey includes index and slots', () => {
 
 check('migrateLegacySingleSaveToSlots creates first slot', () => {
   store.clear();
-  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: 7, clubName: 'Santos', division: 'A', season: 2028 }));
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: SAVE_VERSION.career, clubName: 'Santos', division: 'A', season: 2028 }));
   localStorage.setItem(SAVE_KEYS.season, JSON.stringify({ year: 2028, currentRound: 5 }));
   const index = migrateLegacySingleSaveToSlots();
   assert(index.slots.length === 1);
@@ -90,7 +91,7 @@ check('migrateLegacySingleSaveToSlots creates first slot', () => {
 check('hydrateSlot copies bundle to active keys', () => {
   store.clear();
   const slotId = createNewSlot();
-  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: 7, clubName: 'Test FC', division: 'B' }));
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: SAVE_VERSION.career, clubName: 'Test FC', division: 'B' }));
   syncActiveSlotFromCache();
   localStorage.removeItem(SAVE_KEYS.career);
   hydrateSlot(slotId);
@@ -101,13 +102,13 @@ check('hydrateSlot copies bundle to active keys', () => {
 check('hydrateSlot never overwrites a selected slot with another active career', () => {
   localStorage.clear();
   const firstId = createNewSlot({ name: 'Carreira A' });
-  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: 7, clubName: 'Clube A', saveRevision: 99 }));
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: SAVE_VERSION.career, clubName: 'Clube A', saveRevision: 99 }));
   localStorage.setItem(SAVE_KEYS.season, JSON.stringify({ year: 2032, currentRound: 30, saveRevision: 99 }));
   syncActiveSlotFromCache({ slotId: firstId });
 
   const secondId = createNewSlot({ name: 'Carreira B' });
   const secondBundle = slotBundleKeys(secondId);
-  localStorage.setItem(secondBundle.career, JSON.stringify({ version: 7, clubName: 'Clube B', saveRevision: 10 }));
+  localStorage.setItem(secondBundle.career, JSON.stringify({ version: SAVE_VERSION.career, clubName: 'Clube B', saveRevision: 10 }));
   localStorage.setItem(secondBundle.season, JSON.stringify({ year: 2029, currentRound: 8, saveRevision: 10 }));
 
   setActiveSlotId(firstId);
@@ -165,7 +166,7 @@ check('current career survives save, logout and login hydration checkpoints', ()
   store.clear();
   const slotId = 'current-login-cycle';
   const bundle = slotBundleKeys(slotId);
-  const career = { version: 7, seed: 20260809, clubName: 'Novo FC', division: 'D', season: 2026 };
+  const career = { version: SAVE_VERSION.career, seed: 20260809, clubName: 'Novo FC', division: 'D', season: 2026 };
   localStorage.setItem(bundle.career, JSON.stringify(career));
   localStorage.setItem(SAVE_KEYS.career, JSON.stringify(buildCareerLocalCheckpoint(career)));
   localStorage.setItem(CAREER_INDEX_KEY, JSON.stringify({
@@ -183,7 +184,7 @@ check('current career survives save, logout and login hydration checkpoints', ()
 check('late cloud career rebuilds a playable slot after authentication', () => {
   store.clear();
   localStorage.setItem(SAVE_KEYS.career, JSON.stringify({
-    version: 7,
+    version: SAVE_VERSION.career,
     clubName: 'Recuperado FC',
     division: 'C',
     season: 2029,
@@ -199,7 +200,7 @@ check('late cloud career rebuilds a playable slot after authentication', () => {
 try {
   store.clear();
   const firstId = createNewSlot();
-  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: 7, clubName: 'Delete FC' }));
+  localStorage.setItem(SAVE_KEYS.career, JSON.stringify({ version: SAVE_VERSION.career, clubName: 'Delete FC' }));
   syncActiveSlotFromCache();
   const firstBundle = slotBundleKeys(firstId);
   localStorage.setItem(`brfut-slot-${firstId}-season-archive-2026`, JSON.stringify({ year: 2026 }));

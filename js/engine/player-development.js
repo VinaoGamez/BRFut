@@ -5,6 +5,7 @@
 import { MODULE_VERSIONS } from '../core/constants.js';
 import { resolvePlayerId } from './player-identity.js';
 import { playerKey } from './player-match-stats.js';
+import { calculatePlayerOverall, syncPlayerOverall, overallWeights, canDevelopAttribute } from './player-overall.js';
 
 export const DEVELOPMENT_MODULE_VERSION = MODULE_VERSIONS.playerDevelopment || 1;
 
@@ -131,6 +132,7 @@ const normalizeTrainingByPlayer = raw => {
     out[id] = {
       xpSeason: Math.max(0, Number(row.xpSeason) || 0),
       ovrFromTraining: Math.max(0, Number(row.ovrFromTraining) || 0),
+      ...(Number.isFinite(row.startOverallRaw) ? { startOverallRaw: row.startOverallRaw } : {}),
       attrGains,
     };
   });
@@ -309,34 +311,26 @@ export function computePulseDelta(player, period, yearDeltaSoFar) {
 export function applyOverallDelta(player, delta) {
   const change = Math.round(Number(delta) || 0);
   if (!change || !player) return false;
-  const pot = Math.max(
-    Number(player.overall) || 1,
-    Number(player.potential) || Number(player.overall) || 99,
-  );
-  const before = Number(player.overall) || 50;
-  player.overall = clamp(before + change, 1, pot);
-  player.potential = Math.max(Number(player.potential) || player.overall, player.overall);
-
-  const applied = player.overall - before;
-  if (!applied) return false;
-
-  const keys = ATTR_BY_POS[player.pos] || ['passing', 'speed', 'dribble', 'finishing'];
-  let left = Math.abs(applied);
-  const sign = Math.sign(applied);
-  let guard = 0;
-  while (left > 0 && guard < 24) {
-    const key = keys[guard % keys.length];
-    const cur = Number(player[key]);
-    if (Number.isFinite(cur)) {
-      const next = clamp(cur + sign, 1, 99);
-      if (next !== cur) {
-        player[key] = next;
-        left -= 1;
-      }
-    }
-    guard += 1;
+  const before = calculatePlayerOverall(player);
+  const cap = Math.max(before, Number(player.potential) || before);
+  const target = clamp(before + change, 1, cap);
+  const keys = ATTR_BY_POS[player.pos] || Object.keys(overallWeights(player));
+  const sign = Math.sign(change);
+  let changed = false;
+  for (let guard = 0; guard < 2000; guard++) {
+    const current = calculatePlayerOverall(player);
+    if ((sign > 0 && current >= target - .01) || (sign < 0 && current <= target + .01)) break;
+    const key = keys[guard % keys.length], value = Number(player[key]);
+    if (!Number.isFinite(value)) continue;
+    const next = clamp(value + sign, 1, 99);
+    if (next === value) continue;
+    if (sign > 0 && !canDevelopAttribute(player, key, next - value, target)) continue;
+    if (sign < 0 && calculatePlayerOverall({ ...player, [key]: next }) < target - 1e-9) continue;
+    player[key] = next;
+    changed = true;
   }
-  return true;
+  syncPlayerOverall(player);
+  return changed;
 }
 
 export function syncClubPowers(clubs) {

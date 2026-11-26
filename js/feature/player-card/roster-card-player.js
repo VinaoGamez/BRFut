@@ -5,7 +5,10 @@
 import { cardDisplayPos, resolveCardRoleKey } from '../../engine/player-card-variant-id.js';
 import { playerKey } from '../../engine/player-match-stats.js';
 import { resolvePlayerSeasonStats } from '../../engine/player-history.js';
-import { cardArtForPlayer } from '../../engine/player-card-art.js';
+
+// Este módulo é só dados: não importa a camada de arte de propósito.
+// `player-card-art.js` puxa `lab/card-variants.js`, que importa centenas de PNG;
+// quem chama anexa a arte com `attachCardArt()` ou no próprio call site.
 
 export function resolveCardStatsBucket(localBucket, remoteTotal) {
   if (!localBucket) return remoteTotal || null;
@@ -18,7 +21,7 @@ export function resolveCardStatsBucket(localBucket, remoteTotal) {
   return localBucket;
 }
 
-export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSeason, clubName, clubDivision, remoteStats = null } = {}) {
+export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSeason, clubName, clubDivision, remoteStats = null, resolveArt = null } = {}) {
   if (!player) return null;
 
   const key = playerKey(player);
@@ -32,12 +35,12 @@ export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSe
   ) || resolvePlayerSeasonStats(playerHistory, key, careerSeason);
   const remote = remoteStats?.total
     ? {
-        apps: remote.apps,
-        goals: remote.goals,
-        assists: remote.assists,
-        yellow: remote.yellow,
-        red: remote.red,
-        avgRating: remote.avg_rating,
+        apps: remoteStats.total.apps,
+        goals: remoteStats.total.goals,
+        assists: remoteStats.total.assists,
+        yellow: remoteStats.total.yellow,
+        red: remoteStats.total.red,
+        avgRating: remoteStats.total.avg_rating,
       }
     : null;
   const bucket = resolveCardStatsBucket(localBucket, remote);
@@ -60,6 +63,8 @@ export async function rosterPlayerToCardPlayer(player, { playerHistory, careerSe
     },
   };
 
-  cardPlayer._cardArt = await cardArtForPlayer(cardPlayer);
+  // A arte e opcional e resolvida por quem chama — o modulo segue sem depender
+  // dos assets.
+  if (resolveArt) cardPlayer._cardArt = await resolveArt(cardPlayer);
   return cardPlayer;
 }

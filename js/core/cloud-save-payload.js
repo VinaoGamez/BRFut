@@ -245,6 +245,8 @@ export function slimPlayerHistoryForCloudUpload(history) {
   const slimmed = {
     ...syncMetadata(history),
     version: history.version,
+    statsModelVersion: history.statsModelVersion,
+    processedMatches: history.processedMatches || {},
     season: history.season ?? null,
     players: slimPlayers,
     matchLogs,
@@ -255,6 +257,8 @@ export function slimPlayerHistoryForCloudUpload(history) {
   return {
     ...syncMetadata(history),
     version: history.version,
+    statsModelVersion: history.statsModelVersion,
+    processedMatches: history.processedMatches || {},
     season: history.season ?? null,
     players: slimPlayers,
     matchLogs: [],

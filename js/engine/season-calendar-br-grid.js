@@ -36,6 +36,9 @@ import {
   windowToDates,
 } from './season-scheduler.js';
 import { buildCupPhaseNominalDates, seasonEndDate as planSeasonEndDate } from './season-calendar-plan.js';
+import { serieCTotalRounds } from './serie-c-format.js';
+import { serieCClubsForSeason } from './serie-c-calendar.js';
+import { clubStoppages } from './international-calendar.js';
 
 export const BR_GRID_PHASE = Object.freeze({
   EST_ONLY: 'est_only',
@@ -49,6 +52,21 @@ export const BR_GRID_PHASE_BOUNDS = Object.freeze({
   [BR_GRID_PHASE.OVERLAP]: Object.freeze({ start: [0, 28], end: [2, 8] }),
   [BR_GRID_PHASE.NATIONAL_FULL]: Object.freeze({ start: [2, 9], end: [11, 31] }),
 });
+
+/**
+ * Divisões com vaga continental.
+ *
+ * As vagas da CONMEBOL saem do elite doméstico: o Brasil tem 7 na Libertadores e
+ * 6 na Sul-Americana, e todas vêm da Série A ou da Série B. Série C e Série D
+ * não têm vaga nenhuma — os clubes do Brasil que caem na Sul-Americana sempre
+ * vêm das duas primeiras divisões.
+ */
+export const CONTINENTAL_ELIGIBLE_DIVISIONS = Object.freeze(['A', 'B']);
+
+/** Essa divisão disputa continental? */
+export function divisionPlaysContinental(division) {
+  return CONTINENTAL_ELIGIBLE_DIVISIONS.includes(String(division || '').toUpperCase());
+}
 
 /** 13 slots CONMEBOL — simulação / molde; competição desligada in-game. */
 export const CONTINENTAL_CALENDAR_SLOTS = Object.freeze([
@@ -208,8 +226,24 @@ function buildLeagueNominalDates(seasonYear, division) {
   const spec = LEAGUE_DIVISION_MOLD[division];
   if (!spec) return [];
   const compId = spec.competitionId;
-  const roundCount = spec.matchCount ?? 38;
+  // Série C é a única divisão sem `matchCount` no molde: o total depende do
+  // tamanho da divisão naquele ano (27 com 20 clubes, 31 com 24, 35 com 28).
+  // Cair num 38 fixo fazia a grade testar uma temporada que não existe.
+  const roundCount = spec.matchCount ?? (
+    compId === 'league_c' ? serieCTotalRounds(serieCClubsForSeason(seasonYear)) : 38
+  );
   const year = Number(seasonYear) || 2026;
+
+  // Os nominais saem de uma cadência semanal recortada em exatamente
+  // `roundCount`. Quando um desses dias cai num blackout — a Copa do Mundo leva
+  // 56 a 61 dias do meio da temporada — ele some e não há substituto, porque a
+  // lista já acabou. Gerar folga para os dias bloqueados resolve: são gerados
+  // `roundCount` candidatos a mais e o corte final mantém o total.
+  const blackoutDays = clubStoppages(year)
+    .filter(p => toComparable(p.start) >= toComparable(windowStart(spec)) && toComparable(p.end) <= toComparable(windowEnd(spec)))
+    .reduce((acc, p) => acc + p.days, 0);
+  const slack = Math.ceil(blackoutDays / 7) + 3;
+  const wanted = roundCount + slack;
 
   if (compId === 'league_a') {
     const overlapEnd = md(year, BR_GRID_PHASE_BOUNDS[BR_GRID_PHASE.OVERLAP].end[0],
@@ -219,8 +253,8 @@ function buildLeagueNominalDates(seasonYear, division) {
     const fullStart = md(year, BR_GRID_PHASE_BOUNDS[BR_GRID_PHASE.NATIONAL_FULL].start[0],
       BR_GRID_PHASE_BOUNDS[BR_GRID_PHASE.NATIONAL_FULL].start[1]);
     const { end } = windowToDates(seasonYear, spec);
-    const wed = buildWeeklyCadenceDates(overlapStart, overlapEnd, [WEEKDAY.WED], roundCount);
-    const sun = buildWeeklyCadenceDates(fullStart, end, [WEEKDAY.SUN], roundCount);
+    const wed = buildWeeklyCadenceDates(overlapStart, overlapEnd, [WEEKDAY.WED], wanted);
+    const sun = buildWeeklyCadenceDates(fullStart, end, [WEEKDAY.SUN], wanted);
     return [...wed, ...sun].sort((a, b) => a - b).slice(0, roundCount);
   }
 
@@ -230,18 +264,27 @@ function buildLeagueNominalDates(seasonYear, division) {
     const { start, end } = windowToDates(seasonYear, spec);
     const fullStart = md(year, BR_GRID_PHASE_BOUNDS[BR_GRID_PHASE.NATIONAL_FULL].start[0],
       BR_GRID_PHASE_BOUNDS[BR_GRID_PHASE.NATIONAL_FULL].start[1]);
-    const satOverlap = buildWeeklyCadenceDates(start, overlapEnd, [WEEKDAY.SAT], roundCount);
-    const satFull = buildWeeklyCadenceDates(fullStart, end, [WEEKDAY.SAT], roundCount);
-    return [...satOverlap, ...satFull].sort((a, b) => a - b).slice(0, roundCount);
+    const satOverlap = buildWeeklyCadenceDates(start, overlapEnd, [WEEKDAY.SAT], wanted);
+    const satFull = buildWeeklyCadenceDates(fullStart, end, [WEEKDAY.SAT], wanted);
+    // Só sábado não fecha em ano de Copa: a Copa come nove sábados do meio da
+    // temporada e a Série B perdia duas rodadas. As quartas entram como
+    // reserva, igual às demais divisões.
+    const extras = buildWeeklyCadenceDates(start, end, [WEEKDAY.WED], wanted);
+    return [...satOverlap, ...satFull, ...extras].sort((a, b) => a - b).slice(0, roundCount);
   }
 
   const { start, end } = windowToDates(seasonYear, spec);
   const weekdays = getBrGridWeekdays(compId, start, seasonYear);
-  const primary = buildWeeklyCadenceDates(start, end, [weekdays[0]], roundCount);
+  const primary = buildWeeklyCadenceDates(start, end, [weekdays[0]], wanted);
   if (primary.length >= roundCount || !weekdays[1]) return primary.slice(0, roundCount);
-  const alt = buildWeeklyCadenceDates(start, end, [weekdays[1]], roundCount - primary.length);
+  const alt = buildWeeklyCadenceDates(start, end, [weekdays[1]], wanted);
   return [...primary, ...alt].sort((a, b) => a - b).slice(0, roundCount);
 }
+
+/** Início/fim do molde de uma divisão, em [mês, dia] ordenável. */
+function windowStart(spec) { return spec?.start || [0, 1]; }
+function windowEnd(spec) { return spec?.end || [11, 31]; }
+function toComparable([month, day]) { return Number(month) * 1000 + Number(day); }
 
 function buildStateLeagueNominalDates(seasonYear) {
   const mold = FUTURE_COMPETITION_MOLD.state_league;
@@ -525,11 +568,18 @@ export function runBrGridValidationMatrix(seasonYears = [2026, 2027]) {
   const packages = Object.entries(BR_GRID_VALIDATION_PACKAGES);
   const scenarios = [];
 
+  // Série C e D não têm vaga continental: o pacote continua o mesmo, mas os
+  // slots da CONMEBOL não são Placeados para elas. Sem isso a divisão recebia
+  // 10 a 12 jogos que não existem no regulamento e o calendário era testado
+  // contra uma carga falsa.
+  const continentalFor = (division, pkg) => pkg.includeContinental && divisionPlaysContinental(division);
+
   seasonYears.forEach(seasonYear => {
     divisions.forEach(division => {
       packages.forEach(([packageId, pkg]) => {
         const leagueKey = BR_GRID_DIVISION_LEAGUE_KEYS[division];
-        const competitions = [...pkg.competitions];
+        const temContinental = continentalFor(division, pkg);
+        const competitions = [...pkg.competitions].filter(c => c !== 'continental' || temContinental);
         if (!competitions.includes(leagueKey)) competitions.push(leagueKey);
         const id = `${seasonYear} · Série ${division} · ${pkg.label}`;
         scenarios.push({
@@ -541,7 +591,7 @@ export function runBrGridValidationMatrix(seasonYears = [2026, 2027]) {
           ...simulateClubBrGrid({
             seasonYear,
             competitions,
-            includeContinental: pkg.includeContinental,
+            includeContinental: temContinental,
           }),
         });
       });

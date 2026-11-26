@@ -30,7 +30,7 @@ const stage = document.getElementById('managerLabStage');
 const jsonOut = document.getElementById('managerLabJson');
 const stageLabel = document.getElementById('managerLabStageLabel');
 
-function artUrl(index) { return `./manager-cards/manager-${String(index).padStart(2, '0')}.png`; }
+function artUrl(index) { return `./manager-cards/manager-${String(index).padStart(2, '0')}.webp`; }
 function loadArtIndex() {
   try { return Math.min(ART_COUNT, Math.max(1, Number(localStorage.getItem(ART_STORAGE_KEY)) || 1)); } catch { return 1; }
 }

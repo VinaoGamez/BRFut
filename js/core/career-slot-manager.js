@@ -58,8 +58,7 @@ export function writeCareerIndex(index) {
     updatedAt: new Date().toISOString(),
     slots: Array.isArray(index.slots) ? index.slots : [],
   };
-  writeJson(CAREER_INDEX_KEY, next);
-  return next;
+  return writeJson(CAREER_INDEX_KEY, next) ? next : null;
 }
 
 export function newSlotId() {
@@ -121,6 +120,7 @@ export function buildSlotManifest(slotId, { name, career, season } = {}) {
   const existing = getSlotById(slotId);
   return {
     id: slotId,
+    seed: c?.seed ?? null,
     name: name || existing?.name || defaultSlotName(c, s),
     clubName: c?.clubName || c?.foundingClubName || existing?.clubName || '—',
     division: c?.division || existing?.division || '—',
@@ -146,8 +146,7 @@ export function upsertSlotManifest(manifest) {
   if (idx >= 0) index.slots[idx] = entry;
   else index.slots.push(entry);
   index.activeSlotId = manifest.id;
-  writeCareerIndex(index);
-  return entry;
+  return writeCareerIndex(index) ? entry : null;
 }
 
 function copyStorageKey(src, dest, { scheduleSlotSync = false, clearDestIfMissing = true } = {}) {
@@ -157,37 +156,36 @@ function copyStorageKey(src, dest, { scheduleSlotSync = false, clearDestIfMissin
       try {
         localStorage.removeItem(dest);
       } catch {
-        /* ignore */
+        return false;
       }
     }
-    return;
+    return true;
   }
   // Checkpoint local não pode sobrescrever o bundle completo (fonte da nuvem).
   if (isLocalStorageCheckpoint(value)) {
     const existing = readJson(dest, null);
-    if (existing && !isLocalStorageCheckpoint(existing)) return;
-    return;
+    return !!existing && !isLocalStorageCheckpoint(existing);
   }
-  writeJson(dest, value, { scheduleSlotSync });
+  return writeJson(dest, value, { scheduleSlotSync });
 }
 
 export function copyActiveKeysToBundle(slotId, { force = false } = {}) {
-  if (!slotId || (!force && getStoragePressure().level === 'critical')) return;
+  if (!slotId || (!force && getStoragePressure().level === 'critical')) return false;
   const bundle = slotBundleKeys(slotId);
-  copyStorageKey(SAVE_KEYS.career, bundle.career, { scheduleSlotSync: false });
-  copyStorageKey(SAVE_KEYS.season, bundle.season, { scheduleSlotSync: false });
-  copyStorageKey(SAVE_KEYS.playerHistory, bundle.playerHistory, { scheduleSlotSync: false });
-  copyStorageKey(SAVE_KEYS.liveMatch, bundle.liveMatch, { scheduleSlotSync: false });
+  return ['career', 'season', 'playerHistory', 'liveMatch']
+    .map(kind => copyStorageKey(SAVE_KEYS[kind], bundle[kind], { scheduleSlotSync: false })).every(Boolean);
 }
 
-export function copyBundleToActiveKeys(slotId) {
+export function copyBundleToActiveKeys(slotId, { preserveNewer = false, clearMissing = false } = {}) {
   if (!slotId) return;
   const bundle = slotBundleKeys(slotId);
-  const copyOpts = { scheduleSlotSync: false, clearDestIfMissing: false };
-  copyStorageKey(bundle.career, SAVE_KEYS.career, copyOpts);
-  copyStorageKey(bundle.season, SAVE_KEYS.season, copyOpts);
-  copyStorageKey(bundle.playerHistory, SAVE_KEYS.playerHistory, copyOpts);
-  copyStorageKey(bundle.liveMatch, SAVE_KEYS.liveMatch, copyOpts);
+  const copyOpts = { scheduleSlotSync: false, clearDestIfMissing: clearMissing };
+  return ['career', 'season', 'playerHistory', 'liveMatch'].map(kind => {
+    const active = readJson(SAVE_KEYS[kind]);
+    const saved = readJson(bundle[kind]);
+    if (preserveNewer && active && pickNewerSave(active, saved, SAVE_KEYS[kind]) === active) return true;
+    return copyStorageKey(bundle[kind], SAVE_KEYS[kind], copyOpts);
+  }).every(Boolean);
 }
 
 /** Se o ativo está mais fresco que o bundle, espelha ativo→bundle antes de hidratar. */
@@ -261,9 +259,9 @@ export function scheduleActiveSlotSync({ name } = {}) {
 export function syncActiveSlotFromCache({ name, slotId: forcedSlotId } = {}) {
   const slotId = forcedSlotId || getActiveSlotId();
   if (!slotId) return false;
-  copyActiveKeysToBundle(slotId, { force: true });
+  if (!copyActiveKeysToBundle(slotId, { force: true })) return false;
   const manifest = buildSlotManifest(slotId, { name });
-  upsertSlotManifest(manifest);
+  if (!upsertSlotManifest(manifest)) return false;
   queueBundleCloudSync(slotId);
   return true;
 }
@@ -294,8 +292,10 @@ export function hydrateSlot(slotId, { allowSeedFromActive = true } = {}) {
   // ser de outro save; copiá-lo para o bundle selecionado mistura ou substitui
   // carreiras e faz o carregamento aparentar ter voltado/sumido.
   if (currentId === slotId) preferActiveOverStaleBundle(slotId);
-  copyBundleToActiveKeys(slotId);
-  return true;
+  return copyBundleToActiveKeys(slotId, {
+    preserveNewer: currentId === slotId,
+    clearMissing: hasBundleCareer && currentId !== slotId,
+  });
 }
 
 export function createNewSlot({ name } = {}) {
@@ -316,7 +316,7 @@ export function createNewSlot({ name } = {}) {
   const index = readCareerIndex();
   index.slots.push(manifest);
   index.activeSlotId = slotId;
-  writeCareerIndex(index);
+  if (!writeCareerIndex(index)) return null;
   setActiveSlotId(slotId);
   return slotId;
 }
