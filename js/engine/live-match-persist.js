@@ -170,9 +170,7 @@ export function buildLiveMatchSnapshot(state) {
     awayFormation: state.awayFormation || null,
     awayLineupOrder: Array.isArray(state.awayLineupOrder) ? [...state.awayLineupOrder] : [],
     liveClockSeconds: Number(state.liveClockSeconds) || 0,
-    timelineHtml: typeof state.timelineHtml === 'string'
-      ? state.timelineHtml.slice(-8000)
-      : '',
+    timelineHtml: compactTimelineHtml(state.timelineHtml),
     matchStatusText: state.matchStatusText || '',
     ui: {
       pauseOpen: !!state.ui?.pauseOpen,
@@ -265,4 +263,27 @@ export function createLiveMatchPersistController(deps) {
     clear,
     load: loadLiveMatchSave,
   };
+}
+
+const TIMELINE_SNAPSHOT_MAX_CHARS = 12000;
+const DATA_URL_IMG_RE = /<img\b[^>]*\bsrc="data:[^"]*"[^>]*>/gi;
+
+/**
+ * Narração ao vivo para o snapshot de recarga.
+ *
+ * Escudos gerados são data-URLs de ~3 KB: guardá-los estourava o limite e o
+ * corte por caracteres caía no meio de um atributo, exibindo o SVG como texto.
+ * Removemos as imagens embutidas (o restore regenera pelo `title` do escudo) e
+ * cortamos apenas entre eventos completos.
+ */
+export function compactTimelineHtml(html, maxChars = TIMELINE_SNAPSHOT_MAX_CHARS) {
+  if (typeof html !== 'string' || !html) return '';
+  const compact = html.replace(DATA_URL_IMG_RE, '<img data-crest-restore="1" alt="">');
+  if (compact.length <= maxChars) return compact;
+  const starts = [];
+  const re = /<p\b/gi;
+  let match;
+  while ((match = re.exec(compact))) starts.push(match.index);
+  const cut = starts.find(index => compact.length - index <= maxChars);
+  return cut === undefined ? '' : compact.slice(cut);
 }

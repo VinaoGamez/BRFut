@@ -365,3 +365,9 @@ html.is-mobile .home-support {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* O cabeçalho fixo (z-index 1000) cobria o topo dos modais (z-index 10–50).
+   Com qualquer modal aberto, o cabeçalho recua para baixo deles. */
+html.is-mobile body:has(.modal:not(.hidden)) .app-header {
+  z-index: 5;
+}

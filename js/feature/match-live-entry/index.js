@@ -1,4 +1,5 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
+import { applyTeamCrestToElement } from '../../ui/team-crest.js';
 
 export function reconcileLinkedFixtureWithLiveSnapshot(linked, snap) {
   if (!linked || !snap?.fixture) return linked;
@@ -403,6 +404,11 @@ export function createMatchLiveEntryFeature(deps) {
     } else {
       const html = snap.timelineHtml || `<p>${getMinute()}' · Partida retomada após recarregar a página.</p>`;
       timeline.innerHTML = /PRÉ-JOGO\s*·\s*Aguardando/.test(html) ? '' : html;
+      // Escudos não vão no snapshot (ver compactTimelineHtml): regenera pelo title.
+      timeline.querySelectorAll('img[data-crest-restore]').forEach(img => {
+        const crest = img.closest('.crest');
+        if (crest?.title) applyTeamCrestToElement(crest, crest.title, { away: crest.classList.contains('away') });
+      });
       timeline.classList.toggle('hidden', !timeline.innerHTML.trim());
     }
     $('#matchStatus').textContent = snap.matchStatusText || (getMatchFinished() ? 'Partida encerrada.' : getPreMatchPreparation() ? 'Organize sua equipe antes de iniciar a partida.' : 'A partida está em andamento…');

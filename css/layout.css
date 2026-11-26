@@ -3270,3 +3270,16 @@ main > .view.active.training-view {
     width: 100%;
   }
 }
+
+/* Treinamento — blocos compactos (pré/pós-jogo) ficam lado a lado com ~340px
+   cada; 3 colunas deixavam ~20px de texto por botão e cortavam os rótulos.
+   A grade agora se adapta: 3 colunas quando cabem, lista vertical quando não.
+   (`.training-options` vinha depois no CSS e anulava `.training-options-compact`.) */
+.training-options.training-options-compact {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.training-options button b,
+.training-options button small {
+  overflow-wrap: break-word;
+}
