@@ -378,7 +378,7 @@ body.transfer-window-alert-open { overflow: hidden; }
   border: 1px solid #3a7080;
   background: #143440;
   color: #9edff0;
-  font: 800 9px 'DM Sans', sans-serif;
+  font: 800 10px 'DM Sans', sans-serif;
   letter-spacing: .4px;
   vertical-align: middle;
 }
@@ -866,7 +866,7 @@ body.transfers-col-resizing * {
   display: block;
   margin-bottom: 4px;
   color: #7ec8d4;
-  font: 700 9px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: .45px;
 }
 
@@ -978,7 +978,7 @@ body.transfers-col-resizing * {
 .transfers-envelope-metrics small {
   display: block;
   color: #6f97a2;
-  font: 700 9px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: 0.45px;
   margin-bottom: 2px;
 }
@@ -1363,7 +1363,7 @@ body.transfers-col-resizing * {
 .transfers-alert-payroll small {
   display: block;
   color: #6f97a2;
-  font: 700 9px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: 0.45px;
   margin-bottom: 3px;
 }

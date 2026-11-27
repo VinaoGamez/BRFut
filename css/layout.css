@@ -857,7 +857,7 @@ main > .view.active {
   margin: 0 !important;
   font-style: normal;
   color: #63d9ff;
-  font-size: 9px;
+  font-size: 10px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -1045,7 +1045,7 @@ main > .view.active {
 .messages-toolbar-top small {
   display: block;
   color: #63d9ff;
-  font: 700 8px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: .55px;
 }
 
@@ -1060,7 +1060,7 @@ main > .view.active {
   border: 1px solid #3a6b77 !important;
   background: #12313c !important;
   color: #75dfff !important;
-  font-size: 8px !important;
+  font-size: 10px !important;
   white-space: nowrap;
 }
 
@@ -1076,7 +1076,7 @@ main > .view.active {
   border: 1px solid #315d69 !important;
   background: #102a34 !important;
   color: #b9ced2 !important;
-  font-size: 8px !important;
+  font-size: 10px !important;
 }
 
 .message-filters button.active {
@@ -1643,7 +1643,7 @@ main > .view.active {
 .overall-box small,
 .environment-gauge small {
   display: block;
-  font: 700 8px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: .55px;
   color: #9eb6b8;
 }
@@ -1755,7 +1755,7 @@ main > .view.active {
 
 .dashboard-factors small {
   display: block !important;
-  font: 700 8px 'DM Sans', sans-serif !important;
+  font: 700 10px 'DM Sans', sans-serif !important;
   letter-spacing: .3px;
   color: #9eb6b8 !important;
   min-height: 0 !important;
@@ -1824,7 +1824,7 @@ main > .view.active {
 }
 
 #dashboard.dashboard-wc-mode .environment-card .dashboard-overall small {
-  font-size: 9px;
+  font-size: 10px;
 }
 
 #dashboard.dashboard-wc-mode .environment-card .dashboard-environment {
@@ -1837,7 +1837,7 @@ main > .view.active {
 }
 
 #dashboard.dashboard-wc-mode .environment-card .dashboard-environment small {
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: .4px;
 }
 
@@ -1846,7 +1846,7 @@ main > .view.active {
   margin-top: 8px;
   text-align: center;
   color: #9fcfd8;
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.35;
 }
 
@@ -1862,7 +1862,7 @@ main > .view.active {
   width: 100%;
   min-height: 30px;
   padding: 7px 10px !important;
-  font-size: 8px !important;
+  font-size: 10px !important;
   text-align: center !important;
   white-space: nowrap;
   overflow: hidden;
@@ -1898,7 +1898,7 @@ main > .view.active {
 
   #dashboard .dashboard-overall small,
   #dashboard .dashboard-environment small {
-    font-size: 9px !important;
+    font-size: 10px !important;
   }
 
   #dashboard .dashboard-summary {
@@ -1919,7 +1919,7 @@ main > .view.active {
   }
 
   #dashboard .dashboard-factors small {
-    font-size: 8px !important;
+    font-size: 10px !important;
   }
 
   #dashboard .dashboard-factors b {
@@ -1943,7 +1943,7 @@ main > .view.active {
 
 #dashboard .dashboard-overall small,
 #dashboard .dashboard-environment small {
-  font-size: 9px !important;
+  font-size: 10px !important;
 }
 
 #dashboard .dashboard-overall strong {
@@ -2191,7 +2191,7 @@ main > .view.active {
 }
 
 .view#dashboard .club-upcoming-badge.match-competition b {
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 0.2px;
   line-height: 1.1;
 }
@@ -2207,7 +2207,7 @@ main > .view.active {
     height: 11px;
   }
   .view#dashboard .club-upcoming-badge.match-competition b {
-    font-size: 8px;
+    font-size: 10px;
   }
 }
 
@@ -3138,7 +3138,7 @@ main > .view.active.training-view {
 .calendar-view .routine-alert.training-report small {
   display: block;
   color: #7eb8c8;
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.08em;
 }
 

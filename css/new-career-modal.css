@@ -70,7 +70,7 @@ body.dark-mode .modal-card.new-career-v2 {
   display: block;
   margin-bottom: 5px;
   color: #63d9ff;
-  font: 700 9px DM Sans, sans-serif;
+  font: 700 10px DM Sans, sans-serif;
   letter-spacing: 0.55px;
 }
 
@@ -97,7 +97,7 @@ body.dark-mode .modal-card.new-career-v2 {
 
 .new-career-shuffle {
   padding: 9px 12px !important;
-  font: 700 9px DM Sans, sans-serif !important;
+  font: 700 10px DM Sans, sans-serif !important;
   letter-spacing: 0.45px;
   white-space: nowrap;
 }
@@ -129,7 +129,7 @@ body.dark-mode .modal-card.new-career-v2 {
   padding: 7px 10px;
   background: #123040;
   color: #79cce7;
-  font: 700 9px DM Sans, sans-serif;
+  font: 700 10px DM Sans, sans-serif;
   letter-spacing: 0.5px;
   text-align: left;
   border-bottom: 1px solid #244f61;
