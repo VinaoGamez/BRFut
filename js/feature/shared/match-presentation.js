@@ -1,3 +1,4 @@
+import { QUALIFIERS_COMPETITION } from '../../engine/conmebol-qualifiers.js';
 import { conmebolShortName, isConmebolGame } from '../../engine/conmebol-format.js';
 import { resolveNationalTeam } from '../../engine/national-teams.js';
 import { WORLD_CUP_COMPETITION } from '../../engine/world-cup-calendar.js';
@@ -38,6 +39,7 @@ export const matchCompetitionRoundLabel = (game, userDivision, currentRound = 1,
     return parts.join(' · ') || 'Copa do Brasil';
   }
   if (isConmebolMatch(game)) return conmebolPhaseLabel(game);
+  if (isQualifierFixture(game)) return `${game.matchday}ª rodada de 18`;
   if (isStateLeagueGame(game)) {
     if (game.phase === 'semis') return 'Semifinal';
     if (game.phase === 'final') return 'Final';
@@ -53,7 +55,9 @@ export const matchCompetitionRoundLabel = (game, userDivision, currentRound = 1,
   return `Rodada ${round} de 38`;
 };
 
-export const isWorldCupFixture = game => game?.competition === WORLD_CUP_COMPETITION;
+/** Jogo de seleção (Copa do Mundo ou Eliminatórias). */
+export const isWorldCupFixture = game => game?.competition === WORLD_CUP_COMPETITION || game?.competition === QUALIFIERS_COMPETITION;
+const isQualifierFixture = game => game?.competition === QUALIFIERS_COMPETITION;
 
 export const isSerieDEnrolledClub = (clubName, clubs, serieDGroups) => {
   const club = clubs?.[clubName];
@@ -131,7 +135,7 @@ export const clubStandingContext = (
   const club = clubs?.[clubName];
   if (!club) {
     const nt = resolveNationalTeam(clubName);
-    if (nt) return `Copa do Mundo · FIFA ${nt.fifaRank}º`;
+    if (nt) return `${game?.competition === 'ELIMINATÓRIAS' ? 'Eliminatórias' : 'Copa do Mundo'} · FIFA ${nt.fifaRank}º`;
     return '';
   }
   if (club.division === 'INT') return joinMatchMeta(club.countryName || '', club.city || '');
@@ -162,6 +166,7 @@ export const matchCompetitionPhaseLabel = (
   serieDGroups,
   { currentRound = 1, userSerieDGroupIndex = 0, serieDGroupRounds = 10 } = {},
 ) => {
+  if (isQualifierFixture(game)) return joinMatchMeta('Eliminatórias', `${game.matchday}ª rodada`);
   if (isWorldCupFixture(game)) {
     return joinMatchMeta('Copa do Mundo', game.phase || game.leg) || 'Copa do Mundo';
   }
@@ -203,6 +208,7 @@ export const matchCompetitionPhaseLabel = (
 /** Texto do `<em>` ao lado do título (rodada/fase) — espelha o card Próxima Partida. */
 export const matchCompetitionRoundEmLabel = (game, userDivision, userSerieDGroupIndex = 0) => {
   if (!game) return '';
+  if (isQualifierFixture(game)) return `ELIMINATÓRIAS · ${game.matchday}ª RODADA`;
   if (isWorldCupFixture(game)) {
     return game.phase || game.leg || 'COPA DO MUNDO';
   }

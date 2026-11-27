@@ -63,6 +63,7 @@ export function competitionKeyFromFixture(fixture, { isKnockoutShootout = () => 
   if (fixture.competition === 'COPA DO BRASIL') return 'COPA';
   // Cartões da CONMEBOL só contam na própria competição.
   if (CONMEBOL_DISCIPLINE_KEYS[fixture.competition]) return CONMEBOL_DISCIPLINE_KEYS[fixture.competition];
+  if (fixture.competition === 'ELIMINATÓRIAS') return 'ELIMINATORIAS';
   if (isKnockoutShootout(fixture)) return 'SERIE_D_KO';
   const homeDiv = clubs[fixture.home]?.division;
   const awayDiv = clubs[fixture.away]?.division;
@@ -76,6 +77,7 @@ export function competitionLabel(competitionKey) {
   if (competitionKey === 'LIBERTADORES') return 'Libertadores';
   if (competitionKey === 'SUDAMERICANA') return 'Sul-Americana';
   if (competitionKey === 'RECOPA_SUL') return 'Recopa Sul-Americana';
+  if (competitionKey === 'ELIMINATORIAS') return 'Eliminatórias';
   if (competitionKey === 'INTERCONTINENTAL') return 'Intercontinental';
   if (String(competitionKey).startsWith('LEAGUE:')) {
     return `Brasileirão Série ${String(competitionKey).slice(7)}`;

@@ -1,5 +1,5 @@
 import '../../../css/national-team-offers.css';
-import { NATIONAL_TEAMS, nationalTeamFlagUrl, nationalTeamPower } from '../../engine/national-teams.js';
+import { ALL_NATIONAL_TEAMS as NATIONAL_TEAMS, nationalTeamFlagUrl, nationalTeamPower } from '../../engine/national-teams.js';
 import { preloadCompetitionTrophy } from '../../ui/competition-trophies.js';
 import {
   NATIONAL_TEAM_OFFER_COUNT,

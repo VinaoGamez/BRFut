@@ -885,7 +885,9 @@ export function createCalendarViewFeature(deps) {
         const isState = isStateLeagueGame(game);
         const completed = isFixtureCompleted(game);
         const scoreLabel = fixtureResultLabel(game);
-        const eventLabel = isWorldCup
+        const eventLabel = game.competition === 'ELIMINATÓRIAS'
+          ? `ELIMINATÓRIAS · ${game.matchday}ª RODADA`
+          : isWorldCup
           ? `COPA DO MUNDO · ${game.phase}${game.knockout ? '' : ` · R${game.round}`}`
           : isCup
             ? `COPA DO BRASIL · ${game.phase} · ${game.leg}`

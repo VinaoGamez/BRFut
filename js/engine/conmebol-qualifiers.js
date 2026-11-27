@@ -14,7 +14,7 @@
 import { INTERNATIONAL_WINDOWS } from './international-calendar.js';
 
 export const QUALIFIERS_COMPETITION = 'ELIMINATÓRIAS';
-export const QUALIFIERS_VERSION = 1;
+export const QUALIFIERS_VERSION = 2;
 
 export const QUALIFIER_TEAMS = Object.freeze([
   Object.freeze({ code: 'ARG', name: 'Argentina', power: 94 }),
@@ -30,6 +30,20 @@ export const QUALIFIER_TEAMS = Object.freeze([
 ]);
 
 const TEAM_BY_CODE = new Map(QUALIFIER_TEAMS.map(team => [team.code, team]));
+
+/** Onde cada seleção manda os jogos das Eliminatórias. */
+export const QUALIFIER_HOME_VENUES = Object.freeze({
+  ARG: { name: 'Estadio Monumental', city: 'Buenos Aires', capacity: 84000 },
+  BRA: { name: 'Maracanã', city: 'Rio de Janeiro', capacity: 73000 },
+  URU: { name: 'Estadio Centenario', city: 'Montevidéu', capacity: 60000 },
+  COL: { name: 'Estadio Metropolitano', city: 'Barranquilla', capacity: 46000 },
+  ECU: { name: 'Estadio Rodrigo Paz Delgado', city: 'Quito', capacity: 41000 },
+  PAR: { name: 'Estadio Defensores del Chaco', city: 'Assunção', capacity: 42000 },
+  CHI: { name: 'Estadio Nacional', city: 'Santiago', capacity: 48000 },
+  PER: { name: 'Estadio Nacional', city: 'Lima', capacity: 50000 },
+  VEN: { name: 'Estadio Monumental de Maturín', city: 'Maturín', capacity: 51000 },
+  BOL: { name: 'Estadio Hernando Siles', city: 'La Paz', capacity: 41000 },
+});
 
 /** Sedes sul-americanas por Copa (classificadas, mas jogam). */
 const HOSTS_BY_CYCLE = Object.freeze({ 2030: Object.freeze(['ARG', 'URU', 'PAR']) });
@@ -96,10 +110,16 @@ export function createConmebolQualifiers({ cycleYear, seed = 1 } = {}) {
         cycleYear,
         matchday: index + 1,
         windowId: window.id,
-        home,
-        away,
+        // Nomes no home/away, como na Copa: o ao vivo do técnico de seleção
+        // acha o elenco pelo nome. Os códigos ficam em homeCode/awayCode.
+        home: TEAM_BY_CODE.get(home).name,
+        away: TEAM_BY_CODE.get(away).name,
+        homeCode: home,
+        awayCode: away,
         homeName: TEAM_BY_CODE.get(home).name,
         awayName: TEAM_BY_CODE.get(away).name,
+        time: index % 2 === 0 ? '21:30' : '20:00',
+        isNationalTeamFixture: true,
         date: date.toISOString(),
         completed: false,
         homeGoals: null,
@@ -132,7 +152,7 @@ export function qualifierStrength(code, { home = false } = {}) {
 
 /** Placar pelo mesmo modelo de Poisson da Copa (força vem de fora). */
 function simulateQualifier(qualifiers, game) {
-  const diff = (qualifierStrength(game.home, { home: true }) - qualifierStrength(game.away)) / 18;
+  const diff = (qualifierStrength(game.homeCode, { home: true }) - qualifierStrength(game.awayCode)) / 18;
   const lamH = Math.max(0.35, 1.2 + diff * 0.45);
   const lamA = Math.max(0.3, 1.05 - diff * 0.45);
   const sample = lambda => {
@@ -156,8 +176,8 @@ export function qualifierTable(qualifiers) {
     code: team.code, name: team.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0,
   }]));
   (qualifiers?.fixtures || []).filter(game => game.completed).forEach(game => {
-    const h = rows[game.home];
-    const a = rows[game.away];
+    const h = rows[game.homeCode];
+    const a = rows[game.awayCode];
     if (!h || !a) return;
     h.played += 1; a.played += 1;
     h.goalsFor += game.homeGoals; h.goalsAgainst += game.awayGoals;
@@ -175,29 +195,57 @@ export function qualifierTable(qualifiers) {
  * Joga as rodadas com data até `date`. Fecha a classificação quando acabar.
  * @returns {{changed: boolean, completedMatchdays: number[], finished: boolean}}
  */
-export function advanceQualifiersThroughDate(qualifiers, date) {
+export function advanceQualifiersThroughDate(qualifiers, date, { isUserFixture = () => false } = {}) {
   if (!qualifiers || qualifiers.complete) return { changed: false, completedMatchdays: [], finished: false };
   const limit = new Date(date).getTime();
   const matchdays = new Set();
   qualifiers.fixtures.forEach(game => {
     if (game.completed || new Date(game.date).getTime() > limit) return;
+    // Jogo da seleção do usuário espera a partida ao vivo.
+    if (isUserFixture(game)) return;
     Object.assign(game, simulateQualifier(qualifiers, game), { completed: true });
     matchdays.add(game.matchday);
   });
-  let finished = false;
-  if (qualifiers.fixtures.length && qualifiers.fixtures.every(game => game.completed)) {
-    const { hosts, direct, playoff } = qualifierSlots(qualifiers.cycleYear);
-    const table = qualifierTable(qualifiers).filter(row => !hosts.includes(row.code));
-    const directCodes = table.slice(0, direct).map(row => row.code);
-    const playoffTeam = playoff ? table[direct]?.code : null;
-    // Repescagem intercontinental: chance pela força (Bolívia em 2026 caiu nela).
-    const playoffWin = playoffTeam ? nextRandom(qualifiers) < Math.min(0.8, Math.max(0.25, (qualifierStrength(playoffTeam) - 76) / 20)) : false;
-    qualifiers.qualified = [...hosts, ...directCodes, ...(playoffWin ? [playoffTeam] : [])];
-    qualifiers.playoff = playoffTeam ? { team: playoffTeam, won: playoffWin } : null;
-    qualifiers.complete = true;
-    finished = true;
-  }
+  const finished = closeQualifiersIfDone(qualifiers);
   return { changed: matchdays.size > 0 || finished, completedMatchdays: [...matchdays].sort((a, b) => a - b), finished };
+}
+
+/** Placar ao vivo do usuário gravado em `game`: fecha a rodada/tabela se der. */
+export function completeQualifierGame(qualifiers, game, { homeGoals, awayGoals } = {}) {
+  if (!qualifiers || !game) return { finished: false };
+  const target = qualifiers.fixtures.find(item => item.id === game.id) || game;
+  target.homeGoals = Number(homeGoals ?? game.homeGoals) || 0;
+  target.awayGoals = Number(awayGoals ?? game.awayGoals) || 0;
+  target.completed = true;
+  return { finished: closeQualifiersIfDone(qualifiers) };
+}
+
+function closeQualifiersIfDone(qualifiers) {
+  if (qualifiers.complete || !qualifiers.fixtures.length || !qualifiers.fixtures.every(game => game.completed)) return false;
+  const { hosts, direct, playoff } = qualifierSlots(qualifiers.cycleYear);
+  const table = qualifierTable(qualifiers).filter(row => !hosts.includes(row.code));
+  const directCodes = table.slice(0, direct).map(row => row.code);
+  const playoffTeam = playoff ? table[direct]?.code : null;
+  // Repescagem intercontinental: chance pela força (Bolívia em 2026 caiu nela).
+  const playoffWin = playoffTeam ? nextRandom(qualifiers) < Math.min(0.8, Math.max(0.25, (qualifierStrength(playoffTeam) - 76) / 20)) : false;
+  qualifiers.qualified = [...hosts, ...directCodes, ...(playoffWin ? [playoffTeam] : [])];
+  qualifiers.playoff = playoffTeam ? { team: playoffTeam, won: playoffWin } : null;
+  qualifiers.complete = true;
+  return true;
+}
+
+/** Save antigo (v1: códigos no home/away) → v2. */
+export function migrateQualifiers(saved) {
+  if (!saved || !Array.isArray(saved.fixtures)) return null;
+  if (saved.version === QUALIFIERS_VERSION) return saved;
+  if (saved.version !== 1) return null;
+  return {
+    ...saved,
+    version: QUALIFIERS_VERSION,
+    fixtures: saved.fixtures.map(game => (TEAM_BY_CODE.has(game.home)
+      ? { ...game, homeCode: game.home, awayCode: game.away, home: TEAM_BY_CODE.get(game.home).name, away: TEAM_BY_CODE.get(game.away).name, isNationalTeamFixture: true }
+      : game)),
+  };
 }
 
 export function qualifierTeamName(code) {

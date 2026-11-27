@@ -4,8 +4,13 @@
  */
 import assert from 'node:assert/strict';
 import { selectCallUps, resolveDutyReturn, applyDutyReturn, callupRuleFor } from '../js/engine/international-duty.js';
+import { applyConmebolQualifiersToRanking, getSeedRankingForEdition } from '../js/engine/world-cup-history.js';
+import { buildExtraNationalSquad, withExtraNationalSquads } from '../js/engine/world-cup-extra-squads.js';
+import { resolveNationalTeam } from '../js/engine/national-teams.js';
 import {
   advanceQualifiersThroughDate,
+  completeQualifierGame,
+  migrateQualifiers,
   createConmebolQualifiers,
   qualifierTable,
   qualifierWindows,
@@ -92,6 +97,59 @@ test('favoritos se classificam na maioria das simulações', () => {
     if (q.qualified.includes('BRA')) brazil += 1;
   }
   assert.ok(brazil >= 50, `Brasil classificou ${brazil}/60`);
+});
+
+test('técnico de seleção: jogo dele espera o ao vivo e trava o fim das Eliminatórias', () => {
+  const q = createConmebolQualifiers({ cycleYear: 2030, seed: 9 });
+  const isUser = game => game.home === 'Brasil' || game.away === 'Brasil';
+  advanceQualifiersThroughDate(q, new Date(2029, 11, 31), { isUserFixture: isUser });
+  const pending = q.fixtures.filter(game => !game.completed);
+  assert.equal(pending.length, 18);
+  assert.ok(pending.every(isUser));
+  assert.equal(q.complete, false);
+  pending.forEach(game => completeQualifierGame(q, game, { homeGoals: 2, awayGoals: 1 }));
+  assert.equal(q.complete, true);
+  assert.ok(q.qualified.includes('ARG'));
+});
+
+test('jogo das Eliminatórias usa o nome da seleção no home/away e o código ao lado', () => {
+  const q = createConmebolQualifiers({ cycleYear: 2030, seed: 2 });
+  const game = q.fixtures[0];
+  assert.ok(resolveNationalTeam(game.home), `${game.home} não é seleção conhecida`);
+  assert.equal(resolveNationalTeam(game.home).code, game.homeCode);
+  assert.equal(game.competition, 'ELIMINATÓRIAS');
+});
+
+test('save antigo das Eliminatórias (códigos no home/away) migra sem perder placar', () => {
+  const q = createConmebolQualifiers({ cycleYear: 2030, seed: 4 });
+  advanceQualifiersThroughDate(q, new Date(2027, 11, 31));
+  const v1 = { ...q, version: 1, fixtures: q.fixtures.map(({ homeCode, awayCode, ...game }) => ({ ...game, home: homeCode, away: awayCode })) };
+  const back = migrateQualifiers(v1);
+  assert.equal(back.version, 2);
+  assert.deepEqual(qualifierTable(back), qualifierTable(q));
+});
+
+test('Copa 2030: sul-americanos vêm das Eliminatórias e o total continua 48', () => {
+  const base = getSeedRankingForEdition([], 2030);
+  const seven = applyConmebolQualifiersToRanking(base, ['ARG', 'URU', 'PAR', 'BRA', 'CHI', 'PER', 'BOL']);
+  assert.equal(seven.length, 48);
+  ['CHI', 'PER', 'BOL'].forEach(code => assert.ok(seven.some(row => row.code === code)));
+  ['COL', 'ECU'].forEach(code => assert.ok(!seven.some(row => row.code === code)));
+  assert.equal(new Set(seven.map(row => row.code)).size, 48);
+  const six = applyConmebolQualifiersToRanking(seven, ['ARG', 'URU', 'PAR', 'BRA', 'COL', 'ECU']);
+  assert.equal(six.length, 48);
+  assert.equal(six.filter(row => ['ARG', 'URU', 'PAR', 'BRA', 'COL', 'ECU', 'CHI', 'PER', 'BOL', 'VEN'].includes(row.code)).length, 6);
+});
+
+test('Chile, Peru, Venezuela e Bolívia ganham elenco de 26 no formato do JSON', () => {
+  ['CHI', 'PER', 'VEN', 'BOL'].forEach(code => {
+    const team = buildExtraNationalSquad(code);
+    assert.equal(team.players.length, 26);
+    assert.equal(team.players.filter(p => p.pos === 'GOL').length, 3);
+    assert.equal(new Set(team.players.map(p => p.name)).size, 26);
+  });
+  const merged = withExtraNationalSquads({ teams: { BRA: { code: 'BRA', players: [] } } });
+  assert.ok(merged.teams.BOL && merged.teams.BRA);
 });
 
 console.log(`\n${passed} testes ok`);

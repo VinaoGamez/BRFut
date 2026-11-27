@@ -32,8 +32,11 @@ const dayDiff = (later, earlier) => {
 };
 
 /** Pool de seleções elegíveis ao convite (CMU 2026). */
-export function nationalTeamOfferPool({ year = WORLD_CUP_2026_YEAR, userDivision = 'D' } = {}) {
-  const all = Object.values(NATIONAL_TEAMS);
+export function nationalTeamOfferPool({ year = WORLD_CUP_2026_YEAR, userDivision = 'D', participantCodes = null } = {}) {
+  // A partir de 2030, só quem está na Copa (sul-americanos vêm das Eliminatórias).
+  const all = Array.isArray(participantCodes) && participantCodes.length
+    ? participantCodes.map(code => nationalTeamByCode(code)).filter(Boolean)
+    : Object.values(NATIONAL_TEAMS);
   if (Number(year) !== WORLD_CUP_2026_YEAR) return all;
 
   const division = String(userDivision || 'D').trim().toUpperCase();
@@ -131,9 +134,10 @@ export function generateNationalTeamOffers({
   seed = 1,
   count = 3,
   excludeCodes = [],
+  participantCodes = null,
 } = {}) {
   const excluded = new Set((excludeCodes || []).map(code => String(code || '').trim().toUpperCase()).filter(Boolean));
-  const pool = nationalTeamOfferPool({ year, userDivision }).filter(team => !excluded.has(team.code));
+  const pool = nationalTeamOfferPool({ year, userDivision, participantCodes }).filter(team => !excluded.has(team.code));
   const shuffled = [...pool].sort(
     (a, b) => hashPick(seed, a.fifaRank, 997) - hashPick(seed, b.fifaRank, 997),
   );
@@ -222,9 +226,11 @@ export function generateNextNationalTeamOffer({
   seed = 1,
   issueIndex = 0,
   existingOffers = [],
+  participantCodes = null,
 } = {}) {
   const excludeCodes = collectNationalTeamOfferCodes(existingOffers);
   const teams = generateNationalTeamOffers({
+    participantCodes,
     year,
     userDivision,
     seed: (Number(seed) || 1) + issueIndex * 991,

@@ -32,7 +32,7 @@ export function createFixtureDetailsResolver({
     const resolveFormattedDate = (rawDate, fallbackDate = null) =>
       formatFixtureDateLabel(rawDate) || formatFixtureDateLabel(fallbackDate);
 
-    const conmebol = isConmebolGame(game);
+    const conmebol = isConmebolGame(game) || game.competition === 'ELIMINATÓRIAS';
     if (game.competition === 'COPA DO BRASIL' || game.competition === WORLD_CUP_COMPETITION || conmebol || isStateLeagueGame(game)) {
       const formatted = resolveFormattedDate(game.date, isStateLeagueGame(game) ? stateLeagueFallbackDate() : null);
       const date = formatted?.date || parseCalendarDate(game.date) || seasonStartDate();

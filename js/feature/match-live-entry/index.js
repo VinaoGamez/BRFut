@@ -531,7 +531,7 @@ export function createMatchLiveEntryFeature(deps) {
       const liveGame = nextEntry?.game || getNextUserGame();
       setLiveMatchGame(liveGame);
       if (!(await bindSquadForUserFixture(getLiveMatchGame()))) {
-        pushMessage?.({ category: 'match', type: 'error', title: 'Elenco indisponível', body: 'Não foi possível carregar o elenco da seleção. Recarregue a página e tente novamente.', round: getCurrentRound(), meta: { competition: 'Copa do Mundo' } });
+        pushMessage?.({ category: 'match', type: 'error', title: 'Elenco indisponível', body: 'Não foi possível carregar o elenco da seleção. Recarregue a página e tente novamente.', round: getCurrentRound(), meta: { competition: 'Seleção' } });
         setLiveMatchGame(null);
         return;
       }

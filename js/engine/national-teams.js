@@ -55,7 +55,32 @@ export const NATIONAL_TEAMS = Object.freeze({
   HAI: { code: 'HAI', name: 'Haiti', iso: 'ht', fifaRank: 50, block: 4, namePool: 'Concacaf' },
 });
 
+/**
+ * Seleções da CONMEBOL que não estão na Copa de 2026. Jogam as Eliminatórias
+ * e entram na Copa quando se classificam; não fazem parte do pool fixo de 48.
+ */
+export const EXTRA_NATIONAL_TEAMS = Object.freeze({
+  CHI: { code: 'CHI', name: 'Chile', iso: 'cl', fifaRank: 51, block: 4, namePool: 'Chile' },
+  PER: { code: 'PER', name: 'Peru', iso: 'pe', fifaRank: 52, block: 4, namePool: 'Peru' },
+  VEN: { code: 'VEN', name: 'Venezuela', iso: 've', fifaRank: 53, block: 4, namePool: 'Venezuela' },
+  BOL: { code: 'BOL', name: 'Bolívia', iso: 'bo', fifaRank: 54, block: 4, namePool: 'Bolívia' },
+});
+
+/** Todas as seleções conhecidas pelo jogo (pool da Copa + extras). */
+export const ALL_NATIONAL_TEAMS = Object.freeze({ ...NATIONAL_TEAMS, ...EXTRA_NATIONAL_TEAMS });
+
+/** As dez seleções da CONMEBOL. */
+export const CONMEBOL_NATION_CODES = Object.freeze(['ARG', 'BOL', 'BRA', 'CHI', 'COL', 'ECU', 'PAR', 'PER', 'URU', 'VEN']);
+
+export function isConmebolNation(code) {
+  return CONMEBOL_NATION_CODES.includes(String(code || '').trim().toUpperCase());
+}
+
 const NAME_ALIASES = Object.freeze({
+  chile: 'CHI',
+  peru: 'PER',
+  venezuela: 'VEN',
+  bolivia: 'BOL',
   brasil: 'BRA',
   brazil: 'BRA',
   franca: 'FRA',
@@ -147,16 +172,16 @@ function normKey(value) {
 
 export function nationalTeamByCode(code) {
   const key = String(code || '').trim().toUpperCase();
-  return NATIONAL_TEAMS[key] || null;
+  return ALL_NATIONAL_TEAMS[key] || null;
 }
 
 export function resolveNationalTeam(teamKey) {
   if (!teamKey) return null;
   const raw = String(teamKey).trim();
   const upper = raw.toUpperCase();
-  if (NATIONAL_TEAMS[upper]) return NATIONAL_TEAMS[upper];
+  if (ALL_NATIONAL_TEAMS[upper]) return ALL_NATIONAL_TEAMS[upper];
   const alias = NAME_ALIASES[normKey(raw)];
-  if (alias) return NATIONAL_TEAMS[alias] || null;
+  if (alias) return ALL_NATIONAL_TEAMS[alias] || null;
   return null;
 }
 

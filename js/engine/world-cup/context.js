@@ -2,11 +2,18 @@
  * Contexto de partida — Copa do Mundo vs clube.
  */
 
+import { QUALIFIERS_COMPETITION } from '../conmebol-qualifiers.js';
 import { WORLD_CUP_COMPETITION } from '../world-cup-calendar.js';
 
+/** Jogo de seleção: Copa do Mundo ou Eliminatórias. */
+export function isNationalTeamCompetitionGame(game) {
+  return game?.competition === WORLD_CUP_COMPETITION || game?.competition === QUALIFIERS_COMPETITION;
+}
+
+/** Jogo da seleção que o usuário treina (Copa ou Eliminatórias). */
 export function isWorldCupUserFixture(game, userNationalTeamName) {
   return !!(
-    game?.competition === WORLD_CUP_COMPETITION &&
+    isNationalTeamCompetitionGame(game) &&
     userNationalTeamName &&
     (game.home === userNationalTeamName || game.away === userNationalTeamName)
   );

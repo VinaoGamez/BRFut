@@ -575,6 +575,7 @@ export function resolveFixtureCompetitionCode(game, { division = null } = {}) {
   if (comp === 'LIBERTADORES') return 'LIB';
   if (comp === 'SUL-AMERICANA') return 'CSU';
   if (comp === 'RECOPA SUL-AMERICANA') return 'RSA';
+  if (comp === 'ELIMINATÓRIAS') return 'ELI';
   if (comp === 'INTERCONTINENTAL') return 'CIF';
   if (comp === 'SÉRIE D ELIMINATÓRIAS' || (game.tieId && game.knockoutRound != null)) {
     return LEAGUE_CODE_BY_DIVISION.D || 'BSD';

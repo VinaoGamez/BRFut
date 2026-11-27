@@ -1,3 +1,4 @@
+import { QUALIFIERS_COMPETITION } from './conmebol-qualifiers.js';
 import { isConmebolGame } from './conmebol-format.js';
 import { FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { clamp } from '../ui/dom.js';
@@ -21,6 +22,7 @@ export function createUserScheduleEngine({
   getCopaDoBrasilFixtures,
   getRecopaFixtures,
   getConmebolFixtures = () => [],
+  getQualifierFixtures = () => [],
   getWorldCupCompetition,
   getWorldCupAllFixtures,
   getStateLeagueEngine,
@@ -34,6 +36,8 @@ export function createUserScheduleEngine({
   rescheduleAllCupFixtures,
 }) {
   let userScheduleCache = null;
+  // Só para QA (?engineTest): limita a fila a uma competição.
+  let qaFocusCompetition = null;
   let pendingUserScheduleCache = null;
   const invalidateUserScheduleCache = () => {
     userScheduleCache = null;
@@ -43,8 +47,8 @@ export function createUserScheduleEngine({
   const isUserFixture = game => {
     const userClub = getUserClub();
     const userNationalTeamName = getUserNationalTeamName();
-    if (game.competition === WORLD_CUP_COMPETITION && userNationalTeamName) {
-      return game.home === userNationalTeamName || game.away === userNationalTeamName;
+    if (game.competition === WORLD_CUP_COMPETITION || game.competition === QUALIFIERS_COMPETITION) {
+      return !!userNationalTeamName && (game.home === userNationalTeamName || game.away === userNationalTeamName);
     }
     return game.home === userClub || game.away === userClub;
   };
@@ -78,6 +82,7 @@ export function createUserScheduleEngine({
     if (isRecopaNationalGame(game)) return !!game.completed;
     if (isConmebolGame(game)) return !!game.completed;
     if (game.competition === WORLD_CUP_COMPETITION) return !!game.completed || game.homeGoals != null;
+    if (game.competition === QUALIFIERS_COMPETITION) return !!game.completed;
     if (game.competition === 'COPA DO BRASIL' || isKnockoutShootoutCompetition(game)) {
       if (game.completed) return true;
       if (Number.isFinite(Number(game.homeGoals)) && Number.isFinite(Number(game.awayGoals))) return true;
@@ -118,6 +123,8 @@ export function createUserScheduleEngine({
     const worldCup = worldCupCompetition
       ? getWorldCupAllFixtures(worldCupCompetition).filter(isUserFixture)
       : [];
+    // Eliminatórias só entram na agenda de quem treina a seleção.
+    const qualifiers = getUserNationalTeamName() ? (getQualifierFixtures?.() || []).filter(isUserFixture) : [];
     const stateEntries = FEATURES.stateLeague && savedNewGame
       ? stateLeagueEngine.getUserFixtures(userClub).map(game => ({ game, details: fixtureDetails(game) }))
       : [];
@@ -130,6 +137,7 @@ export function createUserScheduleEngine({
       ...recopa.map(game => ({ game, details: fixtureDetails(game) })),
       ...conmebol.map(game => ({ game, details: fixtureDetails(game) })),
       ...worldCup.map(game => ({ game, details: fixtureDetails(game) })),
+      ...qualifiers.map(game => ({ game, details: fixtureDetails(game) })),
     ].sort((a, b) => {
       const aTs = parseCalendarDate(a.details?.date)?.getTime() ?? Number.MAX_SAFE_INTEGER;
       const bTs = parseCalendarDate(b.details?.date)?.getTime() ?? Number.MAX_SAFE_INTEGER;
@@ -141,7 +149,7 @@ export function createUserScheduleEngine({
     return userScheduleCache;
   };
 
-  const isWorldCupFixture = game => game?.competition === WORLD_CUP_COMPETITION;
+  const isWorldCupFixture = game => game?.competition === WORLD_CUP_COMPETITION || game?.competition === QUALIFIERS_COMPETITION;
 
   const isClubFixtureBlockedByWorldCup = entry => {
     if (!entry?.game || isWorldCupFixture(entry.game)) return false;
@@ -156,6 +164,7 @@ export function createUserScheduleEngine({
     // Durante a janela CMU, jogos de clube (Série D etc.) não entram na fila —
     // slots travados; a Copa tem prioridade absoluta.
     pendingUserScheduleCache = userSchedule()
+      .filter(entry => !qaFocusCompetition || entry.game?.competition === qaFocusCompetition)
       .filter(entry => !isFixtureCompleted(entry.game))
       .filter(entry => !isClubFixtureBlockedByWorldCup(entry));
     return pendingUserScheduleCache;
@@ -280,7 +289,13 @@ export function createUserScheduleEngine({
     normalizeCalendarBeforeNextMatch();
   };
 
+  const setQaFocusCompetition = competition => {
+    qaFocusCompetition = competition || null;
+    invalidateUserScheduleCache();
+  };
+
   return {
+    setQaFocusCompetition,
     invalidateUserScheduleCache,
     isUserFixture,
     leagueFixtureRecorded,

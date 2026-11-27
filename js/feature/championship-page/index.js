@@ -157,6 +157,7 @@ export function createChampionshipPageFeature(deps) {
   const getConmebolEdition = deps.getConmebolEdition || (() => null);
   const pageConmebolStep = { libertadores: 0, sudamericana: 0 };
   const getConmebolQualifiers = deps.getConmebolQualifiers || (() => null);
+  const getQualifiersHighlight = deps.getQualifiersHighlight || (() => 'BRA');
   let pageQualifiersMatchday = 1;
   const escapeConmebol = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
@@ -1253,7 +1254,7 @@ export function createChampionshipPageFeature(deps) {
       if (head) head.innerHTML = '';
       body.innerHTML = gamesHtml;
     } else if (pageCompetition === QUALIFIERS_PAGE_ID && !isArchiveView()) {
-      const view = qualifiersBody({ qualifiers: getConmebolQualifiers(), matchday: pageQualifiersMatchday, escapeHtml: escapeConmebol });
+      const view = qualifiersBody({ qualifiers: getConmebolQualifiers(), matchday: pageQualifiersMatchday, highlightCode: getQualifiersHighlight(), escapeHtml: escapeConmebol });
       tableCard?.classList.toggle('is-knockout', !view.head);
       if (head) head.innerHTML = view.head;
       body.innerHTML = view.html;
