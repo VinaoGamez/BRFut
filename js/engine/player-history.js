@@ -5,6 +5,7 @@
  * matchLogs = buffer só da temporada corrente (cap ≈ nº de jogos do calendário).
  * No finalizeSeason os logs são apagados; permanece players.*.seasons (médias).
  */
+import { storage as brfutStorage } from '../core/storage-backend.js';
 import { SAVE_KEYS, SAVE_VERSION, MODULE_VERSIONS, CAREER_INDEX_KEY, ACTIVE_SLOT_SESSION_KEY, slotBundleKeys } from '../core/constants.js';
 import { isLocalStorageCheckpoint } from '../core/local-save-checkpoint.js';
 import { readJson, writeJson, getStoragePressure, prepareStorageForSave } from '../core/save.js';
@@ -800,7 +801,7 @@ export function savePlayerHistoryStore(store, options = {}) {
 
 export function clearPlayerHistoryStore() {
   try {
-    localStorage.removeItem(SAVE_KEYS.playerHistory);
+    brfutStorage.removeItem(SAVE_KEYS.playerHistory);
   } catch {
     /* ignore */
   }

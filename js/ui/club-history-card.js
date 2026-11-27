@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../core/storage-backend.js';
 import { teamCrestHtml } from './team-crest.js';
 import { hydratePickerTrophyIcons, resolveChampionshipTrophyKey } from './competition-trophies.js';
 
@@ -6,7 +7,7 @@ export const CLUB_HISTORY_LAYOUT_DEFAULTS = Object.freeze({ width: 560, radius: 
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 
 export function loadClubHistoryLayout() {
-  try { return { ...CLUB_HISTORY_LAYOUT_DEFAULTS, ...JSON.parse(localStorage.getItem(CLUB_HISTORY_LAYOUT_KEY) || '{}') }; }
+  try { return { ...CLUB_HISTORY_LAYOUT_DEFAULTS, ...JSON.parse(brfutStorage.getItem(CLUB_HISTORY_LAYOUT_KEY) || '{}') }; }
   catch { return { ...CLUB_HISTORY_LAYOUT_DEFAULTS }; }
 }
 

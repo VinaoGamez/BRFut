@@ -50,7 +50,7 @@
 
 .calendar-toolbar small {
   color: #63d9ff;
-  font: 700 8px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: 1px;
 }
 
@@ -76,7 +76,7 @@
   background: #102b35 !important;
   color: #9edff0 !important;
   padding: 0 10px !important;
-  font: 700 9px 'DM Sans', sans-serif !important;
+  font: 700 10px 'DM Sans', sans-serif !important;
   cursor: pointer;
 }
 
@@ -102,7 +102,7 @@
   background: #102b35;
   border-bottom: 1px solid #28505b;
   color: #75cde3;
-  font: 700 8px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: .6px;
 }
 
@@ -199,7 +199,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #91b0b5;
-  font: 700 8px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: .25px;
 }
 
@@ -239,7 +239,7 @@
   display: inline-block;
   padding: 4px 7px;
   border-radius: 3px;
-  font: 700 9px 'Barlow Condensed', sans-serif;
+  font: 700 10px 'Barlow Condensed', sans-serif;
   letter-spacing: 0.35px;
   line-height: 1;
   cursor: default;
@@ -257,7 +257,7 @@
   border-radius: 4px;
   background: #0b1d25;
   color: #edf8f5;
-  font: 700 9px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: 0.2px;
   white-space: nowrap;
   pointer-events: none;
@@ -322,7 +322,7 @@
   gap: 16px;
   background: #0d2029;
   color: #8eaaaf;
-  font: 700 8px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: .4px;
 }
 
@@ -457,7 +457,7 @@
 
 .agenda-date small {
   color: #9ebfc2;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .day-agenda {
@@ -486,7 +486,7 @@
   border-radius: 3px;
   background: #102b35;
   color: #63d9ff;
-  font: 700 9px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   font-style: normal;
 }
 
@@ -528,7 +528,7 @@
 .agenda-item.market-listed > i,
 .agenda-item.market-free > i,
 .agenda-item.market-idle > i {
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .agenda-item.market-window > i {
@@ -586,7 +586,7 @@
 
 .agenda-item small {
   color: #80a4aa;
-  font: 700 8px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: .5px;
 }
 
@@ -658,7 +658,7 @@
   display: block;
   padding: 0 16px 15px;
   color: #718f95;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.4;
 }
 
@@ -784,7 +784,7 @@ body.dark-mode .calendar-view .training-rules button:focus-visible {
 }
 
 /* from feature/calendar-view/index.js injectDom (fullCalendarCss) */
-.calendar-year-months{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;padding:8px 0 12px}.calendar-year-months button{min-width:0;padding:7px 2px!important;background:#0d2732!important;color:#9ebfc2!important;border:1px solid #28505b!important;font-size:8px!important}.calendar-year-months button.active{background:#1d5a6d!important;color:#fff!important;border-color:#63d9ff!important;box-shadow:inset 0 -2px #b6ff38}#calendarAdvanceWeek{min-width:118px!important;background:#1d5a6d!important;color:#fff!important;border-color:#63d9ff!important;box-shadow:inset 0 -2px #b6ff38!important}#calendarAdvanceWeek:disabled{opacity:.45;cursor:not-allowed!important;box-shadow:none!important}.calendar-day.planning-week{background:#0f2430!important}.calendar-day.matchday-stop{box-shadow:inset 0 0 0 2px #ffc94f!important}.calendar-day .cup-match{background:#ffc94f!important;color:#171003!important}.calendar-day.completed-user{opacity:.78}.calendar-day.completed-user time{text-decoration:line-through;text-decoration-color:#63d9ff55}.calendar-day .completed-score{color:#b6ff38!important;font-weight:700}.calendar-day.career-today{outline:2px solid #63d9ff;outline-offset:-2px}.calendar-day.career-today time{color:#63d9ff;font-weight:700}.calendar-legend i.cup{background:#ffc94f!important}.agenda-item.cup{border-left-color:#ffc94f!important;background:#281f0d!important}.agenda-item.cup small{color:#ffc94f!important}.agenda-item.completed{opacity:.88}.agenda-item.completed strong em{color:#b6ff38;font-style:normal;font-weight:700}.calendar-routine-card{padding:14px!important}.calendar-routine-summary{display:grid;gap:8px}.calendar-routine-summary .routine-alert{padding:10px 11px;border-radius:5px;font-size:10px;line-height:1.45}.calendar-routine-summary .routine-alert.matchday{background:#2b220d;border:1px solid #ffc94f;color:#ffe6a8}.calendar-routine-summary .routine-stat{padding:9px 10px;background:#102b35;border:1px solid #28505b;border-radius:5px}.calendar-routine-summary small{display:block;color:#63d9ff;font:700 8px DM Sans;letter-spacing:.55px}.calendar-routine-summary strong{display:block;margin-top:4px;color:#edf8f5;font:700 13px Barlow Condensed;line-height:1.25}.club-upcoming-row.cup-row span:first-child{color:#ffc94f}.cup-calendar-card{padding:16px!important}.cup-calendar-card>strong{display:block;margin:13px 0 7px;color:#b6ff38;font:700 20px Barlow Condensed}.cup-calendar-card p{margin:0;color:#9ebfc2;font-size:10px;line-height:1.5}.cup-calendar-card>div{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.cup-calendar-card span{padding:8px;background:#102b35;color:#63d9ff;font-size:7px}.cup-calendar-card span b{display:block;margin-top:3px;color:#edf8f5;font-size:11px}@media(max-width:900px){.calendar-year-months{grid-template-columns:repeat(6,1fr)}}@media(max-width:520px){.calendar-year-months{grid-template-columns:repeat(4,1fr)}}
+.calendar-year-months{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;padding:8px 0 12px}.calendar-year-months button{min-width:0;padding:7px 2px!important;background:#0d2732!important;color:#9ebfc2!important;border:1px solid #28505b!important;font-size:10px!important}.calendar-year-months button.active{background:#1d5a6d!important;color:#fff!important;border-color:#63d9ff!important;box-shadow:inset 0 -2px #b6ff38}#calendarAdvanceWeek{min-width:118px!important;background:#1d5a6d!important;color:#fff!important;border-color:#63d9ff!important;box-shadow:inset 0 -2px #b6ff38!important}#calendarAdvanceWeek:disabled{opacity:.45;cursor:not-allowed!important;box-shadow:none!important}.calendar-day.planning-week{background:#0f2430!important}.calendar-day.matchday-stop{box-shadow:inset 0 0 0 2px #ffc94f!important}.calendar-day .cup-match{background:#ffc94f!important;color:#171003!important}.calendar-day.completed-user{opacity:.78}.calendar-day.completed-user time{text-decoration:line-through;text-decoration-color:#63d9ff55}.calendar-day .completed-score{color:#b6ff38!important;font-weight:700}.calendar-day.career-today{outline:2px solid #63d9ff;outline-offset:-2px}.calendar-day.career-today time{color:#63d9ff;font-weight:700}.calendar-legend i.cup{background:#ffc94f!important}.agenda-item.cup{border-left-color:#ffc94f!important;background:#281f0d!important}.agenda-item.cup small{color:#ffc94f!important}.agenda-item.completed{opacity:.88}.agenda-item.completed strong em{color:#b6ff38;font-style:normal;font-weight:700}.calendar-routine-card{padding:14px!important}.calendar-routine-summary{display:grid;gap:8px}.calendar-routine-summary .routine-alert{padding:10px 11px;border-radius:5px;font-size:10px;line-height:1.45}.calendar-routine-summary .routine-alert.matchday{background:#2b220d;border:1px solid #ffc94f;color:#ffe6a8}.calendar-routine-summary .routine-stat{padding:9px 10px;background:#102b35;border:1px solid #28505b;border-radius:5px}.calendar-routine-summary small{display:block;color:#63d9ff;font:700 10px DM Sans, sans-serif;letter-spacing:.55px}.calendar-routine-summary strong{display:block;margin-top:4px;color:#edf8f5;font:700 13px Barlow Condensed, sans-serif;line-height:1.25}.club-upcoming-row.cup-row span:first-child{color:#ffc94f}.cup-calendar-card{padding:16px!important}.cup-calendar-card>strong{display:block;margin:13px 0 7px;color:#b6ff38;font:700 20px Barlow Condensed, sans-serif}.cup-calendar-card p{margin:0;color:#9ebfc2;font-size:10px;line-height:1.5}.cup-calendar-card>div{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.cup-calendar-card span{padding:8px;background:#102b35;color:#63d9ff;font-size:7px}.cup-calendar-card span b{display:block;margin-top:3px;color:#edf8f5;font-size:11px}@media(max-width:900px){.calendar-year-months{grid-template-columns:repeat(6,1fr)}}@media(max-width:520px){.calendar-year-months{grid-template-columns:repeat(4,1fr)}}
 
 /* from feature/calendar-view/index.js injectDom (matchReportCss) */
 .agenda-item.has-report{grid-template-columns:54px minmax(0,1fr) 34px!important}.agenda-match-report{display:grid!important;place-items:center;width:32px!important;height:32px!important;min-height:0!important;padding:0!important;margin-left:auto;border:1px solid #3a6b77!important;border-radius:5px!important;background:#12313c!important;color:#75dfff!important;font-size:17px!important;line-height:1!important}.agenda-match-report:hover{background:#1b4a59!important;border-color:#75dfff!important;color:#fff!important}
@@ -792,7 +792,7 @@ body.dark-mode .calendar-view .training-rules button:focus-visible {
 /* !important vence .modal-card{width:min(640px,...)} */
 .modal-card.match-report-modal,.match-report-modal{width:min(530px,calc(100vw - 20px))!important;max-width:530px!important;max-height:calc(100vh - 16px);overflow:auto;text-align:center;padding:10px 10px 12px!important}
 .match-report-live-head{display:grid;gap:2px;margin:0 0 10px}
-.match-report-live-label{display:block;margin:0;color:#edf8f5;font:700 11px DM Sans;letter-spacing:.8px;text-align:center}
+.match-report-live-label{display:block;margin:0;color:#edf8f5;font:700 11px DM Sans, sans-serif;letter-spacing:.8px;text-align:center}
 .match-report-live-datetime,.match-report-live-venue{margin:0;text-align:center;font-size:11px;letter-spacing:.35px}
 .match-report-live-datetime{margin-top:4px;color:#b6c8c9}
 .match-report-live-venue{margin-top:2px;margin-bottom:5px;color:#7fa8b0}
@@ -806,24 +806,24 @@ body.dark-mode .calendar-view .training-rules button:focus-visible {
 .match-report-modal .live-score-center{min-width:88px}
 .match-report-modal .live-score-center strong{font:800 28px 'Barlow Condensed',sans-serif;color:#edf8f5}
 .match-report-modal .live-match-clock-time{font-size:16px}
-.match-report-modal .live-match-clock-phase{font-size:9px}
+.match-report-modal .live-match-clock-phase{font-size:10px}
 .match-report-empty{padding:16px;border:1px solid #28505b;border-radius:7px;color:#9eb6b8;text-align:center;font-size:12px}
 .match-report-statistics{margin:10px 0 0;border:1px solid #28505b;border-radius:7px;overflow:hidden;text-align:center}
-.match-report-statistics>h3{margin:0;padding:9px 10px;background:#123843;color:#b6ff38;font:700 18px Barlow Condensed}
-.match-report-statistics-head{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:8px 12px;border-top:1px solid #234650;color:#63d9ff;font:700 10px DM Sans;text-transform:uppercase}
+.match-report-statistics>h3{margin:0;padding:9px 10px;background:#123843;color:#b6ff38;font:700 18px Barlow Condensed, sans-serif}
+.match-report-statistics-head{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:8px 12px;border-top:1px solid #234650;color:#63d9ff;font:700 10px DM Sans, sans-serif;text-transform:uppercase}
 .match-report-statistics-head b:first-child{text-align:left}.match-report-statistics-head b:last-child{text-align:right}
 .match-report-stat-row{display:grid;grid-template-columns:55px minmax(0,1fr) 55px;align-items:center;min-height:29px;padding:0 12px;border-top:1px solid #173943}
-.match-report-stat-row span{color:#9eb6b8;font:500 11px DM Sans}.match-report-stat-row strong{color:#edf8f5;font:700 15px Barlow Condensed}.match-report-stat-row strong:first-child{text-align:left}.match-report-stat-row strong:last-child{text-align:right}
+.match-report-stat-row span{color:#9eb6b8;font:500 11px DM Sans, sans-serif}.match-report-stat-row strong{color:#edf8f5;font:700 15px Barlow Condensed, sans-serif}.match-report-stat-row strong:first-child{text-align:left}.match-report-stat-row strong:last-child{text-align:right}
 .match-report-ratings{margin:10px 0 0;border:1px solid #28505b;border-radius:7px;overflow:hidden;text-align:left}
-.match-report-ratings>h3{margin:0;padding:9px 10px;background:#123843;color:#b6ff38;text-align:center;font:700 18px Barlow Condensed}
+.match-report-ratings>h3{margin:0;padding:9px 10px;background:#123843;color:#b6ff38;text-align:center;font:700 18px Barlow Condensed, sans-serif}
 .match-report-ratings-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .match-report-ratings-side{padding:12px 10px 14px;border-top:1px solid #234650}
 .match-report-ratings-side:first-child{border-right:1px solid #234650}
-.match-report-ratings-side>b{display:block;margin-bottom:9px;color:#63d9ff;font:700 10px DM Sans;letter-spacing:.4px}
+.match-report-ratings-side>b{display:block;margin-bottom:9px;color:#63d9ff;font:700 10px DM Sans, sans-serif;letter-spacing:.4px}
 .match-report-ratings-side ul{margin:0;padding:0;list-style:none;display:grid;gap:9px}
 .match-report-ratings-side li{display:grid;grid-template-columns:30px minmax(0,1fr) 34px;gap:5px;align-items:center;min-height:22px;line-height:1.35}
 .match-report-ratings-side li.match-report-best{background:#b6ff3812;border-radius:4px;margin:0 -4px;padding:3px 4px}
-.match-report-pos{color:#7fa3ab;font:700 11px DM Sans}
+.match-report-pos{color:#7fa3ab;font:700 11px DM Sans, sans-serif}
 .match-report-player{display:flex;align-items:center;gap:4px;min-width:0;color:#e9f4f2}
 .match-report-name{font:500 14.5px 'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .match-report-player.is-best .match-report-name{font-weight:800;color:#fff}
@@ -858,7 +858,7 @@ body.dark-mode .calendar-view .training-rules button:focus-visible {
 .match-report-sub{display:inline-block;width:0;height:0;margin-left:1px;flex-shrink:0;border-left:4px solid transparent;border-right:4px solid transparent}
 .match-report-sub.out{border-top:8px solid #ff4d4d;filter:drop-shadow(0 0 1px #ff9a9a)}
 .match-report-sub.in{border-bottom:8px solid #3dcf6a;filter:drop-shadow(0 0 1px #9dffb8)}
-.match-report-rating{text-align:right;font:700 15px Barlow Condensed;color:#edf8f5}
+.match-report-rating{text-align:right;font:700 15px Barlow Condensed, sans-serif;color:#edf8f5}
 .match-report-rating.rating-high,.match-report-rating.rating-best{color:#b6ff38}
 .match-report-rating.rating-ok{color:#9fd8ff}
 .match-report-rating.rating-low{color:#ff8f8f}

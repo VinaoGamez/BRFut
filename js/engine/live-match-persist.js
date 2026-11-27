@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../core/storage-backend.js';
 import { SAVE_KEYS, MODULE_VERSIONS } from '../core/constants.js';
 import { readJson, writeJson, MEMORY_LIMITS } from '../core/save.js';
 
@@ -41,7 +42,7 @@ export function saveLiveMatchSave(snapshot) {
 
 export function clearLiveMatchSave() {
   try {
-    localStorage.removeItem(SAVE_KEYS.liveMatch);
+    brfutStorage.removeItem(SAVE_KEYS.liveMatch);
   } catch {
     /* ignore */
   }

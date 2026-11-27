@@ -112,6 +112,7 @@ const SUITES = [
   { label: 'own-goal-report', steps: [['scripts/own-goal-report-tests.mjs']] },
   { label: 'youth-academy', steps: [['scripts/youth-academy-tests.mjs']] },
   { label: 'brfut-api', steps: [['scripts/brfut_api_tests.py']] },
+  { label: 'storage-backend', steps: [['scripts/storage-backend-tests.mjs']] },
   { label: 'transfers', steps: [['scripts/transfers-tests.mjs']] },
   { label: 'transfer-history-data', steps: [['scripts/transfer-history-data-tests.mjs']] },
   { label: 'manager-ranking-history', steps: [['scripts/manager-ranking-history-tests.mjs']] },

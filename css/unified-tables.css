@@ -45,7 +45,7 @@
   background: var(--table-head) !important;
   color: var(--table-cyan) !important;
   border-color: #28505b !important;
-  font: 700 9px DM Sans !important;
+  font: 700 10px DM Sans, sans-serif !important;
   letter-spacing: 0.6px;
 }
 
@@ -192,6 +192,6 @@
   .dashboard-fixture-row,
   .round-games-head,
   .round-game-row {
-    font-size: 9px !important;
+    font-size: 10px !important;
   }
 }

@@ -2,6 +2,7 @@
  * Checkpoints imutáveis em IndexedDB, criados antes de qualquer merge local/nuvem.
  * Mantém poucas revisões e nunca interfere no boot quando IndexedDB não está disponível.
  */
+import { storage as brfutStorage } from './storage-backend.js';
 const DB_NAME = 'brfut-save-recovery';
 const DB_VERSION = 1;
 const STORE_NAME = 'snapshots';
@@ -28,10 +29,10 @@ function openDb() {
 function localSnapshot() {
   const saves = {};
   try {
-    for (let index = 0; index < localStorage.length; index += 1) {
-      const key = localStorage.key(index);
+    for (let index = 0; index < brfutStorage.length; index += 1) {
+      const key = brfutStorage.key(index);
       if (!key || (!key.startsWith('brfut-') && !key.startsWith('matchday-'))) continue;
-      const raw = localStorage.getItem(key);
+      const raw = brfutStorage.getItem(key);
       if (raw == null) continue;
       try {
         saves[key] = JSON.parse(raw);

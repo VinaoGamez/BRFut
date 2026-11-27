@@ -16,7 +16,7 @@
   padding: 0;
   margin: 0;
   color: #63d9ff;
-  font: 700 9px DM Sans, sans-serif;
+  font: 700 10px DM Sans, sans-serif;
   letter-spacing: 0.55px;
 }
 
@@ -55,7 +55,7 @@
   border-radius: 4px;
   background: #102b35;
   color: #c5dce0;
-  font: 600 9px DM Sans, sans-serif;
+  font: 600 10px DM Sans, sans-serif;
   cursor: pointer;
 }
 
@@ -233,7 +233,7 @@
 
 .nc-crest-swatch span {
   color: #79cce7;
-  font: 700 8px DM Sans, sans-serif;
+  font: 700 10px DM Sans, sans-serif;
   letter-spacing: 0.35px;
 }
 
@@ -268,7 +268,7 @@
 
 .nc-crest-field span {
   color: #79cce7;
-  font: 700 8px DM Sans, sans-serif;
+  font: 700 10px DM Sans, sans-serif;
   letter-spacing: 0.4px;
 }
 
@@ -310,7 +310,7 @@
   min-height: 30px;
   padding-bottom: 1px;
   color: #c5dce0;
-  font: 600 9px DM Sans, sans-serif;
+  font: 600 10px DM Sans, sans-serif;
   white-space: nowrap;
 }
 
@@ -335,7 +335,7 @@
 .nc-crest-range output {
   min-width: 34px;
   color: #9eb6b8;
-  font: 600 9px DM Sans, sans-serif;
+  font: 600 10px DM Sans, sans-serif;
   text-align: right;
 }
 
@@ -364,7 +364,7 @@
   min-width: 10rem;
   max-width: 12rem;
   padding: 6px 10px !important;
-  font-size: 9px !important;
+  font-size: 10px !important;
 }
 
 @media (max-width: 720px) {

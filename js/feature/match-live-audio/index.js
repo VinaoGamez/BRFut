@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../../core/storage-backend.js';
 import { MODULE_VERSIONS } from '../../core/constants.js';
 
 import whistleUrl from '../../../assets/sounds/match-live/whistle.mp3?url';
@@ -29,7 +30,7 @@ const CLIPS = {
 
 const loadSettings = () => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = brfutStorage.getItem(STORAGE_KEY);
     if (!raw) return { enabled: true, volume: 0.52 };
     const parsed = JSON.parse(raw);
     return {
@@ -60,7 +61,7 @@ export function createMatchLiveAudioFeature() {
   let goalLayers = [];
 
   const persistSettings = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    brfutStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   };
 
   const syncControls = () => {

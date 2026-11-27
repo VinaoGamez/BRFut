@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../core/storage-backend.js';
 const STORAGE_KEY = 'brfut-manager-card-layout-v1';
 
 export const DEFAULT_MANAGER_CARD_LAYOUT = Object.freeze({
@@ -31,7 +32,7 @@ export function normalizeManagerCardLayout(raw = {}) {
 
 export function loadManagerCardLayout() {
   try {
-    return normalizeManagerCardLayout(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'));
+    return normalizeManagerCardLayout(JSON.parse(brfutStorage.getItem(STORAGE_KEY) || '{}'));
   } catch {
     return normalizeManagerCardLayout();
   }
@@ -39,12 +40,12 @@ export function loadManagerCardLayout() {
 
 export function saveManagerCardLayout(layout) {
   const normalized = normalizeManagerCardLayout(layout);
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized)); } catch { /* ignore */ }
+  try { brfutStorage.setItem(STORAGE_KEY, JSON.stringify(normalized)); } catch { /* ignore */ }
   return normalized;
 }
 
 export function resetManagerCardLayout() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  try { brfutStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
   return normalizeManagerCardLayout();
 }
 

@@ -19,7 +19,7 @@
 
 .transfer-history-route i {
   color: #27dcef;
-  font: 900 18px/1 'Barlow Condensed';
+  font: 900 18px/1 'Barlow Condensed', sans-serif;
   font-style: normal;
   text-align: center;
 }

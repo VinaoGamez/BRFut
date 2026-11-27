@@ -7,12 +7,13 @@ import {
   slotBundleKeys,
   isSlotBundleKey,
 } from './constants.js';
+import { storage as brfutStorage } from './storage-backend.js';
 import { readJson } from './save.js';
 import { readCareerIndex, getActiveSlotId, getSlotById, copyActiveKeysToBundle, copyBundleToActiveKeys, preferActiveOverStaleBundle } from './career-slot-manager.js';
 
 function readRaw(key) {
   try {
-    return localStorage.getItem(key);
+    return brfutStorage.getItem(key);
   } catch {
     return null;
   }
@@ -40,8 +41,8 @@ export function hasPlayableCareerSave(slotId = null) {
 export function scanLocalCareerStorage() {
   const keys = [];
   try {
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
       if (!key) continue;
       if (
         key.startsWith('brfut-')
@@ -92,7 +93,7 @@ export function repairSlotFromLocalStorage(slotId, { forceBundleCopy = true } = 
   const legacyCareer = readJson(LEGACY_SAVE_KEYS.career, null);
   if (legacyCareer && getActiveSlotId() === slotId) {
     try {
-      localStorage.setItem(SAVE_KEYS.career, JSON.stringify(legacyCareer));
+      brfutStorage.setItem(SAVE_KEYS.career, JSON.stringify(legacyCareer));
     } catch {
       return false;
     }
@@ -107,8 +108,8 @@ export function repairSlotFromLocalStorage(slotId, { forceBundleCopy = true } = 
   const clubHint = manifest?.clubName && manifest.clubName !== '—' ? manifest.clubName : null;
 
   try {
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
       if (!key || !isSlotBundleKey(key) || !key.endsWith('-career')) continue;
       const career = readJson(key, null);
       if (!career?.clubName) continue;
@@ -137,7 +138,7 @@ function copyStoragePair(src, dest) {
   const raw = readRaw(src);
   if (!raw) return;
   try {
-    localStorage.setItem(dest, raw);
+    brfutStorage.setItem(dest, raw);
   } catch {
     /* ignore quota */
   }

@@ -24,7 +24,7 @@ main > header.app-header {
 .header-news-kicker {
   flex: 0 0 auto;
   color: #2abee9;
-  font: 700 9px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: 1.1px;
 }
 
@@ -89,7 +89,7 @@ main > header.app-header {
   flex: 0 0 auto;
   font-style: normal;
   color: #75cde3;
-  font: 700 8px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: 0.55px;
 }
 

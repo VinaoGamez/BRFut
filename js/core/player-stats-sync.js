@@ -8,6 +8,7 @@ import {
   BRFUT_API_ORIGIN,
   CAREER_INDEX_KEY,
 } from './constants.js';
+import { storage as brfutStorage } from './storage-backend.js';
 import { authSessionSignal, authenticatedFetchOptions } from './auth-session.js';
 
 const DB_NAME = 'brfut-player-stats';
@@ -39,7 +40,7 @@ function activeCareerId() {
   try {
     const session = sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY);
     if (session) return session;
-    const index = JSON.parse(localStorage.getItem(CAREER_INDEX_KEY) || 'null');
+    const index = JSON.parse(brfutStorage.getItem(CAREER_INDEX_KEY) || 'null');
     return index?.activeSlotId || null;
   } catch {
     return null;

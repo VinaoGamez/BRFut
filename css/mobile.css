@@ -241,7 +241,7 @@ html.is-mobile .table-scroll::after {
   width: max-content;
   margin: 8px;
   color: #76a9b2;
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: .08em;
   text-transform: uppercase;
 }

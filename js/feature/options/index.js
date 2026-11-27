@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../../core/storage-backend.js';
 import { MODULE_VERSIONS, FEATURES, SITE_MAINTENANCE, SAVE_KEYS, SAVE_VERSION, CAREER_INDEX_KEY, CAREER_SLOT_LIMIT, slotBundleKeys } from '../../core/constants.js';
 import '../../../css/new-career-modal.css';
 import { initReleaseNotesViewer, renderOptionsUpdateSummary } from '../../ui/release-notes-viewer.js';
@@ -95,11 +96,11 @@ export function createOptionsFeature(deps) {
     openAccountLogin,
   } = deps;
 
-  let gamePace = localStorage.getItem(SAVE_KEYS.pace) || 'standard';
+  let gamePace = brfutStorage.getItem(SAVE_KEYS.pace) || 'standard';
   if (!GAME_PACE_CONFIG[gamePace]) gamePace = 'standard';
   let autosaveMode = getAutosaveMode();
 
-  const careerExists = () => !!localStorage.getItem(SAVE_KEYS.career);
+  const careerExists = () => !!brfutStorage.getItem(SAVE_KEYS.career);
 
   const ensureNewCareerBackdrop = () => {
     let backdrop = $('#newCareerBackdrop');
@@ -189,7 +190,7 @@ export function createOptionsFeature(deps) {
     }
     document.body.insertAdjacentHTML(
       'beforeend',
-      '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.webp" alt="BR Fut" width="480" height="72"></div><div class="career-welcome-actions"><button id="welcomeLogin" type="button">ENTRAR</button><button id="welcomeNewGame" type="button" class="primary hidden">NOVO JOGO</button></div><p id="welcomeHint" class="career-welcome-hint hidden"></p></div></section>',
+      '<section id="careerWelcome" class="career-welcome"><div class="career-welcome-content"><div class="career-welcome-brand"><img class="career-welcome-logo" src="./brand/lockup-lg.webp" alt="BR Fut" width="379" height="72"></div><div class="career-welcome-actions"><button id="welcomeLogin" type="button">ENTRAR</button><button id="welcomeNewGame" type="button" class="primary hidden">NOVO JOGO</button></div><p id="welcomeHint" class="career-welcome-hint hidden"></p></div></section>',
     );
   };
 
@@ -517,7 +518,7 @@ export function createOptionsFeature(deps) {
     const button = event.target.closest('button');
     if (!button) return;
     gamePace = button.dataset.pace;
-    localStorage.setItem(SAVE_KEYS.pace, gamePace);
+    brfutStorage.setItem(SAVE_KEYS.pace, gamePace);
     persistPreferences({ pace: gamePace });
     renderOptions();
     onPaceChanged?.();

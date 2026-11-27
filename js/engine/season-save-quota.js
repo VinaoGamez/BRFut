@@ -1,6 +1,7 @@
 /**
  * Slim progressivo do save de temporada quando a cota do localStorage aperta.
  */
+import { storage as brfutStorage } from '../core/storage-backend.js';
 import { SAVE_KEYS } from '../core/constants.js';
 import { isCloudLocalTrimEnabled } from '../core/local-save-checkpoint.js';
 import { writeJsonResilient } from '../core/save.js';
@@ -160,7 +161,7 @@ export function slimSeasonPayloadLevel4(payload, context = {}) {
  */
 export function persistSeasonPayload(seasonPayload, context = {}) {
   try {
-    localStorage.removeItem(SAVE_KEYS.liveMatch);
+    brfutStorage.removeItem(SAVE_KEYS.liveMatch);
   } catch {
     /* ignore */
   }

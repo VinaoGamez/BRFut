@@ -461,7 +461,7 @@
 }
 .penalty-compare-card>small{
   color:#8ba7aa;
-  font:800 9px 'DM Sans',sans-serif;
+  font:800 10px 'DM Sans',sans-serif;
   letter-spacing:.7px;
 }
 .penalty-compare-card.is-attack>small{color:#ffb070}
@@ -527,7 +527,7 @@
 }
 .penalty-compare-mid>small{
   color:#8ba7aa;
-  font:600 9px 'DM Sans',sans-serif;
+  font:600 10px 'DM Sans',sans-serif;
   text-align:center;
   max-width:4.5rem;
   line-height:1.2;

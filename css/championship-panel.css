@@ -32,7 +32,7 @@
   background: #102b35;
   border-bottom: 1px solid #28505b;
   color: #63d9ff !important;
-  font: 700 9px DM Sans !important;
+  font: 700 10px DM Sans, sans-serif !important;
   letter-spacing: 0.65px;
 }
 
@@ -40,7 +40,7 @@
   display: block;
   margin-top: 3px;
   color: #8fb0b4;
-  font: 600 8px DM Sans;
+  font: 600 10px DM Sans, sans-serif;
   letter-spacing: 0.35px;
   font-style: normal;
 }
@@ -60,7 +60,7 @@
   border-radius: 4px !important;
   background: #102833 !important;
   color: #9fcfd8 !important;
-  font: 700 8px DM Sans !important;
+  font: 700 10px DM Sans, sans-serif !important;
   box-shadow: none !important;
   cursor: pointer;
 }
@@ -84,7 +84,7 @@
 .championship-leader-head {
   background: #102b35;
   color: #63d9ff;
-  font: 700 8px DM Sans;
+  font: 700 10px DM Sans, sans-serif;
   letter-spacing: 0.55px;
 }
 
@@ -110,13 +110,13 @@
   display: block;
   margin-top: 2px;
   color: #83a7ac;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.2;
 }
 
 .championship-leader-row span:last-child {
   color: #63d9ff;
-  font: 700 13px Barlow Condensed;
+  font: 700 13px Barlow Condensed, sans-serif;
 }
 
 .championship-leader-row.user-leader {
@@ -162,13 +162,13 @@
   background: transparent !important;
   border: 0 !important;
   color: #63d9ff !important;
-  font: 700 16px Barlow Condensed !important;
+  font: 700 16px Barlow Condensed, sans-serif !important;
 }
 
 .round-browser-nav small {
   display: block;
   color: #8fb0b4;
-  font: 700 7px DM Sans;
+  font: 700 7px DM Sans, sans-serif;
   letter-spacing: 0.65px;
 }
 
@@ -204,7 +204,7 @@
   border-radius: 4px !important;
   background: #102b35 !important;
   color: #9edff0 !important;
-  font: 700 14px DM Sans !important;
+  font: 700 14px DM Sans, sans-serif !important;
   box-shadow: none !important;
   transform: none !important;
 }
@@ -259,7 +259,7 @@
 }
 
 .round-score {
-  font: 700 17px Barlow Condensed;
+  font: 700 17px Barlow Condensed, sans-serif;
 }
 
 .round-browser-row.user-round {

@@ -202,7 +202,7 @@ export function createRankingViewsFeature(deps) {
               <h4><span>CONQUISTAS</span><small>${trophyRows.length ? `${trophyRows.length} registrada(s)` : 'histórico anual'}</small></h4>
               ${trophyRows.length ? trophyRows.map(title => `<article><span class="manager-card-trophy-icon" aria-hidden="true">🏆</span><div><strong>${escapeHtml(title.competition)}</strong><small>${escapeHtml(title.club || '')} · ${escapeHtml(title.season)}</small></div></article>`).join('') : '<div class="manager-card-empty"><b aria-hidden="true">🏆</b><span>Nenhum título consolidado</span><small>O histórico é atualizado ao fim de cada temporada.</small></div>'}
             </section>
-            <footer class="manager-card-back-footer"><span>BR FOOTBALL</span><small>${rankingEntry ? `${rankingEntry.total.toFixed(1)} PONTOS` : 'CARREIRA'}</small></footer>
+            <footer class="manager-card-back-footer"><span>BR FUT</span><small>${rankingEntry ? `${rankingEntry.total.toFixed(1)} PONTOS` : 'CARREIRA'}</small></footer>
           </article>
         </div>
       </div>`;

@@ -1,6 +1,7 @@
 /**
  * Preferências de save e ritmo — persistidas na carreira (sync na nuvem).
  */
+import { storage as brfutStorage } from './storage-backend.js';
 import { SAVE_KEYS } from './constants.js';
 
 export const AUTOSAVE_MODES = {
@@ -29,7 +30,7 @@ export function normalizeAutosaveMode(mode) {
 
 export function getAutosaveMode() {
   try {
-    const stored = localStorage.getItem(AUTOSAVE_STORAGE_KEY);
+    const stored = brfutStorage.getItem(AUTOSAVE_STORAGE_KEY);
     return normalizeAutosaveMode(stored);
   } catch {
     return DEFAULT_AUTOSAVE;
@@ -39,7 +40,7 @@ export function getAutosaveMode() {
 export function setAutosaveMode(mode) {
   const normalized = normalizeAutosaveMode(mode);
   try {
-    localStorage.setItem(AUTOSAVE_STORAGE_KEY, normalized);
+    brfutStorage.setItem(AUTOSAVE_STORAGE_KEY, normalized);
   } catch {
     /* ignore */
   }
@@ -62,7 +63,7 @@ export function applyCareerPreferences(career) {
   const prefs = readCareerPreferences(career);
   setAutosaveMode(prefs.autosave);
   try {
-    localStorage.setItem(SAVE_KEYS.pace, prefs.pace);
+    brfutStorage.setItem(SAVE_KEYS.pace, prefs.pace);
   } catch {
     /* ignore */
   }
@@ -83,7 +84,7 @@ export function mergePreferencesIntoCareer(career, patch = {}) {
   career.preferences = next;
   setAutosaveMode(next.autosave);
   try {
-    localStorage.setItem(SAVE_KEYS.pace, next.pace);
+    brfutStorage.setItem(SAVE_KEYS.pace, next.pace);
   } catch {
     /* ignore */
   }

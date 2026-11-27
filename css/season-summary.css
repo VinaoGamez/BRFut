@@ -12,12 +12,12 @@
   display:block;
   margin-bottom:4px;
   color:#63d9ff;
-  font:700 10px DM Sans;
+  font:700 10px DM Sans, sans-serif;
   letter-spacing:1px;
 }
 .season-summary-modal h2{
   margin:4px 0 6px;
-  font:700 34px Barlow Condensed;
+  font:700 34px Barlow Condensed, sans-serif;
   line-height:1.05;
   color:#f4fcfc;
 }
@@ -46,7 +46,7 @@
   background:#0c1e28!important;
   color:#8eb4b8!important;
   padding:7px 10px!important;
-  font:700 9px DM Sans,sans-serif!important;
+  font:700 10px DM Sans,sans-serif!important;
   letter-spacing:.35px!important;
   cursor:pointer;
   box-shadow:none!important;
@@ -82,11 +82,11 @@
 }
 .season-goal-result-copy strong{
   color:#edf8f5;
-  font:700 18px Barlow Condensed;
+  font:700 18px Barlow Condensed, sans-serif;
 }
 .season-goal-result-copy span{
   color:#63d9ff;
-  font:700 11px DM Sans;
+  font:700 11px DM Sans, sans-serif;
   letter-spacing:.4px;
 }
 .season-goal-result-copy small{
@@ -97,7 +97,7 @@
 .season-goal-result-copy em{
   font-style:normal;
   color:#b6ff38;
-  font:700 12px DM Sans;
+  font:700 12px DM Sans, sans-serif;
 }
 .season-goal-result.goal-missed .season-goal-result-copy em{color:#ff8c94}
 .season-goal-result.goal-near .season-goal-result-copy em{color:#ffc94f}
@@ -166,7 +166,7 @@
 }
 .season-goal-gauge-score span{
   color:var(--gauge-color,#63d9ff);
-  font:700 9px DM Sans,sans-serif;
+  font:700 10px DM Sans,sans-serif;
   letter-spacing:.55px;
   text-transform:uppercase;
 }
@@ -181,7 +181,7 @@
   align-items:center;
   gap:4px;
   color:#8eb4b8;
-  font:700 8px DM Sans,sans-serif;
+  font:700 10px DM Sans,sans-serif;
   letter-spacing:.35px;
   text-transform:uppercase;
 }
@@ -238,7 +238,7 @@
   font-size:30px;
 }
 .season-goal-gauge--dashboard .season-goal-gauge-score span{
-  font-size:9px;
+  font-size:10px;
   letter-spacing:.6px;
 }
 .season-goal-gauge--dashboard .season-goal-gauge-track,
@@ -270,7 +270,7 @@
   font-size:22px;
 }
 .season-goal-gauge--office .season-goal-gauge-score span{
-  font-size:8px;
+  font-size:10px;
   letter-spacing:.5px;
 }
 .season-goal-gauge--office .season-goal-gauge-track,
@@ -285,7 +285,7 @@
   flex-shrink:0;
 }
 .season-goal-gauge-legend--side span{
-  font-size:8px;
+  font-size:10px;
   letter-spacing:.4px;
 }
 @media(max-width:560px){
@@ -367,14 +367,14 @@
   border:2px solid #ffffff22;
   background:linear-gradient(145deg,#173544,#102833);
   color:#f4fcfc;
-  font:800 18px Barlow Condensed;
+  font:800 18px Barlow Condensed, sans-serif;
   box-shadow:0 8px 20px #0005,inset 0 0 0 1px #63d9ff33;
 }
 .season-summary-user-copy strong{
   display:block;
   margin-bottom:4px;
   color:#b6ff38;
-  font:700 17px Barlow Condensed;
+  font:700 17px Barlow Condensed, sans-serif;
 }
 .season-summary-user-copy span{
   display:block;
@@ -395,12 +395,12 @@
 .season-summary-section>header h3{
   margin:0;
   color:#edf8f5;
-  font:700 20px Barlow Condensed;
+  font:700 20px Barlow Condensed, sans-serif;
   letter-spacing:.2px;
 }
 .season-summary-section>header small{
   color:#9eb6b8;
-  font:700 9px DM Sans;
+  font:700 10px DM Sans, sans-serif;
   letter-spacing:.45px;
 }
 .season-champions-section>header.season-champions-header{
@@ -412,7 +412,7 @@
 .season-champions-section>header.season-champions-header h3{
   margin:0;
   color:#edf8f5;
-  font:700 18px Barlow Condensed;
+  font:700 18px Barlow Condensed, sans-serif;
   letter-spacing:.8px;
   text-transform:uppercase;
 }
@@ -479,7 +479,7 @@
   display:block;
   margin:-2px 0 12px;
   color:#63d9ff;
-  font:700 12px DM Sans;
+  font:700 12px DM Sans, sans-serif;
   letter-spacing:.35px;
   text-transform:uppercase;
 }
@@ -502,22 +502,22 @@
   height:58px!important;
 }
 .season-champions-tournament-stats .dashboard-team-stat-copy small{
-  font:700 11px DM Sans!important;
+  font:700 11px DM Sans, sans-serif!important;
   letter-spacing:.55px;
 }
 .season-champions-tournament-stats .dashboard-team-stat-copy strong{
-  font:800 22px Barlow Condensed!important;
+  font:800 22px Barlow Condensed, sans-serif!important;
   line-height:1.05;
 }
 .season-champions-tournament-stats .dashboard-team-stat-copy span{
-  font:600 13px DM Sans!important;
+  font:600 13px DM Sans, sans-serif!important;
   color:#9eb6b8;
 }
 .season-champions-tournament-stats .dashboard-team-stat-copy em{
   display:block;
   margin-top:4px;
   color:#ffc94f;
-  font:700 14px Barlow Condensed;
+  font:700 14px Barlow Condensed, sans-serif;
   font-style:normal;
 }
 .season-champions-world-cup-wrap{
@@ -549,7 +549,7 @@
 .season-champions-extra-title{
   margin:0;
   color:#9eb6b8;
-  font:700 10px DM Sans;
+  font:700 10px DM Sans, sans-serif;
   letter-spacing:.45px;
   text-transform:uppercase;
 }
@@ -564,7 +564,7 @@
   border:1px dashed #28505b;
   border-radius:10px;
   color:#9eb6b8;
-  font:600 12px DM Sans;
+  font:600 12px DM Sans, sans-serif;
   text-align:center;
 }
 .season-champion-card{
@@ -661,7 +661,7 @@
   border-radius:99px;
   background:#173544;
   color:#b6ff38;
-  font:700 7px DM Sans;
+  font:700 7px DM Sans, sans-serif;
   letter-spacing:.45px;
   text-transform:uppercase;
 }
@@ -741,7 +741,7 @@
   border-radius:99px;
   background:#102833;
   color:var(--champion-accent,#63d9ff);
-  font:700 8px DM Sans;
+  font:700 10px DM Sans, sans-serif;
   letter-spacing:.55px;
   text-transform:uppercase;
 }
@@ -821,7 +821,7 @@
   border:2px solid #ffffff22;
   background:linear-gradient(145deg,#173544,#102833);
   color:#f4fcfc;
-  font:800 18px Barlow Condensed;
+  font:800 18px Barlow Condensed, sans-serif;
   box-shadow:0 8px 20px #0005,inset 0 0 0 1px #63d9ff33;
 }
 .season-champion-card.cup .season-champion-crest.crest:not(.crest--club):not(.crest--flag),
@@ -840,7 +840,7 @@
 .season-champion-name{
   margin:0;
   color:#edf8f5;
-  font:700 13px Barlow Condensed;
+  font:700 13px Barlow Condensed, sans-serif;
   line-height:1.25;
   word-break:break-word;
 }
@@ -854,7 +854,7 @@
 .season-champion-title{
   margin:0;
   color:#9eb6b8;
-  font:700 8px DM Sans;
+  font:700 10px DM Sans, sans-serif;
   letter-spacing:.45px;
   text-transform:uppercase;
 }
@@ -875,7 +875,7 @@
   padding:9px 10px;
   background:#123843;
   color:#63d9ff;
-  font:700 12px Barlow Condensed;
+  font:700 12px Barlow Condensed, sans-serif;
   letter-spacing:.3px;
   text-align:center;
 }
@@ -919,13 +919,13 @@
 }
 .season-leader-label{
   color:#9eb6b8;
-  font:700 8px DM Sans;
+  font:700 10px DM Sans, sans-serif;
   letter-spacing:.45px;
   text-transform:uppercase;
 }
 .season-leader-player{
   color:#edf8f5;
-  font:700 12px Barlow Condensed;
+  font:700 12px Barlow Condensed, sans-serif;
   line-height:1.25;
 }
 .season-leader-meta{
@@ -942,7 +942,7 @@
   border-radius:99px;
   background:#102833;
   color:#b6ff38;
-  font:700 10px DM Sans;
+  font:700 10px DM Sans, sans-serif;
 }
 .season-leader-row.scorer .season-leader-stat{
   background:#2a220d;
@@ -978,7 +978,7 @@
   padding:10px 12px;
   background:#123843;
   color:#b6ff38;
-  font:700 15px Barlow Condensed;
+  font:700 15px Barlow Condensed, sans-serif;
 }
 .season-movement-card h4 i{
   display:grid;
@@ -988,7 +988,7 @@
   border-radius:50%;
   background:#0b1d25;
   color:#63d9ff;
-  font:900 11px DM Sans;
+  font:900 11px DM Sans, sans-serif;
   font-style:normal;
 }
 .season-movement-card.promote h4{color:#b6ff38}
@@ -1038,7 +1038,7 @@
 }
 .season-rewards-total strong{
   color:#b6ff38;
-  font:700 24px Barlow Condensed;
+  font:700 24px Barlow Condensed, sans-serif;
 }
 .season-rewards-total span{
   color:#9eb6b8;
@@ -1093,7 +1093,7 @@
 }
 .idle-sim-modal h2{
   margin:8px 0 6px;
-  font:700 28px Barlow Condensed;
+  font:700 28px Barlow Condensed, sans-serif;
 }
 .idle-sim-modal p{
   margin:0;
@@ -1105,7 +1105,7 @@
   display:block;
   margin-top:14px;
   color:#63d9ff;
-  font:700 13px DM Sans;
+  font:700 13px DM Sans, sans-serif;
 }
 @media(max-width:860px){
   .season-champions-showcase{grid-template-columns:1fr}
@@ -1123,12 +1123,12 @@
   display:block;
   margin-bottom:4px;
   color:#63d9ff;
-  font:700 10px DM Sans;
+  font:700 10px DM Sans, sans-serif;
   letter-spacing:1px;
 }
 .retirement-modal-card h2{
   margin:4px 0 10px;
-  font:700 30px Barlow Condensed;
+  font:700 30px Barlow Condensed, sans-serif;
   color:#f4fcfc;
 }
 .retirement-modal-lead{

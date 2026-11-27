@@ -221,7 +221,7 @@ button.home-btn {
 .feature-card small {
   display: block;
   color: var(--md-cyan);
-  font: 700 8px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: .6px;
 }
 
@@ -270,7 +270,7 @@ button.home-btn {
 
 .home-support-heading small {
   color: var(--md-cyan);
-  font: 700 9px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: 1.15px;
 }
 
@@ -357,7 +357,7 @@ button.home-btn {
 
 .home-support-discord small {
   color: #9eb6b8;
-  font: 700 8px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: .8px;
 }
 
@@ -387,7 +387,7 @@ button.home-btn {
   display: block;
   margin-bottom: 8px;
   color: var(--md-lime);
-  font: 700 9px 'DM Sans', sans-serif;
+  font: 700 10px 'DM Sans', sans-serif;
   letter-spacing: 1.1px;
 }
 

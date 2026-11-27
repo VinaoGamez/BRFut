@@ -1,4 +1,5 @@
 /** Persistência API-first dos 27 Estaduais, fora do save principal/localStorage. */
+import { storage as brfutStorage } from './storage-backend.js';
 import { ACTIVE_SLOT_SESSION_KEY, BRFUT_API_ORIGIN, CAREER_INDEX_KEY } from './constants.js';
 import { authSessionSignal, authenticatedFetchOptions } from './auth-session.js';
 
@@ -24,7 +25,7 @@ async function stateLeagueApiAvailable() {
 function activeCareerId() {
   try {
     return sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY)
-      || JSON.parse(localStorage.getItem(CAREER_INDEX_KEY) || 'null')?.activeSlotId
+      || JSON.parse(brfutStorage.getItem(CAREER_INDEX_KEY) || 'null')?.activeSlotId
       || null;
   } catch {
     return null;

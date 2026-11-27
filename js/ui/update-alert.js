@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../core/storage-backend.js';
 import '../../css/update-alert.css';
 import { BUILD_VERSION, SAVE_KEYS, GAME_BRAND_UPDATE_TITLE } from '../core/constants.js';
 
@@ -29,12 +30,12 @@ function isDebugSession() {
 }
 
 function getLastSeenBuild() {
-  try { return localStorage.getItem(SAVE_KEYS.lastSeenBuild); }
+  try { return brfutStorage.getItem(SAVE_KEYS.lastSeenBuild); }
   catch { return null; }
 }
 
 function markBuildSeen(version) {
-  try { localStorage.setItem(SAVE_KEYS.lastSeenBuild, version); }
+  try { brfutStorage.setItem(SAVE_KEYS.lastSeenBuild, version); }
   catch { /* ignore quota / privacy mode */ }
 }
 

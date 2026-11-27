@@ -1,0 +1,9 @@
+/* Fontes do BR Fut hospedadas junto com o jogo (sem Google Fonts):
+   funcionam offline no app instalado e não expõem o jogador a terceiros. */
+@import '@fontsource/barlow-condensed/600.css';
+@import '@fontsource/barlow-condensed/700.css';
+@import '@fontsource/barlow-condensed/800.css';
+@import '@fontsource/dm-sans/400.css';
+@import '@fontsource/dm-sans/500.css';
+@import '@fontsource/dm-sans/600.css';
+@import '@fontsource/dm-sans/700.css';

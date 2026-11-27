@@ -2,6 +2,7 @@
  * Normalização única de chaves de save (local, remoto, DELETE).
  * Centraliza matchday-* → brfut-* e variantes de slot.
  */
+import { storage as brfutStorage } from './storage-backend.js';
 import { SAVE_KEYS, LEGACY_SAVE_KEYS, CAREER_INDEX_KEY, isSlotBundleKey } from './constants.js';
 
 const SESSION_KEY_ALIASES = [
@@ -107,8 +108,8 @@ export function listLocalSyncableKeys() {
   const keys = new Set(Object.values(SAVE_KEYS));
   keys.add(CAREER_INDEX_KEY);
   try {
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
       if (!key) continue;
       if (isSlotBundleKey(key) || keys.has(key)) keys.add(canonicalSaveKey(key));
     }

@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../core/storage-backend.js';
 import mercadoDaBolaUrl from '../../brand/transfer-history/mercado-da-bola.webp?url';
 
 export const TRANSFER_HISTORY_LAYOUT_KEY = 'brfut-transfer-history-card-layout-v1';
@@ -18,7 +19,7 @@ export function loadTransferHistoryLayout() {
   try {
     return {
       ...TRANSFER_HISTORY_LAYOUT_DEFAULTS,
-      ...JSON.parse(localStorage.getItem(TRANSFER_HISTORY_LAYOUT_KEY) || '{}'),
+      ...JSON.parse(brfutStorage.getItem(TRANSFER_HISTORY_LAYOUT_KEY) || '{}'),
     };
   } catch {
     return { ...TRANSFER_HISTORY_LAYOUT_DEFAULTS };

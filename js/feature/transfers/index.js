@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../../core/storage-backend.js';
 import { MODULE_VERSIONS } from '../../core/constants.js';
 import { traitCodes, ROSTER_PRO_MAX } from '../../engine/player-generation.js';
 import {
@@ -122,7 +123,7 @@ const clampColWidths = (widths, mins, defaults) => {
 
 const loadColWidths = (key, fallback, mins) => {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = brfutStorage.getItem(key);
     if (!raw) return fallback.slice();
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length !== fallback.length) return fallback.slice();
@@ -134,7 +135,7 @@ const loadColWidths = (key, fallback, mins) => {
 
 const saveColWidths = (key, widths) => {
   try {
-    localStorage.setItem(key, JSON.stringify(widths));
+    brfutStorage.setItem(key, JSON.stringify(widths));
   } catch {
     /* quota / private mode */
   }
