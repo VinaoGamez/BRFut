@@ -115,6 +115,9 @@ export function createSerieDKnockoutAdvance(deps) {
       const stage = cupCompetition.stages.find(item => item.fixtures.includes(game));
       return stage ? deps.cupTieGames(stage, game.tieId) : [];
     }
+    if (game.competition === 'LIBERTADORES' || game.competition === 'SUL-AMERICANA') {
+      return deps.getConmebolTieGames?.(game) || [game];
+    }
     if (deps.isWorldCupKnockout?.(game) || deps.isStateKnockoutPhase(game)) return [game];
     if (deps.isKnockoutShootoutCompetition(game)) return getSerieDTieGames(game);
     return [];

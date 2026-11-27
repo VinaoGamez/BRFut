@@ -31,7 +31,8 @@ export function createFixtureDetailsResolver({
     const resolveFormattedDate = (rawDate, fallbackDate = null) =>
       formatFixtureDateLabel(rawDate) || formatFixtureDateLabel(fallbackDate);
 
-    if (game.competition === 'COPA DO BRASIL' || game.competition === WORLD_CUP_COMPETITION || isStateLeagueGame(game)) {
+    const conmebol = game.competition === 'LIBERTADORES' || game.competition === 'SUL-AMERICANA';
+    if (game.competition === 'COPA DO BRASIL' || game.competition === WORLD_CUP_COMPETITION || conmebol || isStateLeagueGame(game)) {
       const formatted = resolveFormattedDate(game.date, isStateLeagueGame(game) ? stateLeagueFallbackDate() : null);
       const date = formatted?.date || parseCalendarDate(game.date) || seasonStartDate();
       const display = formatted?.display || formatFixtureDateLabel(date)?.display || '—';

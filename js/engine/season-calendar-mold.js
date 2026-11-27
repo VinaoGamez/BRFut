@@ -310,7 +310,7 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     voltaSlot: 'continental_conmebol',
     twoLegged: true,
     priority: 3,
-    enabled: false,
+    enabled: true,
     skipsWhen: ['world_cup'], // clubes liberados em anos de copa — ajustável
   }),
   /** CONMEBOL Sudamericana (3/mar a 21/nov de 2026) — mesmo slot que Libertadores. */
@@ -328,7 +328,7 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     voltaSlot: 'continental_conmebol',
     twoLegged: true,
     priority: 3,
-    enabled: false,
+    enabled: true,
   }),
   /** Recopa Sul-Americana — campeão Libertadores × campeão Sul-Americana. */
   recopa_sudamericana: Object.freeze({
@@ -572,6 +572,8 @@ export function resolveFixtureCompetitionCode(game, { division = null } = {}) {
   if (comp === 'RECOPA NACIONAL') return 'SCB';
   if (comp === 'COPA DO BRASIL' || comp === 'COPA') return COMPETITION_CALENDAR_MOLD.cup.code;
   if (comp === 'COPA DO MUNDO') return 'CMU';
+  if (comp === 'LIBERTADORES') return 'LIB';
+  if (comp === 'SUL-AMERICANA') return 'CSU';
   if (comp === 'SÉRIE D ELIMINATÓRIAS' || (game.tieId && game.knockoutRound != null)) {
     return LEAGUE_CODE_BY_DIVISION.D || 'BSD';
   }

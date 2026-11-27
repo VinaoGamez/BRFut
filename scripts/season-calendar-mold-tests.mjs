@@ -84,9 +84,10 @@ check('describeCalendarMold resume futuras + flag worldCupYear', () => {
   assert(d.future.every(entry => entry.id && entry.label));
 });
 
-check('futuras disabled exceto recopa nacional e estadual', () => {
+check('futuras disabled exceto recopa nacional, estadual e CONMEBOL', () => {
+  const ligadas = new Set(['recopa_national', 'state_league', 'libertadores', 'sudamericana']);
   Object.values(FUTURE_COMPETITION_MOLD).forEach(spec => {
-    if (spec.competitionId === 'recopa_national' || spec.competitionId === 'state_league') return;
+    if (ligadas.has(spec.competitionId)) return;
     assert(spec.enabled === false, spec.competitionId);
   });
   assert(FUTURE_COMPETITION_MOLD.recopa_national.enabled === true);
@@ -97,6 +98,8 @@ check('resolveFixtureCompetitionCode mapeia liga, copa e mata-mata', () => {
   assert(resolveFixtureCompetitionCode({ home: 'A', away: 'B' }, { division: 'A' }) === 'BSA');
   assert(resolveFixtureCompetitionCode({ competition: 'LEAGUE:B' }) === 'BSB');
   assert(resolveFixtureCompetitionCode({ tieId: 'T1', knockoutRound: 2 }) === 'BSD');
+  assert(resolveFixtureCompetitionCode({ competition: 'LIBERTADORES', tieId: 'T1', knockoutRound: 5 }) === 'LIB');
+  assert(resolveFixtureCompetitionCode({ competition: 'SUL-AMERICANA' }) === 'CSU');
 });
 
 check('sortCalendarCompetitionCodes ordena BSA antes de CBR', () => {

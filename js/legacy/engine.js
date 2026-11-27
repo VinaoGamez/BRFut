@@ -423,6 +423,13 @@ import {
   sanitizeKnockoutShootoutSave,
   sameKnockoutFixture,
 } from '../engine/knockout-shootout.js';
+import {
+  createConmebolRuntime,
+  clubsWithForeignFallback,
+  isConmebolCompetitionGame,
+  conmebolGameLabel,
+} from '../engine/conmebol-runtime.js';
+import { isClubCalendarBlackout } from '../engine/season-calendar-cycle.js';
 import { rosterShootoutKickPair, simulateProbabilisticShootout } from '../engine/shootout-sim.js';
 import { createCupTieAdvanceEngine } from '../engine/cup-tie-advance.js';
 import {
@@ -915,7 +922,11 @@ export async function bootEngine({
     ensureBudget,
     ensureStadium,
   });
-  const clubs=clubsBoot.clubs;
+  // Libertadores / Sul-Americana: `clubs[nome]` também acha os clubes
+  // estrangeiros (registro próprio, montado sob demanda). Iterar `clubs`
+  // continua devolvendo só os clubes da carreira.
+  let conmebolRuntime=null;
+  const clubs=clubsWithForeignFallback(clubsBoot.clubs,name=>conmebolRuntime?.getForeignClub(name)||null);
   if(savedNewGame){
     Object.entries(savedNewGame.worldYouthStates||{}).forEach(([clubName,state])=>{
       if(clubs[clubName]&&clubName!==userClub)applyYouthClubState(clubs[clubName],state);
@@ -2357,6 +2368,51 @@ export async function bootEngine({
   const recopaFixtures=[];
   const refreshRecopaFixtures=()=>{recopaFixtures.length=0;recopaFixtures.push(...recopaNationalFixtures(recopaCompetition));};
   refreshRecopaFixtures();
+  const conmebolFixtures=[];
+  if(savedNewGame){
+    conmebolRuntime=createConmebolRuntime({
+      getCareerSeason:()=>careerSeason,
+      getCareerSeed:()=>savedNewGame?.seed??0,
+      getClubs:()=>clubs,
+      getUserClub:()=>userClub,
+      getDivisionTeams:()=>divisionTeams,
+      getSavedEdition:()=>validSavedSeason?savedSeason.conmebolEdition:null,
+      getPriorSeasonChampions:()=>priorSeasonChampions,
+      getHistory:()=>savedNewGame?.conmebolHistory||{},
+      getFirstNames:()=>firstNames,
+      getLastNames:()=>lastNames,
+      simulateRoundMatch:(home,away,game)=>simulateRoundMatch(home,away,game),
+      applyMatchEffects:(game,result)=>applyCupFatigue(game,result),
+      recordPlayerHistoryMatch:(game,meta)=>recordPlayerHistoryMatch(game,meta),
+      isUserFixture:game=>isUserFixture(game),
+      penaltyWinner:(first,second)=>cupPenaltyWinner(first,second),
+      pushMessage:message=>pushMessage({...message,round:currentRound}),
+      creditUserPrize:(amount,label)=>{
+        if(!clubs[userClub]||!(amount>0))return;
+        credit(clubs[userClub],amount,{reason:'continental_prize',label});
+        try{renderClubBudget();}catch{}
+      },
+      onScheduleNeeded:()=>{
+        try{
+          rescheduleAllCupFixtures();
+          refreshCopaDoBrasilFixtures();
+          rebuildCalendarGames();
+        }catch(error){console.warn('[brfut] reagendar após sorteio continental',error);}
+      },
+      onFixturesChanged:()=>{
+        conmebolFixtures.length=0;
+        conmebolFixtures.push(...conmebolRuntime.fixtures());
+        try{invalidateUserScheduleCache();}catch{}
+      },
+    });
+    try{
+      conmebolRuntime.init();
+      conmebolFixtures.push(...conmebolRuntime.fixtures());
+    }catch(error){
+      console.warn('[brfut] Libertadores/Sul-Americana indisponível nesta temporada',error);
+      conmebolRuntime=null;
+    }
+  }
   const cupGameNumberHolder={value:cupGameNumber};
   const cupCalendar=createCupCalendarEngine({
     getCupCompetition:()=>cupCompetition,
@@ -2374,6 +2430,16 @@ export async function bootEngine({
     getClubs:()=>clubs,
     shuffleCup,
     onCupScheduleChanged:()=>onCupScheduleChanged(),
+    reserveExtraFixtures:occupancy=>{
+      if(!conmebolRuntime)return;
+      const obstacles=new Map();
+      copaDoBrasilFixtures.forEach(game=>{
+        if(game.completed||!game.date)return;
+        const ts=new Date(game.date).setHours(12,0,0,0);
+        [game.home,game.away].forEach(club=>{const list=obstacles.get(club)||[];list.push(ts);obstacles.set(club,list);});
+      });
+      conmebolRuntime.scheduleAndReserve(occupancy,{floor:careerCalendarDate||null,obstacles});
+    },
   });
   cupGameNumber=cupGameNumberHolder.value;
   const {
@@ -2420,6 +2486,7 @@ export async function bootEngine({
     getChampionshipFixtures:()=>championshipFixtures,
     getCopaDoBrasilFixtures:()=>copaDoBrasilFixtures,
     getRecopaFixtures:()=>recopaFixtures,
+    getConmebolFixtures:()=>conmebolFixtures,
     getWorldCupCompetition:()=>worldCupCompetition,
     getWorldCupAllFixtures,
     getStateLeagueEngine:()=>stateLeagueEngine,
@@ -2523,7 +2590,7 @@ export async function bootEngine({
       const gateAmount=Number.isFinite(Number(game.gateRevenue))
         ?Number(game.gateRevenue)
         :Math.round(estimateGateReceipt(clubs[userClub],{
-          channel:game.competition==='COPA DO BRASIL'?'cups':'national',
+          channel:game.competition==='COPA DO BRASIL'||isConmebolCompetitionGame(game)?'cups':'national',
           division:userDivision,
         }).revenue||0);
       if(gateAmount>0)parts.push(`Renda ${formatBudget(gateAmount)}`);
@@ -2535,7 +2602,8 @@ export async function bootEngine({
   const crowdCompetitionLabel=game=>{
     if(isStateLeagueGame(game))return `${stateLeagueBadgeName(game)} · ${stateLeaguePhaseLabel(game)}`;
     if(game?.competition==='COPA DO BRASIL')return `Copa · ${game.phase||''}${game.leg?` · ${game.leg}`:''}`.replace(/\s·\s$/,'').trim();
-    if(isKnockoutShootoutCompetition(game))return `Série D · ${joinMatchMeta(serieDKnockoutPhaseLabel(game),game.leg)}`;
+    if(isConmebolCompetitionGame(game))return conmebolGameLabel(game);
+    if(isKnockoutShootoutCompetition(game))return `Série D · ${[serieDKnockoutPhaseLabel(game),game.leg].filter(Boolean).join(' · ')}`;
     return `Rodada ${game?.round??currentRound}`;
   };
   const upsertUserSeasonCrowd=entry=>{
@@ -3039,7 +3107,7 @@ export async function bootEngine({
   const calendarDate=key=>{const [year,month,day]=key.split('-').map(Number);return new Date(year,month-1,day,12);};
   const matchBriefAlreadySent=briefKey=>messages.getMessages().some(message=>message.meta?.briefKey===briefKey);
   const opponentForGame=game=>game.home===userClub?game.away:game.home;
-  const competitionLabelForGame=game=>isStateLeagueGame(game)?`${stateLeagueBadgeName(game)} · ${stateLeaguePhaseLabel(game)}`:game.competition===RECOPA_NATIONAL_COMPETITION?'Recopa Nacional · Final':game.competition==='COPA DO BRASIL'?`Copa do Brasil · ${game.phase||game.leg||''}`:isKnockoutShootoutCompetition(game)?`Série D · ${game.leg||'Eliminatórias'}`:`Brasileirão Série ${userDivision} · Rodada ${game.round??currentRound}`;
+  const competitionLabelForGame=game=>isConmebolCompetitionGame(game)?conmebolGameLabel(game):isStateLeagueGame(game)?`${stateLeagueBadgeName(game)} · ${stateLeaguePhaseLabel(game)}`:game.competition===RECOPA_NATIONAL_COMPETITION?'Recopa Nacional · Final':game.competition==='COPA DO BRASIL'?`Copa do Brasil · ${game.phase||game.leg||''}`:isKnockoutShootoutCompetition(game)?`Série D · ${game.leg||'Eliminatórias'}`:`Brasileirão Série ${userDivision} · Rodada ${game.round??currentRound}`;
   const matchdayMetaForGame=game=>{
     if(isStateLeagueGame(game)){
       return {
@@ -3049,6 +3117,10 @@ export async function bootEngine({
     }
     if(game.competition===RECOPA_NATIONAL_COMPETITION){
       return {competition:'Recopa Nacional',roundLabel:game.phase||'Final'};
+    }
+    if(isConmebolCompetitionGame(game)){
+      const label=conmebolGameLabel(game).split(' · ');
+      return {competition:label[0],roundLabel:label.slice(1).join(' · ')};
     }
     if(game.competition==='COPA DO BRASIL'){
       return {
@@ -3136,7 +3208,13 @@ export async function bootEngine({
       if(!game?.date)return;
       addCalendarCompetitionTag(new Date(game.date),WORLD_CUP_CALENDAR_CODE);
     });
+    conmebolCalendarFixtures().forEach(game=>{
+      if(!game?.date)return;
+      addCalendarCompetitionTag(new Date(game.date),resolveFixtureCompetitionCode(game));
+    });
   };
+  // No calendário entram só os jogos continentais com clube brasileiro.
+  const conmebolCalendarFixtures=()=>conmebolFixtures.filter(game=>!conmebolRuntime?.isForeignClub(game.home)||!conmebolRuntime?.isForeignClub(game.away));
   const rebuildCalendarGames=()=>{
     invalidateUserScheduleCache();
     seasonCalendarFixtures=[
@@ -3145,6 +3223,7 @@ export async function bootEngine({
       ...userKnockoutFixtures(),
       ...copaDoBrasilFixtures,
       ...recopaFixtures,
+      ...conmebolCalendarFixtures(),
       ...worldCupFixtures,
     ].sort((a,b)=>fixtureDetails(a).date-fixtureDetails(b).date);
     calendarGames.clear();
@@ -6284,7 +6363,7 @@ export async function bootEngine({
     resolveCupTie,
     finalizeCupStageIfReady,
     advanceCupComputerTies,
-    advanceCupThroughDate,
+    advanceCupThroughDate:advanceCupThroughDateBase,
   }=createCupTieAdvanceEngine({
     getCupCompetition:()=>cupCompetition,
     getUserClub:()=>userClub,
@@ -6304,6 +6383,21 @@ export async function bootEngine({
     persistPlayerHistory:()=>playerHistory.persist(),
     invalidateUserScheduleCache,
   });
+  // A Copa do Brasil e a CONMEBOL andam juntas: quem avança uma data avança as
+  // duas (rodada, simulação rápida, transição de temporada).
+  const advanceCupThroughDate=date=>{
+    const cupChanged=advanceCupThroughDateBase(date);
+    let continentalChanged=false;
+    if(conmebolRuntime&&date){
+      try{
+        continentalChanged=conmebolRuntime.advanceThroughDate(date);
+        if(continentalChanged)playerHistory.persist();
+      }catch(error){
+        console.warn('[brfut] avanço da Libertadores/Sul-Americana',error);
+      }
+    }
+    return cupChanged||continentalChanged;
+  };
   let advanceStateLeagueThroughDate=()=>false;
   let advancePostMatchDay=()=>{};
   let advanceStateLeagueRound=()=>false;
@@ -6449,6 +6543,7 @@ export async function bootEngine({
     :userDivision;
   const initialSeasonTransitionPrepared=!!(validSavedSeason&&(savedSeason.seasonTransitionPrepared||(Array.isArray(savedSeason.userBudgetLedger)&&savedSeason.userBudgetLedger.some(entry=>entry?.reason==='season_prize'))));
   const writeSeasonSave=createSeasonSaveWriter({
+    getConmebolEdition:()=>conmebolRuntime?.serialize()||null,
     getSavedNewGame:()=>savedNewGame,
     getUserClub:()=>userClub,
     getUserDivision:()=>userDivision,
@@ -6621,6 +6716,20 @@ export async function bootEngine({
   }));
   const buildLiveCupStats = buildLiveKnockoutStats;
   const commitLiveCupResult = commitLiveKnockoutResult;
+  /** Grava o placar ao vivo de jogo da Libertadores / Sul-Americana (grupo ou mata-mata). */
+  const commitLiveConmebolResult=()=>{
+    if(!liveMatchGame||!isConmebolCompetitionGame(liveMatchGame)||liveMatchGame.completed)return false;
+    Object.assign(liveMatchGame,buildLiveKnockoutStats(),{completed:true});
+    clearStaleKnockoutShootout(liveMatchGame);
+    if(!availabilityCommitted)commitLiveAvailability();
+    recordGameLeaders(liveMatchGame);
+    playerHistory.persist();
+    const competitionKey=liveMatchGame.competition==='LIBERTADORES'?'LIBERTADORES':'SUDAMERICANA';
+    serveCompetitionSuspensions(clubs,new Set([liveMatchGame.home,liveMatchGame.away]),competitionKey,currentRound);
+    conmebolRuntime?.completeUserGame(liveMatchGame);
+    rebuildCalendarGames();
+    return true;
+  };
   const { simulateNationalRound, applySecondaryResult } = createNationalRoundSimulator({
     getUserDivision: () => userDivision,
     getCurrentRound: () => currentRound,
@@ -6651,6 +6760,7 @@ export async function bootEngine({
     isUserFixture,
     cupTieGames,
     getCupCompetition:()=>cupCompetition,
+    getConmebolTieGames:game=>conmebolRuntime?.tieGames(game)||[game],
     isStateKnockoutPhase,
     isWorldCupKnockout,
     isKnockoutShootoutCompetition,
@@ -7344,6 +7454,7 @@ export async function bootEngine({
     getClubs:()=>clubs,
     getCompetitionRoundHistory:()=>competitionRoundHistory,
     serveCompetitionSuspensions:(participants,competitionKey,round)=>serveCompetitionSuspensions(clubs,participants,competitionKey,round),
+    commitLiveConmebolResult:()=>commitLiveConmebolResult(),
     advanceCupComputerTies,
     seasonComplete,
   }));
@@ -7417,6 +7528,9 @@ export async function bootEngine({
     setPriorSeasonChampions:payload=>{
       if(!savedNewGame)return;
       savedNewGame.priorSeasonChampions=payload;
+      // Pontos de ranking CONMEBOL acumulam entre temporadas (potes do sorteio).
+      const continental=conmebolRuntime?.seasonSummary?.();
+      if(continental?.history)savedNewGame.conmebolHistory=continental.history;
       persistCareer(savedNewGame);
     },
     getGeneratedClubPool:()=>generatedClubPool,
@@ -7685,7 +7799,10 @@ export async function bootEngine({
       if(!Array.isArray(divisions))return null;
       return divisions.find(item=>(item.teams||[]).some(name=>normClubName(name)===normClubName(userClub)))||null;
     },
-    getContinentalChampions:()=>({}),
+    getContinentalChampions:()=>{
+      const summary=conmebolRuntime?.seasonSummary?.();
+      return summary?{LIBERTADORES:summary.LIBERTADORES,SUDAMERICANA:summary.SUDAMERICANA}:{};
+    },
     pruneClubMemory,
     getNationalRankingEntries:()=>nationalRankingEntries,
     getStateRnfQualifiers:season=>stateLeagueEngine.getRnfQualifiers(season),
@@ -8269,6 +8386,114 @@ export async function bootEngine({
       calendarDate:calendarKey(careerCalendarDate),currentRound,seasonIdle:isUserSeasonIdle(),seasonComplete:seasonComplete(),everInCup,anomalies
     };
   };
+  /**
+   * Auditoria da Libertadores / Sul-Americana (?conmebolAudit): avança a
+   * temporada semana a semana, joga no automático os jogos continentais do
+   * usuário e confere datas, fases e campeões.
+   */
+  const runConmebolAudit=({useLiveCommit=false}={})=>{
+    const out={season:careerSeason,userClub,enabled:!!conmebolRuntime,anomalies:[],mode:useLiveCommit?'live-commit':'direct'};
+    if(!conmebolRuntime?.edition)return out;
+    const edition=conmebolRuntime.edition;
+    const statusAtStart=conmebolRuntime.userStatus();
+    out.userEntry=statusAtStart?`${statusAtStart.label} · ${statusAtStart.stageLabel}`:null;
+    const brazilian=Object.entries(edition.countries).filter(([,country])=>country==='BRA').map(([club])=>club);
+    out.brazilianClubs=brazilian.map(club=>{
+      const lib=edition.libertadores.entrants;const sud=edition.sudamericana.entrants;
+      const find=(list,stage)=>(list||[]).some(entry=>entry.club===club)?stage:null;
+      return `${club}: ${find(lib.group,'Liberta grupos')||find(lib.f2,'Liberta 2ª fase')||find(sud.group,'Sul grupos')}`;
+    });
+    const day=86400000;
+    for(let ts=new Date(careerSeason,0,20,12).getTime();ts<=new Date(careerSeason,11,31,12).getTime();ts+=4*day){
+      const date=new Date(ts);
+      advanceCareerCalendarTo(date);
+      advanceCupThroughDate(date);
+      for(let pass=0;pass<4;pass++){
+        const due=conmebolFixtures.filter(game=>!game.completed&&isUserFixture(game)&&new Date(game.date)<=date);
+        if(!due.length)break;
+        due.forEach(game=>{
+          const result=simulateRoundMatch(game.home,game.away,game);
+          if(useLiveCommit){
+            // Mesmo caminho do fim de partida ao vivo (placar, portão, mensagem, avanço).
+            const userHome=game.home===userClub;
+            liveMatchGame=game;
+            home=userHome?result.homeGoals:result.awayGoals;
+            away=userHome?result.awayGoals:result.homeGoals;
+            stats={home:blank(),away:blank()};
+            goals={home:[],away:[]};
+            availabilityCommitted=true;
+            if(game.tieId&&conmebolRuntime.isDecidingLeg(game)){
+              const games=conmebolRuntime.tieGames(game).filter(g=>g!==game);
+              const goalsFor=club=>games.reduce((sum,g)=>sum+(g.home===club?Number(g.homeGoals)||0:g.away===club?Number(g.awayGoals)||0:0),0)+(club===game.home?result.homeGoals:result.awayGoals);
+              if(goalsFor(game.home)===goalsFor(game.away)){game.shootoutWinner=Math.random()<.5?game.home:game.away;game.penalties='4–3';}
+            }
+            advanceSeasonRound({navigateDashboard:false});
+            out.liveCommits=(out.liveCommits||0)+1;
+            if(!game.completed)out.anomalies.push(`live_commit_failed:${game.id}`);
+            return;
+          }
+          Object.assign(game,{homeGoals:result.homeGoals,awayGoals:result.awayGoals,data:result.data,goals:result.goals});
+          if(game.tieId&&conmebolRuntime.isDecidingLeg(game)){
+            const games=conmebolRuntime.tieGames(game);
+            const goalsFor=club=>games.reduce((sum,g)=>sum+(g.home===club?Number(g.homeGoals)||0:g.away===club?Number(g.awayGoals)||0:0),0);
+            if(goalsFor(game.home)===goalsFor(game.away)){
+              game.shootoutWinner=Math.random()<.5?game.home:game.away;
+              game.penalties='4–3';
+            }
+          }
+          conmebolRuntime.completeUserGame(game);
+        });
+        advanceCupThroughDate(date);
+      }
+    }
+    out.libertadoresChampion=edition.libertadores.champion;
+    out.sudamericanaChampion=edition.sudamericana.champion;
+    out.libertadoresFinal=edition.libertadores.finalVenue;
+    const statusAtEnd=conmebolRuntime.userStatus();
+    out.userResult=statusAtEnd?`${statusAtEnd.label} · ${statusAtEnd.stageLabel}${statusAtEnd.result?` · ${statusAtEnd.result}`:''}${statusAtEnd.eliminatedAt?` · eliminado em ${statusAtEnd.eliminatedAt}`:''}`:null;
+    out.fixtures=edition.fixtures.length;
+    out.pending=edition.fixtures.filter(game=>!game.completed).length;
+    if(out.pending)out.anomalies.push(`pending:${out.pending}`);
+    if(!out.libertadoresChampion)out.anomalies.push('no_libertadores_champion');
+    if(!out.sudamericanaChampion)out.anomalies.push('no_sudamericana_champion');
+    // Folga: jogo continental de brasileiro a menos de 2 dias de jogo da liga ou da Copa do Brasil.
+    const otherDates=new Map();
+    const pushDate=(club,date)=>{if(!club||!date)return;const list=otherDates.get(club)||[];list.push(new Date(date).getTime());otherDates.set(club,list);};
+    Object.entries(nationalCompetitions).forEach(([division,competition])=>{
+      (competition.fixtures||[]).flat().forEach(game=>{
+        if(!game?.home)return;
+        const date=gameScheduledDate(game,game.round?fixtureDateFor(division,game.round):null);
+        pushDate(game.home,date);pushDate(game.away,date);
+      });
+    });
+    copaDoBrasilFixtures.forEach(game=>{pushDate(game.home,game.date);pushDate(game.away,game.date);});
+    const tight=[];
+    edition.fixtures.forEach(game=>{
+      [game.home,game.away].filter(club=>edition.countries[club]==='BRA').forEach(club=>{
+        const ts=new Date(game.date).getTime();
+        const gap=Math.min(99,...(otherDates.get(club)||[]).map(other=>Math.abs(other-ts)/day));
+        if(gap<2)tight.push(`${club} ${calendarKey(new Date(game.date))} ${game.stage} gap=${gap.toFixed(1)}`);
+      });
+    });
+    out.tightDates=tight.length;
+    out.tightSample=tight.slice(0,8);
+    const blocked=edition.fixtures.filter(game=>isClubCalendarBlackout(new Date(game.date),careerSeason));
+    if(blocked.length)out.anomalies.push(`in_blackout:${blocked.length}`);
+    out.userBudget=getBalance(clubs[userClub]);
+    out.prizeLedger=(clubs[userClub]?.budgetLedger||[]).filter(entry=>entry.reason==='continental_prize').map(entry=>`${entry.label}: ${entry.amount}`).slice(0,12);
+    out.messages=(messages.getMessages?.()||[]).filter(m=>m.type==='conmebol').map(m=>m.title).slice(0,12);
+    return out;
+  };
+  window.__brfutRunConmebolAudit=runConmebolAudit;
+  if(new URLSearchParams(location.search).has('engineTest')){
+    window.__brfutConmebolDebug={advanceTo:date=>{advanceCareerCalendarTo(date);return advanceCupThroughDate(date);},cupFixtures:()=>copaDoBrasilFixtures,runtime:()=>conmebolRuntime,occupancy:()=>cupCalendar.clubMatchDates,nationalCompetitions:()=>nationalCompetitions,fixtureDateFor};
+  }
+  if(new URLSearchParams(location.search).has('conmebolAudit')&&savedNewGame){
+    let audit;
+    try{audit=runConmebolAudit({useLiveCommit:new URLSearchParams(location.search).get('conmebolAudit')==='live'});}catch(error){audit={crash:String(error?.stack||error)};}
+    document.body.innerHTML=`<pre id="cup-audit-json">${JSON.stringify(audit,null,2)}</pre>`;
+    document.title=audit.crash||audit.anomalies?.length?'CONMEBOL_AUDIT_FAIL':'CONMEBOL_AUDIT_OK';
+  }
   window.__brfutRunCupCareerAudit=runCupCareerAudit;
   window.__matchdayRunCupCareerAudit=window.__brfutRunCupCareerAudit;
   if(new URLSearchParams(location.search).has('cupAudit')&&savedNewGame){
@@ -8278,7 +8503,7 @@ export async function bootEngine({
     window.__cupAuditResult=audit;
   }
   // Pinta o dashboard com dados reais antes de liberar a shell — evita placeholders do index.html.
-  const skipPresentationHydration=new URLSearchParams(location.search).has('benchmark')||new URLSearchParams(location.search).has('cupAudit');
+  const skipPresentationHydration=new URLSearchParams(location.search).has('benchmark')||new URLSearchParams(location.search).has('cupAudit')||new URLSearchParams(location.search).has('conmebolAudit');
   if(savedNewGame&&!skipPresentationHydration)refreshSeasonPresentation();
   // Pós-boot leve: partida ao vivo, simulação idle ou transição de temporada.
   if(savedNewGame&&!skipPresentationHydration){

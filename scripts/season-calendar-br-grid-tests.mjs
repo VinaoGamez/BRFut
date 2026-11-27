@@ -33,9 +33,9 @@ const assert = (cond, message) => {
   if (!cond) throw new Error(message || 'assertion failed');
 };
 
-check('internacionais desligadas in-game', () => {
-  assert(FUTURE_COMPETITION_MOLD.libertadores.enabled === false);
-  assert(FUTURE_COMPETITION_MOLD.sudamericana.enabled === false);
+check('CONMEBOL ligada in-game', () => {
+  assert(FUTURE_COMPETITION_MOLD.libertadores.enabled === true);
+  assert(FUTURE_COMPETITION_MOLD.sudamericana.enabled === true);
   assert(FUTURE_COMPETITION_MOLD.libertadores.matchCount === 13);
 });
 

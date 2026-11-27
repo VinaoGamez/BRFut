@@ -60,6 +60,9 @@ export function normalizePlayerDiscipline(source, { defaultLeagueKey = 'LEAGUE:A
 export function competitionKeyFromFixture(fixture, { isKnockoutShootout = () => false, clubs = {} } = {}) {
   if (!fixture || typeof fixture !== 'object') return 'LEAGUE:A';
   if (fixture.competition === 'COPA DO BRASIL') return 'COPA';
+  // Cartões da CONMEBOL só contam na própria competição.
+  if (fixture.competition === 'LIBERTADORES') return 'LIBERTADORES';
+  if (fixture.competition === 'SUL-AMERICANA') return 'SUDAMERICANA';
   if (isKnockoutShootout(fixture)) return 'SERIE_D_KO';
   const homeDiv = clubs[fixture.home]?.division;
   const awayDiv = clubs[fixture.away]?.division;
@@ -70,6 +73,8 @@ export function competitionKeyFromFixture(fixture, { isKnockoutShootout = () => 
 export function competitionLabel(competitionKey) {
   if (competitionKey === 'COPA') return 'Copa do Brasil';
   if (competitionKey === 'SERIE_D_KO') return 'Série D · mata-mata';
+  if (competitionKey === 'LIBERTADORES') return 'Libertadores';
+  if (competitionKey === 'SUDAMERICANA') return 'Sul-Americana';
   if (String(competitionKey).startsWith('LEAGUE:')) {
     return `Brasileirão Série ${String(competitionKey).slice(7)}`;
   }

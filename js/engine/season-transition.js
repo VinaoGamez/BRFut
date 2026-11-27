@@ -254,10 +254,20 @@ export function createSeasonTransitionEngine(deps) {
       champions,
       championEstaduais,
     });
+    // Final da Copa do Brasil: o vice também vai à Libertadores (regra da CBF).
+    const cupFinalStage = [...(cupCompetition.stages || [])].reverse().find(stage => stage?.completed && Array.isArray(stage.fixtures) && stage.fixtures.length);
+    const cupFinalists = cupFinalStage ? [...new Set(cupFinalStage.fixtures.flatMap(game => [game.home, game.away]))] : [];
+    const cupRunnerUp = cupCompetition.champion && cupFinalists.length === 2
+      ? cupFinalists.find(club => club !== cupCompetition.champion) || null
+      : null;
     deps.setPriorSeasonChampions?.({
       season: careerSeason,
       A: champions.A,
       CUP: champions.CUP,
+      CUP_RUNNER_UP: cupRunnerUp,
+      standingsA: ranked('A').slice(0, 20),
+      LIBERTADORES: champions.LIBERTADORES || null,
+      SUDAMERICANA: champions.SUDAMERICANA || null,
     });
     const userPromoted = promD.includes(userClub) || promC.includes(userClub) || promB.includes(userClub);
     const userRelegated = relA.includes(userClub) || relB.includes(userClub) || relC.includes(userClub);

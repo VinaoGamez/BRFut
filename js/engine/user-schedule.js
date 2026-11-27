@@ -19,6 +19,7 @@ export function createUserScheduleEngine({
   getChampionshipFixtures,
   getCopaDoBrasilFixtures,
   getRecopaFixtures,
+  getConmebolFixtures = () => [],
   getWorldCupCompetition,
   getWorldCupAllFixtures,
   getStateLeagueEngine,
@@ -74,6 +75,7 @@ export function createUserScheduleEngine({
     const stateLeagueEngine = getStateLeagueEngine();
     if (isStateLeagueGame(game)) return stateLeagueEngine.isGameComplete(game, userClub);
     if (isRecopaNationalGame(game)) return !!game.completed;
+    if (game.competition === 'LIBERTADORES' || game.competition === 'SUL-AMERICANA') return !!game.completed;
     if (game.competition === WORLD_CUP_COMPETITION) return !!game.completed || game.homeGoals != null;
     if (game.competition === 'COPA DO BRASIL' || isKnockoutShootoutCompetition(game)) {
       if (game.completed) return true;
@@ -110,6 +112,7 @@ export function createUserScheduleEngine({
     const knockout = userGroupStageComplete() ? userKnockoutFixtures().filter(isUserFixture) : [];
     const cup = getCopaDoBrasilFixtures().filter(isUserFixture);
     const recopa = getRecopaFixtures().filter(isUserFixture);
+    const conmebol = (getConmebolFixtures() || []).filter(isUserFixture);
     const worldCupCompetition = getWorldCupCompetition();
     const worldCup = worldCupCompetition
       ? getWorldCupAllFixtures(worldCupCompetition).filter(isUserFixture)
@@ -124,6 +127,7 @@ export function createUserScheduleEngine({
       ...knockout.map(game => ({ game, details: fixtureDetails(game) })),
       ...cup.map(game => ({ game, details: fixtureDetails(game) })),
       ...recopa.map(game => ({ game, details: fixtureDetails(game) })),
+      ...conmebol.map(game => ({ game, details: fixtureDetails(game) })),
       ...worldCup.map(game => ({ game, details: fixtureDetails(game) })),
     ].sort((a, b) => {
       const aTs = parseCalendarDate(a.details?.date)?.getTime() ?? Number.MAX_SAFE_INTEGER;

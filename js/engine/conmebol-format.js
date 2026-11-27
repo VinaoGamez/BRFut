@@ -228,39 +228,65 @@ function windowOf(year, [month, start, end]) {
 export function conmebolStageWindows(competitionId, year, { blocked = [] } = {}) {
   const template = CALENDAR_2026[competitionId];
   if (!template) return {};
-  const shiftOut = window => {
-    let { start, end } = window;
-    // Fase de grupos e mata-mata não podem cair em janela FIFA ou na Copa:
-    // a CONMEBOL antecipa a semana. Até 6 tentativas, depois desiste.
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      const hit = blocked.find(b => start <= b.end && end >= b.start);
-      if (!hit) break;
-      const direction = start < hit.start ? -1 : (attempt < 3 ? -1 : 1);
-      start = new Date(start.getTime() + direction * 7 * DAY_MS);
-      end = new Date(end.getTime() + direction * 7 * DAY_MS);
-    }
-    return { start, end };
-  };
-  const out = {};
+
+  // Lista cronológica de todas as semanas da competição.
+  const items = [];
   Object.entries(template).forEach(([stage, spec]) => {
     if (Array.isArray(spec)) {
-      let previousEnd = null;
-      out[stage] = spec.map(entry => {
-        let window = shiftOut(windowOf(year, entry));
-        // Duas rodadas não podem cair na mesma semana depois do ajuste.
-        if (previousEnd && window.start <= previousEnd) {
-          window = { start: new Date(previousEnd.getTime() + 5 * DAY_MS), end: new Date(previousEnd.getTime() + 7 * DAY_MS) };
-        }
-        previousEnd = window.end;
-        return window;
-      });
+      spec.forEach((entry, index) => items.push({ stage, key: index, window: windowOf(year, entry) }));
       return;
     }
-    const stageOut = {};
-    if (spec.single) stageOut.single = shiftOut(windowOf(year, spec.single));
-    if (spec.ida) stageOut.ida = shiftOut(windowOf(year, spec.ida));
-    if (spec.volta) stageOut.volta = shiftOut(windowOf(year, spec.volta));
-    out[stage] = stageOut;
+    ['single', 'ida', 'volta'].forEach(key => {
+      if (spec[key]) items.push({ stage, key, window: windowOf(year, spec[key]) });
+    });
+  });
+  items.sort((a, b) => a.window.start - b.window.start);
+
+  const isBlocked = window => blocked.some(b => window.start <= b.end && window.end >= b.start);
+  const shift = (window, days) => ({
+    start: new Date(window.start.getTime() + days * DAY_MS),
+    end: new Date(window.end.getTime() + days * DAY_MS),
+  });
+  const MIN_GAP = 5 * DAY_MS;
+
+  // Primeiro semestre: se a semana cai em Data FIFA ou na liberação para a Copa,
+  // a CONMEBOL antecipa — e as rodadas anteriores recuam junto.
+  const pivot = new Date(Number(year), 6, 1).getTime();
+  const before = items.filter(item => item.window.start.getTime() < pivot);
+  const after = items.filter(item => item.window.start.getTime() >= pivot);
+  for (let i = before.length - 1; i >= 0; i -= 1) {
+    const next = before[i + 1]?.window || null;
+    for (let guard = 0; guard < 10; guard += 1) {
+      const tooClose = next && before[i].window.end.getTime() > next.start.getTime() - MIN_GAP;
+      if (!isBlocked(before[i].window) && !tooClose) break;
+      before[i].window = shift(before[i].window, -7);
+    }
+  }
+  // Segundo semestre: adia para a semana seguinte livre. Ida e volta andam
+  // juntas, para o confronto não ficar com um mês entre os jogos.
+  const units = [];
+  after.forEach(item => {
+    const last = units[units.length - 1];
+    if (last && last[0].stage === item.stage) last.push(item);
+    else units.push([item]);
+  });
+  let prevEnd = before[before.length - 1]?.window.end || null;
+  units.forEach(unit => {
+    for (let guard = 0; guard < 10; guard += 1) {
+      const tooClose = prevEnd && unit[0].window.start.getTime() < prevEnd.getTime() + MIN_GAP;
+      if (!unit.some(item => isBlocked(item.window)) && !tooClose) break;
+      unit.forEach(item => { item.window = shift(item.window, 7); });
+    }
+    prevEnd = unit[unit.length - 1].window.end;
+  });
+
+  const out = {};
+  items.forEach(({ stage, key, window }) => {
+    if (Array.isArray(template[stage])) {
+      (out[stage] = out[stage] || [])[key] = window;
+    } else {
+      (out[stage] = out[stage] || {})[key] = window;
+    }
   });
   return out;
 }

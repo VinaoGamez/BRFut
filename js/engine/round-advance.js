@@ -344,6 +344,28 @@ export function createRoundAdvanceEngine(deps) {
       return;
     }
 
+    if (liveMatchGame?.competition === 'LIBERTADORES' || liveMatchGame?.competition === 'SUL-AMERICANA') {
+      deps.setRoundCommitted(true);
+      try {
+        // Placar primeiro: se algo da apresentação falhar, o resultado já está gravado.
+        deps.commitLiveConmebolResult?.();
+        const gateResult = deps.creditUserHomeGate(liveMatchGame);
+        deps.pushUserMatchResultMessage(liveMatchGame, gateResult);
+        advancePostMatchDay();
+        deps.persistSeason(true);
+        deps.refreshSeasonPresentation();
+        resetLiveMatchSession(deps);
+        if (deps.evaluateManagerJobRisk()) return;
+        if (navigateDashboard) deps.navigateToDashboard();
+      } catch (error) {
+        console.warn('[brfut] falha ao avançar pós-jogo continental', error);
+        resetLiveMatchSession(deps);
+      } finally {
+        deps.setRoundCommitted(false);
+      }
+      return;
+    }
+
     if (liveMatchGame?.competition === KNOCKOUT_COMPETITIONS.RECOPA) {
       deps.commitLiveKnockoutResult();
       deps.setRoundCommitted(true);
