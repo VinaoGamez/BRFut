@@ -4,6 +4,7 @@
  */
 
 import { getCustomClubCrestArtwork } from './custom-clubs.js';
+import { conmebolClubMeta } from './conmebol-clubs.js';
 
 /** @type {Record<string, { slug: string, name: string, primary: string, secondary: string, pattern?: string, accent?: string }>} */
 export const CLUB_CREST_ARTWORK = Object.freeze({
@@ -251,6 +252,9 @@ export function clubCrestSlug(clubName) {
 export function resolveClubCrestArtwork(clubName) {
   const custom = getCustomClubCrestArtwork(clubName);
   if (custom) return custom;
+  // Clubes sul-americanos fictícios: cores e formato do catálogo.
+  const conmebol = conmebolClubMeta(clubName);
+  if (conmebol) return { ...conmebol.crest, name: conmebol.name, custom: true };
 
   const key = normClubKey(clubName);
   const alias = NAME_ALIASES[key];

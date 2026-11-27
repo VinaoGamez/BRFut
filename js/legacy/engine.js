@@ -3537,6 +3537,16 @@ export async function bootEngine({
   let rawOnCupScheduleChanged=()=>{};
   const buildCalendarDeps=()=>({
     $,$$,onClick,writeJson,
+    getUserContinentalLabel:()=>{
+      const status=conmebolRuntime?.userStatus?.();
+      if(status)return status.competitionId==='libertadores'?'Libertadores':'Sul-Americana';
+      const ed=conmebolRuntime?.edition;
+      if(!ed)return '';
+      const has=list=>Object.values(list||{}).flat().some(entry=>entry.club===userClub);
+      if(has(ed.libertadores.entrants))return 'Libertadores';
+      if(has(ed.sudamericana.entrants))return 'Sul-Americana';
+      return '';
+    },
     getUserClub:()=>userClub,
     getUserDivision:()=>userDivision,
     getCurrentRound:()=>currentRound,
@@ -6286,6 +6296,7 @@ export async function bootEngine({
   };
   championshipPage=createChampionshipPageFeature({
     $,$$,onClick,clamp,router,
+    getConmebolEdition:()=>conmebolRuntime?.edition||null,
     getUserClub:()=>userClub,
     getUserDivision:()=>userDivision,
     getUserNationalTeamName:()=>userNationalTeamName,

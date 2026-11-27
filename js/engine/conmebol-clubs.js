@@ -189,7 +189,9 @@ function slugify(text) {
 function initialsOf(name) {
   const skip = new Set(['de', 'del', 'la', 'las', 'los', 'el']);
   const words = String(name).split(/\s+/).filter(word => !skip.has(word.toLowerCase()));
-  return words.slice(0, 3).map(word => word[0]).join('').toUpperCase();
+  // Duas letras cabem em qualquer formato de escudo: apelido + cidade.
+  const picked = words.length > 1 ? [words[0], words[words.length - 1]] : words;
+  return picked.map(word => word[0]).join('').toUpperCase();
 }
 
 /** Ficha imutável de cada clube estrangeiro. */
@@ -314,6 +316,7 @@ export function buildConmebolClub(meta, { careerSeed = 0, seasonYear = 2026, fir
     division: 'INT',
     country: meta.country,
     conmebolForeign: true,
+    countryName: meta.countryName,
     uf: null,
     city: meta.city,
     stadiumName: meta.stadium,

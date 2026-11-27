@@ -21,6 +21,8 @@ export function resolveCompetitionBadge(game, { userDivision = 'A' } = {}) {
   if (game.competition === 'COPA DO MUNDO') {
     return { name: 'Copa do Mundo', kind: 'world-cup' };
   }
+  if (game.competition === 'LIBERTADORES') return { name: 'Libertadores', kind: 'libertadores' };
+  if (game.competition === 'SUL-AMERICANA') return { name: 'Sul-Americana', kind: 'sudamericana' };
   if (isKnockoutShootoutCompetition(game)) {
     if (
       game.competition === KNOCKOUT_COMPETITIONS.SERIE_D ||

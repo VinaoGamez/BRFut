@@ -1036,7 +1036,8 @@ export function createCalendarViewFeature(deps) {
       ? `<article class="card world-cup-calendar-card"><label>COPA DO MUNDO ${careerSeason}</label><strong>11 JUN — 19 JUL</strong><p>Fase de grupos (3 rodadas) com resultados simulados semana a semana. Mata-mata gerado após a 3ª rodada — avance o calendário para ver placares.</p><div class="world-cup-calendar-jumps"><button type="button" data-calendar-month="5">JUN</button><button type="button" data-calendar-month="6">JUL</button></div></article>`
       : '';
 
-    $('#calendar .title p').textContent = `TEMPORADA ${careerSeason} · BRASILEIRÃO SÉRIE ${userDivision} + COPA DO BRASIL${isWorldCupSeasonActive(careerSeason) ? ' + CMU' : ''}`;
+    const continental = deps.getUserContinentalLabel?.() || '';
+    $('#calendar .title p').textContent = `TEMPORADA ${careerSeason} · BRASILEIRÃO SÉRIE ${userDivision} + COPA DO BRASIL${continental ? ` + ${continental.toUpperCase()}` : ''}${isWorldCupSeasonActive(careerSeason) ? ' + CMU' : ''}`;
     syncCalendarSubtitle();
     $('.calendar-toolbar').insertAdjacentHTML(
       'afterend',
