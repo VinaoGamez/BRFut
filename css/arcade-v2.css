@@ -1058,3 +1058,73 @@ html.is-mobile body .squad-performance table {
   width: 100% !important;
   min-width: 0 !important;
 }
+
+/* ---------------- Elenco: Desempenho como terceira visualização ---------------- */
+html body #squad .card.roster {
+  display: flex !important;
+  flex-direction: column;
+  max-height: calc(100vh - 300px) !important;
+  min-height: 320px;
+}
+
+html body #squad .card.roster > .roster-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+html body #squad .card.roster:not(.roster-performance-mode) > #squadPerformance {
+  display: none !important;
+}
+
+html body #squad .card.roster.roster-performance-mode > .roster-scroll,
+html body #squad .card.roster.roster-performance-mode > #rosterFilters > label,
+html body #squad .card.roster.roster-performance-mode #rosterContractPanel {
+  display: none !important;
+}
+
+html body #squad .card.roster.roster-performance-mode > #rosterFilters {
+  justify-content: flex-end;
+}
+
+html body #squad .card.roster > #squadPerformance {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex !important;
+  flex-direction: column;
+  margin: 0 !important;
+  padding: 12px 12px 0 !important;
+  background: transparent !important;
+}
+
+html body #squad .card.roster > #squadPerformance > h2 {
+  display: none;
+}
+
+html body #squad .card.roster > #squadPerformance > p {
+  margin: 0 0 8px;
+}
+
+html body #squad .card.roster > #squadPerformance .roster-filters {
+  flex: none;
+}
+
+html body #squad .card.roster > #squadPerformance .roster-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+html body #squad .card.roster > #squadPerformance thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+html.is-mobile body #squad .card.roster {
+  max-height: none !important;
+}
+
+html.is-mobile body #squad .roster-density button {
+  padding: 6px 12px !important;
+}
