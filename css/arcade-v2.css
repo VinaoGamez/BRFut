@@ -3872,3 +3872,76 @@ html.is-mobile body #ranking .ranking-trophies {
 }
 html.is-mobile body #ranking .ranking-trophy { flex: 0 0 150px; }
 html body #ranking .national-ranking-col-hidden { display: none !important; }
+
+/* Competições v2: coluna lateral (rodada, artilharia, ranking) */
+html body #table.view.active {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+}
+html body #table.view.active > :not(.championship-page-table):not(#champV2Side) { grid-column: 1 / -1; }
+html body #table .champ-v2-side { display: flex; flex-direction: column; gap: 12px; margin-top: 48px; }
+html body #table .champ-v2-side[hidden] { display: none !important; }
+html body #table .champ-v2-card { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--av-panel); }
+html body #table .champ-v2-card:first-child { background: linear-gradient(225deg, transparent 12px, var(--av-panel) 12px); }
+html body #table .champ-v2-card-title { color: var(--av-cyan); font: italic 800 11px var(--av-display); letter-spacing: .08em; margin-bottom: 4px; }
+html body #table .champ-v2-card-title.is-gold { color: var(--av-gold); }
+html body #table .champ-v2-round-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+html body #table .champ-v2-round-nav strong { font: italic 800 14px var(--av-display); }
+html body #table .champ-v2-round-nav button {
+  width: 32px;
+  min-height: 28px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-ink) !important;
+  box-shadow: none !important;
+}
+html body #table .champ-v2-round-nav button:disabled { opacity: .35; }
+html body #table .champ-v2-fx {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--av-line);
+  cursor: pointer;
+}
+html body #table .champ-v2-fx > strong { text-align: center; color: var(--av-muted); font: italic 900 15px var(--av-display); }
+html body #table .champ-v2-fx > strong.is-done { color: var(--av-ink); }
+html body #table .champ-v2-fx-team { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; }
+html body #table .champ-v2-fx-team.right { justify-content: flex-end; text-align: right; }
+html body #table .champ-v2-fx-team b { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 700; }
+html body #table .champ-v2-fx-team.is-user b { color: var(--av-lime); }
+html body #table i.champ-v2-fx-crest {
+  flex: 0 0 18px;
+  width: 18px !important;
+  height: 20px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+html body #table i.champ-v2-fx-crest > *, html body #table i.champ-v2-fx-crest img, html body #table i.champ-v2-fx-crest svg { width: 100% !important; height: 100% !important; }
+html body #table .champ-v2-scorer { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--av-line); font-size: 13px; }
+html body #table .champ-v2-scorer > strong { width: 16px; font: italic 900 14px var(--av-display); }
+html body #table .champ-v2-scorer > span { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+html body #table .champ-v2-scorer > b { color: var(--av-gold); font: italic 900 15px var(--av-display); }
+html body #table .champ-v2-note,
+html body #table .champ-v2-empty { margin: 6px 0 0; color: var(--av-muted); font-size: 11px; }
+html body #table .champ-v2-rank { flex-direction: row; align-items: center; gap: 12px; box-shadow: inset 3px 0 var(--av-cyan); }
+html body #table .champ-v2-rank > div { flex: 1; }
+html body #table .champ-v2-rank p { margin: 0; font-size: 13px; }
+html body #table .champ-v2-rank button {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 7px 12px !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-ink) !important;
+  box-shadow: none !important;
+  font: italic 800 11px var(--av-display) !important;
+}
+html.is-mobile body #table.view.active { grid-template-columns: minmax(0, 1fr); }
+html.is-mobile body #table .champ-v2-side { margin-top: 12px; }
+html body #table .champ-v2-round-nav { padding: 0 0 6px !important; background: none !important; border: 0 !important; box-shadow: none !important; min-height: 0 !important; }

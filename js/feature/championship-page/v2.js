@@ -23,7 +23,8 @@ const CHIP_META = {
 
 const esc = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
-export function createChampionshipV2({ $, getUserClub, getClubForm }) {
+export function createChampionshipV2({ $, getUserClub, getClubForm, getSideRound, getScorers, getUserNationalRank, openRanking }) {
+  const sideRounds = new Map();
   let scheduled = false;
   let observer = null;
 
@@ -102,12 +103,70 @@ export function createChampionshipV2({ $, getUserClub, getClubForm }) {
     if (summary.innerHTML !== html) summary.innerHTML = html;
   };
 
+  // ---------- Coluna lateral: rodada, artilharia e ranking ----------
+  const fixtureRow = game => {
+    const done = game.scheduled !== true && (game.completed === true || (game.homeGoals != null && game.awayGoals != null));
+    const user = getUserClub();
+    const side = (club, align) => `<span class="champ-v2-fx-team ${align}${club === user ? ' is-user' : ''}">${align === 'right' ? `<b>${esc(club)}</b>${teamCrestHtml(club, { className: 'champ-v2-fx-crest' })}` : `${teamCrestHtml(club, { className: 'champ-v2-fx-crest' })}<b>${esc(club)}</b>`}</span>`;
+    return `<div class="champ-v2-fx" data-club="${esc(game.home === user ? game.away : game.home)}">${side(game.home, 'right')}<strong class="${done ? 'is-done' : ''}">${done ? `${game.homeGoals}–${game.awayGoals}` : '×'}</strong>${side(game.away, 'left')}</div>`;
+  };
+
+  const renderSide = () => {
+    const card = $('.championship-page-table');
+    if (!card) return;
+    let side = $('#champV2Side');
+    if (!side) {
+      card.insertAdjacentHTML('afterend', '<aside id="champV2Side" class="champ-v2-side" aria-label="Rodada e destaques"></aside>');
+      side = $('#champV2Side');
+      side.addEventListener('click', event => {
+        const step = event.target.closest('[data-champ-v2-round]');
+        if (step) {
+          const view = typeof getSideRound === 'function' ? getSideRound(null) : null;
+          if (!view) return;
+          const now = sideRounds.get(view.key) || view.current;
+          const next = Math.max(1, Math.min(view.limit, now + Number(step.dataset.champV2Round)));
+          sideRounds.set(view.key, next);
+          renderSide();
+          return;
+        }
+        if (event.target.closest('[data-champ-v2-ranking]')) openRanking?.();
+      });
+    }
+    const parts = [];
+    const base = typeof getSideRound === 'function' ? getSideRound(null) : null;
+    if (base) {
+      const view = getSideRound(sideRounds.get(base.key) || base.current) || base;
+      const games = (view.games || []).filter(game => game?.home && game?.away);
+      const user = getUserClub();
+      games.sort((a, b) => Number(b.home === user || b.away === user) - Number(a.home === user || a.away === user));
+      parts.push(`<section class="champ-v2-card"><header class="champ-v2-round-nav"><button type="button" data-champ-v2-round="-1" aria-label="Rodada anterior" ${view.round <= 1 ? 'disabled' : ''}>‹</button><strong>RODADA ${view.round}${view.round === view.current ? ' · ATUAL' : ''}</strong><button type="button" data-champ-v2-round="1" aria-label="Próxima rodada" ${view.round >= view.limit ? 'disabled' : ''}>›</button></header>${games.map(fixtureRow).join('') || '<p class="champ-v2-empty">Sem jogos nesta rodada.</p>'}</section>`);
+    }
+    // Artilharia entre os clubes da tabela em tela.
+    const clubs = new Set([...document.querySelectorAll('#leagueTable .league-row[data-club]')].map(row => row.dataset.club));
+    const scorers = (typeof getScorers === 'function' ? getScorers() || [] : [])
+      .filter(player => clubs.has(player.club) && Number(player.goals) > 0)
+      .slice(0, 5);
+    if (clubs.size) {
+      parts.push(`<section class="champ-v2-card"><span class="champ-v2-card-title is-gold">ARTILHARIA</span>${scorers.length ? scorers.map((player, index) => `<div class="champ-v2-scorer"><strong>${index + 1}</strong>${teamCrestHtml(player.club, { className: 'champ-v2-fx-crest' })}<span>${esc(player.name)}</span><b>${Number(player.goals)}</b></div>`).join('') : '<p class="champ-v2-empty">Ainda sem gols marcados.</p>'}<small class="champ-v2-note">Gols na temporada dos clubes desta tabela.</small></section>`);
+    }
+    const rank = typeof getUserNationalRank === 'function' ? getUserNationalRank() : null;
+    if (rank) {
+      const fmt = value => Number(value || 0).toFixed(1).replace('.', ',');
+      const line = rank.position === 1 ? `líder · ${fmt(rank.lead)} à frente` : `a ${fmt(rank.leaderGap)} do líder`;
+      parts.push(`<section class="champ-v2-card champ-v2-rank"><div><span class="champ-v2-card-title">RANKING NACIONAL</span><p>Você é o <strong>${rank.position}º</strong> · ${fmt(rank.total)} pts · ${line}</p></div><button type="button" data-champ-v2-ranking>VER →</button></section>`);
+    }
+    const html = parts.join('');
+    if (side.innerHTML !== html) side.innerHTML = html;
+    side.hidden = !html;
+  };
+
   const run = () => {
     scheduled = false;
     observer?.disconnect();
     try {
       renderChips();
       enhanceTable();
+      renderSide();
     } finally {
       const card = $('.championship-page-table');
       if (card && observer) observer.observe(card, { childList: true, subtree: true });

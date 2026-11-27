@@ -1825,7 +1825,43 @@ export function createChampionshipPageFeature(deps) {
     openChampionshipLastGames = typeof fn === 'function' ? fn : () => {};
   };
 
-  const champV2 = createChampionshipV2({ $, getUserClub: () => getUserClub(), getClubForm: deps.getClubForm });
+  /**
+   * Rodada para a coluna lateral (Competições v2): só ligas por pontos
+   * (Séries e estaduais na fase de classificação). Retorna null nos demais.
+   */
+  const getSideRound = requested => {
+    try {
+      if (isArchiveView() || championshipPageIsKnockoutView()) return null;
+      const userClub = getUserClub();
+      if (isStateChampionshipPage(pageCompetition)) {
+        const limit = stateLeagueEngine.getRoundLimit(pageCompetition);
+        const current = stateLeagueEngine.getCurrentRound(pageCompetition, userClub);
+        const round = clamp(requested || current, 1, Math.max(1, limit));
+        const games = stateLeagueEngine.getRoundGamesForBrowse(pageCompetition, round) || [];
+        return { key: pageCompetition, round, current, limit, games };
+      }
+      if (['A', 'B', 'C', 'D'].includes(pageCompetition)) {
+        const fixtures = getNationalCompetitions()?.[pageCompetition]?.fixtures || [];
+        if (!fixtures.length) return null;
+        const current = clamp(getCurrentRound(), 1, fixtures.length);
+        const round = clamp(requested || current, 1, fixtures.length);
+        return { key: pageCompetition, round, current, limit: fixtures.length, games: fixtures[round - 1] || [] };
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  const champV2 = createChampionshipV2({
+    $,
+    getUserClub: () => getUserClub(),
+    getClubForm: deps.getClubForm,
+    getSideRound,
+    getScorers: deps.getScorers,
+    getUserNationalRank: deps.getUserNationalRank,
+    openRanking: () => deps.openView?.('ranking'),
+  });
 
   const init = () => {
     champV2.init();

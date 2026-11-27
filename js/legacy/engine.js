@@ -6520,6 +6520,16 @@ export async function bootEngine({
   championshipPage=createChampionshipPageFeature({
     $,$$,onClick,clamp,router,
     getClubForm:clubFormFromHistory,
+    getScorers:()=>allScorers,
+    openView:viewId=>router.openView(viewId),
+    getUserNationalRank:()=>{
+      try{
+        const ranking=currentNationalRanking();
+        const index=ranking.findIndex(entry=>entry.club===userClub);
+        if(index<0)return null;
+        return {position:index+1,total:ranking[index].total,leaderGap:index?ranking[0].total-ranking[index].total:0,lead:index===0&&ranking[1]?ranking[0].total-ranking[1].total:0};
+      }catch{return null;}
+    },
     getConmebolEdition:()=>conmebolRuntime?.edition||null,
     getConmebolQualifiers:()=>savedNewGame?.conmebolQualifiers||null,
     // Destaque na tabela: a seleção do usuário, se for sul-americana; senão o Brasil.
