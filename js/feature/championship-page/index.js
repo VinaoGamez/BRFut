@@ -22,6 +22,7 @@ import {
   renderEstaduaisHub,
 } from './hub.js';
 import { createChampionshipPageFocus } from './focus.js';
+import { QUALIFIERS_PAGE_ID, qualifiersBody, qualifiersCurrentMatchday, qualifiersHeader } from './qualifiers-view.js';
 import { CONMEBOL_PAGE_IDS, conmebolBody, conmebolHeader, conmebolSteps, conmebolUserStep, isConmebolPage } from './conmebol-view.js';
 
 /**
@@ -155,6 +156,8 @@ export function createChampionshipPageFeature(deps) {
   } = deps;
   const getConmebolEdition = deps.getConmebolEdition || (() => null);
   const pageConmebolStep = { libertadores: 0, sudamericana: 0 };
+  const getConmebolQualifiers = deps.getConmebolQualifiers || (() => null);
+  let pageQualifiersMatchday = 1;
   const escapeConmebol = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
   let pageCompetition = getUserDivision();
@@ -1101,6 +1104,13 @@ export function createChampionshipPageFeature(deps) {
         canPrev = pageStateRound > 1;
         canNext = pageStateRound < roundLimit;
       }
+    } else if (pageCompetition === QUALIFIERS_PAGE_ID) {
+      const header = qualifiersHeader(getConmebolQualifiers(), pageQualifiersMatchday);
+      pageQualifiersMatchday = header.matchday;
+      subText = header.subText;
+      titleText = header.titleText;
+      canPrev = header.canPrev;
+      canNext = header.canNext;
     } else if (isConmebolPage(pageCompetition)) {
       const competitionId = CONMEBOL_PAGE_IDS[pageCompetition];
       const header = conmebolHeader(getConmebolEdition(), competitionId, pageConmebolStep[competitionId]);
@@ -1177,7 +1187,7 @@ export function createChampionshipPageFeature(deps) {
     if (prevBtn) prevBtn.disabled = !canPrev;
     if (nextBtn) nextBtn.disabled = !canNext;
     const lastGamesBtn = $('#championshipPageLastGamesBtn');
-    if (lastGamesBtn) lastGamesBtn.classList.toggle('hidden', pageCompetition === 'CUP' || pageCompetition === 'RECOPA' || pageCompetition === 'CMU' || isConmebolPage(pageCompetition) || isStateHub || isArchiveView());
+    if (lastGamesBtn) lastGamesBtn.classList.toggle('hidden', pageCompetition === 'CUP' || pageCompetition === 'RECOPA' || pageCompetition === 'CMU' || pageCompetition === QUALIFIERS_PAGE_ID || isConmebolPage(pageCompetition) || isStateHub || isArchiveView());
 
     if (isStateHub && !isArchiveView()) {
       tableCard?.classList.remove('is-knockout');
@@ -1242,6 +1252,11 @@ export function createChampionshipPageFeature(deps) {
       }
       if (head) head.innerHTML = '';
       body.innerHTML = gamesHtml;
+    } else if (pageCompetition === QUALIFIERS_PAGE_ID && !isArchiveView()) {
+      const view = qualifiersBody({ qualifiers: getConmebolQualifiers(), matchday: pageQualifiersMatchday, escapeHtml: escapeConmebol });
+      tableCard?.classList.toggle('is-knockout', !view.head);
+      if (head) head.innerHTML = view.head;
+      body.innerHTML = view.html;
     } else if (isConmebolPage(pageCompetition) && !isArchiveView()) {
       const competitionId = CONMEBOL_PAGE_IDS[pageCompetition];
       const view = conmebolBody({
@@ -1458,6 +1473,7 @@ export function createChampionshipPageFeature(deps) {
     const valid = getPageCompetitionOptions().some(option => option.id === competitionId) || isStateChampionshipPage(competitionId);
     if (!valid) return;
     pageCompetition = competitionId;
+    if (competitionId === QUALIFIERS_PAGE_ID) pageQualifiersMatchday = qualifiersCurrentMatchday(getConmebolQualifiers());
     if (isConmebolPage(competitionId)) {
       const id = CONMEBOL_PAGE_IDS[competitionId];
       pageConmebolStep[id] = conmebolUserStep(getConmebolEdition(), id, userClub);
@@ -1586,6 +1602,8 @@ export function createChampionshipPageFeature(deps) {
         return;
       }
       pageStateRound = clamp((pageStateRound || 1) + step, 1, limit);
+    } else if (pageCompetition === QUALIFIERS_PAGE_ID) {
+      pageQualifiersMatchday = clamp((pageQualifiersMatchday || 1) + step, 1, 18);
     } else if (isConmebolPage(pageCompetition)) {
       const id = CONMEBOL_PAGE_IDS[pageCompetition];
       const total = conmebolSteps(getConmebolEdition(), id).length;

@@ -20,6 +20,9 @@ export function buildPageCompetitionOptions({ FEATURES, savedNewGame }) {
     ...(FUTURE_COMPETITION_MOLD.sudamericana.enabled
       ? [{ id: 'SUDAMERICANA', label: 'Copa Sul-Americana', trophyKey: 'sul-americana' }]
       : []),
+    ...(savedNewGame
+      ? [{ id: 'ELIMINATORIAS', label: 'Eliminatórias', trophyKey: 'world-cup' }]
+      : []),
   ];
 }
 

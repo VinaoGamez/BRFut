@@ -1,3 +1,4 @@
+import { createInternationalRuntime } from '../engine/international-runtime.js';
 import { storage as brfutStorage } from '../core/storage-backend.js';
 import { $, $$, on, onClick, redirectGame, clamp, cleanCareerText } from '../ui/dom.js';
 import { clubLabelHtml, clubCrestTitleHtml } from '../ui/club-label.js';
@@ -2411,6 +2412,32 @@ export async function bootEngine({
     }catch(error){
       console.warn('[brfut] Libertadores/Sul-Americana indisponível nesta temporada',error);
       conmebolRuntime=null;
+    }
+  }
+  let internationalRuntime=null;
+  if(savedNewGame){
+    try{
+      internationalRuntime=createInternationalRuntime({
+        getCareerSeason:()=>careerSeason,
+        getCareerSeed:()=>savedNewGame?.seed??0,
+        getClubs:()=>clubs,
+        getUserClub:()=>userClub,
+        getSavedState:()=>validSavedSeason?savedSeason.internationalDuty:null,
+        getQualifiersState:()=>savedNewGame?.conmebolQualifiers||null,
+        setQualifiersState:value=>{savedNewGame.conmebolQualifiers=value;},
+        getCapsLedger:()=>savedNewGame?.internationalCaps||{},
+        setCapsLedger:value=>{savedNewGame.internationalCaps=value;},
+        pushMessage:message=>pushMessage({...message,round:currentRound}),
+        injurePlayer:(player,clubName)=>{
+          const record=createInjuryRecord(player,currentRound,{source:'national-team'});
+          return assignPlayerInjury(player,record,currentRound,{skipTreatmentPrompt:true,club:clubs[clubName]});
+        },
+        random:gameRandom,
+      });
+      internationalRuntime.init();
+    }catch(error){
+      console.warn('[brfut] Datas FIFA indisponíveis nesta temporada',error);
+      internationalRuntime=null;
     }
   }
   const cupGameNumberHolder={value:cupGameNumber};
@@ -6297,6 +6324,7 @@ export async function bootEngine({
   championshipPage=createChampionshipPageFeature({
     $,$$,onClick,clamp,router,
     getConmebolEdition:()=>conmebolRuntime?.edition||null,
+    getConmebolQualifiers:()=>savedNewGame?.conmebolQualifiers||null,
     getUserClub:()=>userClub,
     getUserDivision:()=>userDivision,
     getUserNationalTeamName:()=>userNationalTeamName,
@@ -6407,7 +6435,16 @@ export async function bootEngine({
         console.warn('[brfut] avanço da Libertadores/Sul-Americana',error);
       }
     }
-    return cupChanged||continentalChanged;
+    let internationalChanged=false;
+    if(internationalRuntime&&date){
+      try{
+        internationalChanged=internationalRuntime.advanceTo(date);
+        if(internationalChanged)persistCareer({...savedNewGame});
+      }catch(error){
+        console.warn('[brfut] avanço das Datas FIFA',error);
+      }
+    }
+    return cupChanged||continentalChanged||internationalChanged;
   };
   let advanceStateLeagueThroughDate=()=>false;
   let advancePostMatchDay=()=>{};
@@ -6555,6 +6592,7 @@ export async function bootEngine({
   const initialSeasonTransitionPrepared=!!(validSavedSeason&&(savedSeason.seasonTransitionPrepared||(Array.isArray(savedSeason.userBudgetLedger)&&savedSeason.userBudgetLedger.some(entry=>entry?.reason==='season_prize'))));
   const writeSeasonSave=createSeasonSaveWriter({
     getConmebolEdition:()=>conmebolRuntime?.serialize()||null,
+    getInternationalDuty:()=>internationalRuntime?.serialize()||null,
     getSavedNewGame:()=>savedNewGame,
     getUserClub:()=>userClub,
     getUserDivision:()=>userDivision,
@@ -8493,6 +8531,13 @@ export async function bootEngine({
     out.userBudget=getBalance(clubs[userClub]);
     out.prizeLedger=(clubs[userClub]?.budgetLedger||[]).filter(entry=>entry.reason==='continental_prize').map(entry=>`${entry.label}: ${entry.amount}`).slice(0,12);
     out.messages=(messages.getMessages?.()||[]).filter(m=>m.type==='conmebol').map(m=>m.title).slice(0,12);
+    const intl=internationalRuntime?.serialize();
+    out.international=intl?Object.entries(intl.windows||{}).map(([id,entry])=>`${id}:${entry.status}:${(entry.callups||[]).length}`):null;
+    out.internationalMessages=(messages.getMessages?.()||[]).filter(m=>String(m.type||'').startsWith('national-team')||m.type==='qualifiers').map(m=>`${m.title} — ${String(m.body||'').slice(0,120)}`).slice(0,10);
+    const q=savedNewGame?.conmebolQualifiers;
+    out.qualifiers=q?{cycle:q.cycleYear,played:q.fixtures.filter(g=>g.completed).length,total:q.fixtures.length,complete:q.complete}:null;
+    out.capsLedger=Object.keys(savedNewGame?.internationalCaps||{}).length;
+    if(intl&&Object.values(intl.windows||{}).some(entry=>entry.status!=='returned'))out.anomalies.push('duty_not_returned');
     return out;
   };
   window.__brfutRunConmebolAudit=runConmebolAudit;

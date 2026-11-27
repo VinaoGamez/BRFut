@@ -70,6 +70,7 @@ function serializeManagerJobCrisis(activeCrisis) {
  */
 export function createSeasonSaveWriter({
   getConmebolEdition = () => null,
+  getInternationalDuty = () => null,
   getSavedNewGame,
   getUserClub,
   getUserDivision,
@@ -383,6 +384,7 @@ export function createSeasonSaveWriter({
       priorSeasonChampions: savedNewGame?.priorSeasonChampions || null,
       worldCupCompetition: serializeWorldCupCompetition(worldCupCompetition),
       conmebolEdition: getConmebolEdition() || null,
+      internationalDuty: getInternationalDuty() || null,
       nationalTeamOffersSentYear: nationalTeamOffersSentYear ?? null,
       nationalTeamOfferState: nationalTeamOfferState ?? null,
       nationalRanking: {

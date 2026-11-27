@@ -61,3 +61,5 @@
 .roster-nation-fallback{font:700 10px 'DM Sans',sans-serif;color:#75cde3;letter-spacing:.3px}
 #tactics .tactic-player-row .roster-name-wrap{width:100%}
 #tactics .tactic-player-row .roster-rename-btn{flex-shrink:0}
+
+.player-national-tag{border-color:#b8902f;background:#3a2d0c;color:#ffd36b}

@@ -114,6 +114,7 @@ const SUITES = [
   { label: 'brfut-api', steps: [['scripts/brfut_api_tests.py']] },
   { label: 'storage-backend', steps: [['scripts/storage-backend-tests.mjs']] },
   { label: 'conmebol', steps: [['scripts/conmebol-tests.mjs']] },
+  { label: 'international-duty', steps: [['scripts/international-duty-tests.mjs']] },
   { label: 'transfers', steps: [['scripts/transfers-tests.mjs']] },
   { label: 'transfer-history-data', steps: [['scripts/transfer-history-data-tests.mjs']] },
   { label: 'manager-ranking-history', steps: [['scripts/manager-ranking-history-tests.mjs']] },

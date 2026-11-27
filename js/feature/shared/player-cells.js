@@ -174,6 +174,15 @@ export function createPlayerCells({
     return `<span class="player-loan-line"><small class="player-loan-tag" title="Emprestado${from} até o fim da temporada">EMPR.</small>${club}</span>`;
   };
 
+  /** Convocado: linha "SELEÇÃO · <time>" enquanto estiver fora com a seleção. */
+  const playerNationalLine = player => {
+    const duty = player?.internationalDuty;
+    if (!duty?.team) return '';
+    const caps = Number(player?.internationalCareer?.caps) || 0;
+    const title = `Convocado pela seleção ${duty.team}${caps ? ` · ${caps} jogos pela seleção` : ''}`;
+    return `<span class="player-loan-line"><small class="player-loan-tag player-national-tag" title="${escapeAttr(title)}">${duty.worldCup ? 'COPA' : 'SELEÇÃO'}</small><small class="player-loan-tag player-loan-tag-club">${escapeAttr(duty.team)}</small></span>`;
+  };
+
   const playerStarBadge = player => {
     if (isCraque(player)) {
       const title = 'Craque · estrela dourada';
@@ -202,14 +211,15 @@ export function createPlayerCells({
     const displayName = playerDisplayName(name, getPlayerRoster?.(player, clubName) || []);
     const loanLine = showLoan ? playerLoanLine(player) : '';
     const injuryLine = playerInjuryLine(player);
+    const nationalLine = playerNationalLine(player);
     const badges = playerStatusBadges(player, liveState, { allCompetitions, showLoan: false });
     const playerId = resolvePlayerId(player) || '';
-    const cellMods = [loanLine && 'has-loan', injuryLine && 'has-injury'].filter(Boolean).join(' ');
+    const cellMods = [(loanLine || nationalLine) && 'has-loan', injuryLine && 'has-injury'].filter(Boolean).join(' ');
     const cardAttrs =
       openCard && playerId
         ? ` role="button" tabindex="0" class="player-name-text is-card-trigger" data-open-player-card data-player-id="${escapeAttr(playerId)}"${clubName ? ` data-player-club="${escapeAttr(clubName)}"` : ''}`
         : ' class="player-name-text"';
-    return `<b class="player-name-cell${cellMods ? ` ${cellMods}` : ''}"><span class="player-name-line">${prefix ? `<span class="player-name-prefix">${prefix}</span>` : ''}<span${cardAttrs} title="${escapeAttr(name)}">${escapeAttr(displayName)}</span>${playerStarBadge(player)}${badges}</span>${injuryLine}${loanLine}</b>`;
+    return `<b class="player-name-cell${cellMods ? ` ${cellMods}` : ''}"><span class="player-name-line">${prefix ? `<span class="player-name-prefix">${prefix}</span>` : ''}<span${cardAttrs} title="${escapeAttr(name)}">${escapeAttr(displayName)}</span>${playerStarBadge(player)}${badges}</span>${injuryLine}${nationalLine}${loanLine}</b>`;
   };
 
   return { playerNameCell, playerStatusBadges, playerInjuryLine };
