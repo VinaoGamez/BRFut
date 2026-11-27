@@ -58,6 +58,57 @@ export function createHubV2() {
     });
   };
 
+  /**
+   * Central aprovada (canvas v2): título "Central do clube", coluna da
+   * esquerda (próximo jogo, indicadores, próximos jogos) e da direita
+   * (pendências e mini tabela). Move os blocos que já existem; idempotente.
+   */
+  const arrange = () => {
+    const view = document.getElementById('dashboard');
+    const grid = view?.querySelector(':scope > .grid');
+    if (!view || !grid || grid.dataset.hubArranged) return;
+    grid.dataset.hubArranged = '1';
+    if (!view.querySelector(':scope > .hub-title')) {
+      const title = document.createElement('div');
+      title.className = 'title hub-title';
+      title.innerHTML = '<p id="hubKicker">TEMPORADA</p><h1>Central do clube</h1>';
+      grid.before(title);
+    }
+    const match = grid.querySelector(':scope > .card.match');
+    const attention = document.getElementById('hubAttention');
+    const tiles = document.getElementById('hubTiles');
+    const standings = view.querySelector('.dashboard-tables .card.standings');
+    const upcoming = match?.querySelector('.club-upcoming');
+    const left = document.createElement('div');
+    left.className = 'hub-col hub-col--left';
+    const right = document.createElement('div');
+    right.className = 'hub-col hub-col--right';
+    if (upcoming) {
+      upcoming.classList.add('card', 'hub-upcoming');
+      upcoming.querySelector(':scope > label')?.replaceChildren(document.createTextNode('PRÓXIMOS JOGOS'));
+    }
+    [match, tiles, upcoming].forEach(node => node && left.append(node));
+    [attention, standings].forEach(node => node && right.append(node));
+    standings?.classList.add('hub-standings');
+    grid.prepend(left, right);
+  };
+
+  /** Horário grande no centro do cartão do próximo jogo. */
+  const setKickoff = ({ date = '', time = '' } = {}) => {
+    const block = document.querySelector('#dashboard .match .match-vs-block');
+    if (!block) return;
+    let box = block.querySelector('.hub-kickoff');
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'hub-kickoff';
+      box.innerHTML = '<small class="hub-kickoff-date"></small><strong class="hub-kickoff-time"></strong><i class="hub-kickoff-stripe" aria-hidden="true"></i>';
+      block.querySelector('.match-vs-label')?.after(box);
+    }
+    box.querySelector('.hub-kickoff-date').textContent = date;
+    box.querySelector('.hub-kickoff-time').textContent = time;
+    block.classList.toggle('has-kickoff', !!time);
+  };
+
   const bind = () => {
     document.getElementById('hubAttentionList')?.addEventListener('click', event => {
       const button = event.target.closest('[data-hub-action]');
@@ -66,5 +117,5 @@ export function createHubV2() {
     });
   };
 
-  return { bind, renderAttention, renderTiles };
+  return { bind, arrange, setKickoff, renderAttention, renderTiles };
 }

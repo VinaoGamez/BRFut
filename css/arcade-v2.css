@@ -1128,3 +1128,414 @@ html.is-mobile body #squad .card.roster {
 html.is-mobile body #squad .roster-density button {
   padding: 6px 12px !important;
 }
+
+/* =====================================================================
+ * Central igual à tela aprovada (canvas "v2 angular — Central no PC")
+ * ===================================================================== */
+html body .view#dashboard > .hero {
+  display: none !important;
+}
+
+html body .view#dashboard > .hub-title {
+  margin-bottom: 14px;
+}
+
+html body .view#dashboard > .grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 340px) !important;
+  grid-template-areas: none !important;
+  gap: 20px !important;
+  align-items: start !important;
+}
+
+html body .view#dashboard .hub-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+html body .view#dashboard .hub-col > .card,
+html body .view#dashboard .hub-col > .hub-tiles {
+  margin: 0 !important;
+  grid-area: auto !important;
+}
+
+/* Próximo jogo: escudos grandes, nomes em Kanit, horário no centro. */
+html body .view#dashboard .card.match {
+  padding: 0 0 18px !important;
+}
+
+html body .view#dashboard .card.match > label {
+  margin: 0 0 6px !important;
+}
+
+html body .view#dashboard .card.match .teams {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 260px) minmax(0, 1fr) !important;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px 4px;
+}
+
+html body .view#dashboard .card.match .teams > div {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+html body .view#dashboard .card.match .teams > div i.crest--club {
+  width: 132px !important;
+  height: 150px !important;
+  min-width: 0 !important;
+  background-size: contain !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html body .view#dashboard .card.match .teams > div > b {
+  font-size: 24px !important;
+  line-height: 1.05 !important;
+}
+
+html body .view#dashboard .card.match .teams small {
+  color: var(--av-muted) !important;
+}
+
+html body .view#dashboard .card.match .teams small[id$="Position"] {
+  color: var(--av-green) !important;
+  font-weight: 700;
+}
+
+html body .view#dashboard .match-vs-block {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+html body .view#dashboard .match-vs-block.has-kickoff .match-vs-label,
+html body .view#dashboard .match-vs-block.has-kickoff .match-meta-today,
+html body .view#dashboard .match-vs-block.has-kickoff .match-meta-next {
+  display: none !important;
+}
+
+html body .view#dashboard .hub-kickoff {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+html body .view#dashboard .match-vs-block.has-kickoff .hub-kickoff {
+  display: flex;
+}
+
+html body .view#dashboard .hub-kickoff-date {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  color: var(--av-muted);
+}
+
+html body .view#dashboard .hub-kickoff-time {
+  font-family: var(--av-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 56px;
+  line-height: 1;
+  color: var(--av-ink);
+}
+
+html body .view#dashboard .hub-kickoff-stripe {
+  width: 90px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--av-cyan) 0 64%, transparent 64% 70%, var(--av-cyan) 70% 82%, transparent 82% 88%, var(--av-cyan) 88%);
+  transform: skewX(-30deg);
+}
+
+html body .view#dashboard .match-meta-extra {
+  font-size: 12px !important;
+  color: var(--av-muted) !important;
+}
+
+/* Rodapé do cartão: forma vai para o indicador; ações em linha discreta. */
+html body .view#dashboard .card.match .match-recent-form {
+  display: none !important;
+}
+
+html body .view#dashboard .card.match .match-actions-footer {
+  display: flex !important;
+  justify-content: center;
+  border: 0 !important;
+  padding: 6px 24px 0 !important;
+  background: transparent !important;
+}
+
+html body .view#dashboard .card.match .match-actions-buttons {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Quatro indicadores (Tabela, Moral, Diretoria, Forma). */
+html body .view#dashboard .hub-tiles {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+/* Próximos jogos como cartão próprio. */
+html body .view#dashboard .hub-upcoming {
+  display: block !important;
+  padding: 16px 18px !important;
+}
+
+html body .view#dashboard .hub-upcoming .club-upcoming-head {
+  display: none !important;
+}
+
+/* Mini tabela à direita: posição, escudo, clube e pontos. */
+html body .view#dashboard .hub-standings {
+  display: block !important;
+  padding: 16px 14px !important;
+}
+
+html body .view#dashboard .hub-standings > label em {
+  font-family: var(--av-body) !important;
+  font-style: normal;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+html body .view#dashboard .hub-standings .mini-table-head {
+  display: none !important;
+}
+
+html body .view#dashboard .hub-standings .standing-row {
+  display: grid !important;
+  grid-template-columns: 24px minmax(0, 1fr) 34px !important;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 10px !important;
+  border: 0 !important;
+  background: transparent !important;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+
+html body .view#dashboard .hub-standings .standing-row > span:nth-child(3),
+html body .view#dashboard .hub-standings .standing-row > span:nth-child(4) {
+  display: none !important;
+}
+
+html body .view#dashboard .hub-standings .standing-row > span:first-child,
+html body .view#dashboard .hub-standings .standing-row > span:last-child {
+  font-family: var(--av-display);
+  font-style: italic;
+  font-weight: 800;
+  color: var(--av-muted);
+}
+
+html body .view#dashboard .hub-standings .standing-row > span:last-child {
+  text-align: right;
+  color: var(--av-ink);
+}
+
+html body .view#dashboard .hub-standings .standing-row.highlight {
+  background: #11bbed26 !important;
+}
+
+html body .view#dashboard .hub-standings .standing-row.highlight > span:first-child {
+  color: var(--av-cyan);
+}
+
+html body .view#dashboard .hub-standings .standing-club-cell {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--av-ink) !important;
+  font-weight: 600 !important;
+}
+
+html body .view#dashboard .hub-standings .standing-club-cell > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Trilho lateral: cartão do clube logo abaixo da logo, como aprovado. */
+html body .sidebar {
+  display: flex !important;
+  flex-direction: column;
+}
+
+html body .sidebar > .brand { order: 0; }
+html body .sidebar > .club {
+  order: 1;
+  margin: 18px 0 6px !important;
+  padding: 10px !important;
+  border: 0 !important;
+  background: var(--av-panel) !important;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+html body .sidebar > .club strong {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+}
+html body .sidebar > .section-nav { order: 2; margin-top: 12px !important; }
+html body .sidebar > .season { display: none !important; }
+html body .sidebar > .support-project-nav { order: 3; margin-top: auto !important; }
+html body .sidebar > :not(.brand):not(.club):not(.section-nav):not(.season):not(.support-project-nav) { order: 4; }
+
+/* Celular: uma coluna na ordem da tela aprovada. */
+@media (max-width: 1099px) {
+  html body .view#dashboard > .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+html.is-mobile body .view#dashboard > .grid {
+  display: flex !important;
+  flex-direction: column;
+}
+
+html.is-mobile body .view#dashboard .hub-col {
+  display: contents;
+}
+
+html.is-mobile body .view#dashboard .card.match { order: 1; }
+html.is-mobile body .view#dashboard #hubAttention { order: 2; }
+html.is-mobile body .view#dashboard .hub-tiles { order: 3; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+html.is-mobile body .view#dashboard .hub-standings { order: 4; }
+html.is-mobile body .view#dashboard .hub-upcoming { order: 5; }
+
+html.is-mobile body .view#dashboard .card.match .teams {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  padding: 12px 10px 4px;
+  gap: 6px;
+}
+
+html.is-mobile body .view#dashboard .card.match .teams > div i.crest--club {
+  width: 84px !important;
+  height: 96px !important;
+}
+
+html.is-mobile body .view#dashboard .card.match .teams > div > b {
+  font-size: 15px !important;
+}
+
+html.is-mobile body .view#dashboard .card.match .teams .match-team-context {
+  display: none !important;
+}
+
+html.is-mobile body .view#dashboard .hub-kickoff-time {
+  font-size: 34px;
+}
+
+html.is-mobile body .view#dashboard .match-competition {
+  transform: scale(.85);
+}
+
+html body .view#dashboard .card.match .teams > div i.crest--club > *,
+html body .view#dashboard .card.match .teams > div i.crest--club img,
+html body .view#dashboard .card.match .teams > div i.crest--club svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain;
+}
+
+html body .view#dashboard .hub-standings .standing-row-crest,
+html body .view#dashboard .hub-standings .standing-club-cell > i {
+  flex: none;
+  width: 22px !important;
+  height: 25px !important;
+  min-width: 0 !important;
+}
+
+html body .view#dashboard .hub-standings .standing-row-crest img,
+html body .view#dashboard .hub-standings .standing-row-crest svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+html.is-mobile body .view#dashboard .card.match .teams > div:first-child { order: 1; }
+html.is-mobile body .view#dashboard .card.match .teams > .match-vs-block { order: 2; }
+html.is-mobile body .view#dashboard .card.match .teams > div:last-child { order: 3; }
+
+html.is-mobile body .view#dashboard .match-competition-phase,
+html.is-mobile body .view#dashboard .match-meta-extra {
+  display: none !important;
+}
+
+html.is-mobile body .view#dashboard .card.match .match-actions-buttons {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+html.is-mobile body .view#dashboard .card.match .match-actions-buttons > button {
+  width: 100% !important;
+  min-height: 40px;
+  font-size: 12px !important;
+  margin: 0 !important;
+}
+
+html.is-mobile body .view#dashboard .card.match .match-actions-buttons > button.hidden {
+  display: none !important;
+}
+
+html body .view#dashboard .card.match .teams > div i.crest--club {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  flex: none !important;
+  display: block !important;
+}
+
+html body .view#dashboard .card.match .teams .human-badge-host {
+  position: relative !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  transform: none !important;
+}
+
+html body .view#dashboard .card.match .teams .human-badge-host .human-badge {
+  position: absolute !important;
+  right: -6px !important;
+  bottom: 8px !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+html body .view#dashboard .card.match .teams .human-badge-host {
+  min-height: 150px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+html.is-mobile body .view#dashboard .card.match .teams .human-badge-host {
+  min-height: 96px !important;
+}
+
+html body #nextMatchHome,
+html body #nextMatchAway {
+  font-family: var(--av-display) !important;
+  font-style: italic !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase;
+}

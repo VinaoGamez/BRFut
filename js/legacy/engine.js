@@ -4690,10 +4690,23 @@ export async function bootEngine({
       const board=Number(user.board)||0;
       const tone=value=>value>=70?'#3ddc84':value>=45?'#ff8a2b':'#ff4d5e';
       const standingPct=pos=>pos?Math.max(8,100-(Number(pos)-1)*5):0;
+      // Forma: últimos resultados já desenhados no cartão do próximo jogo.
+      const formMarks=[...document.querySelectorAll('#matchRecentForm b')].map(mark=>mark.textContent.trim()).filter(Boolean);
+      const formPoints=formMarks.reduce((total,mark)=>total+(mark==='V'?3:mark==='E'?1:0),0);
+      const formTile={id:'form',label:'FORMA',value:formMarks.length?formMarks.join(''):'—',color:'#eaf2ff',pct:formMarks.length?Math.round(formPoints/(formMarks.length*3)*100):0,note:formMarks.length?`${formPoints} de ${formMarks.length*3} pts`:'Sem jogos ainda',run:open('table')};
+      // Título e horário do próximo jogo (Central aprovada no canvas v2).
+      hubV2.arrange();
+      const kicker=$('#hubKicker');
+      if(kicker)kicker.textContent=`TEMPORADA ${careerSeason} · ${($('#headerDateLabel')?.textContent||'').trim()}`.replace(/ · $/,'');
+      const nextLine=($('#nextMatchMeta .match-meta-next')?.textContent||'').trim();
+      const timeMatch=nextLine.match(/(\d{1,2}:\d{2})/);
+      const dateMatch=nextLine.match(/(\d{1,2}\s+[A-ZÇ]{3}(?:\s+\d{4})?)/i);
+      hubV2.setKickoff({time:timeMatch?timeMatch[1]:'',date:dateMatch?dateMatch[1].toUpperCase():''});
       hubV2.renderTiles([
         {id:'standing',label:'CLASSIFICAÇÃO',value:posMatch?`${posMatch[1]}º`:(leaguePos?`${leaguePos}º`:'—'),color:'#11bbed',pct:standingPct(posMatch?posMatch[1]:leaguePos),note:posMatch?`${competitionName||'Competição'} · ${positionText.replace(/^\d+º\s*/,'')}`:`Série ${userDivision}`,run:open('table')},
         {id:'morale',label:'MORAL DO ELENCO',value:`${environment}%`,color:tone(environment),pct:environment,note:environment>75?'Vestiário em alta':environment>40?'Ambiente estável':'Vestiário pressionado',run:open('squad')},
         {id:'board',label:'CONFIANÇA DA DIRETORIA',value:`${board}%`,color:tone(board),pct:board,note:board>=70?'Diretoria satisfeita':board>=45?'Diretoria atenta aos resultados':'Cargo sob pressão',run:open('office')},
+        formTile,
       ]);
       sectionsNav?.refreshContinue();
     }catch(error){
