@@ -102,6 +102,7 @@
   <link rel="stylesheet" href="css/player-status.css?v=20260721-loan-stack">
   <link rel="stylesheet" href="css/roster-contracts.css?v=20260726-contract-modal">
   <link rel="stylesheet" href="css/mobile.css?v=20260810-mobile-v1">
+  <link rel="stylesheet" href="css/navigation-v2.css?v=20261127-nav-v2">
 </head>
 <body>
 
@@ -114,23 +115,14 @@
   <aside class="sidebar">
     <div class="brand"><img class="brand-lockup" src="./brand/lockup.webp" alt="BR Fut" width="157" height="30"></div>
     <small class="season">TEMPORADA 2026</small>
-    <nav>
-      <button id="openSupportProject" class="support-project-nav" type="button"><span class="support-project-nav-icon" aria-hidden="true">♥</span><span>APOIE O PROJETO</span></button>
-      <button class="nav active" data-view="dashboard">▦ Central</button>
-      <button class="nav" data-view="squad">♟ Elenco <em id="squadNavBadge" class="nav-badge hidden">0</em></button>
-      <button class="nav" data-view="tactics">⌁ Táticas</button>
-      <button class="nav" data-view="table">▤ Campeonatos</button>
-      <button class="nav" data-view="office">▥ Escritório</button>
-      <button class="nav" data-view="stadium">⬡ Estádio</button>
-      <button class="nav" data-view="training">◎ Treinamento</button>
-      <button class="nav" data-view="transfers"><span class="nav-label"><img class="nav-transfer-icon" src="./brand/transfer-coins.png" alt="" width="16" height="16" aria-hidden="true">Mercado</span></button>
-      <button class="nav" data-view="youth">◆ Categoria de Base</button>
-      <button class="nav" data-view="ranking">≣ Ranking Nacional</button>
-      <button class="nav" data-view="managers">♛ Ranking de Técnicos</button>
-      <button class="nav" data-view="messages">✉ Mensagens <em id="messagesBadge" class="nav-badge hidden">0</em></button>
-      <button class="nav" data-view="calendar">◷ Calendário</button>
+    <nav class="section-nav" aria-label="Seções do jogo">
+      <button class="section-btn active" type="button" data-section="central" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Central</span></button>
+      <button class="section-btn" type="button" data-section="elenco"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a5.5 5.5 0 0 1 3.5 6"/></svg><span>Elenco</span><em id="squadNavBadge" class="nav-badge hidden">0</em></button>
+      <button class="section-btn" type="button" data-section="taticas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3zM3 12h18M12 3v18"/></svg><span>Táticas</span></button>
+      <button class="section-btn" type="button" data-section="jogos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0zM6 5H3v1a3 3 0 0 0 3 3M18 5h3v1a3 3 0 0 1-3 3M12 12v5M8 20h8"/></svg><span>Jogos</span></button>
+      <button class="section-btn" type="button" data-section="clube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg><span>Clube</span></button>
     </nav>
-    <button id="openOptions" class="sidebar-options" type="button"><span>⚙</span> ABRIR OPÇÕES</button>
+    <button id="openSupportProject" class="support-project-nav" type="button"><span class="support-project-nav-icon" aria-hidden="true">♥</span><span>APOIE O PROJETO</span></button>
     <div class="club"><b>—</b><span><strong>—</strong><small>—</small></span></div>
   </aside>
   <main>
@@ -149,12 +141,31 @@
           </i>
           <span id="headerBudget" class="header-budget">R$ —</span>
         </span>
+        <button class="nav header-icon-btn" type="button" data-view="messages" aria-label="Mensagens" title="Mensagens (Y)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zM3 7l9 6 9-6"/></svg><em id="messagesBadge" class="nav-badge hidden">0</em></button>
+        <button class="nav header-icon-btn" type="button" data-view="managers" aria-label="Perfil do técnico" title="Perfil do técnico e Ranking de Técnicos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg></button>
+        <button id="openOptions" class="header-icon-btn" type="button" aria-label="Opções" title="Opções, conta e carreiras"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+        <button id="headerContinue" class="header-continue" type="button" title="Continuar (Start / ☰)"><span>CONTINUAR</span><small id="headerContinueHint"></small></button>
       </div>
     </header>
+    <nav id="sectionTabs" class="section-tabs" aria-label="Sub-abas da seção">
+      <button class="nav active" type="button" data-view="dashboard" data-section="central">Central</button>
+      <button class="nav" type="button" data-view="squad" data-section="elenco">Jogadores</button>
+      <button class="nav" type="button" data-view="transfers" data-section="elenco">Mercado</button>
+      <button class="nav" type="button" data-view="youth" data-section="elenco">Base</button>
+      <button class="nav" type="button" data-view="tactics" data-section="taticas">Escalação e instruções</button>
+      <button class="nav" type="button" data-view="training" data-section="taticas">Treinamento</button>
+      <button class="nav" type="button" data-view="calendar" data-section="jogos">Calendário</button>
+      <button class="nav" type="button" data-view="table" data-section="jogos">Competições</button>
+      <button class="nav" type="button" data-view="ranking" data-section="jogos">Ranking nacional</button>
+      <button class="nav" type="button" data-view="office" data-section="clube">Finanças e diretoria</button>
+      <button class="nav" type="button" data-view="stadium" data-section="clube">Estádio</button>
+    </nav>
     <section id="dashboard" class="view active">
       <div class="hero"><div><p>CARREGANDO…</p><h1>—</h1><span>—</span></div><div class="crest">—</div></div>
       <div class="grid">
         <article class="card match"><label><span id="nextMatchCardTitle">PRÓXIMA PARTIDA</span> <em id="nextMatchRound">RODADA —</em></label><div class="teams"><div><i>—</i><b id="nextMatchHome">—</b><small id="nextMatchHomePosition">—</small><small id="nextMatchHomeContext" class="match-team-context"></small></div><strong class="match-vs-block"><span id="nextMatchCompetition" class="match-competition" data-kind="serie-a" aria-label="Campeonato"><svg class="match-competition-trophy" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path class="trophy-cup" d="M8 4h16v3c0 4.5-2.2 7.8-5.5 9.5L18 20v2h4v3H10v-3h4v-2l-.5-3.5C10.2 14.8 8 11.5 8 7V4z"/><path class="trophy-shine" d="M11 6h10v1.5c0 3.2-1.5 5.6-3.8 7L16 17.5 14.8 14.5C12.5 12.6 11 10.2 11 7V6z"/><rect class="trophy-base" x="12" y="25" width="8" height="2" rx="1"/><path class="trophy-handles" fill="none" stroke-width="1.2" d="M8 6H5.5a2.5 2.5 0 0 0 0 5H8M24 6h2.5a2.5 2.5 0 0 1 0 5H24"/></svg><b id="nextMatchCompetitionName" data-competition-name>—</b></span><small id="nextMatchCompetitionPhase" class="match-competition-phase"></small><span class="match-vs-label">VS</span><div id="nextMatchMeta" class="match-meta"></div></strong><div><i id="nextMatchAwayCrest" class="away">EC</i><b id="nextMatchAway">—</b><small id="nextMatchAwayPosition">—</small><small id="nextMatchAwayContext" class="match-team-context"></small></div></div><div id="seasonReviewBoard" class="season-review-board hidden" aria-label="Resumo da temporada"></div><footer class="match-actions-footer"><section class="match-recent-form" aria-label="Últimos resultados"><label>ÚLTIMOS RESULTADOS</label><div class="form" id="matchRecentForm"></div><small id="matchRecentSummary">A temporada ainda não possui resultados.</small></section><div class="match-actions-buttons"><button id="playMatch">JOGAR PARTIDA →</button><button id="reopenPostMatch" class="scout-button hidden" type="button" title="Reabrir o resumo da última partida">PÓS-JOGO</button><button id="simulateRemainder" class="hidden">SIMULAR RESTANTE DA TEMPORADA →</button><button id="advanceTransferCalendar" class="scout-button hidden">AVANÇAR SEMANA</button><button id="openDashboardCalendar" class="scout-button hidden">DIA DE JOGO</button><button id="inspectOpponent" class="scout-button">VER ADVERSÁRIO</button></div></footer><section class="club-upcoming"><label>PRÓXIMOS JOGOS</label><div class="club-upcoming-head"><span>CONFRONTO</span><span>DATA E HORA</span><span>MANDO</span></div><div id="clubUpcomingMatches"></div><div class="club-upcoming-actions"><button id="openTeamGames" type="button">JOGOS DO TIME</button></div></section></article>
+        <section class="hub-attention card" id="hubAttention" aria-labelledby="hubAttentionTitle"><label id="hubAttentionTitle">PRECISA DA SUA ATENÇÃO <em id="hubAttentionCount"></em></label><div id="hubAttentionList" class="hub-attention-list"></div></section>
+        <section class="hub-tiles" id="hubTiles" aria-label="Situação do clube"></section>
         <aside class="dashboard-side"><div class="dashboard-side-split"><article class="card season-goal-card" id="dashboardSeasonGoalCard"><label>META DA TEMPORADA</label><div class="season-goal-card-visual"><div id="dashboardSeasonGoalGauge" class="season-goal-card-gauge" aria-hidden="true"></div></div></article><article class="card dashboard-side-slot dashboard-team-stats" id="dashboardTeamStatsCard"><label>ESTATISTICAS DO TIME</label><div class="dashboard-team-stats-list"><article class="dashboard-team-stat"><img class="dashboard-team-stat-icon" src="./brand/stats-scorer.webp" alt="" width="46" height="46" decoding="async"><div class="dashboard-team-stat-copy"><small>ARTILHEIRO</small><strong id="dashboardTeamScorer">—</strong><span id="dashboardTeamScorerMeta">0 gols</span></div></article><article class="dashboard-team-stat"><img class="dashboard-team-stat-icon" src="./brand/stats-assist.webp" alt="" width="46" height="46" decoding="async"><div class="dashboard-team-stat-copy"><small>ASSISTÊNCIAS</small><strong id="dashboardTeamAssistant">—</strong><span id="dashboardTeamAssistantMeta">0 assist.</span></div></article><article class="dashboard-team-stat"><img class="dashboard-team-stat-icon" src="./brand/stats-overall.webp" alt="" width="46" height="46" decoding="async"><div class="dashboard-team-stat-copy"><small>MÉDIA DO TIME</small><strong id="dashboardTeamOverall">—</strong><span id="dashboardTeamOverallMeta">nota média</span></div></article></div></article></div><article class="card environment-card"><label>AMBIENTE DO ELENCO</label><div class="summary-top dashboard-summary"><div class="overall-box dashboard-overall"><small>OVERALL</small><strong>—</strong></div><div class="environment-gauge dashboard-environment" style="--environment:0"><div><strong>—</strong><small>AMBIENTE</small></div></div></div><div class="dashboard-environment-note"><strong>—</strong><small>—</small></div><div class="dashboard-factors"><div><small>ORÇAMENTO DO CLUBE</small><b id="dashboardBudget">—</b></div><div><small>APOIO DA TORCIDA</small><b data-dashboard-factor data-min="58" data-max="97"></b></div><div><small>DIRETORIA</small><b data-dashboard-factor data-min="48" data-max="94"></b></div><div><small>SAÚDE FINANCEIRA</small><b data-dashboard-factor data-min="42" data-max="91"></b></div></div></article><div class="side-mini-cards"><article class="card stadium-card office-entry-card" id="openStadiumFromDashboard" role="button" tabindex="0" aria-label="Abrir Estádio"><label>ESTÁDIO</label><div class="dashboard-stadium-preview" aria-hidden="true"><img class="dashboard-stadium-preview-img" id="dashboardStadiumPreviewImg" alt="" width="92" height="64" loading="lazy" decoding="async" fetchpriority="low"/></div><div><strong>Estádio</strong><small>Gramado, capacidade e bilheteria →</small></div></article><article class="card stadium-card office-entry-card" id="openOfficeFromDashboard" role="button" tabindex="0" aria-label="Abrir Escritório"><label>ESCRITÓRIO</label><svg class="office-icon" viewBox="0 0 160 110" role="img" aria-hidden="true"><rect class="office-icon-board" x="78" y="16" width="68" height="60" rx="5"/><rect class="office-icon-bar" x="90" y="50" width="9" height="16" rx="1.5"/><rect class="office-icon-bar" x="104" y="40" width="9" height="26" rx="1.5"/><rect class="office-icon-bar" x="118" y="30" width="9" height="36" rx="1.5"/><rect class="office-icon-bar" x="132" y="22" width="9" height="44" rx="1.5"/><circle class="office-icon-figure" cx="46" cy="28" r="15"/><path class="office-icon-figure" fill-rule="evenodd" d="M12 90V76c2-20 14-34 34-34s32 14 34 34v14H12zm26-46l8 14 8-14z"/></svg><div><strong>Escritório</strong><small>Orçamento e investimentos →</small></div></article></div></aside>
         <div class="dashboard-tables">
           <article class="card standings"><label id="openChampionship">CAMPEONATO <em>VER CAMPEONATO →</em></label><div class="mini-table-head"><span>#</span><span>CLUBE</span><span>J</span><span>SG</span><span>PTS</span></div><div id="miniTable"></div></article>

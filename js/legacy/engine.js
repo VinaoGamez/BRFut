@@ -1,3 +1,6 @@
+import { bindRosterDensity } from '../ui/roster-density.js';
+import { createSectionsNav } from '../ui/sections-nav.js';
+import { createHubV2 } from '../feature/hub-v2/index.js';
 import { isConmebolNation } from '../engine/national-teams.js';
 import { QUALIFIERS_COMPETITION, QUALIFIER_HOME_VENUES } from '../engine/conmebol-qualifiers.js';
 import { CONMEBOL_DISCIPLINE_KEYS } from '../engine/conmebol-format.js';
@@ -1109,6 +1112,7 @@ export async function bootEngine({
   let worldCupDashboardCtx=()=>null;
   const CLUB_ONLY_NAV_VIEWS=new Set(['office','stadium','youth','training']);
   let openNavView=null;
+  const hubV2=createHubV2();
   const syncNationalTeamCommandUi=()=>{
     const active=isWorldCupDashboard()&&!!userNationalTeamName;
     document.body.classList.toggle('national-team-command',active);
@@ -3108,6 +3112,7 @@ export async function bootEngine({
   rankingViews.renderNationalRanking();
   rankingViews.renderManagerRanking();
   const router=createRouter({ $$, onClick });
+  let sectionsNav=null;
   const squadPerformance=createSquadPerformance({
     root:$('#squadPerformance'),
     getRoster:()=>squad,
@@ -3122,6 +3127,26 @@ export async function bootEngine({
   router.onView('messages',renderMessages);
   router.bindNav();
   messages.bindHandlers({ openView:viewId=>router.openView(viewId) });
+  // Navegação v2: 5 seções, sub-abas, CONTINUAR no topo.
+  const continueCandidates=[['#playMatch','Jogar partida'],['#advanceTransferCalendar','Avançar semana'],['#openDashboardCalendar','Dia de jogo'],['#simulateRemainder','Simular restante']];
+  const isUsableButton=el=>!!el&&!el.classList.contains('hidden')&&!el.disabled&&el.getAttribute('aria-disabled')!=='true'&&!el.classList.contains('is-disabled');
+  sectionsNav=createSectionsNav({
+    $$,
+    router,
+    openOptions:()=>$('#openOptions')?.click(),
+    getContinueAction:()=>{
+      for(const [selector,hint] of continueCandidates){
+        const el=$(selector);
+        if(!isUsableButton(el))continue;
+        return {label:'CONTINUAR',hint,run:()=>{if(router.currentView()!=='dashboard')router.openView('dashboard');el.click();}};
+      }
+      return null;
+    },
+  });
+  sectionsNav.bind();
+  hubV2.bind();
+  bindRosterDensity();
+  router.onActivate(viewId=>{if(viewId==='dashboard')renderHubV2();});
   if(savedNewGame&&!messages.getMessages().length)pushMessage({category:'club',type:'welcome',title:'Nova temporada',body:`${userClub} inicia a temporada ${careerSeason} na Série ${userDivision}. A jornada começa em 1º de janeiro; os campeonatos seguem o calendário nacional da CBF.`,round:currentRound,read:true});
   if(savedNewGame?.cascadeVictimPendingReveal&&savedNewGame?.replacedHostClub){
     const hostDiv=savedNewGame.hostDivision||careerHostMeta?.hostDivision||userDivision;
@@ -4626,6 +4651,54 @@ export async function bootEngine({
     formatBudget,
     headerMatchContext,
   });
+  /** Central v2: pendências (até 3) e tiles de classificação, moral e diretoria. */
+  const renderHubV2=()=>{
+    try{
+      const user=clubs[userClub];
+      if(!user)return;
+      const open=viewId=>()=>openNavView(viewId);
+      const items=[];
+      // 1) Mensagens que pedem decisão (propostas, médico).
+      (messages.getActionRequiredMessages?.()||[]).slice(0,2).forEach(message=>{
+        const transfer=/transfer|offer|proposta/i.test(`${message.type||''} ${message.category||''}`);
+        items.push({icon:transfer?'offer':'medical',tone:transfer?'info':'warn',title:message.title||'Mensagem pendente',meta:`Mensagens · ${transfer?'responder proposta':'decisão do departamento médico'}`,run:open('messages')});
+      });
+      // 2) Titulares que não podem jogar o próximo compromisso.
+      const blocked=(user.roster||[]).slice(0,11).filter(player=>playerStarterBlocked(player));
+      if(blocked.length){
+        items.push({icon:'shirt',tone:'warn',title:`${blocked.length} titular${blocked.length>1?'es':''} indisponíve${blocked.length>1?'is':'l'} na escalação`,meta:`Táticas · ${blocked.slice(0,2).map(player=>player.name).join(', ')}${blocked.length>2?'…':''}`,run:open('tactics')});
+      }
+      // 3) Contratos vencendo.
+      const alerts=rosterContracts.getAlerts?.()||[];
+      if(alerts.length){
+        const first=alerts[0]?.player?.name;
+        items.push({icon:'pen',tone:alerts.some(item=>item.inRenewal)?'warn':'ok',title:alerts.length===1&&first?`Contrato de ${first}`:`${alerts.length} contratos a vencer`,meta:'Elenco · renovar ou liberar',run:()=>{openNavView('squad');rosterContracts.openPanel?.();}});
+      }
+      // 4) Caixa negativo / diretoria insatisfeita.
+      const balance=Number(getBalance(user))||0;
+      if(balance<0)items.push({icon:'money',tone:'danger',title:'Caixa no vermelho',meta:`Clube · Finanças · ${formatBudget(balance)}`,run:open('office')});
+      if((Number(user.board)||0)<35)items.push({icon:'board',tone:'danger',title:'Diretoria insatisfeita',meta:`Clube · confiança em ${user.board}%`,run:open('office')});
+      hubV2.renderAttention(items);
+
+      // Tiles: classificação do próximo compromisso, moral e diretoria.
+      const userSideId=nextUserGame?.away===userClub?'#nextMatchAwayPosition':'#nextMatchHomePosition';
+      const positionText=($(userSideId)?.textContent||'').trim();
+      const posMatch=positionText.match(/(\d+)º/);
+      const competitionName=($('#nextMatchCompetitionName')?.textContent||'').trim();
+      const leaguePos=user.position;
+      const environment=Number(user.environment)||0;
+      const board=Number(user.board)||0;
+      const tone=value=>value>=70?'#bbeb27':value>=45?'#ffb020':'#ff7b7b';
+      hubV2.renderTiles([
+        {id:'standing',label:'CLASSIFICAÇÃO',value:posMatch?`${posMatch[1]}º`:(leaguePos?`${leaguePos}º`:'—'),color:'#edf8f5',note:posMatch?`${competitionName||'Competição'} · ${positionText.replace(/^\d+º\s*/,'')}`:`Série ${userDivision}`,run:open('table')},
+        {id:'morale',label:'MORAL DO ELENCO',value:`${environment}%`,color:tone(environment),note:environment>75?'Vestiário em alta':environment>40?'Ambiente estável':'Vestiário pressionado',run:open('squad')},
+        {id:'board',label:'CONFIANÇA DA DIRETORIA',value:`${board}%`,color:tone(board),note:board>=70?'Diretoria satisfeita':board>=45?'Diretoria atenta aos resultados':'Cargo sob pressão',run:open('office')},
+      ]);
+      sectionsNav?.refreshContinue();
+    }catch(error){
+      console.warn('[brfut] Central v2',error);
+    }
+  };
   const renderDashboardHero=()=>{
     const heroSpan=$('.hero>div>span');
     if(!heroSpan)return;
@@ -4655,6 +4728,7 @@ export async function bootEngine({
     renderUserMatchPresentation();
     renderEnvironmentCard();
     renderClubBudget();
+    renderHubV2();
     renderHeaderGuide();
     rankingViews?.renderNationalRanking();
     rankingViews?.renderManagerRanking();

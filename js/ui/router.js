@@ -1,15 +1,27 @@
 /** Navegação entre views — desacopla sidebar do motor. */
 export function createRouter({ $$, onClick }) {
   const viewHandlers = new Map();
+  const listeners = new Set();
+  let current = 'dashboard';
 
   const activate = viewId => {
+    current = viewId;
     $$('.nav').forEach(nav => nav.classList.toggle('active', nav.dataset.view === viewId));
     $$('.view').forEach(view => view.classList.toggle('active', view.id === viewId));
     viewHandlers.get(viewId)?.();
+    listeners.forEach(listener => {
+      try { listener(viewId); } catch (error) { console.warn('[brfut] listener de navegação', error); }
+    });
   };
 
   const onView = (viewId, handler) => {
     viewHandlers.set(viewId, handler);
+  };
+
+  /** Avisado a cada troca de tela (seções, sub-abas, topo). */
+  const onActivate = listener => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
   };
 
   const bindNav = () => {
@@ -24,5 +36,5 @@ export function createRouter({ $$, onClick }) {
     else activate(viewId);
   };
 
-  return { activate, onView, bindNav, openView };
+  return { activate, onView, onActivate, bindNav, openView, currentView: () => current };
 }

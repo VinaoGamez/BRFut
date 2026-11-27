@@ -1,0 +1,590 @@
+/*
+ * Navegação v2 (claude/ux-navegacao-v2.md): cinco seções fixas, sub-abas,
+ * Mensagens / Perfil / ⚙ / CONTINUAR no topo e Central enxuta.
+ * Carregado por último: sobrescreve layout.css e mobile.css.
+ */
+
+:root {
+  --nav2-lime: #bbeb27;
+  --nav2-ink: #edf8f5;
+  --nav2-muted: #a9c1c4;
+  --nav2-panel: #0b1a28;
+  --nav2-line: #1e4a5c;
+  --nav2-active: #122436;
+}
+
+/* Foco visível em toda a navegação (teclado e controle). */
+.sidebar .section-nav .section-btn.section-btn:focus-visible,
+.section-tabs .nav:focus-visible,
+.header-actions .header-icon-btn.header-icon-btn:focus-visible,
+#headerContinue:focus-visible,
+#hubAttentionList .hub-attention-item:focus-visible,
+#hubTiles .hub-tile:focus-visible {
+  outline: 2px solid var(--nav2-lime) !important;
+  outline-offset: 2px;
+}
+
+/* ---------------- Trilho lateral: 5 seções ---------------- */
+.sidebar .section-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px !important;
+  flex: 1 1 auto;
+  margin-top: 6px;
+}
+
+.sidebar .section-nav .section-btn.section-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: var(--nav2-muted) !important;
+  font: 500 16px 'DM Sans', sans-serif !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+
+.sidebar .section-nav .section-btn.section-btn svg {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sidebar .section-nav .section-btn.section-btn:hover {
+  background: #0f1f2e !important;
+  color: var(--nav2-ink) !important;
+}
+
+.sidebar .section-nav .section-btn.section-btn.active {
+  background: var(--nav2-active) !important;
+  color: var(--nav2-lime) !important;
+  font-weight: 700 !important;
+}
+
+.sidebar .section-nav .section-btn.section-btn .nav-badge {
+  margin-left: auto;
+}
+
+.sidebar .support-project-nav {
+  margin-top: auto;
+}
+
+/* ---------------- Topo: Mensagens, Perfil, ⚙, CONTINUAR ---------------- */
+.header-actions .header-icon-btn.header-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--nav2-line);
+  border-radius: 12px;
+  background: var(--nav2-panel);
+  color: var(--nav2-ink);
+  cursor: pointer;
+}
+
+.header-actions .header-icon-btn.header-icon-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.header-actions .header-icon-btn.header-icon-btn:hover,
+.header-actions .header-icon-btn.header-icon-btn.active {
+  border-color: var(--nav2-lime);
+  color: var(--nav2-lime);
+}
+
+.header-actions .header-icon-btn.header-icon-btn .nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--nav2-lime);
+  color: #06131b;
+  font: 700 12px 'DM Sans', sans-serif;
+  box-shadow: 0 0 0 2px #07111c;
+}
+
+.header-actions .header-icon-btn.header-icon-btn .nav-badge.nav-badge--urgent {
+  background: #e23b3b;
+  color: #fff8f8;
+}
+
+.header-actions .header-icon-btn.header-icon-btn .nav-badge.hidden,
+.sidebar .section-nav .section-btn.section-btn .nav-badge.hidden {
+  display: none;
+}
+
+.sidebar .section-nav .section-btn.section-btn .nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--nav2-lime);
+  color: #06131b;
+  font: 700 12px 'DM Sans', sans-serif;
+}
+
+#headerContinue {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 150px;
+  min-height: 44px;
+  padding: 4px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--nav2-lime);
+  color: #06131b;
+  font: 800 15px 'Barlow Condensed', 'DM Sans', sans-serif;
+  letter-spacing: .6px;
+  cursor: pointer;
+  box-shadow: 0 0 18px #bbeb2733;
+}
+
+#headerContinue small {
+  font: 600 12px 'DM Sans', sans-serif;
+  letter-spacing: 0;
+  opacity: .8;
+}
+
+#headerContinue small:empty {
+  display: none;
+}
+
+#headerContinue:disabled {
+  background: #2a3a2a;
+  color: #7f9488;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* ---------------- Sub-abas da seção ---------------- */
+.section-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--nav2-line);
+  background: #081522;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.section-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.section-tabs.is-empty {
+  display: none;
+}
+
+.section-tabs .nav {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 16px !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--nav2-muted) !important;
+  font: 600 14px 'DM Sans', sans-serif !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+.section-tabs .nav[hidden],
+.section-tabs .nav.hidden {
+  display: none !important;
+}
+
+.section-tabs .nav:hover {
+  color: var(--nav2-ink) !important;
+  border-color: var(--nav2-line) !important;
+}
+
+.section-tabs .nav.active {
+  background: var(--nav2-active) !important;
+  border-color: var(--nav2-lime) !important;
+  color: var(--nav2-lime) !important;
+}
+
+/* ---------------- Central enxuta: 3 blocos ---------------- */
+.view#dashboard .dashboard-side,
+.view#dashboard .dashboard-tables,
+.view#dashboard .match .club-upcoming {
+  display: none !important;
+}
+
+.view#dashboard .grid {
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr) !important;
+  grid-template-areas:
+    'match attention'
+    'tiles tiles';
+  align-items: start;
+}
+
+.view#dashboard .grid > .match {
+  grid-area: match;
+}
+
+.view#dashboard .grid > .hub-attention {
+  grid-area: attention;
+}
+
+.view#dashboard .grid > .hub-tiles {
+  grid-area: tiles;
+}
+
+.hub-attention > label em {
+  margin-left: 8px;
+  color: var(--nav2-muted);
+  font-style: normal;
+}
+
+.hub-attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#hubAttentionList .hub-attention-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 1px solid var(--nav2-line);
+  border-radius: 12px;
+  background: #0a1724;
+  color: var(--nav2-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+#hubAttentionList .hub-attention-item.is-clear {
+  cursor: default;
+}
+
+#hubAttentionList .hub-attention-item:not(.is-clear):hover {
+  border-color: var(--nav2-lime);
+}
+
+#hubAttentionList .hub-attention-item > i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--tone-bg);
+  color: var(--tone-fg);
+}
+
+#hubAttentionList .hub-attention-item > i svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#hubAttentionList .hub-attention-item > span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+#hubAttentionList .hub-attention-item strong {
+  font: 700 14px 'DM Sans', sans-serif;
+}
+
+#hubAttentionList .hub-attention-item small {
+  color: var(--nav2-muted);
+  font: 500 12px 'DM Sans', sans-serif;
+}
+
+#hubAttentionList .hub-attention-item > b {
+  color: var(--nav2-muted);
+  font-size: 22px;
+}
+
+.hub-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+#hubTiles .hub-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 112px;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--nav2-line);
+}
+
+#hubTiles .hub-tile:hover {
+  border-color: var(--nav2-lime);
+}
+
+#hubTiles .hub-tile strong {
+  font: 800 34px 'Barlow Condensed', 'DM Sans', sans-serif;
+  line-height: 1;
+}
+
+#hubTiles .hub-tile small {
+  color: var(--nav2-muted);
+  font: 500 12px 'DM Sans', sans-serif;
+}
+
+@media (max-width: 1099px) {
+  .view#dashboard .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas: 'match' 'attention' 'tiles';
+  }
+}
+
+/* ---------------- Celular: barra inferior + CONTINUAR na zona do polegar ---------------- */
+html.is-mobile .mobile-menu-toggle,
+html.is-mobile .mobile-menu-backdrop {
+  display: none !important;
+}
+
+html.is-mobile .sidebar {
+  position: fixed !important;
+  inset: auto 0 0 0 !important;
+  z-index: 2002;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: 6px 6px max(6px, env(safe-area-inset-bottom)) !important;
+  border-top: 1px solid var(--nav2-line);
+  background: #07111c !important;
+  transform: none !important;
+  flex-direction: row !important;
+}
+
+html.is-mobile .sidebar > :not(.section-nav) {
+  display: none !important;
+}
+
+html.is-mobile .sidebar .section-nav {
+  flex-direction: row;
+  gap: 2px !important;
+  width: 100%;
+  margin: 0;
+  overflow: visible;
+}
+
+html.is-mobile .sidebar .section-nav .section-btn.section-btn {
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 4px 2px;
+  font-size: 12px;
+  text-align: center;
+}
+
+html.is-mobile .sidebar .section-nav .section-btn.section-btn .nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 18%;
+  margin: 0;
+}
+
+html.is-mobile .game-shell > main {
+  padding-bottom: calc(132px + env(safe-area-inset-bottom));
+}
+
+html.is-mobile #headerContinue {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  z-index: 2001;
+  align-items: center;
+  min-height: 52px;
+}
+
+html.is-mobile .header-date,
+html.is-mobile .header-news {
+  display: none !important;
+}
+
+html.is-mobile main > header.app-header,
+html.is-mobile .app-header {
+  display: flex !important;
+  justify-content: flex-end;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1500;
+}
+
+html.is-mobile .header-actions {
+  gap: 8px;
+}
+
+html.is-mobile .header-actions .header-icon-btn.header-icon-btn {
+  flex: 0 0 44px;
+}
+
+html.is-mobile .sidebar .section-nav .section-btn.section-btn {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  border: 0 !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  padding: 4px 2px !important;
+}
+
+html.is-mobile .sidebar .section-nav .section-btn.section-btn.active {
+  background: var(--nav2-active) !important;
+}
+
+html.is-mobile .section-tabs {
+  position: sticky;
+  top: 60px;
+  z-index: 1400;
+  padding: 8px 12px;
+}
+
+html.is-mobile .hub-tiles {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* O tema escuro força estilo em todo <button> sem .nav (com !important):
+   reafirma o visual dos botões da navegação v2. */
+.header-actions .header-icon-btn.header-icon-btn {
+  border: 1px solid var(--nav2-line) !important;
+  border-radius: 12px !important;
+  background: var(--nav2-panel) !important;
+  color: var(--nav2-ink) !important;
+  padding: 0 !important;
+}
+.header-actions .header-icon-btn.header-icon-btn:hover,
+.header-actions .header-icon-btn.header-icon-btn.active {
+  border-color: var(--nav2-lime) !important;
+  color: var(--nav2-lime) !important;
+}
+body #headerContinue {
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: var(--nav2-lime) !important;
+  color: #06131b !important;
+  padding: 4px 18px !important;
+}
+body #headerContinue:disabled {
+  background: #2a3a2a !important;
+  color: #7f9488 !important;
+}
+body #hubAttentionList .hub-attention-item {
+  border: 1px solid var(--nav2-line) !important;
+  border-radius: 12px !important;
+  background: #0a1724 !important;
+  color: var(--nav2-ink) !important;
+  padding: 10px 12px !important;
+}
+body #hubAttentionList .hub-attention-item:not(.is-clear):hover {
+  border-color: var(--nav2-lime) !important;
+}
+body #hubTiles .hub-tile {
+  border: 1px solid var(--nav2-line) !important;
+  border-radius: 14px !important;
+  background: var(--nav2-panel) !important;
+  color: var(--nav2-ink) !important;
+  padding: 16px !important;
+}
+body #hubTiles .hub-tile:hover {
+  border-color: var(--nav2-lime) !important;
+}
+
+/* ---------------- Elenco: Simples (5 colunas) / Detalhado ---------------- */
+#squad .roster-density {
+  display: inline-flex;
+  padding: 3px;
+  margin-right: 10px;
+  border: 1px solid var(--nav2-line);
+  border-radius: 10px;
+  background: #081522;
+}
+
+#squad .roster-density button {
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--nav2-muted) !important;
+  font: 600 13px 'DM Sans', sans-serif !important;
+  letter-spacing: 0 !important;
+  box-shadow: none !important;
+}
+
+#squad .roster-density button[aria-pressed="true"] {
+  background: var(--nav2-active) !important;
+  color: var(--nav2-lime) !important;
+}
+
+#squad .card.roster.roster-simple .roster-head.roster-expanded,
+#squad .card.roster.roster-simple .player-row.roster-expanded {
+  grid-template-columns: minmax(220px, 1fr) 90px 90px 90px 140px !important;
+  min-width: 560px !important;
+  width: 100% !important;
+}
+
+#squad .card.roster.roster-simple .roster-scroll > *,
+#squad .card.roster.roster-simple #playerList {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+#squad .card.roster.roster-simple .roster-head.roster-expanded > :nth-child(n+5):not(:nth-child(22)),
+#squad .card.roster.roster-simple .player-row.roster-expanded > :nth-child(n+5):not(:nth-child(22)) {
+  display: none !important;
+}

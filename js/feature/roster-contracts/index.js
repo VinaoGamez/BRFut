@@ -129,6 +129,7 @@ export function createRosterContractsFeature(deps) {
   return {
     bindHandlers,
     render,
+    getAlerts,
     updateButtonBadge,
     openPanel,
     closePanel,
