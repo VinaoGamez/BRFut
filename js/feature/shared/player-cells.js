@@ -16,8 +16,17 @@ export const fatigueCell = player => {
 export const rosterFatigueCell = (player, { compact = false } = {}) => {
   const fatigue = Math.round(clamp(Number(player?.fatigue) ?? 100, 0, 100));
   const mod = compact ? ' roster-fatigue--compact' : '';
-  return `<span class="roster-fatigue${mod}"><i><b style="width:${fatigue}%"></b><em>${fatigue}%</em></i></span>`;
+  const level = fatigue >= 70 ? 'ok' : fatigue >= 40 ? 'warn' : 'low';
+  return `<span class="roster-fatigue${mod}" data-level="${level}"><i><b style="width:${fatigue}%"></b></i><em>${fatigue}%</em></span>`;
 };
+
+/** Linha do campo para a cor do chip de posição: gol, def, mei, ata. */
+const POSITION_LINES = Object.freeze({
+  GOL: 'gol', ZAG: 'def', LAT: 'def', LD: 'def', LE: 'def',
+  VOL: 'mei', MC: 'mei', MEI: 'mei', ME: 'mei', MD: 'mei',
+  PD: 'ata', PE: 'ata', ATA: 'ata', SA: 'ata', CA: 'ata',
+});
+export const positionLine = pos => POSITION_LINES[String(pos || '').toUpperCase()] || 'mei';
 
 const hasMatchOverlay = liveState =>
   !!liveState &&

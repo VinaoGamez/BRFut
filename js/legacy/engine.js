@@ -36,7 +36,7 @@ import { createTacticsFeature } from '../feature/tactics/index.js';
 import { createSeasonSummaryFeature } from '../feature/season-summary/index.js';
 import { createRetirementModalFeature } from '../feature/retirement-modal/index.js';
 import { processSeasonRetirements, markRetiredInHistoryStore } from '../engine/player-retirement.js';
-import { createPlayerCells, outfield, fatigueCell, rosterFatigueCell } from '../feature/shared/player-cells.js';
+import { createPlayerCells, outfield, fatigueCell, rosterFatigueCell, positionLine } from '../feature/shared/player-cells.js';
 import { renderTableFootIcon } from '../lab/card-back.js';
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
@@ -3025,7 +3025,7 @@ export async function bootEngine({
         contractTone==='expired'?' roster-contract-expired':'';
       return `<div class="player-row roster-expanded${contractClass}">
       <span>${playerRename.renderNameCell(p,{showLoan:true,clubName:userClub,allowRename:true})}</span>
-      <span class="badge">${p.pos}</span>
+      <span class="badge pos-chip" data-line="${positionLine(p.pos)}">${p.pos}</span>
       <span>${p.age}</span>
       <span class="roster-ovr roster-col-ovr">${p.overall}${rosterOvrMarkHtml(p)}</span>
       <span>${p.height?`${p.height} cm`:'—'}</span>

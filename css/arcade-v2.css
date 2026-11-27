@@ -482,3 +482,579 @@ html body .view#dashboard .card.match .match-actions-buttons button:not(#playMat
 html body .view#dashboard .card.match .club-upcoming-actions button {
   background: var(--av-panel) !important;
 }
+
+/* =====================================================================
+ * Padrão de telas (v2.1): títulos, formulários, tabelas, chips e botões
+ * compartilhados — primeiro aplicado no Elenco, vale para todas as telas.
+ * ===================================================================== */
+:root {
+  --table-surface: var(--av-panel);
+  --table-head: var(--av-panel-hi);
+  --table-section: var(--av-panel-hi);
+  --table-line: #ffffff10;
+  --table-cyan: var(--av-cyan);
+  --table-text: var(--av-ink);
+  --table-muted: var(--av-muted);
+  --table-lime: var(--av-green);
+}
+
+/* Título da tela: Kanit itálico, sobretítulo ciano. */
+html body .view .title h1 {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+  letter-spacing: .3px !important;
+  color: var(--av-ink) !important;
+}
+
+html body .view .title p:first-child {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  color: var(--av-cyan) !important;
+}
+
+/* Formulários: campo escuro com linha inferior, foco ciano, sem arredondado. */
+html body .view select,
+html body .view input[type="text"],
+html body .view input[type="number"],
+html body .view input[type="search"],
+html body .modal select,
+html body .modal input[type="text"],
+html body .modal input[type="number"] {
+  border: 0 !important;
+  border-bottom: 2px solid var(--av-line) !important;
+  border-radius: 0 !important;
+  background-color: var(--av-night) !important;
+  color: var(--av-ink) !important;
+  box-shadow: none !important;
+  font-family: var(--av-body) !important;
+  font-weight: 600 !important;
+}
+
+html body .view select:focus,
+html body .view input:focus,
+html body .modal select:focus,
+html body .modal input:focus {
+  outline: none !important;
+  border-bottom-color: var(--av-cyan) !important;
+}
+
+html body .view input::placeholder {
+  color: #9fb2cc99 !important;
+}
+
+html body .view input[type="checkbox"],
+html body .modal input[type="checkbox"] {
+  accent-color: var(--av-cyan);
+}
+
+html body .view label {
+  color: var(--av-muted);
+}
+
+/* Tabelas (div e <table>): cabeçalho destacado, linhas compactas, zebra sutil. */
+html body .view table {
+  border-collapse: collapse !important;
+  background: transparent !important;
+}
+
+html body .view table thead th,
+html body .view .roster-head,
+html body .view .roster-head > *,
+html body .view .league-head,
+html body .view .champ-head {
+  background: var(--av-panel-hi) !important;
+  color: var(--av-muted) !important;
+  border-color: transparent !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  letter-spacing: .3px !important;
+  text-transform: uppercase;
+}
+
+html body .view .roster-head button {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--av-muted) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+}
+
+html body .view .roster-head button.is-sorted,
+html body .view table thead th[aria-sort],
+html body .view table thead th.is-sorted {
+  color: var(--av-cyan) !important;
+}
+
+html body .view table tbody td,
+html body .view .player-row {
+  border-color: #ffffff0d !important;
+  color: var(--av-ink) !important;
+}
+
+html body .view table tbody tr:nth-child(even),
+html body .view .player-row:nth-child(even) {
+  background: #ffffff05 !important;
+}
+
+html body .view table tbody tr:hover,
+html body .view .player-row:hover {
+  background: var(--av-panel-hi) !important;
+}
+
+/* Nomes clicáveis: sem sublinhado fixo, ciano ao passar o mouse. */
+html body .player-name-text.is-card-trigger,
+html body .club-link {
+  text-decoration: none !important;
+  color: var(--av-ink) !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+}
+
+html body .player-name-text.is-card-trigger:hover,
+html body .club-link:hover {
+  color: var(--av-cyan) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+}
+
+html body .club-link {
+  font-weight: 600 !important;
+  color: var(--av-muted) !important;
+}
+
+/* Chip de posição: paralelogramo na cor da linha do campo. */
+html body .pos-chip,
+html body .view .badge.pos-chip {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 22px;
+  padding: 0 10px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  font-size: 12px !important;
+  letter-spacing: .3px;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  background: color-mix(in srgb, var(--pos) 20%, transparent) !important;
+  color: var(--pos) !important;
+}
+
+.pos-chip { --pos: var(--av-muted); }
+html body .pos-chip[data-line="gol"] { --pos: var(--av-orange); }
+html body .pos-chip[data-line="def"] { --pos: var(--av-cyan); }
+html body .pos-chip[data-line="mei"] { --pos: var(--av-green); }
+html body .pos-chip[data-line="ata"] { --pos: var(--av-red); }
+
+/* OVR em destaque. */
+html body .view .roster-ovr,
+html body .view td.col-force {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  font-size: 16px !important;
+  color: var(--av-ink) !important;
+}
+
+/* Botão de renomear: ícone discreto, sem caixa. */
+html body .roster-rename-btn {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--av-muted) !important;
+  opacity: .55;
+}
+
+html body .player-row:hover .roster-rename-btn,
+html body .roster-rename-btn:focus-visible {
+  opacity: 1;
+  color: var(--av-cyan) !important;
+}
+
+/* Condição física: barra fina com cor por nível e número ao lado. */
+html body .roster-fatigue {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+}
+
+html body .roster-fatigue i {
+  position: relative;
+  display: block !important;
+  width: 56px !important;
+  height: 6px !important;
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  box-shadow: none !important;
+  overflow: hidden;
+  transform: skewX(-20deg);
+}
+
+html body .roster-fatigue i b {
+  display: block;
+  height: 100% !important;
+  border-radius: 0 !important;
+  background: var(--av-green) !important;
+}
+
+html body .roster-fatigue[data-level="warn"] i b { background: var(--av-orange) !important; }
+html body .roster-fatigue[data-level="low"] i b { background: var(--av-red) !important; }
+
+html body .roster-fatigue em {
+  position: static !important;
+  display: inline !important;
+  font-style: normal;
+  font-family: var(--av-body);
+  font-weight: 700;
+  font-size: 12px !important;
+  color: var(--av-muted) !important;
+}
+
+html body .roster-fatigue--compact i {
+  width: 36px !important;
+}
+
+/* Alternância Simples/Detalhado: segmentos inclinados. */
+html body #squad .roster-density {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  gap: 4px;
+  padding: 0 !important;
+}
+
+html body #squad .roster-density button {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-muted) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  padding: 6px 16px !important;
+}
+
+html body #squad .roster-density button[aria-pressed="true"] {
+  background: var(--av-cyan) !important;
+  color: var(--av-night) !important;
+}
+
+/* Botões secundários das telas (filtros, ações de linha, paginação). */
+html body #rosterContractBtn,
+html body .transfers-action,
+html body .transfers-history-button,
+html body [data-transfers-tab],
+html body .transfers-pagination button,
+html body .view .roster-filters button,
+html body .view .scout-button {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+html body #rosterContractBtn:hover,
+html body .transfers-action:hover,
+html body .transfers-history-button:hover,
+html body [data-transfers-tab]:hover,
+html body .view .scout-button:hover {
+  background: #1d3560 !important;
+  color: var(--av-ink) !important;
+}
+
+html body [data-transfers-tab].is-active {
+  background: var(--av-cyan) !important;
+  color: var(--av-night) !important;
+}
+
+html body .transfers-action.secondary {
+  background: transparent !important;
+  color: var(--av-muted) !important;
+}
+
+html body button:disabled.transfers-action,
+html body .transfers-pagination button:disabled {
+  opacity: .4;
+}
+
+/* Ação principal do formulário de busca. */
+html body #transfersApplyFilters {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important;
+  color: var(--av-night) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 900 !important;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+/* Dinheiro é ouro; status de mercado é dado (verde/vermelho), não ação. */
+html body #headerBudget,
+html body .header-budget,
+html body #transfersBalance,
+html body .office-budget-value,
+html body .view td.col-passe {
+  color: var(--av-gold) !important;
+  text-shadow: none !important;
+}
+
+html body .transfers-search-title {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  color: var(--av-cyan) !important;
+}
+
+html body .view .transfers-market-state,
+html body .view [class*="market-status"] {
+  color: var(--av-green) !important;
+}
+
+html body .view .transfers-market-state.is-closed,
+html body .view [class*="market-status"].is-closed {
+  color: var(--av-red) !important;
+}
+
+html body .view td.col-traits {
+  color: var(--av-muted) !important;
+}
+
+/* Aviso de janela de transferências: cartão com canto cortado, ação limão. */
+html body .transfer-window-open-alert > * {
+  border-radius: 0 !important;
+}
+
+html body .transfer-window-open-ok {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important;
+  color: var(--av-night) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 900 !important;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+
+/* Desempenho do elenco: mesmo título dos cartões. */
+html body .view .squad-performance h2,
+html body .view [class*="performance"] > h2 {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  color: var(--av-cyan) !important;
+  text-transform: uppercase;
+}
+
+/* Elenco: ajustes finos sobre regras antigas com id. */
+html body #squad .roster-filters,
+html body .view .roster-filters {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #ffffff10 !important;
+}
+
+html body #squad .card.roster,
+html body #squad .roster,
+html body #squad #playerList {
+  background: transparent !important;
+}
+
+html body #squad .player-row {
+  min-height: 44px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  background: transparent;
+}
+
+html body #squad .player-row:nth-child(even) {
+  background: #ffffff05 !important;
+}
+
+html body #squad .player-row:hover {
+  background: var(--av-panel-hi) !important;
+}
+
+html body #squad .roster-rename-btn,
+html body #squad .player-row .roster-rename-btn {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html body #rosterHead button.is-sorted,
+html body #rosterHead [data-roster-sort].is-sorted {
+  color: var(--av-cyan) !important;
+}
+
+html body #squad #playerList .badge.pos-chip,
+html body #squad .player-row .badge.pos-chip {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: color-mix(in srgb, var(--pos) 20%, transparent) !important;
+  color: var(--pos) !important;
+}
+
+/* ---------------- Celular: Elenco e Mercado sem rolagem lateral ---------------- */
+html.is-mobile body .view .roster-filters {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px !important;
+  align-items: end;
+}
+
+html.is-mobile body .view .roster-filters label {
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+html.is-mobile body .view .roster-filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+html.is-mobile body #squad .roster-filters > :not(label) {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  display: flex;
+  gap: 6px;
+}
+
+html.is-mobile body #squad .card.roster.roster-simple .roster-head,
+html.is-mobile body #squad .card.roster.roster-simple .player-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 50px 28px 34px 74px !important;
+  align-items: center;
+  gap: 6px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+html.is-mobile body #squad .card.roster.roster-simple .player-row > *,
+html.is-mobile body #squad .card.roster.roster-simple .roster-head > * {
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+html.is-mobile body #squad .card.roster.roster-simple .roster-name-wrap {
+  display: flex;
+  min-width: 0;
+}
+
+html.is-mobile body #squad .card.roster.roster-simple .player-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.is-mobile body #squad .roster-rename-btn {
+  display: none !important;
+}
+
+html.is-mobile body #squad .roster-fatigue i {
+  width: 30px !important;
+}
+
+html.is-mobile body #squad .pos-chip {
+  min-width: 40px;
+  padding: 0 6px !important;
+}
+
+html.is-mobile body .transfers-table-wrap {
+  overflow-x: hidden !important;
+}
+
+html.is-mobile body .transfers-table {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: auto !important;
+}
+
+html.is-mobile body .transfers-table thead,
+html.is-mobile body .transfers-table colgroup {
+  display: none !important;
+}
+
+html.is-mobile body .transfers-table tbody {
+  display: block !important;
+  width: 100%;
+}
+
+html.is-mobile body .transfers-table tbody tr {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto 40px;
+  grid-template-areas:
+    'name pos ovr'
+    'club passe passe'
+    'act act act';
+  gap: 4px 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ffffff10;
+}
+
+html.is-mobile body .transfers-table tbody td {
+  display: none !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  text-align: left !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.is-mobile body .transfers-table tbody td.col-name { display: block !important; grid-area: name; }
+html.is-mobile body .transfers-table tbody td.col-club { display: block !important; grid-area: club; font-size: 13px; }
+html.is-mobile body .transfers-table tbody td.col-pos { display: block !important; grid-area: pos; }
+html.is-mobile body .transfers-table tbody td.col-force { display: block !important; grid-area: ovr; text-align: right !important; }
+html.is-mobile body .transfers-table tbody td.col-passe { display: block !important; grid-area: passe; text-align: right !important; }
+html.is-mobile body .transfers-table tbody td.transfers-actions-cell {
+  display: flex !important;
+  grid-area: act;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Celular: Desempenho do elenco só com as colunas essenciais (J, G, A, NOTA). */
+html.is-mobile body .squad-performance table th:nth-child(4),
+html.is-mobile body .squad-performance table td:nth-child(4),
+html.is-mobile body .squad-performance table th:nth-child(5),
+html.is-mobile body .squad-performance table td:nth-child(5),
+html.is-mobile body .squad-performance table th:nth-child(8),
+html.is-mobile body .squad-performance table td:nth-child(8),
+html.is-mobile body .squad-performance table th:nth-child(9),
+html.is-mobile body .squad-performance table td:nth-child(9) {
+  display: none !important;
+}
+
+html.is-mobile body .squad-performance table {
+  width: 100% !important;
+  min-width: 0 !important;
+}

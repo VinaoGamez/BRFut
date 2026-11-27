@@ -8,6 +8,7 @@ import {
 import { wageMonthlyFromRound } from '../../engine/player-contracts.js';
 import { BRAZIL_NATION, FOREIGN_NATIONS } from '../../engine/player-nationality.js';
 import { getTransferWindowBounds } from '../../engine/transfers.js';
+import { positionLine } from '../shared/player-cells.js';
 import mercadoDaBolaUrl from '../../../brand/transfer-history/mercado-da-bola.webp?url';
 import {
   formatSellerRejectLetter,
@@ -1039,7 +1040,7 @@ export function createTransfersFeature(deps) {
           return `<tr>
           <td class="col-name">${renderMarketPlayerName(playerNameCell, p.name, p, { clubName: row.clubName, suffixHtml: loanTag })}</td>
           <td class="col-club" title="${escapeHtml(row.clubName)}">${row.freeAgent ? '<strong class="transfers-free-agent-label">LIVRE</strong>' : `<span class="club-link" data-club="${escapeHtml(row.clubName)}" role="button" tabindex="0">${escapeHtml(row.clubName)}</span>`}</td>
-          <td>${escapeHtml(p.pos)}</td>
+          <td class="col-pos"><span class="pos-chip" data-line="${positionLine(p.pos)}">${escapeHtml(p.pos)}</span></td>
           <td>${escapeHtml(sideLetter(p))}</td>
           <td class="col-force">${escapeHtml(p.overall)}</td>
           <td>${escapeHtml(p.age)}</td>
@@ -1162,7 +1163,7 @@ export function createTransfersFeature(deps) {
           const wageCell = formatWageCell(wage, getUserDivision?.() || 'A');
           return `<tr>
           <td class="col-name">${nameCell}</td>
-          <td>${escapeHtml(p.pos)}</td>
+          <td class="col-pos"><span class="pos-chip" data-line="${positionLine(p.pos)}">${escapeHtml(p.pos)}</span></td>
           <td>${escapeHtml(sideLetter(p))}</td>
           <td class="col-force">${escapeHtml(p.overall)}</td>
           <td>${escapeHtml(p.age)}</td>
