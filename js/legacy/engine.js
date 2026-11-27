@@ -1,6 +1,7 @@
 import { bindRosterDensity } from '../ui/roster-density.js';
 import { createSectionsNav } from '../ui/sections-nav.js';
 import { createHubV2 } from '../feature/hub-v2/index.js';
+import { createTacticsV2 } from '../feature/tactics-v2/index.js';
 import { isConmebolNation } from '../engine/national-teams.js';
 import { QUALIFIERS_COMPETITION, QUALIFIER_HOME_VENUES } from '../engine/conmebol-qualifiers.js';
 import { CONMEBOL_DISCIPLINE_KEYS } from '../engine/conmebol-format.js';
@@ -3146,7 +3147,7 @@ export async function bootEngine({
   sectionsNav.bind();
   hubV2.bind();
   bindRosterDensity();
-  router.onActivate(viewId=>{if(viewId==='dashboard')renderHubV2();});
+  router.onActivate(viewId=>{if(viewId==='dashboard')renderHubV2();if(viewId==='tactics')tacticsV2?.refresh();});
   if(savedNewGame&&!messages.getMessages().length)pushMessage({category:'club',type:'welcome',title:'Nova temporada',body:`${userClub} inicia a temporada ${careerSeason} na Série ${userDivision}. A jornada começa em 1º de janeiro; os campeonatos seguem o calendário nacional da CBF.`,round:currentRound,read:true});
   if(savedNewGame?.cascadeVictimPendingReveal&&savedNewGame?.replacedHostClub){
     const hostDiv=savedNewGame.hostDivision||careerHostMeta?.hostDivision||userDivision;
@@ -4943,6 +4944,7 @@ export async function bootEngine({
     tactics?.openFormationSuggestion?.(targetFormation,liveCards,moves);
   };
   let tactics;
+  let tacticsV2=null;
   let draw=()=>{},drawBoard=()=>{},renderTacticRoster=()=>{},renderSubstitutionControls=()=>{},makeSubstitution=()=>{},syncTactics=()=>{},applyTacticSuggestion=()=>{},closeFormationSuggestion=()=>{},tacticFor;
   clubs[userClub].roster=squad;
   Object.values(clubs).filter(club=>club.name!==userClub).forEach(club=>orderRosterForFormation(club.roster,club.formation));
@@ -6181,7 +6183,7 @@ export async function bootEngine({
   tactics=createTacticsFeature({
     $,$$,playerNameCell,
     renderPlayerNameCell:(player,options)=>playerRename.renderNameCell(player,options),
-    onTacticsChanged:()=>{renderTacticalConfrontation({context:'tactics'});if(matchStarted&&!matchFinished&&!preMatchPreparation&&$('#stats')&&!$('#stats').classList.contains('hidden'))renderStats();},
+    onTacticsChanged:()=>{renderTacticalConfrontation({context:'tactics'});tacticsV2?.refresh();if(matchStarted&&!matchFinished&&!preMatchPreparation&&$('#stats')&&!$('#stats').classList.contains('hidden'))renderStats();},
     getFormations:()=>formations,
     getFormationRoles:()=>formationRoles,
     getFormationNotes:()=>formationNotes,
@@ -6232,6 +6234,24 @@ export async function bootEngine({
     },
   });
   ({draw,drawBoard,renderTacticRoster,renderSubstitutionControls,makeSubstitution,syncTactics,applyTacticSuggestion,closeFormationSuggestion,tacticFor}=tactics);
+  tacticsV2=createTacticsV2({
+    $,
+    getFormations:()=>formations,
+    getFormationRoles:()=>formationRoles,
+    getFormation:()=>formation,
+    getSquad:()=>clubs[userClub]?.roster||[],
+    getTacticalValues:()=>tactics.getTacticalValues?.()||{},
+    playerStarterBlocked,
+    getOpponent:()=>{
+      try{
+        const name=resolveOpponentClubName();
+        const club=matchClub();
+        if(!name||!club||club===clubs[userClub])return null;
+        const plan=tacticFor('away');
+        return{name,formation:plan?.formation||club.formation,roster:club.roster||[]};
+      }catch{return null;}
+    },
+  });
   playerRenameCallbacks.renderTacticRoster=renderTacticRoster;
   tactics.init(validSavedSeason?savedSeason?.userTactics:null);
   {

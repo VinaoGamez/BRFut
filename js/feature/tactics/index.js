@@ -1,7 +1,8 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
 import { clamp, on, onClick } from '../../ui/dom.js';
 import { bindBoardRosterHover, setBoardSlotHighlight } from '../../ui/board-roster-hover.js';
-import { rosterFatigueCell } from '../shared/player-cells.js';
+import { rosterFatigueCell, positionLine } from '../shared/player-cells.js';
+import { COMPATIBLE_ROLES } from '../../engine/match-core.js';
 import { renderTableFootIcon } from '../../lab/card-back.js';
 
 const TACTIC_SLIDER_KEYS = ['mentality', 'possession', 'press', 'offsideLine'];
@@ -358,11 +359,19 @@ export function createTacticsFeature(deps) {
     const formations = getFormations();
     const formationNotes = getFormationNotes();
     const squad = getSquad();
+    const slotRoles = getFormationRoles?.()?.[formation] || [];
+    // Táticas v2: cada titular vira uma mini-carta (OVR, posição, condição)
+    // com borda de encaixe: natural, adaptado ou improvisado.
     $('#pitchPlayers').innerHTML = formations[formation]
-      .map(
-        (p, i) =>
-          `<div class="pitch-player repositionable" data-slot="${i}" draggable="true" style="left:${p[0]}%;top:${p[1] === 91 ? 90 : p[1]}%"><i style="--energy:${clamp(squad[i].fatigue, 0, 100)}%"><span>${boardJerseyNumber(squad[i], i)}</span></i><small>${squad[i].name}</small></div>`
-      )
+      .map((p, i) => {
+        const player = squad[i];
+        const role = slotRoles[i] || player.pos;
+        const fit = player.pos === role ? 'natural' : (COMPATIBLE_ROLES[role] || []).includes(player.pos) ? 'adapted' : 'improvised';
+        const energy = Math.round(clamp(player.fatigue, 0, 100));
+        const level = energy >= 80 ? 'ok' : energy >= 60 ? 'warn' : 'low';
+        const fitLabel = fit === 'natural' ? 'posição natural' : fit === 'adapted' ? `adaptado em ${role}` : `improvisado em ${role}`;
+        return `<div class="pitch-player repositionable pp-v2 fit-${fit}" data-slot="${i}" draggable="true" title="${player.name} · ${player.pos} · ${fitLabel} · ${energy}% de condição" style="left:${p[0]}%;top:${p[1] === 91 ? 90 : p[1]}%"><span class="pp-card"><span class="pp-top"><b class="pp-ovr">${player.overall}</b><em class="pos-chip" data-line="${positionLine(player.pos)}">${player.pos}</em></span><i class="pp-cond" data-level="${level}"><b style="width:${energy}%"></b></i></span><small>${boardPlayerLabel(player.name, 16)}</small></div>`;
+      })
       .join('');
     $('#formationDescription').textContent = `${formationNotes[formation]} Titulares sugeridos por encaixe, atributos e condição física.`;
     $$('#formations button').forEach(b => b.classList.toggle('selected', b.textContent === formation));

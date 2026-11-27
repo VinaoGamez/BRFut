@@ -1539,3 +1539,666 @@ html body #nextMatchAway {
   letter-spacing: 0 !important;
   text-transform: uppercase;
 }
+
+/* =====================================================================
+ * Táticas v2 (canvas "Táticas v2 · PC / Steam" e "celular")
+ * ===================================================================== */
+html body #tactics .tac-tabs {
+  display: none;
+}
+
+html body #tactics .tactics.tac-v2 {
+  display: grid !important;
+  grid-template-columns: minmax(270px, 300px) minmax(0, 1fr) minmax(300px, 340px) !important;
+  grid-template-areas: 'left center right' !important;
+  gap: 18px !important;
+  align-items: start !important;
+}
+
+html body #tactics .tac-v2 > .tac-left { grid-area: left !important; grid-column: auto !important; grid-row: auto !important; }
+html body #tactics .tac-v2 > .tac-center { grid-area: center; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+html body #tactics .tac-v2 > .tac-right { grid-area: right; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+
+/* Coluna esquerda */
+html body #tactics .tac-left {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px !important;
+}
+
+html body #tactics .tac-left > label,
+html body #tactics .tac-styles > label,
+html body #tactics .tac-right .card > label {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  font-size: 15px !important;
+  color: var(--av-ink) !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 2px !important;
+}
+
+html body #tactics .tac-left > label::after,
+html body #tactics .tac-styles > label::after,
+html body #tactics .tac-right .card > label::after {
+  content: '';
+  flex: 1;
+  height: 3px;
+  background: var(--av-cyan);
+  transform: skewX(-30deg);
+  opacity: .55;
+}
+
+html body #tactics .tac-style-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+html body #tactics .tac-style {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-height: 58px;
+  padding: 9px 10px 8px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-night) !important;
+  color: var(--av-ink) !important;
+  text-align: left;
+  box-shadow: inset 0 0 0 2px transparent !important;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  cursor: pointer;
+}
+
+html body #tactics .tac-style:hover {
+  background: var(--av-panel-hi) !important;
+}
+
+html body #tactics .tac-style[aria-pressed="true"] {
+  background: var(--av-panel-hi) !important;
+  box-shadow: inset 0 0 0 2px var(--av-cyan) !important;
+}
+
+html body #tactics .tac-style > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+html body #tactics .tac-style svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--av-muted);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html body #tactics .tac-style[aria-pressed="true"] svg {
+  stroke: var(--av-cyan);
+}
+
+html body #tactics .tac-style strong {
+  font-family: var(--av-display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+html body #tactics .tac-style small {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--av-muted);
+}
+
+html body #tactics .tac-style-custom {
+  margin: 0;
+  font-size: 12px;
+  color: var(--av-orange);
+}
+
+html body #tactics #formations {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+
+html body #tactics #formations button {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 6px 0 5px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--av-night) !important;
+  color: var(--av-muted) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  font-size: 12px !important;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+
+html body #tactics #formations button.selected {
+  background: var(--av-cyan) !important;
+  color: var(--av-night) !important;
+}
+
+html body #tactics .tac-form-thumb {
+  width: 34px;
+  height: 24px;
+  fill: currentColor;
+}
+
+html body #tactics .tac-form-thumb rect {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: .35;
+}
+
+html body #tactics #formationDescription {
+  margin: 0 !important;
+  font-size: 12px !important;
+  line-height: 1.4;
+  color: var(--av-muted) !important;
+}
+
+html body #tactics .tac-left .tactic-slider {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+html body #tactics .tac-left .tactic-slider > label {
+  display: flex !important;
+  justify-content: space-between;
+  font-size: 12px !important;
+  color: var(--av-muted) !important;
+  font-family: var(--av-body) !important;
+  font-style: normal;
+  letter-spacing: 0 !important;
+}
+
+html body #tactics .tac-left .tactic-slider output {
+  color: var(--av-cyan) !important;
+  font-weight: 700;
+}
+
+html body #tactics .tac-left .tactic-slider small {
+  font-size: 10px !important;
+  color: #6f82a3 !important;
+}
+
+html body #tactics .tac-left input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 10px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(90deg, var(--av-cyan) var(--tactic-value, 50%), var(--av-panel-hi) var(--tactic-value, 50%)) !important;
+  transform: skewX(-20deg);
+}
+
+html body #tactics .tac-left input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 20px;
+  border: 0;
+  border-radius: 0;
+  background: var(--av-ink);
+  box-shadow: 0 2px 0 var(--av-outline);
+  cursor: pointer;
+}
+
+html body #tactics .tac-left input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 20px;
+  border: 0;
+  border-radius: 0;
+  background: var(--av-ink);
+}
+
+/* Centro: barra + campo escuro com faixas */
+html body #tactics .tac-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+html body #tactics .tac-toolbar-gap { flex: 1; }
+
+html body #tactics .tac-ghost-toggle,
+html body #tactics .tactic-suggestion-btn {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 7px 14px !important;
+  background: var(--av-panel) !important;
+  color: var(--av-orange) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  width: auto !important;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+
+html body #tactics .tac-ghost-toggle[aria-pressed="true"] {
+  background: var(--av-orange) !important;
+  color: var(--av-night) !important;
+}
+
+html body #tactics .tactic-suggestion-btn {
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+}
+
+html body #tactics .tactic-suggestion-wrap {
+  position: relative;
+}
+
+html body #tactics .tactic-suggestion-tooltip {
+  right: 0;
+  left: auto !important;
+}
+
+html body #tactics .tac-center > .pitch.tactical-board {
+  position: relative;
+  width: auto !important;
+  height: max(560px, calc(100vh - 250px)) !important;
+  max-width: 100%;
+  aspect-ratio: 68 / 105;
+  margin: 0 auto;
+  border: 2px solid #1c5a42 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: repeating-linear-gradient(180deg, #0f3a2a 0 7.1428%, #0c3324 7.1428% 14.2857%) !important;
+}
+
+html body #tactics .tac-center .field-markings,
+html body #tactics .tac-center .field-markings * {
+  border-color: #ffffff38 !important;
+  color: #ffffff38 !important;
+}
+
+html body #tactics .tac-center .field-markings .centre-spot,
+html body #tactics .tac-center .field-markings .spot {
+  background: #ffffff38 !important;
+}
+
+html body #tactics .pitch-player.pp-v2 {
+  width: 96px !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+}
+
+html body #tactics .pitch-player.pp-v2 .pp-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 64px;
+  padding: 5px 0 5px;
+  background: var(--av-panel);
+  box-shadow: inset 0 0 0 2px var(--fit, var(--av-green)), 0 3px 0 var(--av-outline);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+}
+
+html body #tactics .pitch-player.pp-v2.fit-natural { --fit: var(--av-green); }
+html body #tactics .pitch-player.pp-v2.fit-adapted { --fit: var(--av-cyan); }
+html body #tactics .pitch-player.pp-v2.fit-improvised { --fit: var(--av-orange); }
+
+html body #tactics .pitch-player.pp-v2 .pp-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+html body #tactics .pitch-player.pp-v2 .pp-ovr {
+  font-family: var(--av-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--av-ink);
+}
+
+html body #tactics .pitch-player.pp-v2 .pos-chip {
+  min-width: 0;
+  height: 16px;
+  padding: 0 5px !important;
+  font-size: 10px !important;
+}
+
+html body #tactics .pitch-player.pp-v2 .pp-cond {
+  display: block;
+  width: 46px;
+  height: 4px;
+  background: var(--av-panel-hi);
+  transform: skewX(-20deg);
+  border: 0 !important;
+}
+
+html body #tactics .pitch-player.pp-v2 .pp-cond b {
+  display: block;
+  height: 100%;
+  background: var(--av-green);
+}
+
+html body #tactics .pitch-player.pp-v2 .pp-cond[data-level="warn"] b { background: var(--av-orange); }
+html body #tactics .pitch-player.pp-v2 .pp-cond[data-level="low"] b { background: var(--av-red); }
+
+html body #tactics .pitch-player.pp-v2 small {
+  max-width: 96px;
+  padding: 1px 6px !important;
+  background: #050c17cc !important;
+  color: var(--av-ink) !important;
+  font-family: var(--av-body) !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+html body #tactics .pitch-player.pp-v2.sub-highlight .pp-card {
+  box-shadow: inset 0 0 0 3px var(--av-lime), 0 3px 0 var(--av-outline);
+}
+
+html body #tactics .tac-ghosts i {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  border: 2px dashed #ff8a2bb3;
+  background: #ff8a2b33;
+  pointer-events: none;
+  z-index: 1;
+}
+
+html body #tactics .tac-fit-legend {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 10px;
+  padding: 3px 8px;
+  background: #050c17cc;
+  font-size: 11px;
+  color: var(--av-muted);
+}
+
+html body #tactics .tac-fit-legend span::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  box-shadow: inset 0 0 0 2px var(--av-green);
+}
+
+html body #tactics .tac-fit-legend .is-adapted::before { box-shadow: inset 0 0 0 2px var(--av-cyan); }
+html body #tactics .tac-fit-legend .is-improvised::before { box-shadow: inset 0 0 0 2px var(--av-orange); }
+
+html body #tactics .tactical-board .board-legend,
+html body #tactics .tac-center .pitch-legend {
+  display: none !important;
+}
+
+/* Direita: confronto, auxiliar, banco */
+html body #tactics .tac-right > .card {
+  margin: 0 !important;
+  padding: 12px 14px !important;
+}
+
+html body #tactics .tac-duel {
+  background: linear-gradient(225deg, transparent 12px, var(--av-panel-hi) 12px) !important;
+}
+
+html body #tactics .tac-duel > label em {
+  font-family: var(--av-body);
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--av-muted);
+  order: 2;
+}
+
+html body #tactics .tac-duel-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 58px 1fr 28px;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  font-size: 13px;
+}
+
+html body #tactics .tac-duel-row > b {
+  font-family: var(--av-display);
+  font-style: italic;
+  font-weight: 800;
+  color: var(--av-muted);
+}
+
+html body #tactics .tac-duel-row > b:last-child { text-align: right; }
+html body #tactics .tac-duel-row > b.is-up { color: var(--av-green); }
+html body #tactics .tac-duel-row > b.is-op-up { color: var(--av-red); }
+
+html body #tactics .tac-duel-row > small {
+  text-align: center;
+  color: var(--av-muted);
+  font-size: 12px;
+}
+
+html body #tactics .tac-duel-bar {
+  display: flex;
+  height: 8px;
+  background: var(--av-panel);
+  transform: skewX(-20deg);
+}
+
+html body #tactics .tac-duel-bar.is-me { justify-content: flex-end; }
+html body #tactics .tac-duel-bar i { display: block; height: 100%; background: var(--av-cyan); }
+html body #tactics .tac-duel-bar.is-op i { background: var(--av-orange); }
+
+html body #tactics .tac-duel p {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--av-muted);
+}
+
+html body #tactics .tac-duel p strong { color: var(--av-orange); }
+
+html body #tactics .tac-tip {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 5px 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+html body #tactics .tac-tip > i {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 12px;
+  clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
+  background: #3ddc8422;
+  color: var(--av-green);
+}
+
+html body #tactics .tac-tip.is-warn > i { background: #ff8a2b22; color: var(--av-orange); }
+html body #tactics .tac-tip.is-danger > i { background: #ff4d5e22; color: var(--av-red); }
+
+html body #tactics .tac-right .tactic-roster {
+  grid-column: auto !important;
+  grid-row: auto !important;
+}
+
+html body #tactics .tac-right .tactic-roster > section:first-of-type {
+  display: none !important;
+}
+
+html body #tactics .tac-right .tactic-roster h3 {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  color: var(--av-ink) !important;
+  background: transparent !important;
+}
+
+/* Celular: abas Campo · Estilo · Confronto */
+html.is-mobile body #tactics .tac-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+html.is-mobile body #tactics .tac-tabs button {
+  flex: 1;
+  padding: 9px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel) !important;
+  color: var(--av-muted) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  font-size: 14px !important;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+
+html.is-mobile body #tactics .tac-tabs button[aria-selected="true"] {
+  background: var(--av-cyan) !important;
+  color: var(--av-night) !important;
+}
+
+html.is-mobile body #tactics .tactics.tac-v2 {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas: none !important;
+}
+
+html.is-mobile body #tactics .tac-v2 > * {
+  grid-area: auto !important;
+  max-width: none !important;
+}
+
+html.is-mobile body #tactics .tac-v2[data-tac-tab="campo"] > .tac-left,
+html.is-mobile body #tactics .tac-v2[data-tac-tab="campo"] .tac-duel,
+html.is-mobile body #tactics .tac-v2[data-tac-tab="campo"] .tac-assistant,
+html.is-mobile body #tactics .tac-v2[data-tac-tab="estilo"] > .tac-center,
+html.is-mobile body #tactics .tac-v2[data-tac-tab="estilo"] > .tac-right,
+html.is-mobile body #tactics .tac-v2[data-tac-tab="confronto"] > .tac-left,
+html.is-mobile body #tactics .tac-v2[data-tac-tab="confronto"] > .tac-center,
+html.is-mobile body #tactics .tac-v2[data-tac-tab="confronto"] .tactic-roster {
+  display: none !important;
+}
+
+html.is-mobile body #tactics .tac-center > .pitch.tactical-board {
+  width: 100% !important;
+  height: auto !important;
+}
+
+html.is-mobile body #tactics .pitch-player.pp-v2 {
+  width: 70px !important;
+}
+
+html.is-mobile body #tactics .pitch-player.pp-v2 .pp-card {
+  width: 48px;
+  padding: 3px 0;
+  gap: 2px;
+}
+
+html.is-mobile body #tactics .pitch-player.pp-v2 .pp-top {
+  flex-direction: column;
+  gap: 1px;
+}
+
+html.is-mobile body #tactics .pitch-player.pp-v2 .pp-ovr { font-size: 15px; }
+html.is-mobile body #tactics .pitch-player.pp-v2 .pos-chip { height: 13px; font-size: 9px !important; }
+html.is-mobile body #tactics .pitch-player.pp-v2 .pp-cond { width: 34px; height: 3px; }
+html.is-mobile body #tactics .pitch-player.pp-v2 small { font-size: 10px !important; max-width: 70px; }
+html.is-mobile body #tactics .tac-fit-legend { display: none; }
+html.is-mobile body #tactics .tac-toolbar .tactic-suggestion-btn { font-size: 12px !important; }
+
+html body #tactics .tac-right .tactic-roster {
+  display: block !important;
+  width: auto !important;
+}
+
+html body #tactics .tac-right .tactic-roster > section {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+html body #tactics .tac-right .tactic-player-row,
+html body #tactics .tac-right .tactic-roster-head {
+  grid-template-columns: minmax(0, 1fr) 44px 38px 76px !important;
+}
+
+html body #tactics .pitch-player.pp-v2 i.pp-cond {
+  position: static !important;
+  display: block !important;
+  width: 46px !important;
+  height: 4px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  box-shadow: none !important;
+}
+
+html body #tactics .pitch-player.pp-v2 i.pp-cond::before,
+html body #tactics .pitch-player.pp-v2 i.pp-cond::after {
+  display: none !important;
+}
+
+html body #tactics .pitch-player.pp-v2 i.pp-cond b {
+  position: static !important;
+  display: block !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+}
+
+html.is-mobile body #tactics .pitch-player.pp-v2 i.pp-cond {
+  width: 34px !important;
+  height: 3px !important;
+}
+
+html body #tactics .tac-center .tactical-board::before,
+html body #tactics .tac-center .tactical-board::after {
+  border-color: #ffffff38 !important;
+  box-shadow: none !important;
+}
+
+html body #tactics .tac-style strong {
+  font-size: 13px;
+  line-height: 1.1;
+}
