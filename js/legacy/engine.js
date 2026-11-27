@@ -4610,6 +4610,8 @@ export async function bootEngine({
     pushMessage,
     getCurrentRound:()=>currentRound,
     getCareerSeason:()=>careerSeason,
+    openView:viewId=>router.openView(viewId),
+    currentView:()=>router.currentView(),
     getTransferWindowAlertStamp:()=>savedNewGame?.transferWindowAlertStamp||null,
     setTransferWindowAlertStamp:stamp=>{
       if(!savedNewGame||savedNewGame.transferWindowAlertStamp===stamp)return;
@@ -5819,6 +5821,7 @@ export async function bootEngine({
     getCareerSeason:()=>careerSeason,
     getPlayerHistory:()=>playerHistory,
     getTransfersUi:()=>transfersUi,
+    ensureTransfersUi:()=>(FEATURES.transfers?ensureTransfersUi():Promise.resolve(transfersUi)),
     getTransfersEngine:()=>transfersEngine,
     getClubs:()=>clubs,
     findPlayerInWorld:playerId=>{

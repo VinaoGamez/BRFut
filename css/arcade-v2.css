@@ -841,22 +841,6 @@ html body .view td.col-traits {
   color: var(--av-muted) !important;
 }
 
-/* Aviso de janela de transferências: cartão com canto cortado, ação limão. */
-html body .transfer-window-open-alert > * {
-  border-radius: 0 !important;
-}
-
-html body .transfer-window-open-ok {
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important;
-  color: var(--av-night) !important;
-  font-family: var(--av-display) !important;
-  font-style: italic;
-  font-weight: 900 !important;
-  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
-}
-
 /* Desempenho do elenco: mesmo título dos cartões. */
 html body .view .squad-performance h2,
 html body .view [class*="performance"] > h2 {
@@ -4269,3 +4253,693 @@ html body #clubhistory .clubv2-trophy.is-empty { opacity: .38; box-shadow: inset
 html body #clubhistory .clubv2-trophy.is-empty strong { color: var(--av-muted); }
 html.is-mobile body #clubhub .clubv2-identity-name { flex: 1 1 calc(100% - 80px); }
 html.is-mobile body #clubhub .clubv2-identity-stat { flex: 1 1 0; border-left: 0; border-top: 1px solid var(--av-line); padding: 6px 0 0; }
+
+/* =====================================================================
+   Pop-ups v2 — casca única para todos os modais.
+   Faixa de 3 px no topo (cor pelo tipo), kicker + título Kanit,
+   corpo em blocos retos, rodapé com secundário fantasma e ação limão.
+   No celular: bottom sheet acima da navegação.
+   ===================================================================== */
+:root {
+  --mv2-accent: var(--av-cyan);
+}
+
+/* ---------- Componente novo (.mv2-*) ---------- */
+html body .mv2-shell {
+  --mv2-accent: var(--av-cyan);
+  position: relative;
+  width: min(480px, calc(100vw - 32px));
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(225deg, transparent 16px, var(--av-panel) 16px);
+  box-shadow: inset 0 3px var(--mv2-accent), 0 24px 60px #000b;
+  color: var(--av-ink);
+  text-align: left;
+  font-family: var(--av-body);
+}
+html body .mv2-shell[data-tone="lime"] { --mv2-accent: var(--av-lime); }
+html body .mv2-shell[data-tone="red"] { --mv2-accent: var(--av-red); }
+html body .mv2-shell[data-tone="gold"] { --mv2-accent: var(--av-gold); }
+html body .mv2-shell[data-tone="orange"] { --mv2-accent: var(--av-orange); }
+
+html body .mv2-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--av-line);
+}
+html body .mv2-head > div { flex: 1 1 auto; min-width: 0; }
+html body .mv2-kicker {
+  display: block;
+  color: var(--mv2-accent);
+  font: italic 800 11px/1.2 var(--av-display);
+  letter-spacing: .12em;
+}
+html body .mv2-title {
+  margin: 3px 0 0;
+  color: var(--av-ink);
+  font: italic 900 26px/1.05 var(--av-display);
+  letter-spacing: 0;
+  text-transform: none;
+}
+html body .mv2-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 0;
+  background: var(--av-panel-hi);
+  color: var(--av-muted);
+  font: 700 18px/1 var(--av-body);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  box-shadow: none;
+}
+html body .mv2-close:hover { color: var(--av-ink); background: var(--av-line); }
+html body .mv2-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 22px;
+}
+html body .mv2-tiles { display: flex; gap: 10px; }
+html body .mv2-tile {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: var(--av-rail);
+}
+html body .mv2-tile small {
+  color: var(--av-muted);
+  font: italic 800 10px/1.2 var(--av-display);
+  letter-spacing: .1em;
+}
+html body .mv2-tile strong {
+  color: var(--av-ink);
+  font: italic 900 19px/1.1 var(--av-display);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+html body .mv2-tile strong.is-money { color: var(--av-gold); }
+html body .mv2-note {
+  margin: 0;
+  padding: 9px 12px;
+  background: var(--av-rail);
+  box-shadow: inset 3px 0 var(--mv2-accent);
+  color: #c9d6e8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+html body .mv2-note[hidden] { display: none; }
+html body .mv2-note strong { color: var(--av-ink); }
+html body .mv2-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--av-line);
+}
+html body .mv2-btn {
+  min-width: 0;
+  margin: 0;
+  padding: 11px 22px;
+  border: 0;
+  border-radius: 0;
+  font: italic 900 13px/1 var(--av-display);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+  cursor: pointer;
+}
+html body .mv2-btn[hidden] { display: none; }
+html body .mv2-btn.is-primary {
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px));
+  color: var(--av-night);
+}
+html body .mv2-btn.is-ghost {
+  background: transparent;
+  color: var(--av-ink);
+  box-shadow: inset 0 0 0 1px var(--av-line);
+}
+html body .mv2-btn.is-ghost:hover { background: var(--av-panel-hi); }
+html body .mv2-btn.is-danger { background: var(--av-red); color: #fff; }
+
+/* Alerta de mercado: o contêiner antigo herda só o fundo. */
+html body .transfer-window-open-alert {
+  background: rgba(3, 8, 16, .8);
+  backdrop-filter: blur(4px);
+}
+html body .transfer-window-open-card.mv2-shell {
+  width: min(500px, calc(100vw - 32px));
+  border: 0;
+  border-radius: 0;
+}
+
+/* ---------- Modais existentes (.modal > .modal-card) ---------- */
+html body .modal:not(#matchModal):not(#playerCardModal) {
+  background: rgba(3, 8, 16, .8) !important;
+  backdrop-filter: blur(4px);
+}
+
+html body .modal:not(#matchModal):not(#playerCardModal) > .modal-card {
+  box-shadow: 0 24px 60px #000b !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(225deg, transparent 18px, var(--av-panel) 18px) !important;
+}
+/* Faixa do topo por cima de cabeçalhos com fundo próprio. */
+html body .modal:not(#matchModal):not(#playerCardModal) > .modal-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 18px;
+  height: 3px;
+  background: var(--mv2-accent);
+  pointer-events: none;
+  z-index: 4;
+}
+html body .modal .modal-card :is(.office-bank-loan-info-modal-header, .office-bank-loan-info-modal-actions) {
+  background: transparent !important;
+  border-color: var(--av-line) !important;
+}
+html body .modal .modal-card :is(.office-bank-loan-breakdown, .office-bank-loan-quote, [class*="office-bank-loan"][class*="box"]) {
+  border-color: var(--av-line) !important;
+  background: var(--av-rail) !important;
+}
+html body .modal .modal-card.message-reader-card { width: min(600px, calc(100vw - 32px)) !important; }
+html body .modal .modal-card.message-reader-card h2 { white-space: normal !important; overflow: visible !important; }
+
+/* Cor da faixa por tipo de pop-up. */
+html body :is(#transfersConfirmModal, #transfersOfferModal, #newGameModal, #sponsorPickerModal, #namingPickerModal, #formationSuggestionModal, #accountModal, #accountProfileModal) { --mv2-accent: var(--av-lime); }
+html body :is(#managerSackModal, #clubBankruptcyModal, #clubFinancialRestrictionModal) { --mv2-accent: var(--av-red); }
+html body :is(#managerJobWarnModal, #clubInsolvencyWarnModal, #sponsorRerollWarnModal, #treatmentModal) { --mv2-accent: var(--av-orange); }
+html body :is(#seasonTransitionModal, #roundResultsModal, #transfersWindowReportModal, #nationalTeamOfferModal, #supportProjectModal, #cupBracketModal) { --mv2-accent: var(--av-gold); }
+html body #transfersAlertModal .transfers-alert-card[data-tone="bad"],
+html body #transfersAlertModal .transfers-alert-card[data-tone="block"] { --mv2-accent: var(--av-red); }
+html body #transfersAlertModal .transfers-alert-card[data-tone="warn"] { --mv2-accent: var(--av-orange); }
+
+/* Kicker (rótulo acima do título). */
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card > label:first-of-type,
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card > header > label,
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card [class*="eyebrow"],
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card [class*="kicker"] {
+  color: var(--mv2-accent) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic !important;
+  font-weight: 800 !important;
+  font-size: 11px !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase;
+}
+
+/* Título e subtítulos em Kanit. */
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card h2 {
+  font-family: var(--av-display) !important;
+  font-style: italic !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.05 !important;
+  color: var(--av-ink) !important;
+}
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card h3 {
+  font-family: var(--av-display) !important;
+  font-style: italic !important;
+  font-weight: 800 !important;
+  letter-spacing: .02em !important;
+}
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is([class*="facts"], [class*="metrics"], [class*="payroll"], [class*="summary"], [class*="total"]) strong {
+  font-family: var(--av-display) !important;
+  font-style: italic !important;
+  font-weight: 900 !important;
+}
+
+/* Fechar: paralelogramo. */
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card .close {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-muted) !important;
+  font: 700 18px/1 var(--av-body) !important;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  box-shadow: none !important;
+  z-index: 3;
+}
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card .close:hover {
+  color: var(--av-ink) !important;
+  background: var(--av-line) !important;
+}
+
+/* Formas retas: nada de cantos arredondados dentro do pop-up. */
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card *:not(img):not(svg):not(svg *):not(input[type="radio"]):not([class*="spot"]):not([class*="ball"]):not([class*="circle"]):not([class*="crest"]):not([class*="avatar"]):not([class*="dot"]):not([class*="badge"]) {
+  border-radius: 0 !important;
+}
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), textarea, select) {
+  border: 1px solid var(--av-line) !important;
+  background: var(--av-rail) !important;
+  color: var(--av-ink) !important;
+}
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(input, textarea, select):focus {
+  border-color: var(--av-cyan) !important;
+  outline: none;
+}
+
+/* Blocos internos: fundo trilho, linhas discretas, sem brilho verde-água. */
+html body .modal .modal-card :is(.season-summary-user, .season-goal-result, .season-rewards, .sponsor-picker-summary, .transfers-report-biggest, .support-project-pix, .home-profile-storage, .tester-guide-section, .option-section, .new-career-panel, .roster-contract-modal-list, .message-reader-body, .formation-suggestion-moves, .round-context-nav, .live-day-matches-list, .manager-sack-empty) {
+  border: 1px solid var(--av-line) !important;
+  background: var(--av-rail) !important;
+  box-shadow: none !important;
+}
+html body .modal .modal-card.manager-sack-modal > header,
+html body .modal .modal-card.sponsor-picker-modal > header,
+html body .modal .modal-card .cup-bracket-head {
+  border: 0 !important;
+  border-bottom: 1px solid var(--av-line) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Botões do rodapé: fantasma por padrão, limão na ação principal. */
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(footer, [class*="actions"]) > button:not(.close),
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(#treatmentConservative, #treatmentSurgery, #openNewGame, #manualSaveBtn, #optionsLogout, #openReleaseNotes, #openTesterGuide, #openTesterFeedback, #previewSeasonGoalGauge, .home-profile-photo-btn, .scout-history-btn) {
+  min-height: 40px;
+  padding: 10px 20px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1px var(--av-line) !important;
+  color: var(--av-ink) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic !important;
+  font-weight: 900 !important;
+  font-size: 13px !important;
+  letter-spacing: .05em !important;
+  text-transform: uppercase;
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+  filter: none !important;
+}
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(footer, [class*="actions"]) > button:not(.close):hover {
+  background: var(--av-panel-hi) !important;
+}
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(.transfers-offer-submit, .home-account-btn.primary, #closeRosterContractModalFooter, #messageReaderClose, #releaseNotesClose, #testerGuideToFeedback, #feedbackCopy, #confirmNamingPicker, #applyFormationSuggestion, #confirmSponsorPicker, #sponsorRerollConfirm, #startNextSeason, #managerJobWarnDismiss, #clubInsolvencyWarnDismiss, #clubFinancialRestrictionDismiss, #confirmNewGame, #manualSaveBtn, .office-bank-loan-borrow-confirm, #confirmStadiumInvestmentAlert) {
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important;
+  box-shadow: none !important;
+  color: var(--av-night) !important;
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+  border: 0 !important;
+  border-radius: 0 !important;
+  font-family: var(--av-display) !important;
+  font-style: italic !important;
+  font-weight: 900 !important;
+}
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(.transfers-offer-submit, .home-account-btn.primary, #closeRosterContractModalFooter, #messageReaderClose, #releaseNotesClose, #testerGuideToFeedback, #feedbackCopy, #confirmNamingPicker, #applyFormationSuggestion, #confirmSponsorPicker, #sponsorRerollConfirm, #startNextSeason, #managerJobWarnDismiss, #clubInsolvencyWarnDismiss, #clubFinancialRestrictionDismiss, #confirmNewGame, #manualSaveBtn, .office-bank-loan-borrow-confirm, #confirmStadiumInvestmentAlert):disabled {
+  opacity: .45;
+}
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(footer, [class*="actions"], .option-section) :is(#managerSackRefuse, #clubBankruptcyEnd, #optionsLogout, #officeBankLoanBorrowDeny) {
+  background: var(--av-red) !important;
+  box-shadow: none !important;
+  color: #fff !important;
+}
+html body .modal .modal-card :is(footer, [class*="actions"]) {
+  border-top-color: var(--av-line) !important;
+}
+
+/* ---------- Celular: bottom sheet acima da navegação ---------- */
+html.is-mobile body .modal:not(#matchModal):not(#playerCardModal) {
+  z-index: 2100 !important;
+  align-items: end !important;
+  place-items: end center !important;
+  padding: 0 !important;
+}
+html.is-mobile body :is(#liveOpponentModal, #teamScoutModal) { z-index: 2110 !important; }
+html.is-mobile body #playerCardModal { z-index: 2200 !important; }
+html.is-mobile body .modal:not(#matchModal):not(#playerCardModal) > .modal-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: 92dvh !important;
+  margin: 0 !important;
+  padding: 26px 16px calc(18px + env(safe-area-inset-bottom)) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  animation: mv2-sheet-in .22s ease-out;
+}
+html.is-mobile body .modal:not(#matchModal):not(#playerCardModal) > .modal-card::before {
+  z-index: 4;
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 44px;
+  height: 4px;
+  margin-left: -22px;
+  background: var(--av-line);
+}
+html.is-mobile body .modal:not(#matchModal):not(#playerCardModal) .modal-card .close {
+  top: 14px !important;
+  right: 12px !important;
+}
+html.is-mobile body .modal:not(#matchModal):not(#playerCardModal) .modal-card h2 {
+  font-size: 24px !important;
+  padding-right: 40px;
+}
+html.is-mobile body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(footer, [class*="actions"]) {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  gap: 8px !important;
+}
+html.is-mobile body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(footer, [class*="actions"]) > button:not(.close) {
+  flex: 1 1 140px;
+  min-height: 46px;
+}
+html.is-mobile body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(p, span, small, strong, div) {
+  overflow-wrap: break-word;
+}
+html.is-mobile body .modal .modal-card.manager-sack-modal header :is(span, small, p, em) {
+  white-space: normal !important;
+  text-align: right;
+}
+html.is-mobile body .nto-modal { z-index: 2100 !important; }
+html.is-mobile body .transfer-window-open-alert {
+  place-items: end center;
+  padding: 0;
+  z-index: 99994;
+}
+html.is-mobile body .transfer-window-open-card.mv2-shell {
+  width: 100%;
+  padding-bottom: env(safe-area-inset-bottom);
+  animation: mv2-sheet-in .22s ease-out;
+}
+html.is-mobile body .mv2-tiles { flex-wrap: wrap; }
+html.is-mobile body .mv2-tile { flex: 1 1 calc(50% - 5px); }
+html.is-mobile body .mv2-foot { flex-direction: column-reverse; }
+html.is-mobile body .mv2-btn { width: 100%; padding: 14px 0; text-align: center; }
+@keyframes mv2-sheet-in {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.is-mobile body .modal > .modal-card,
+  html.is-mobile body .transfer-window-open-card.mv2-shell { animation: none; }
+}
+
+/* Convites de seleção (estrutura própria). */
+html body .nto-modal { background: rgba(3, 8, 16, .8) !important; backdrop-filter: blur(4px); }
+html body .nto-modal .nto-modal-card {
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(225deg, transparent 18px, var(--av-panel) 18px) !important;
+  box-shadow: 0 24px 60px #000b !important;
+}
+html body .nto-modal .nto-modal-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 18px; height: 3px; background: var(--av-gold); z-index: 4;
+}
+html body .nto-modal .nto-hero-column {
+  border: 0 !important; border-radius: 0 !important; background: var(--av-rail) !important; box-shadow: none !important;
+}
+html body .nto-modal :is(.nto-hero-kicker) { color: var(--av-gold) !important; font: italic 900 20px/1 var(--av-display) !important; letter-spacing: .04em !important; }
+html body .nto-modal .nto-offers-title { font: italic 900 26px/1.05 var(--av-display) !important; text-transform: none !important; color: var(--av-ink) !important; }
+html body .nto-modal .nto-table-wrap, html body .nto-modal .nto-table { border-radius: 0 !important; border-color: var(--av-line) !important; }
+html body .nto-modal .nto-table thead th {
+  background: var(--av-rail) !important; color: var(--av-muted) !important;
+  font: italic 800 10px var(--av-display) !important; letter-spacing: .1em !important; text-transform: uppercase;
+}
+html body .nto-modal .nto-table td { border-color: var(--av-line) !important; }
+html body .nto-modal .nto-modal-card button {
+  border: 0 !important; border-radius: 0 !important;
+  font-family: var(--av-display) !important; font-style: italic !important; font-weight: 900 !important; text-transform: uppercase;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+html body .nto-modal .nto-deny-all { background: transparent !important; color: var(--av-red) !important; box-shadow: inset 0 0 0 1px var(--av-red) !important; }
+
+/* Cartão de história de outro clube (aberto pelo olheiro): forma v2. */
+html body .club-history-modal { background: rgba(3, 8, 16, .8) !important; }
+html body .club-history-face {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(225deg, transparent 22px, var(--av-panel) 22px) !important;
+  box-shadow: inset 0 3px var(--av-cyan);
+}
+html body .club-history-front { background: linear-gradient(225deg, transparent 22px, var(--av-panel) 22px) !important; }
+html body .club-history-front::before, html body .club-history-back::before { display: none !important; }
+html body .club-history-front p, html body .club-history-back-head p { color: var(--av-cyan) !important; font: italic 800 11px var(--av-display) !important; }
+html body :is(.club-history-front h2, .club-history-back-head h2) { font-family: var(--av-display) !important; font-style: italic !important; font-weight: 900 !important; }
+html body .club-history-back-head { border-color: var(--av-line) !important; }
+html body :is(.club-history-season, .club-history-stats span, .club-history-trophy) { border-radius: 0 !important; border-color: var(--av-line) !important; background: var(--av-rail) !important; }
+html body .club-history-season > header strong { color: var(--av-lime) !important; font-family: var(--av-display) !important; font-style: italic; }
+html body .club-history-stats b { color: var(--av-cyan) !important; font-family: var(--av-display) !important; font-style: italic; }
+
+/* ---------- Ficha do jogador v2: card colecionável + painel ---------- */
+html body #playerCardModal {
+  background: rgba(3, 8, 16, .8) !important;
+  backdrop-filter: blur(4px);
+}
+html body #playerCardModal .player-card-modal-shell.pcv2 {
+  display: flex;
+  flex-direction: column;
+  width: min(860px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(92vh, 760px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+html body .pcv2-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 22px;
+  padding: 18px 22px;
+  align-items: start;
+}
+html body .pcv2-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+html body .pcv2 .player-card-modal-mount .md-card {
+  --md-w: 268px !important;
+  max-width: none;
+  max-height: none;
+  filter: drop-shadow(0 18px 36px #000c);
+}
+html body .pcv2-flip-hint {
+  color: var(--av-muted);
+  font-size: 11px;
+}
+html body .pcv2-info {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+html body .pcv2-top {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+html body .pcv2-ovr {
+  flex: none;
+  width: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0;
+  background: var(--av-lime);
+  color: var(--av-night);
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+html body .pcv2-ovr[data-tone="cyan"] { background: var(--av-cyan); }
+html body .pcv2-ovr[data-tone="muted"], html body .pcv2-ovr[data-tone="low"] { background: var(--av-panel-hi); color: var(--av-ink); }
+html body .pcv2-ovr small { font: italic 800 10px/1 var(--av-display); letter-spacing: .1em; }
+html body .pcv2-ovr strong { font: italic 900 34px/1 var(--av-display); }
+html body .pcv2-id {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+html body .pcv2-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+html body .pcv2-chip {
+  padding: 3px 11px;
+  background: var(--av-panel-hi);
+  color: var(--av-ink);
+  font: italic 800 11px/1.3 var(--av-display);
+  letter-spacing: .04em;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  white-space: nowrap;
+}
+html body .pcv2-chip.is-pos { background: var(--av-cyan); color: var(--av-night); }
+html body .pcv2-chip.is-bad { background: var(--av-red); color: #fff; }
+html body .pcv2-cond {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+html body .pcv2-cond small { color: var(--av-muted); font: italic 800 10px var(--av-display); letter-spacing: .1em; }
+html body .pcv2-cond i, html body .pcv2-attr i {
+  display: block;
+  height: 8px;
+  background: var(--av-rail);
+  transform: skewX(-18deg);
+  overflow: hidden;
+}
+html body .pcv2-cond b, html body .pcv2-attr b { display: block; height: 100%; background: var(--av-green); }
+html body .pcv2-cond[data-level="warn"] b { background: var(--av-orange); }
+html body .pcv2-cond[data-level="low"] b { background: var(--av-red); }
+html body .pcv2-cond strong { font: italic 900 14px var(--av-display); }
+html body .pcv2-pot {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  background: var(--av-rail);
+}
+html body .pcv2-pot small { color: var(--av-muted); font: italic 800 10px var(--av-display); letter-spacing: .1em; }
+html body .pcv2-pot strong { font: italic 900 22px/1 var(--av-display); color: var(--av-ink); }
+html body .pcv2-pot em { font: italic 800 11px var(--av-display); color: var(--av-lime); }
+html body .pcv2-sec { display: flex; flex-direction: column; gap: 8px; }
+html body .pcv2-h {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--av-cyan);
+  font: italic 800 11px/1 var(--av-display);
+  letter-spacing: .12em;
+}
+html body .pcv2-h::after { content: ''; flex: 1; height: 1px; background: var(--av-line); }
+html body .pcv2-attrs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 18px;
+}
+html body .pcv2-attr {
+  display: grid;
+  grid-template-columns: 92px 1fr 26px;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+html body .pcv2-attr span { color: var(--av-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body .pcv2-attr.is-top span { color: var(--av-ink); }
+html body .pcv2-attr strong { text-align: right; font: italic 900 14px var(--av-display); }
+html body .pcv2-attr[data-tone="lime"] b { background: var(--av-lime); }
+html body .pcv2-attr[data-tone="cyan"] b { background: var(--av-cyan); }
+html body .pcv2-attr[data-tone="muted"] b { background: #6d84a3; }
+html body .pcv2-attr[data-tone="low"] b { background: var(--av-orange); }
+html body .pcv2 .mv2-tile strong.is-lime { color: var(--av-lime); }
+html body .pcv2-empty { margin: 0; color: var(--av-muted); font-size: 13px; }
+html body .pcv2-foot { align-items: center; }
+html body .pcv2-foot-hint { flex: 1 1 auto; margin: 0; color: var(--av-muted); font-size: 12px; }
+html body .pcv2-foot-hint[hidden] { display: none; }
+html body .pcv2 .mv2-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+html.is-mobile body #playerCardModal {
+  align-items: flex-end !important;
+  padding: 0 !important;
+}
+html.is-mobile body #playerCardModal .player-card-modal-shell.pcv2 {
+  width: 100%;
+  max-height: 94dvh;
+  animation: mv2-sheet-in .22s ease-out;
+}
+html.is-mobile body .pcv2-grid {
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 14px 16px;
+}
+html.is-mobile body .pcv2 .player-card-modal-mount .md-card { --md-w: 190px !important; }
+html.is-mobile body .pcv2-attrs { grid-template-columns: 1fr; }
+html.is-mobile body .pcv2-foot { flex-direction: row; flex-wrap: wrap; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+html.is-mobile body .pcv2-foot .mv2-btn { flex: 1 1 40%; width: auto; }
+html.is-mobile body .pcv2-foot-hint { flex-basis: 100%; }
+
+/* Botões e casca mv2 vencem as regras genéricas de botão. */
+html body .mv2-shell {
+  box-shadow: inset 0 3px var(--mv2-accent), 0 24px 60px #000b !important;
+  background: linear-gradient(225deg, transparent 16px, var(--av-panel) 16px) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+html body .mv2-shell .mv2-btn {
+  min-height: 40px;
+  padding: 11px 22px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  font: italic 900 13px/1 var(--av-display) !important;
+  letter-spacing: .05em !important;
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%) !important;
+  transform: none !important;
+  filter: none !important;
+}
+html body .mv2-shell .mv2-btn.is-primary {
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important;
+  color: var(--av-night) !important;
+  box-shadow: none !important;
+}
+html body .mv2-shell .mv2-btn.is-ghost {
+  background: transparent !important;
+  color: var(--av-ink) !important;
+  box-shadow: inset 0 0 0 1px var(--av-line) !important;
+}
+html body .mv2-shell .mv2-btn.is-ghost:hover { background: var(--av-panel-hi) !important; }
+html body .mv2-shell .mv2-close {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-muted) !important;
+  font: 700 18px/1 var(--av-body) !important;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+html.is-mobile body .modal .modal-card.manager-sack-modal .manager-sack-section > header {
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+}
+html.is-mobile body .modal .modal-card.manager-sack-modal .manager-sack-section > header > small {
+  flex: none !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  text-align: left !important;
+}
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card h2 {
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: none !important;
+}
+html.is-mobile body :is(#teamScoutModal, #liveOpponentModal) .modal-card h2 { padding-right: 0 !important; font-size: 21px !important; }

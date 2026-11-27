@@ -9,7 +9,6 @@ import { wageMonthlyFromRound } from '../../engine/player-contracts.js';
 import { BRAZIL_NATION, FOREIGN_NATIONS } from '../../engine/player-nationality.js';
 import { getTransferWindowBounds } from '../../engine/transfers.js';
 import { positionLine } from '../shared/player-cells.js';
-import mercadoDaBolaUrl from '../../../brand/transfer-history/mercado-da-bola.webp?url';
 import {
   formatSellerRejectLetter,
   formatLoanLevelPlayerReply,
@@ -1362,15 +1361,26 @@ export function createTransfersFeature(deps) {
     if (!modal) {
       document.body.insertAdjacentHTML('beforeend', `
         <div id="transferWindowOpenAlert" class="transfer-window-open-alert" role="dialog" aria-modal="true" aria-labelledby="transferWindowOpenAlertTitle" hidden>
-          <article class="transfer-window-open-card">
-            <img src="${mercadoDaBolaUrl}" alt="Mercado da Bola">
-            <div class="transfer-window-open-copy">
-              <h2 id="transferWindowOpenAlertTitle">MERCADO ABERTO</h2>
-              <p><span>ABERTURA</span><strong id="transferWindowOpenStart">&mdash;</strong></p>
-              <i aria-hidden="true"></i>
-              <p><span>FECHAMENTO</span><strong id="transferWindowOpenEnd">&mdash;</strong></p>
+          <article class="transfer-window-open-card mv2-shell" data-tone="lime">
+            <header class="mv2-head">
+              <div>
+                <span class="mv2-kicker" id="transferWindowOpenKicker">JANELA DE TRANSFERÊNCIAS</span>
+                <h2 id="transferWindowOpenAlertTitle" class="mv2-title">Mercado aberto</h2>
+              </div>
+              <button type="button" class="mv2-close transfer-window-open-ok" aria-label="Fechar">×</button>
+            </header>
+            <div class="mv2-body">
+              <div class="mv2-tiles">
+                <div class="mv2-tile"><small>ABERTURA</small><strong id="transferWindowOpenStart">&mdash;</strong></div>
+                <div class="mv2-tile"><small>FECHAMENTO</small><strong id="transferWindowOpenEnd">&mdash;</strong></div>
+                <div class="mv2-tile"><small>SEU CAIXA</small><strong id="transferWindowOpenBalance" class="is-money">&mdash;</strong></div>
+              </div>
+              <p class="mv2-note" id="transferWindowOpenNote"></p>
             </div>
-            <button type="button" class="transfer-window-open-ok">CONTINUAR</button>
+            <footer class="mv2-foot">
+              <button type="button" class="mv2-btn is-ghost transfer-window-open-ok">CONTINUAR</button>
+              <button type="button" class="mv2-btn is-primary transfer-window-open-ok" data-window-go-market>IR AO MERCADO</button>
+            </footer>
           </article>
         </div>`);
       modal = $('#transferWindowOpenAlert');
@@ -1378,7 +1388,12 @@ export function createTransfersFeature(deps) {
     if (!windowAlertBound && modal) {
       windowAlertBound = true;
       modal.addEventListener('click', event => {
-        if (event.target.closest('.transfer-window-open-ok')) closeWindowOpenAlert();
+        if (modal.hidden) return;
+        if (event.target === modal) { closeWindowOpenAlert(); return; }
+        const ok = event.target.closest('.transfer-window-open-ok');
+        if (!ok) return;
+        closeWindowOpenAlert();
+        if (ok.hasAttribute('data-window-go-market')) deps.openView?.('transfers');
       });
     }
     return modal;
@@ -1418,6 +1433,33 @@ export function createTransfersFeature(deps) {
     const end = $('#transferWindowOpenEnd');
     if (start) start.textContent = formatDate(bounds.start);
     if (end) end.textContent = formatDate(bounds.end);
+    const isOpen = !!phase?.active;
+    const title = $('#transferWindowOpenAlertTitle');
+    const kicker = $('#transferWindowOpenKicker');
+    if (title) title.textContent = isOpen ? (phase?.isDeadlineDay ? 'Último dia do mercado' : 'Mercado aberto') : 'Mercado fechado';
+    if (kicker) kicker.textContent = isOpen ? 'JANELA DE TRANSFERÊNCIAS' : 'PRÓXIMA JANELA';
+    const balanceEl = $('#transferWindowOpenBalance');
+    if (balanceEl) {
+      try { balanceEl.textContent = formatBudget(getBalance()); } catch { balanceEl.textContent = '—'; }
+    }
+    const note = $('#transferWindowOpenNote');
+    if (note) {
+      const endDate = new Date(season, bounds.end.month - 1, bounds.end.day, 12);
+      const days = Math.round((endDate - careerDate) / 86400000);
+      const pending = api?.listPendingOffers?.({ status: 'pending' })?.length || 0;
+      const parts = [];
+      if (isOpen && days >= 0) {
+        const weeks = Math.ceil(days / 7);
+        parts.push(days <= 1 ? '<strong>Último dia</strong> para negociar.' : `Fecha em <strong>${weeks} ${weeks === 1 ? 'semana' : 'semanas'}</strong>.`);
+      } else if (!isOpen) {
+        parts.push('Compras e vendas só durante a janela; propostas recebidas continuam chegando.');
+      }
+      if (pending) parts.push(`<strong>${pending} ${pending === 1 ? 'proposta' : 'propostas'}</strong> esperando resposta.`);
+      note.innerHTML = parts.join(' ');
+      note.hidden = !parts.length;
+    }
+    const goBtn = modal.querySelector('[data-window-go-market]');
+    if (goBtn) goBtn.hidden = deps.currentView?.() === 'transfers';
     modal.hidden = false;
     document.body.classList.add('transfer-window-alert-open');
     // Consultar a próxima janela ao entrar no Mercado não pode consumir
