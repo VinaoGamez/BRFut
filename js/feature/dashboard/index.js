@@ -22,7 +22,8 @@ import {
   tierMeta,
 } from '../economy/stadium-visual.js';
 
-const DASHBOARD_TABLE_ROWS = 5;
+// PC: tabela completa (o cartão estica até o fim da coluna); celular mostra 5 via CSS.
+const DASHBOARD_TABLE_ROWS = 24;
 const CLUB_UPCOMING_ROWS = 5;
 
 /**

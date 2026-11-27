@@ -3945,3 +3945,40 @@ html body #table .champ-v2-rank button {
 html.is-mobile body #table.view.active { grid-template-columns: minmax(0, 1fr); }
 html.is-mobile body #table .champ-v2-side { margin-top: 12px; }
 html body #table .champ-v2-round-nav { padding: 0 0 6px !important; background: none !important; border: 0 !important; box-shadow: none !important; min-height: 0 !important; }
+
+/* =====================================================================
+ * Regra de alinhamento (docs/06-INTERFACE.md): colunas lado a lado
+ * terminam na mesma linha; o cartão de baixo da coluna menor estica.
+ * Só no PC; no celular as colunas viram uma pilha.
+ * ===================================================================== */
+html:not(.is-mobile) body .view#dashboard > .grid { align-items: stretch !important; }
+html:not(.is-mobile) body .view#dashboard .hub-col > :last-child { flex: 1 1 auto; }
+
+html:not(.is-mobile) body #tactics .tactics.tac-v2 { align-items: stretch !important; }
+html:not(.is-mobile) body #tactics .tac-v2 > .tac-left,
+html:not(.is-mobile) body #tactics .tac-v2 > .tac-right {
+  height: 0 !important;
+  min-height: 100% !important;
+  box-sizing: border-box;
+}
+html:not(.is-mobile) body #tactics .tac-v2 > .tac-left { overflow-y: auto !important; scrollbar-width: thin; }
+html:not(.is-mobile) body #tactics .tac-v2 > .tac-right { overflow: hidden !important; }
+html:not(.is-mobile) body #tactics .tac-v2 > .tac-right > :last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+}
+
+html:not(.is-mobile) body .training-view .training-layout { align-items: stretch !important; }
+html:not(.is-mobile) body .training-view .training-main,
+html:not(.is-mobile) body .training-view .training-sidebar { display: flex !important; flex-direction: column; }
+html:not(.is-mobile) body .training-view .training-main > :last-child,
+html:not(.is-mobile) body .training-view .training-sidebar > :last-child { flex: 1 1 auto; }
+
+html:not(.is-mobile) body #calendar .season-calendar-layout { align-items: stretch !important; }
+html:not(.is-mobile) body #calendar .season-calendar-layout > .calendar-sidebar > #cal2Day { flex: 1 1 auto; }
+html:not(.is-mobile) body #calendar #cal2Day > :last-child { flex: 1 1 auto; }
+html:not(.is-mobile) body .view#dashboard .hub-standings { display: flex !important; flex-direction: column; min-height: 0; }
+html:not(.is-mobile) body .view#dashboard .hub-standings #miniTable { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+html.is-mobile body .view#dashboard .hub-standings .standing-row:nth-child(n+6) { display: none !important; }
