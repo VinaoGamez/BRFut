@@ -203,6 +203,42 @@ export function createMatchLiveSessionFeature(deps) {
     }
   };
 
+  const escHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+  /** Pós-jogo v2 (canvas Arcade Noturno): resultado, craque e números do jogo. */
+  const renderPostMatchHero = () => {
+    const card = $('#matchModal .modal-card');
+    const score = card?.querySelector('.score.live-score');
+    if (!card || !score) return;
+    let hero = card.querySelector('#postMatchHero');
+    const summary = typeof deps.getPostMatchSummary === 'function' ? deps.getPostMatchSummary() : null;
+    if (!summary) {
+      hero?.remove();
+      card.classList.remove('has-post-match');
+      return;
+    }
+    if (!hero) {
+      hero = document.createElement('section');
+      hero.id = 'postMatchHero';
+      hero.className = 'post-match-hero';
+      hero.setAttribute('aria-label', 'Resumo do jogo');
+      score.after(hero);
+    }
+    card.classList.add('has-post-match');
+    const label = summary.result === 'V' ? 'VITÓRIA!' : summary.result === 'D' ? 'DERROTA' : 'EMPATE';
+    const tone = summary.result === 'V' ? 'win' : summary.result === 'D' ? 'loss' : 'draw';
+    card.dataset.postResult = tone;
+    const star = summary.star;
+    const starLine = star ? [star.goals ? `${star.goals} gol${star.goals > 1 ? 's' : ''}` : '', star.assists ? `${star.assists} assist.` : ''].filter(Boolean).join(' · ') : '';
+    const tiles = [
+      { label: 'Nota média do time', value: summary.teamAverage ? summary.teamAverage.toFixed(1).replace('.', ',') : '—' },
+      summary.userIsHome && summary.renda ? { label: 'Bilheteria', value: summary.renda.replace(/^R\$\s*/, 'R$ '), money: true } : null,
+      summary.userIsHome && summary.crowd ? { label: 'Público', value: summary.crowd } : null,
+      summary.shootout ? { label: 'Pênaltis', value: summary.shootout } : null,
+    ].filter(Boolean);
+    hero.innerHTML = `<span class="post-match-result is-${tone}">${label}</span>${star ? `<div class="post-match-star"><i aria-hidden="true">${escHtml(star.pos || '')}</i><span><small>CRAQUE DO JOGO</small><strong>${escHtml(star.name)}</strong>${starLine ? `<em>${escHtml(starLine)}</em>` : ''}</span><b>${Number(star.rating || 0).toFixed(1).replace('.', ',')}</b></div>` : ''}<div class="post-match-tiles">${tiles.map(tile => `<div class="post-match-tile${tile.money ? ' is-money' : ''}"><small>${escHtml(tile.label)}</small><strong>${escHtml(tile.value)}</strong></div>`).join('')}</div>`;
+  };
+
   const showFinalActions = ({ reopen = false, openRatings = !reopen } = {}) => {
     const liveMatchGame = getLiveMatchGame();
     if (!reopen && liveMatchGame) {
@@ -213,7 +249,8 @@ export function createMatchLiveSessionFeature(deps) {
     const actions = $('#matchActions');
     actions.classList.remove('hidden');
     actions.innerHTML =
-      '<button type="button" id="finalRatings">NOTAS</button><button type="button" id="finalDashboard">CLASSIFICAÇÃO</button><button type="button" id="finalTable">TABELA DE JOGOS</button><button type="button" id="finalNext">AVANÇAR</button>';
+      '<button type="button" id="finalRatings">NOTAS</button><button type="button" id="finalDashboard">CLASSIFICAÇÃO</button><button type="button" id="finalTable">TABELA DE JOGOS</button><button type="button" id="finalNext">CONTINUAR</button>';
+    renderPostMatchHero();
     // Bind direto nos botões novos (evita listener órfão se o nó foi recriado).
     actions.querySelector('#finalRatings')?.addEventListener('click', () => {
       if (typeof openLiveMatchRatings === 'function') openLiveMatchRatings();
@@ -236,6 +273,10 @@ export function createMatchLiveSessionFeature(deps) {
 
   const exitLiveMatch = () => {
     if (!getMatchFinished() || getRoundCommitted()) return;
+    $('#postMatchHero')?.remove();
+    const modalCard = $('#matchModal .modal-card');
+    modalCard?.classList.remove('has-post-match');
+    if (modalCard) delete modalCard.dataset.postResult;
     stopMatchClock();
     $('#shootoutPanel')?.classList.add('hidden');
     $('#penaltyDuelModal')?.classList.add('hidden');

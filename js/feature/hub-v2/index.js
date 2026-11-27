@@ -94,19 +94,47 @@ export function createHubV2() {
   };
 
   /** Horário grande no centro do cartão do próximo jogo. */
-  const setKickoff = ({ date = '', time = '' } = {}) => {
+  const setKickoff = ({ date = '', time = '', odds = null } = {}) => {
     const block = document.querySelector('#dashboard .match .match-vs-block');
     if (!block) return;
     let box = block.querySelector('.hub-kickoff');
     if (!box) {
       box = document.createElement('div');
       box.className = 'hub-kickoff';
-      box.innerHTML = '<small class="hub-kickoff-date"></small><strong class="hub-kickoff-time"></strong><i class="hub-kickoff-stripe" aria-hidden="true"></i>';
+      box.innerHTML = '<small class="hub-kickoff-date"></small><strong class="hub-kickoff-time"></strong><i class="hub-kickoff-stripe" aria-hidden="true"></i><div class="hub-odds" hidden><div class="hub-odds-bar" aria-hidden="true"><i class="is-win"></i><i class="is-draw"></i><i class="is-loss"></i></div><div class="hub-odds-labels"><span class="is-win"></span><span class="is-draw"></span><span class="is-loss"></span></div></div>';
       block.querySelector('.match-vs-label')?.after(box);
     }
     box.querySelector('.hub-kickoff-date').textContent = date;
     box.querySelector('.hub-kickoff-time').textContent = time;
     block.classList.toggle('has-kickoff', !!time);
+    const oddsBox = box.querySelector('.hub-odds');
+    if (oddsBox) {
+      oddsBox.hidden = !odds;
+      if (odds) {
+        const parts = [['win', 'V', odds.win], ['draw', 'E', odds.draw], ['loss', 'D', odds.loss]];
+        parts.forEach(([key, letter, value]) => {
+          const bar = oddsBox.querySelector(`.hub-odds-bar .is-${key}`);
+          const label = oddsBox.querySelector(`.hub-odds-labels .is-${key}`);
+          if (bar) bar.style.width = `${value}%`;
+          if (label) label.textContent = `${letter} ${value}%`;
+        });
+        oddsBox.title = 'Chance estimada pela força dos titulares e pelo mando de campo';
+      }
+    }
+  };
+
+  /**
+   * Chance estimada de vitória/empate/derrota: média de OVR dos titulares de
+   * cada lado + mando de campo. Só orientação visual; não afeta o motor.
+   */
+  const estimateOdds = ({ mine = 0, theirs = 0, home = true } = {}) => {
+    if (!mine || !theirs) return null;
+    const edge = (mine - theirs) + (home ? 2.5 : -2.5);
+    const draw = Math.max(0.16, Math.min(0.3, 0.3 - Math.abs(edge) * 0.008));
+    const winShare = Math.max(0.08, Math.min(0.92, 1 / (1 + Math.exp(-edge / 8))));
+    const win = Math.round((1 - draw) * winShare * 100);
+    const drawPct = Math.round(draw * 100);
+    return { win, draw: drawPct, loss: Math.max(0, 100 - win - drawPct) };
   };
 
   const bind = () => {
@@ -117,5 +145,5 @@ export function createHubV2() {
     });
   };
 
-  return { bind, arrange, setKickoff, renderAttention, renderTiles };
+  return { bind, arrange, setKickoff, estimateOdds, renderAttention, renderTiles };
 }

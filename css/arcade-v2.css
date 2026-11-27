@@ -2202,3 +2202,252 @@ html body #tactics .tac-style strong {
   font-size: 13px;
   line-height: 1.1;
 }
+
+/* Central: chance estimada de vitória, empate e derrota. */
+html body .view#dashboard .hub-odds {
+  width: 220px;
+  margin-top: 10px;
+}
+
+html body .view#dashboard .hub-odds[hidden] {
+  display: none !important;
+}
+
+html body .view#dashboard .hub-odds-bar {
+  display: flex;
+  gap: 3px;
+  height: 6px;
+}
+
+html body .view#dashboard .hub-kickoff .hub-odds-bar > i {
+  display: block !important;
+  height: 100% !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  opacity: 1 !important;
+  transform: skewX(-18deg);
+}
+html body .view#dashboard .hub-kickoff .hub-odds-bar > i.is-win { background: var(--av-green) !important; }
+html body .view#dashboard .hub-kickoff .hub-odds-bar > i.is-draw { background: #4a5a78 !important; }
+html body .view#dashboard .hub-kickoff .hub-odds-bar > i.is-loss { background: var(--av-red) !important; }
+html body .view#dashboard .hub-odds-labels span.is-win { color: var(--av-green); }
+html body .view#dashboard .hub-odds-labels span.is-loss { color: var(--av-red); }
+
+html body .view#dashboard .hub-odds-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--av-muted);
+}
+
+html.is-mobile body .view#dashboard .hub-odds {
+  width: 150px;
+}
+
+/* Logo no topo: só no celular (no PC ela fica no menu lateral). */
+html body .app-header-logo {
+  display: none !important;
+}
+
+html.is-mobile body .app-header-logo {
+  display: block !important;
+  flex: 0 0 auto;
+  height: 24px;
+  width: auto;
+  margin-right: auto;
+}
+
+html.is-mobile body main > header.app-header {
+  flex-wrap: nowrap !important;
+  gap: 10px;
+}
+
+html.is-mobile body main > header.app-header .header-actions {
+  flex: 0 1 auto !important;
+  width: auto !important;
+  min-width: 0;
+  gap: 6px !important;
+}
+
+html.is-mobile body .header-actions .header-icon-btn.header-icon-btn {
+  flex: 0 0 38px !important;
+  width: 38px !important;
+  height: 38px !important;
+}
+
+/* =====================================================================
+ * Pós-jogo v2 (canvas Arcade Noturno · pós-jogo)
+ * ===================================================================== */
+html body #matchModal .post-match-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 6px auto 14px;
+  max-width: 640px;
+}
+
+html body #matchModal .post-match-result {
+  padding: 6px 24px;
+  font-family: var(--av-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 26px;
+  letter-spacing: 1px;
+  color: #fff;
+  background: var(--av-green);
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  transform: rotate(-2deg);
+  filter: drop-shadow(0 4px 0 var(--av-outline));
+}
+
+html body #matchModal .post-match-result.is-draw { background: #4a5a78; }
+html body #matchModal .post-match-result.is-loss { background: var(--av-red); }
+
+html body #matchModal .post-match-star {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  background: linear-gradient(225deg, transparent 12px, var(--av-panel-hi) 12px);
+  box-shadow: inset 3px 0 0 var(--av-gold);
+}
+
+html body #matchModal .post-match-star > i {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: italic;
+  font-family: var(--av-display);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--av-night);
+  background: var(--av-gold);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+
+html body #matchModal .post-match-star > span {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+html body #matchModal .post-match-star small {
+  font-family: var(--av-display);
+  font-style: italic;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--av-gold);
+  letter-spacing: .5px;
+}
+
+html body #matchModal .post-match-star strong {
+  font-family: var(--av-display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--av-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html body #matchModal .post-match-star em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--av-muted);
+}
+
+html body #matchModal .post-match-star > b {
+  font-family: var(--av-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 30px;
+  color: var(--av-gold);
+}
+
+html body #matchModal .post-match-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+html body #matchModal .post-match-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  background: linear-gradient(225deg, transparent 10px, var(--av-panel) 10px);
+}
+
+html body #matchModal .post-match-tile small {
+  font-size: 12px;
+  color: var(--av-muted);
+}
+
+html body #matchModal .post-match-tile strong {
+  font-family: var(--av-display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--av-ink);
+}
+
+html body #matchModal .post-match-tile.is-money strong {
+  color: var(--av-gold);
+}
+
+/* Botões finais: CONTINUAR é a ação principal. */
+html body #matchModal #matchActions #finalNext {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 4px), var(--av-lime-edge) calc(100% - 4px)) !important;
+  color: var(--av-night) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 900 !important;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  padding-left: 26px !important;
+  padding-right: 26px !important;
+}
+
+html body #matchModal #matchActions #finalRatings,
+html body #matchModal #matchActions #finalDashboard,
+html body #matchModal #matchActions #finalTable {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+
+html.is-mobile body #matchModal .post-match-result { font-size: 22px; }
+html.is-mobile body #matchModal .post-match-star strong { font-size: 17px; }
+html.is-mobile body #matchModal .post-match-star > b { font-size: 24px; }
+
+/* Pós-jogo no celular: 3 números numa linha só e sem o CONTINUAR flutuante
+   do cabeçalho competindo com o CONTINUAR do próprio pós-jogo. */
+html.is-mobile body #matchModal .post-match-tiles {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+html.is-mobile body #matchModal .post-match-tiles:has(> :nth-child(4)) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+html.is-mobile body:has(#matchModal:not(.hidden)) #headerContinue {
+  display: none !important;
+}
+html.is-mobile body #matchModal .post-match-tile { padding: 8px 8px; }
+html.is-mobile body #matchModal .post-match-tile strong { font-size: 16px; white-space: nowrap; }

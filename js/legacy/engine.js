@@ -1,7 +1,7 @@
 import { bindRosterDensity } from '../ui/roster-density.js';
 import { createSectionsNav } from '../ui/sections-nav.js';
 import { createHubV2 } from '../feature/hub-v2/index.js';
-import { createTacticsV2 } from '../feature/tactics-v2/index.js';
+import { createTacticsV2, probableXI } from '../feature/tactics-v2/index.js';
 import { isConmebolNation } from '../engine/national-teams.js';
 import { QUALIFIERS_COMPETITION, QUALIFIER_HOME_VENUES } from '../engine/conmebol-qualifiers.js';
 import { CONMEBOL_DISCIPLINE_KEYS } from '../engine/conmebol-format.js';
@@ -4702,7 +4702,19 @@ export async function bootEngine({
       const nextLine=($('#nextMatchMeta .match-meta-next')?.textContent||'').trim();
       const timeMatch=nextLine.match(/(\d{1,2}:\d{2})/);
       const dateMatch=nextLine.match(/(\d{1,2}\s+[A-ZÇ]{3}(?:\s+\d{4})?)/i);
-      hubV2.setKickoff({time:timeMatch?timeMatch[1]:'',date:dateMatch?dateMatch[1].toUpperCase():''});
+      let odds=null;
+      try{
+        const oppName=resolveOpponentClubName();
+        const opp=matchClub();
+        if(oppName&&opp&&opp!==user&&nextUserGame){
+          const myXI=(user.roster||[]).slice(0,11).filter(Boolean);
+          const oppRoles=formationRoles[opp.formation]||formationRoles['4-4-2']||[];
+          const oppXI=probableXI(opp.roster||[],oppRoles).filter(Boolean);
+          const mean=list=>list.length?list.reduce((t,p)=>t+(Number(p.overall)||0),0)/list.length:0;
+          odds=hubV2.estimateOdds({mine:mean(myXI),theirs:mean(oppXI),home:nextUserGame.home===userClub});
+        }
+      }catch{odds=null;}
+      hubV2.setKickoff({time:timeMatch?timeMatch[1]:'',date:dateMatch?dateMatch[1].toUpperCase():'',odds});
       hubV2.renderTiles([
         {id:'standing',label:'CLASSIFICAÇÃO',value:posMatch?`${posMatch[1]}º`:(leaguePos?`${leaguePos}º`:'—'),color:'#11bbed',pct:standingPct(posMatch?posMatch[1]:leaguePos),note:posMatch?`${competitionName||'Competição'} · ${positionText.replace(/^\d+º\s*/,'')}`:`Série ${userDivision}`,run:open('table')},
         {id:'morale',label:'MORAL DO ELENCO',value:`${environment}%`,color:tone(environment),pct:environment,note:environment>75?'Vestiário em alta':environment>40?'Ambiente estável':'Vestiário pressionado',run:open('squad')},
@@ -6280,11 +6292,8 @@ export async function bootEngine({
   refreshUserFixtures();
   draw();
   renderTacticalConfrontation({context:'tactics'});
-  const openLiveMatchRatings=()=>{
-    if(!liveMatchGame){
-      console.warn('[NOTAS] Sem partida ao vivo ativa.');
-      return;
-    }
+  const liveMatchRatingSheets=()=>{
+    if(!liveMatchGame)return null;
     const {home:h,away:a}=calendarLiveSideStats();
     const {home:homeGoals,away:awayGoals}=calendarLiveScores();
     const sideGoals=calendarLiveSideGoals();
@@ -6326,6 +6335,14 @@ export async function bootEngine({
       return name===userNationalTeamName&&worldCupMatchSquad?{...nt,roster:worldCupMatchSquad}:nt;
     };
     const built=buildMatchPlayerSheets(enriched,{getClub:ratingClub});
+    return{built,homeGoals,awayGoals,sideGoals,data};
+  };
+  const openLiveMatchRatings=()=>{
+    if(!liveMatchGame){
+      console.warn('[NOTAS] Sem partida ao vivo ativa.');
+      return;
+    }
+    const {built,homeGoals,awayGoals,sideGoals,data}=liveMatchRatingSheets();
     const ratingPlayers=[...(built.home||[]),...(built.away||[])];
     openCalendarMatchReport({
       game:liveMatchGame,
@@ -6340,7 +6357,32 @@ export async function bootEngine({
       incidents:calendarLiveVolumeIncidents(),
     }, { showStatistics: false });
   };
+  /** Pós-jogo v2: resultado, craque do jogo e números do clube do usuário. */
+  const getPostMatchSummary=()=>{
+    try{
+      const sheets=liveMatchRatingSheets();
+      if(!sheets||!liveMatchGame)return null;
+      const {built,homeGoals,awayGoals}=sheets;
+      const userIsHome=liveMatchGame.home===userClub||(userNationalTeamName&&liveMatchGame.home===userNationalTeamName);
+      const side=userIsHome?'home':'away';
+      const mine=(built[side]||[]).filter(sheet=>sheet.minutes>0);
+      const forGoals=userIsHome?homeGoals:awayGoals;
+      const againstGoals=userIsHome?awayGoals:homeGoals;
+      const shoot=String(liveMatchGame.shootoutWinner||'');
+      const result=forGoals>againstGoals?'V':forGoals<againstGoals?'D':(shoot?(shoot===liveMatchGame[side]?'V':'D'):'E');
+      const star=[...mine].sort((a,b)=>(b.rating||0)-(a.rating||0)||(b.goals||0)-(a.goals||0))[0]||null;
+      const avg=mine.length?mine.reduce((total,sheet)=>total+(Number(sheet.rating)||0),0)/mine.length:0;
+      const venueText=($('#liveMatchVenue')?.textContent||'');
+      const renda=(venueText.match(/Renda\s+(R\$\s*[\d.,]+\s*(?:mil|mi)?)/i)||[])[1]||'';
+      const crowd=(venueText.match(/([\d.]+)\s*·\s*\d+%/)||[])[1]||'';
+      return{result,forGoals,againstGoals,userIsHome,star:star?{name:star.name,pos:star.pos,rating:star.rating,goals:star.goals||0,assists:star.assists||0}:null,teamAverage:avg,renda,crowd,shootout:shoot?liveMatchGame.shootoutPenalties||'':''};
+    }catch(error){
+      console.warn('[brfut] pós-jogo v2',error);
+      return null;
+    }
+  };
   const matchLiveSession=createMatchLiveSessionFeature({
+    getPostMatchSummary:()=>getPostMatchSummary(),
     $,
     onClick,
     getLiveInjuries:()=>liveInjuries,
