@@ -10,6 +10,7 @@ import {
   slotBundleKeys,
   SAVE_RESET_EPOCH,
 } from './constants.js';
+import { storage as brfutStorage } from './storage-backend.js';
 import { readJson, writeJson, getStoragePressure } from './save.js';
 import {
   flushCloudDeletesAsync,
@@ -154,7 +155,7 @@ function copyStorageKey(src, dest, { scheduleSlotSync = false, clearDestIfMissin
   if (value == null) {
     if (clearDestIfMissing) {
       try {
-        localStorage.removeItem(dest);
+        brfutStorage.removeItem(dest);
       } catch {
         return false;
       }
@@ -211,7 +212,7 @@ function queueBundleCloudSync(slotId) {
   const bundle = slotBundleKeys(slotId);
   Object.values(bundle).forEach(key => {
     try {
-      const raw = localStorage.getItem(key);
+      const raw = brfutStorage.getItem(key);
       if (raw) queueCloudSave(key, JSON.parse(raw));
     } catch {
       /* ignore corrupt */
@@ -325,8 +326,8 @@ function localKeysForSlot(slotId) {
   const prefix = `brfut-slot-${String(slotId || '').trim()}-`;
   const keys = new Set(Object.values(slotBundleKeys(slotId)));
   try {
-    for (let index = 0; index < localStorage.length; index += 1) {
-      const key = localStorage.key(index);
+    for (let index = 0; index < brfutStorage.length; index += 1) {
+      const key = brfutStorage.key(index);
       if (key?.startsWith(prefix)) keys.add(key);
     }
   } catch {
@@ -353,7 +354,7 @@ export async function deleteCareerSlot(slotId) {
 
   deleteKeys.forEach(key => {
     try {
-      localStorage.removeItem(key);
+      brfutStorage.removeItem(key);
     } catch {
       /* best effort */
     }

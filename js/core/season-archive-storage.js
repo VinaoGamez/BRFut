@@ -4,6 +4,7 @@
 import {
   ACTIVE_SLOT_SESSION_KEY,
 } from './constants.js';
+import { storage as brfutStorage } from './storage-backend.js';
 import { readJson, writeJson } from './save.js';
 import {
   buildSeasonArchive,
@@ -29,7 +30,7 @@ export function isSeasonArchiveKey(key) {
 
 function readActiveSlotId() {
   try {
-    return sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY) || localStorage.getItem(ACTIVE_SLOT_SESSION_KEY) || null;
+    return sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY) || brfutStorage.getItem(ACTIVE_SLOT_SESSION_KEY) || null;
   } catch {
     return null;
   }
@@ -38,8 +39,8 @@ function readActiveSlotId() {
 function listLocalArchiveKeys(slotId = null) {
   const keys = [];
   try {
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
       if (!isSeasonArchiveKey(key)) continue;
       if (slotId) {
         if (!key.includes(`brfut-slot-${slotId}-season-archive-`)) continue;
@@ -65,7 +66,7 @@ function pruneLocalArchives(slotId, keepYears) {
     const year = yearFromArchiveKey(key);
     if (year != null && !keep.has(year)) {
       try {
-        localStorage.removeItem(key);
+        brfutStorage.removeItem(key);
       } catch {
         /* ignore */
       }
@@ -77,7 +78,7 @@ function pruneLocalArchives(slotId, keepYears) {
       const year = yearFromArchiveKey(key);
       if (year != null && !keep.has(year)) {
         try {
-          localStorage.removeItem(key);
+          brfutStorage.removeItem(key);
         } catch {
           /* ignore */
         }
@@ -197,7 +198,7 @@ if (typeof window !== 'undefined') {
     [seasonArchiveStorageKey(year, slotId), seasonArchiveStorageKey(year, null)]
       .filter(Boolean)
       .forEach(key => {
-        try { localStorage.removeItem(key); } catch { /* ignore */ }
+        try { brfutStorage.removeItem(key); } catch { /* ignore */ }
       });
   });
   setTimeout(() => {

@@ -7,6 +7,7 @@ import {
   slotBundleKeys,
   isSlotBundleKey,
 } from './constants.js';
+import { storage as brfutStorage } from './storage-backend.js';
 import { allSaveKeyVariants, listLocalSyncableKeys } from './save-key-normalizer.js';
 import {
   clearSessionCareerData,
@@ -91,13 +92,13 @@ function collectClearKeys({ includeSlots = false, careerOnly = false } = {}) {
 function clearSlotBundlesLocal() {
   try {
     const toRemove = [];
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
       if (key && (isSlotBundleKey(key) || /^matchday-slot-/.test(key))) toRemove.push(key);
     }
-    toRemove.forEach(key => localStorage.removeItem(key));
-    localStorage.removeItem(CAREER_INDEX_KEY);
-    localStorage.removeItem('matchday-career-index');
+    toRemove.forEach(key => brfutStorage.removeItem(key));
+    brfutStorage.removeItem(CAREER_INDEX_KEY);
+    brfutStorage.removeItem('matchday-career-index');
   } catch {
     /* ignore */
   }

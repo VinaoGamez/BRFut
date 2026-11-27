@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from './storage-backend.js';
 import { ACTIVE_SLOT_SESSION_KEY, BRFUT_API_ORIGIN, CAREER_INDEX_KEY } from './constants.js';
 import { authSessionSignal, authenticatedFetchOptions } from './auth-session.js';
 
@@ -10,7 +11,7 @@ let flushing = false;
 function activeCareerId() {
   try {
     return sessionStorage.getItem(ACTIVE_SLOT_SESSION_KEY)
-      || JSON.parse(localStorage.getItem(CAREER_INDEX_KEY) || 'null')?.activeSlotId
+      || JSON.parse(brfutStorage.getItem(CAREER_INDEX_KEY) || 'null')?.activeSlotId
       || null;
   } catch {
     return null;
@@ -54,7 +55,7 @@ export async function queueSeasonHistorySync(archive, managerRanking = null) {
   if (!careerId || !season) return false;
   const checksum = String(archive?.checksum || 'legacy');
   try {
-    if (localStorage.getItem(`${SYNCED_PREFIX}:${careerId}:${season}`) === checksum) return true;
+    if (brfutStorage.getItem(`${SYNCED_PREFIX}:${careerId}:${season}`) === checksum) return true;
   } catch { /* continue with outbox */ }
   const seasonManagers = managerRanking && Array.isArray(managerRanking.managers)
     ? {
@@ -107,7 +108,7 @@ export async function flushCareerHistoryOutbox() {
         body: JSON.stringify({ archive: entry.archive, managerRanking: entry.managerRanking }),
       }));
       if (!response.ok) return { ok: false, reason: `http_${response.status}`, synced };
-      try { localStorage.setItem(`${SYNCED_PREFIX}:${entry.careerId}:${entry.season}`, entry.checksum || 'legacy'); } catch { /* ignore */ }
+      try { brfutStorage.setItem(`${SYNCED_PREFIX}:${entry.careerId}:${entry.season}`, entry.checksum || 'legacy'); } catch { /* ignore */ }
       const tx = db.transaction(STORE, 'readwrite');
       tx.objectStore(STORE).delete(entry.id);
       await transactionDone(tx);

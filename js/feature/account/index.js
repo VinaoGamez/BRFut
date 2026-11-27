@@ -14,6 +14,7 @@ import {
   updateAccountProfile,
   validateAuthenticatedSession,
 } from '../../core/storage-api.js';
+import { storage as brfutStorage } from '../../core/storage-backend.js';
 import { AUTH_REQUIRED, SAVE_KEYS, BRFUT_API_ORIGIN } from '../../core/constants.js';
 import { clearSessionCareerData } from '../../core/save.js';
 import { ensureAccountModals } from './inject-modals.js';
@@ -284,7 +285,7 @@ export function mountAccountPanel({
       return;
     }
     try {
-      const save = JSON.parse(localStorage.getItem(SAVE_KEYS.career) || '{}');
+      const save = JSON.parse(brfutStorage.getItem(SAVE_KEYS.career) || '{}');
       const club = save.clubName || 'seu clube';
       const division = save.division ? `Série ${save.division}` : 'carreira ativa';
       onCareerHint(`Carreira encontrada: ${club} · ${division}.`);

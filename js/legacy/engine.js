@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../core/storage-backend.js';
 import { $, $$, on, onClick, redirectGame, clamp, cleanCareerText } from '../ui/dom.js';
 import { clubLabelHtml, clubCrestTitleHtml } from '../ui/club-label.js';
 import { applyTeamCrestToElement, teamCrestHtml, clubCrestInitials as teamCrestInitials } from '../ui/team-crest.js';
@@ -445,7 +446,7 @@ export async function bootEngine({
     applyCareerPreferences(savedNewGame);
     if (!savedNewGame.preferences) {
       mergePreferencesIntoCareer(savedNewGame, {
-        pace: localStorage.getItem(SAVE_KEYS.pace) || 'standard',
+        pace: brfutStorage.getItem(SAVE_KEYS.pace) || 'standard',
       });
     }
   }
@@ -3400,7 +3401,7 @@ export async function bootEngine({
   const trainingOptions={before:['Preparação tática','Treino leve','Descanso'],after:['Recuperação','Descanso total','Análise do jogo'],free:['Treino equilibrado','Treino técnico','Descanso intermitente']};
   let trainingRules=normalizeTrainingRules({before:'Preparação tática',after:'Recuperação',free:'Treino equilibrado'});
   if(validSavedSeason&&savedSeason.trainingRules)trainingRules=normalizeTrainingRules({...trainingRules,...savedSeason.trainingRules});
-  else try{trainingRules=normalizeTrainingRules({...trainingRules,...JSON.parse(localStorage.getItem('brfut-training-rules')||'{}')});}catch{}
+  else try{trainingRules=normalizeTrainingRules({...trainingRules,...JSON.parse(brfutStorage.getItem('brfut-training-rules')||'{}')});}catch{}
   const fatigueEngine=createFatigueEngine({
     clamp,
     getClubs:()=>clubs,

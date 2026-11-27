@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from './storage-backend.js';
 import { SAVE_KEYS, LEGACY_SAVE_KEYS, SAVE_VERSION, CAREER_INDEX_KEY, ACTIVE_SLOT_SESSION_KEY, isSlotBundleKey, slotBundleKeys } from './constants.js';
 import { isCareerSaveKey, isCompatibleCareerPayload } from './save-compatibility.js';
 import { normalizeWorldCupHistory } from '../engine/world-cup-history.js';
@@ -43,7 +44,7 @@ export const MEMORY_LIMITS = {
 
 export function readJson(key, fallback = null) {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = brfutStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
   } catch {
     return fallback;
@@ -52,7 +53,7 @@ export function readJson(key, fallback = null) {
 
 /** Copia chaves legadas Matchday → BR Fut (local + sessionStorage). */
 export function migrateLegacyStorageKeys() {
-  migrateLegacyStorageKeysInPlace(localStorage);
+  migrateLegacyStorageKeysInPlace(brfutStorage);
   migrateLegacyStorageKeysInPlace(sessionStorage);
 }
 
@@ -63,10 +64,10 @@ export function estimateLocalStorageUsage() {
   let total = 0;
   const breakdown = {};
   try {
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
       if (!key) continue;
-      const value = localStorage.getItem(key) || '';
+      const value = brfutStorage.getItem(key) || '';
       const bytes = (key.length + value.length) * 2;
       breakdown[key] = bytes;
       total += bytes;
@@ -119,9 +120,9 @@ export function reclaimLocalStorageSpace({ aggressive = false, preserveKeys = []
   const removeKey = key => {
     if (!key || preserve.has(key)) return;
     try {
-      const value = localStorage.getItem(key);
+      const value = brfutStorage.getItem(key);
       if (value) freed += (key.length + value.length) * 2;
-      localStorage.removeItem(key);
+      brfutStorage.removeItem(key);
       invalidateStoragePressureCache();
     } catch {
       /* ignore */
@@ -141,8 +142,8 @@ export function reclaimLocalStorageSpace({ aggressive = false, preserveKeys = []
 
   try {
     const keysToDrop = [];
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
       if (!key || preserve.has(key)) continue;
       if (
         key.startsWith('brfut-card-lab')
@@ -196,7 +197,7 @@ export function writeJson(key, value, { scheduleSlotSync = true } = {}) {
   }
 
   const tryWrite = () => {
-    localStorage.setItem(key, raw);
+    brfutStorage.setItem(key, raw);
     invalidateStoragePressureCache();
     try {
       queueCloudSave(key, payload);
@@ -478,15 +479,15 @@ export function consumeFreshCareerBoot() {
 }
 
 export function clearSeasonSave({ cloudDeletes = true } = {}) {
-  localStorage.removeItem(SAVE_KEYS.season);
-  localStorage.removeItem(SAVE_KEYS.liveMatch);
+  brfutStorage.removeItem(SAVE_KEYS.season);
+  brfutStorage.removeItem(SAVE_KEYS.liveMatch);
   // Bundle do slot também — senão loadSeasonSave reidrata a temporada antiga após a virada.
   const slotId = readActiveSlotIdForLoad();
   if (slotId) {
     try {
       const bundle = slotBundleKeys(slotId);
-      localStorage.removeItem(bundle.season);
-      localStorage.removeItem(bundle.liveMatch);
+      brfutStorage.removeItem(bundle.season);
+      brfutStorage.removeItem(bundle.liveMatch);
       if (cloudDeletes && isCloudStorageActive()) {
         queueCloudDelete(bundle.season);
         queueCloudDelete(bundle.liveMatch);
@@ -528,11 +529,11 @@ const CAREER_RELOAD_KEY = 'brfut-career-reload';
 
 export function hasLocalCareerSave() {
   try {
-    if (localStorage.getItem(SAVE_KEYS.career)) return true;
-    if (localStorage.getItem(LEGACY_SAVE_KEYS.career)) return true;
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
-      if (key && isSlotBundleKey(key) && key.endsWith('-career') && localStorage.getItem(key)) {
+    if (brfutStorage.getItem(SAVE_KEYS.career)) return true;
+    if (brfutStorage.getItem(LEGACY_SAVE_KEYS.career)) return true;
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
+      if (key && isSlotBundleKey(key) && key.endsWith('-career') && brfutStorage.getItem(key)) {
         return true;
       }
     }
@@ -605,7 +606,7 @@ export function clearCareerStorage({
   cloudDeletes = true,
 } = {}) {
   try {
-    localStorage.removeItem(SAVE_KEYS.career);
+    brfutStorage.removeItem(SAVE_KEYS.career);
     if (cloudDeletes && isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.career);
   } catch {
     /* ignore */
@@ -613,7 +614,7 @@ export function clearCareerStorage({
   clearSeasonSave({ cloudDeletes });
   if (clearTraining) {
     try {
-      localStorage.removeItem(SAVE_KEYS.training);
+      brfutStorage.removeItem(SAVE_KEYS.training);
       if (cloudDeletes && isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.training);
     } catch {
       /* ignore */
@@ -621,7 +622,7 @@ export function clearCareerStorage({
   }
   if (clearPlayerHistory && SAVE_KEYS.playerHistory) {
     try {
-      localStorage.removeItem(SAVE_KEYS.playerHistory);
+      brfutStorage.removeItem(SAVE_KEYS.playerHistory);
       if (cloudDeletes && isCloudStorageActive()) queueCloudDelete(SAVE_KEYS.playerHistory);
     } catch {
       /* ignore */
@@ -632,14 +633,14 @@ export function clearCareerStorage({
 /** Limpa dados locais da sessão (carreira ativa) sem apagar histórico de jogadores. */
 export function clearSessionCareerData() {
   try {
-    localStorage.removeItem(SAVE_KEYS.career);
-    localStorage.removeItem(SAVE_KEYS.season);
-    localStorage.removeItem(SAVE_KEYS.liveMatch);
-    localStorage.removeItem(SAVE_KEYS.training);
-    localStorage.removeItem(SAVE_KEYS.pace);
-    localStorage.removeItem('brfut-autosave-mode');
-    localStorage.removeItem('matchday-autosave-mode');
-    Object.values(LEGACY_SAVE_KEYS).forEach(key => localStorage.removeItem(key));
+    brfutStorage.removeItem(SAVE_KEYS.career);
+    brfutStorage.removeItem(SAVE_KEYS.season);
+    brfutStorage.removeItem(SAVE_KEYS.liveMatch);
+    brfutStorage.removeItem(SAVE_KEYS.training);
+    brfutStorage.removeItem(SAVE_KEYS.pace);
+    brfutStorage.removeItem('brfut-autosave-mode');
+    brfutStorage.removeItem('matchday-autosave-mode');
+    Object.values(LEGACY_SAVE_KEYS).forEach(key => brfutStorage.removeItem(key));
   } catch {
     /* ignore */
   }
@@ -673,11 +674,11 @@ export function purgeAllCareerStorage({ preserveLastSeenBuild = false } = {}) {
   }
 
   try {
-    for (let i = localStorage.length - 1; i >= 0; i -= 1) {
-      const key = localStorage.key(i);
+    for (let i = brfutStorage.length - 1; i >= 0; i -= 1) {
+      const key = brfutStorage.key(i);
       if (!key) continue;
       if (keysToDrop.has(key) || isSlotBundleKey(key) || /^matchday-slot-/.test(key)) {
-        localStorage.removeItem(key);
+        brfutStorage.removeItem(key);
       }
     }
   } catch {
@@ -707,8 +708,8 @@ export function purgeAllCareerStorage({ preserveLastSeenBuild = false } = {}) {
 export function purgeObsoleteCareerStorage(minVersion = SAVE_VERSION.career) {
   let obsolete = false;
   try {
-    for (let index = 0; index < localStorage.length; index += 1) {
-      const key = localStorage.key(index);
+    for (let index = 0; index < brfutStorage.length; index += 1) {
+      const key = brfutStorage.key(index);
       if (!key || !isCareerSaveKey(key)) continue;
       if (!isCompatibleCareerPayload(readJson(key, null), minVersion)) {
         obsolete = true;
@@ -731,12 +732,12 @@ export function applySaveResetMigration(epoch, markerKey = 'brfut-save-reset-epo
   const expected = String(epoch || '').trim();
   if (!expected) return false;
   try {
-    if (localStorage.getItem(markerKey) === expected) return false;
+    if (brfutStorage.getItem(markerKey) === expected) return false;
   } catch {
     return false;
   }
   purgeAllCareerStorage();
-  try { localStorage.setItem(markerKey, expected); }
+  try { brfutStorage.setItem(markerKey, expected); }
   catch { /* ignore quota / privacy mode */ }
   return true;
 }

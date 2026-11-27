@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../../core/storage-backend.js';
 import { MODULE_VERSIONS, BUILD_VERSION, SAVE_KEYS } from '../../core/constants.js';
 
 const GITHUB_ISSUES_NEW =
@@ -66,7 +67,7 @@ const FEEDBACK_AREAS = [
 
 function careerSnapshot() {
   try {
-    const raw = localStorage.getItem(SAVE_KEYS.career);
+    const raw = brfutStorage.getItem(SAVE_KEYS.career);
     if (!raw) return { hasCareer: false };
     const save = JSON.parse(raw);
     return {

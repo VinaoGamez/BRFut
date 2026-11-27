@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from './storage-backend.js';
 import { SAVE_KEYS, SAVE_VERSION, CAREER_INDEX_KEY, SAVE_RESET_EPOCH, SAVE_RESET_MARKER_KEY, slotBundleKeys, isSlotBundleKey } from './constants.js';
 
 function read(storage, key) {
@@ -35,7 +36,7 @@ export function careerRecoveryIdentity(career) {
 }
 
 /** Non-destructive: original bundles stay on disk, including duplicate aliases. */
-export function recoverMislabeledCareerVersions(storage = localStorage) {
+export function recoverMislabeledCareerVersions(storage = brfutStorage) {
   const epoch = storage.getItem(SAVE_RESET_MARKER_KEY);
   const keys = Array.from({ length: storage.length }, (_, i) => storage.key(i));
   let upgraded = 0;
@@ -78,7 +79,7 @@ export function recoverMislabeledCareerVersions(storage = localStorage) {
 }
 
 /** Alias slots caused by the v7 bug may contain the original IndexedDB rows. */
-export function careerRecoveryAliases(slotId, storage = localStorage) {
+export function careerRecoveryAliases(slotId, storage = brfutStorage) {
   const career = read(storage, slotBundleKeys(slotId).career);
   const identity = careerRecoveryIdentity(career);
   const ids = new Set([slotId]);

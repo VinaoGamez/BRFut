@@ -6,11 +6,11 @@
       "source_path": "assets/brand/lockup-lg.png",
       "source_sha256": "0a95c8f47d9ac965a4c0bc4a3dfd68897f9573308c70d6654c4126fe40d22d46",
       "size": [
-        1470,
+        1159,
         220
       ],
-      "alpha_sha256": "c3a2af982ab52e1fdee2bb4dc28c4a32bd09d66ed09a716567146eb9b268216f",
-      "transparent_pixels": 203036,
+      "alpha_sha256": "8a71d57dc554b025e9abab16dc6ec8ddc9c687b13b8a46b2cc630cf0952ddecc",
+      "transparent_pixels": 139687,
       "partial_alpha_pixels": 30584
     },
     {
@@ -18,11 +18,11 @@
       "source_path": "assets/brand/lockup.png",
       "source_sha256": "40c6cdd4fc9721a77d8d1cab8230443c19b4506c8580efbea8eeb06a1eb558fa",
       "size": [
-        1069,
+        838,
         160
       ],
-      "alpha_sha256": "5eb11563c995eb185fececa59aa05fccf6f4ccbe4e36f53a1195619c6f71d3c0",
-      "transparent_pixels": 107642,
+      "alpha_sha256": "bcb6a8698da50ab7bde60cc6f3db8228e46455b0c8b3ccc8c876f20f0bac7daa",
+      "transparent_pixels": 72788,
       "partial_alpha_pixels": 15972
     },
     {
@@ -173,11 +173,11 @@
       "source_path": "public/brand/lockup-lg.png",
       "source_sha256": "0a95c8f47d9ac965a4c0bc4a3dfd68897f9573308c70d6654c4126fe40d22d46",
       "size": [
-        1470,
+        1159,
         220
       ],
-      "alpha_sha256": "c3a2af982ab52e1fdee2bb4dc28c4a32bd09d66ed09a716567146eb9b268216f",
-      "transparent_pixels": 203036,
+      "alpha_sha256": "8a71d57dc554b025e9abab16dc6ec8ddc9c687b13b8a46b2cc630cf0952ddecc",
+      "transparent_pixels": 139687,
       "partial_alpha_pixels": 30584
     },
     {
@@ -185,11 +185,11 @@
       "source_path": "public/brand/lockup.png",
       "source_sha256": "40c6cdd4fc9721a77d8d1cab8230443c19b4506c8580efbea8eeb06a1eb558fa",
       "size": [
-        1069,
+        838,
         160
       ],
-      "alpha_sha256": "5eb11563c995eb185fececa59aa05fccf6f4ccbe4e36f53a1195619c6f71d3c0",
-      "transparent_pixels": 107642,
+      "alpha_sha256": "bcb6a8698da50ab7bde60cc6f3db8228e46455b0c8b3ccc8c876f20f0bac7daa",
+      "transparent_pixels": 72788,
       "partial_alpha_pixels": 15972
     },
     {

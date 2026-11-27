@@ -16,6 +16,7 @@ import {
   slotBundleKeys,
   SAVE_VERSION,
 } from './constants.js';
+import { storage as brfutStorage } from './storage-backend.js';
 import { pickNewerSave, saveFreshness, maxStateLeagueRound, mergeSeasonSaves, mergeCareerSaves, isSaveProgressAhead, logicalSaveKey } from './save-sync.js';
 import { prepareCloudSavePayload, estimateCloudBodyChars, rawPayloadChars } from './cloud-save-payload.js';
 import {
@@ -102,7 +103,7 @@ function noteSyncFailure(error) {
 
 function readPendingSyncState() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(PENDING_SYNC_KEYS_STORAGE) || '[]');
+    const parsed = JSON.parse(brfutStorage.getItem(PENDING_SYNC_KEYS_STORAGE) || '[]');
     if (Array.isArray(parsed)) {
       return { owner: null, keys: new Set(parsed.filter(isSyncableSaveKey)) };
     }
@@ -123,9 +124,9 @@ function writePendingSyncState({ owner = null, keys }) {
   try {
     const values = [...keys].filter(isSyncableSaveKey);
     if (values.length) {
-      localStorage.setItem(PENDING_SYNC_KEYS_STORAGE, JSON.stringify({ owner, keys: values }));
+      brfutStorage.setItem(PENDING_SYNC_KEYS_STORAGE, JSON.stringify({ owner, keys: values }));
     }
-    else localStorage.removeItem(PENDING_SYNC_KEYS_STORAGE);
+    else brfutStorage.removeItem(PENDING_SYNC_KEYS_STORAGE);
   } catch {
     /* local save remains available for reconstruction */
   }
@@ -149,7 +150,7 @@ function markSyncComplete(key) {
 
 function readPendingDeleteState() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(PENDING_DELETE_KEYS_STORAGE) || '{}');
+    const parsed = JSON.parse(brfutStorage.getItem(PENDING_DELETE_KEYS_STORAGE) || '{}');
     return {
       owner: typeof parsed?.owner === 'string' ? parsed.owner : null,
       keys: new Set(Array.isArray(parsed?.keys) ? parsed.keys.filter(isSyncableSaveKey) : []),
@@ -163,9 +164,9 @@ function writePendingDeleteState({ owner = null, keys }) {
   try {
     const values = [...keys].filter(isSyncableSaveKey);
     if (values.length) {
-      localStorage.setItem(PENDING_DELETE_KEYS_STORAGE, JSON.stringify({ owner, keys: values }));
+      brfutStorage.setItem(PENDING_DELETE_KEYS_STORAGE, JSON.stringify({ owner, keys: values }));
     } else {
-      localStorage.removeItem(PENDING_DELETE_KEYS_STORAGE);
+      brfutStorage.removeItem(PENDING_DELETE_KEYS_STORAGE);
     }
   } catch {
     /* best effort */
@@ -276,7 +277,7 @@ export function getAuthToken() {
 
 export function isAuthRememberEnabled() {
   try {
-    return localStorage.getItem(AUTH_REMEMBER_KEY) === '1';
+    return brfutStorage.getItem(AUTH_REMEMBER_KEY) === '1';
   } catch {
     return false;
   }
@@ -561,8 +562,8 @@ function localHasAnyCareerPayload() {
   if (readLocalSave(SAVE_KEYS.career)) return true;
   if (readLocalSave(LEGACY_SAVE_KEYS?.career || 'matchday-new-game')) return true;
   try {
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
       if (key && isSlotBundleKey(key) && key.endsWith('-career') && readLocalSave(key)) return true;
     }
   } catch {
@@ -650,7 +651,7 @@ function mirrorFullSaveToActiveSlot(key, fullValue) {
           ? bundle.playerHistory
           : bundle.liveMatch;
   try {
-    localStorage.setItem(dest, JSON.stringify(fullValue));
+    brfutStorage.setItem(dest, JSON.stringify(fullValue));
     return { key: dest, value: fullValue };
   } catch {
     return null;
@@ -699,7 +700,7 @@ async function discardObsoleteCareerSet(remoteSaves = {}) {
 function resolveLocalValueForCloudUpload(key) {
   let value = null;
   try {
-    const raw = localStorage.getItem(key);
+    const raw = brfutStorage.getItem(key);
     if (raw) value = JSON.parse(raw);
   } catch {
     return null;
@@ -728,7 +729,7 @@ function resolveLocalValueForCloudUpload(key) {
           ? bundle.playerHistory
           : bundle.liveMatch;
   try {
-    const altRaw = localStorage.getItem(altKey);
+    const altRaw = brfutStorage.getItem(altKey);
     if (!altRaw) return value;
     const alt = JSON.parse(altRaw);
     if (alt && !isLocalStorageCheckpoint(alt)) return alt;
@@ -771,7 +772,7 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
       const localValue = readLocalSave(key);
       const winner = mergeSaveValues(localValue, remoteValue, key, remoteEnvelopeAt);
       try {
-        localStorage.setItem(key, JSON.stringify(winner));
+        brfutStorage.setItem(key, JSON.stringify(winner));
       } catch {
         /* ignore quota during hydrate */
       }
@@ -804,7 +805,7 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
             ? mergeCareerSaves(localValue, remoteValue, remoteEnvelopeAt)
             : remoteValue;
       try {
-        localStorage.setItem(key, JSON.stringify(winner));
+        brfutStorage.setItem(key, JSON.stringify(winner));
       } catch {
         /* ignore quota during hydrate */
       }
@@ -818,7 +819,7 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
         if (career && remoteValue?.seed != null && remoteValue.seed !== career.seed) return;
       }
       try {
-        localStorage.setItem(key, JSON.stringify(remoteValue));
+        brfutStorage.setItem(key, JSON.stringify(remoteValue));
       } catch {
         /* ignore quota during hydrate */
       }
@@ -832,7 +833,7 @@ function mergeRemoteSaves(saves, { skipCareerSeasonHydrate = false } = {}) {
           ? mergeCareerSaves(localValue, remoteValue, remoteEnvelopeAt)
           : pickNewerSave(localValue, remoteValue, key, remoteEnvelopeAt);
     try {
-      localStorage.setItem(key, JSON.stringify(winner));
+      brfutStorage.setItem(key, JSON.stringify(winner));
     } catch {
       /* ignore quota during hydrate */
     }
@@ -883,8 +884,8 @@ export function queueNewerLocalSavesToCloud() {
     /* ignore */
   }
   try {
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
       if (key && isSeasonArchiveKey(key)) keys.add(key);
     }
   } catch {
@@ -1154,23 +1155,23 @@ function localSavesSnapshot() {
   const out = {};
   SYNCABLE_KEYS.forEach(key => {
     try {
-      const raw = localStorage.getItem(key);
+      const raw = brfutStorage.getItem(key);
       if (raw != null) out[key] = JSON.parse(raw);
     } catch {
       /* ignore corrupt entry */
     }
   });
   try {
-    const indexRaw = localStorage.getItem(CAREER_INDEX_KEY);
+    const indexRaw = brfutStorage.getItem(CAREER_INDEX_KEY);
     if (indexRaw) out[CAREER_INDEX_KEY] = JSON.parse(indexRaw);
   } catch {
     /* ignore */
   }
   try {
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < brfutStorage.length; i += 1) {
+      const key = brfutStorage.key(i);
       if (!key || (!isSlotBundleKey(key) && !isSeasonArchiveKey(key))) continue;
-      const raw = localStorage.getItem(key);
+      const raw = brfutStorage.getItem(key);
       if (raw != null) out[key] = JSON.parse(raw);
     }
   } catch {
@@ -1690,7 +1691,7 @@ export async function mergeSlotBundleFromCloud(slotId) {
       const local = readLocalSave(key);
       const winner = local ? mergeSaveValues(local, remote, key) : remote;
       try {
-        localStorage.setItem(key, JSON.stringify(winner));
+        brfutStorage.setItem(key, JSON.stringify(winner));
       } catch {
         /* ignore quota */
       }

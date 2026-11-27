@@ -3,6 +3,7 @@
  * O estado completo permanece na API; o browser guarda apenas identidade e
  * progresso suficiente para localizar/hidratar a carreira na proxima abertura.
  */
+import { storage as brfutStorage } from './storage-backend.js';
 import { SAVE_KEYS, SAVE_VERSION } from './constants.js';
 import { invalidateStoragePressureCache } from './save.js';
 
@@ -102,7 +103,7 @@ export function buildLocalCheckpointForKey(key, fullValue) {
 export function writeLocalCheckpoint(key, checkpoint) {
   if (!key || checkpoint == null) return false;
   try {
-    localStorage.setItem(key, JSON.stringify(checkpoint));
+    brfutStorage.setItem(key, JSON.stringify(checkpoint));
     invalidateStoragePressureCache();
     return true;
   } catch {
@@ -119,8 +120,8 @@ export function applyLocalCheckpointTrim(key, fullValue) {
   const checkpoint = buildLocalCheckpointForKey(key, fullValue);
   if (checkpoint === undefined) return false;
   try {
-    if (checkpoint === null) localStorage.removeItem(key);
-    else localStorage.setItem(key, JSON.stringify(checkpoint));
+    if (checkpoint === null) brfutStorage.removeItem(key);
+    else brfutStorage.setItem(key, JSON.stringify(checkpoint));
     invalidateStoragePressureCache();
     return true;
   } catch {

@@ -42,7 +42,7 @@ const checkAsync = async (label, fn) => {
 };
 
 checkSync('index sem token redireciona para home.html', () => {
-  const src = readFileSync(join(ROOT, 'js/main.js'), 'utf8');
+  const src = readFileSync(join(ROOT, 'js/main-app.js'), 'utf8');
   assert(src.includes('redirectToHomeLanding'), 'função de redirect para home');
   assert(src.includes("new URL('home.html'"), 'destino home.html');
   assert(!src.includes('injectPreLoginWelcome'), 'sem overlay ENTRAR no index');
@@ -50,7 +50,7 @@ checkSync('index sem token redireciona para home.html', () => {
 });
 
 checkSync('home abre login em COMEÇAR CARREIRA', () => {
-  const src = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  const src = readFileSync(join(ROOT, 'js/home-app.js'), 'utf8');
   assert(src.includes("loginBtn?.addEventListener('click', () => account.openLogin())"), 'botão home abre login');
 });
 
@@ -79,7 +79,7 @@ checkSync('navegação interna preserva sessão (skip session end)', () => {
   const save = readFileSync(join(ROOT, 'js/core/save.js'), 'utf8');
   const dom = readFileSync(join(ROOT, 'js/ui/dom.js'), 'utf8');
   const persist = readFileSync(join(ROOT, 'js/engine/career-persistence.js'), 'utf8');
-  const home = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  const home = readFileSync(join(ROOT, 'js/home-app.js'), 'utf8');
   assert(save.includes('markSkipSessionEndOnce'), 'helper mark skip session');
   assert(save.includes('consumeSkipSessionEndOnce'), 'helper consume skip session');
   assert(dom.includes('markSkipSessionEndOnce'), 'redirectGame marca skip');
@@ -96,14 +96,14 @@ checkSync('navegação interna preserva sessão (skip session end)', () => {
 });
 
 checkSync('home e index encerram sessão ao fechar aba', () => {
-  const home = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
-  const main = readFileSync(join(ROOT, 'js/main.js'), 'utf8');
+  const home = readFileSync(join(ROOT, 'js/home-app.js'), 'utf8');
+  const main = readFileSync(join(ROOT, 'js/main-app.js'), 'utf8');
   assert(home.includes('endBrowserSession'), 'home pagehide logout');
   assert(main.includes('endBrowserSession'), 'index pagehide logout');
 });
 
 checkSync('home keeps authenticated state when slots render again', () => {
-  const src = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  const src = readFileSync(join(ROOT, 'js/home-app.js'), 'utf8');
   assert(src.includes('let authUiState = {'), 'persistent auth state on Home');
   assert(
     src.includes('onSlotsChanged: () => syncCareerActions(authUiState)'),
@@ -113,7 +113,7 @@ checkSync('home keeps authenticated state when slots render again', () => {
 });
 
 checkSync('identificador interno da carreira não aparece na URL', () => {
-  const home = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  const home = readFileSync(join(ROOT, 'js/home-app.js'), 'utf8');
   assert(!home.includes("url.searchParams.set('slot'"), 'home não adiciona slot na URL');
   assert(!home.includes('index.html?slot='), 'continuar usa URL limpa');
   assert(home.includes("continueBtn.href = 'index.html'"), 'link público não contém identificador');
@@ -146,7 +146,7 @@ checkSync('sessão usa cookie HttpOnly e não persiste novos tokens no frontend'
 checkSync('páginas públicas aplicam CSP e não exibem diagnóstico interno', () => {
   const homeHtml = readFileSync(join(ROOT, 'home.html'), 'utf8');
   const indexHtml = readFileSync(join(ROOT, 'index.html'), 'utf8');
-  const home = readFileSync(join(ROOT, 'js/home.js'), 'utf8');
+  const home = readFileSync(join(ROOT, 'js/home-app.js'), 'utf8');
   const accountModal = readFileSync(join(ROOT, 'js/feature/account/modals-html.js'), 'utf8');
   assert(homeHtml.includes('Content-Security-Policy'), 'CSP na Home');
   assert(indexHtml.includes('Content-Security-Policy'), 'CSP no jogo');

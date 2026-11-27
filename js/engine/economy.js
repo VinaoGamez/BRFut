@@ -1,3 +1,4 @@
+import { storage as brfutStorage } from '../core/storage-backend.js';
 import { MODULE_VERSIONS } from '../core/constants.js';
 import { serieCTotalRounds } from './serie-c-format.js';
 import { SPONSOR_EXTERNAL_LINKS, sponsorExternalUrlBySlug } from '../core/sponsor-links.js';
@@ -2479,7 +2480,7 @@ function pickOfferSponsorNames({
 
 function loadSponsorOfferHistory() {
   try {
-    const raw = JSON.parse(localStorage.getItem(SPONSOR_OFFER_HISTORY_KEY) || '[]');
+    const raw = JSON.parse(brfutStorage.getItem(SPONSOR_OFFER_HISTORY_KEY) || '[]');
     return Array.isArray(raw) ? raw.filter(item => typeof item === 'string') : [];
   } catch {
     return [];
@@ -2490,7 +2491,7 @@ function pushSponsorOfferHistory(names = []) {
   const prev = loadSponsorOfferHistory();
   const next = [...names, ...prev].slice(0, SPONSOR_OFFER_HISTORY_LIMIT);
   try {
-    localStorage.setItem(SPONSOR_OFFER_HISTORY_KEY, JSON.stringify(next));
+    brfutStorage.setItem(SPONSOR_OFFER_HISTORY_KEY, JSON.stringify(next));
   } catch {
     /* ignore quota */
   }
