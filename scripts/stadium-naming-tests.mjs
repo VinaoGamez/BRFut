@@ -36,7 +36,7 @@ const eligibleClub = () => {
     support: 72,
     environment: 70,
     division: 'A',
-    sponsors: { master: { name: 'Nubanco' }, secondaries: [{ name: 'iFome' }, { name: 'Googol' }, { name: 'Petrobraz' }] },
+    sponsors: { master: { name: 'Bancoroa' }, secondaries: [{ name: 'Rango Já' }, { name: 'Tucanet Fibra' }, { name: 'Posto Flecha' }] },
   };
   ensureStadiumSectors(club, 'A', { newGame: true });
   club.stadiumStructure = 2;
@@ -49,11 +49,11 @@ const eligibleClub = () => {
 check('ofertas: 3 nomes, sem conflito com master', () => {
   const club = eligibleClub();
   const offers = generateNamingOffers(club, 'A', {
-    pool: ['Nubanco', 'Tekno Cursos', 'Magazine Luizão', 'BetRegional', 'PicPaga', 'Metagol'],
+    pool: ['Bancoroa', 'Tekno Cursos', 'Mercadão Paçoca', 'Lance Certo', 'Pitanga Pay', 'Pipoca Games'],
     random: () => 0.3,
   });
   assert(offers.length >= 2, String(offers.length));
-  assert(!offers.some(o => o.sponsor === 'Nubanco'), 'master');
+  assert(!offers.some(o => o.sponsor === 'Bancoroa'), 'master');
   assert(offers.every(o => o.perRound > 0), 'perRound');
 });
 

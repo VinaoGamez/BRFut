@@ -361,11 +361,11 @@ const legacy = {
   season: 2026,
   total: 10_000_000,
   credited: true,
-  master: { name: 'Googol', value: 7_000_000 },
+  master: { name: 'Tucanet Fibra', value: 7_000_000 },
   secondaries: [
-    { name: 'Naike', value: 1_000_000 },
-    { name: 'Pumba Sport', value: 1_000_000 },
-    { name: 'Ifome', value: 1_000_000 },
+    { name: 'Ventania Esportes', value: 1_000_000 },
+    { name: 'Capivara Calçados', value: 1_000_000 },
+    { name: 'Rango Já', value: 1_000_000 },
   ],
 };
 normalizeSponsorContract(legacy, { installments: 38 });

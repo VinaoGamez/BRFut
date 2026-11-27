@@ -56,7 +56,7 @@ function cardMarkup() {
           <article><span class="manager-card-trophy-icon">🏆</span><div><strong>Copa Nacional</strong><small>BR Futebol Clube · 2029</small></div></article>
           <article><span class="manager-card-trophy-icon">🏆</span><div><strong>Campeonato Estadual</strong><small>BR Futebol Clube · 2028</small></div></article>
         </section>
-        <footer class="manager-card-back-footer"><span>BR FOOTBALL</span><small>118.4 PONTOS</small></footer>
+        <footer class="manager-card-back-footer"><span>BR FUT</span><small>118.4 PONTOS</small></footer>
       </article>
     </div>
   </div>`;

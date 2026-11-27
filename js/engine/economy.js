@@ -2339,27 +2339,31 @@ export function creditHomeGate(club, game, { division = 'A', capacity = null, at
   return result;
 }
 
-/** Pool único — qualquer nome pode ser Master ou Secundário. */
+/**
+ * Pool único — qualquer nome pode ser Master ou Secundário.
+ * Marcas fictícias (logos em assets/sponsors, gerados por scripts/generate-sponsor-logos.py),
+ * exceto os parceiros reais listados em SPONSOR_REAL_PARTNERS.
+ */
 export const SPONSOR_POOL = [
   'Tekno Cursos',
-  'Nubanco',
-  'Petrobraz',
-  'Magazine Luizão',
-  'iFome',
-  'BetRegional',
-  'PicPaga',
-  'Sheinpee',
-  'Amazônia.com',
-  'Googol',
-  'Metagol',
-  'Starbox Coffee',
-  'Havaianinhas',
-  'Naike',
-  'Pumba Sport',
-  'Perdigol',
-  'Poweraid',
-  'Playstação',
-  'FedExpressão',
+  'Tucanet Fibra',
+  'Bancoroa',
+  'Posto Flecha',
+  'Mercadão Paçoca',
+  'Rango Já',
+  'Lance Certo',
+  'Pitanga Pay',
+  'Moda Bossa',
+  'Jabuti Express',
+  'Mandacaru Telecom',
+  'Vila Café',
+  'Capivara Calçados',
+  'Ventania Esportes',
+  'Sabiá Seguros',
+  'Granja Serrana',
+  'Cajuí Energia',
+  'Pipoca Games',
+  'Carcará Motors',
 ];
 
 /**
@@ -2382,24 +2386,24 @@ const SPONSOR_OFFER_HISTORY_LIMIT = 28;
 /** Slug do arquivo em assets/sponsors/icons/{slug}.webp */
 export const SPONSOR_LOGO_SLUG = {
   'Tekno Cursos': 'tekno-cursos',
-  Nubanco: 'nubanco',
-  Petrobraz: 'petrobraz',
-  'Magazine Luizão': 'magazine-luizao',
-  iFome: 'ifome',
-  BetRegional: 'betregional',
-  PicPaga: 'picpaga',
-  Sheinpee: 'sheinpee',
-  'Amazônia.com': 'amazonia-com',
-  Googol: 'googol',
-  Metagol: 'metagol',
-  'Starbox Coffee': 'starbox-coffee',
-  Havaianinhas: 'havaianinhas',
-  Naike: 'naike',
-  'Pumba Sport': 'pumba-sport',
-  Perdigol: 'perdigol',
-  Poweraid: 'poweraid',
-  Playstação: 'playstacao',
-  FedExpressão: 'fedexpressao',
+  'Tucanet Fibra': 'tucanet-fibra',
+  'Bancoroa': 'bancoroa',
+  'Posto Flecha': 'posto-flecha',
+  'Mercadão Paçoca': 'mercadao-pacoca',
+  'Rango Já': 'rango-ja',
+  'Lance Certo': 'lance-certo',
+  'Pitanga Pay': 'pitanga-pay',
+  'Moda Bossa': 'moda-bossa',
+  'Jabuti Express': 'jabuti-express',
+  'Mandacaru Telecom': 'mandacaru-telecom',
+  'Vila Café': 'vila-cafe',
+  'Capivara Calçados': 'capivara-calcados',
+  'Ventania Esportes': 'ventania-esportes',
+  'Sabiá Seguros': 'sabia-seguros',
+  'Granja Serrana': 'granja-serrana',
+  'Cajuí Energia': 'cajui-energia',
+  'Pipoca Games': 'pipoca-games',
+  'Carcará Motors': 'carcara-motors',
 };
 
 export function sponsorLogoSlug(name) {
