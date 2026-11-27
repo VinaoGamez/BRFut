@@ -6,7 +6,7 @@
  */
 
 const SECTION_ORDER = ['central', 'elenco', 'taticas', 'jogos', 'clube'];
-const SECTION_DEFAULT_VIEW = { central: 'dashboard', elenco: 'squad', taticas: 'tactics', jogos: 'calendar', clube: 'office' };
+const SECTION_DEFAULT_VIEW = { central: 'dashboard', elenco: 'squad', taticas: 'tactics', jogos: 'calendar', clube: 'clubhub' };
 const STORAGE_KEY = 'brfut-nav-last-subtab';
 
 function readMemory() {

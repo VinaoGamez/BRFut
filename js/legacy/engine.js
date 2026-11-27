@@ -1111,7 +1111,7 @@ export async function bootEngine({
   let isWorldCupDashboard=()=>false;
   let dashboardStandingsFocus=()=>'club';
   let worldCupDashboardCtx=()=>null;
-  const CLUB_ONLY_NAV_VIEWS=new Set(['office','stadium','youth','training']);
+  const CLUB_ONLY_NAV_VIEWS=new Set(['clubhub','office','stadium','clubhistory','youth','training']);
   let openNavView=null;
   const hubV2=createHubV2();
   const syncNationalTeamCommandUi=()=>{
@@ -3980,6 +3980,8 @@ export async function bootEngine({
     openView:viewId=>router.openView(viewId),
   });
   economyUi.init();
+  router.onView('clubhub',()=>economyUi.renderClubHub?.());
+  router.onView('clubhistory',()=>economyUi.renderClubHistory?.());
   router.onView('office',()=>economyUi.renderOffice());
   router.onView('stadium',()=>economyUi.renderStadium());
   router.onView('training',()=>{void calendarLazy.call('renderTrainingRules');});

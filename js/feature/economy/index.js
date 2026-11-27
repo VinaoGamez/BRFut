@@ -17,6 +17,7 @@ import { listSeasonArchiveYears, loadSeasonArchive } from '../../core/season-arc
 import { buildClubHistory } from '../../engine/club-history.js';
 import { renderClubHistoryCard, hydrateClubHistoryCard } from '../../ui/club-history-card.js';
 import { fetchStructuredSeasonHistory } from '../../core/career-history-sync.js';
+import { createClubV2 } from './club-v2.js';
 
 const NAMING_MODAL_HTML = `
 <div id="namingPickerModal" class="modal hidden">
@@ -372,7 +373,7 @@ export function createEconomyFeature(deps) {
             <b>${row.label}</b>
             <small>${row.description}</small>
           </div>
-          <span class="economy-invest-level">${levelText}</span>
+          <span class="economy-invest-level">${levelText}${!locked && row.maxLevel ? `<span class="economy-invest-pips" aria-hidden="true">${Array.from({ length: Number(row.maxLevel) || 0 }, (_, i) => `<i class="${i < (Number(row.level) || 0) ? 'on' : ''}"></i>`).join('')}</span>` : ''}</span>
           <button type="button" ${buyAttrHtml} ${nativeDisabled ? 'disabled' : ''} ${explainableBlock ? 'aria-disabled="true"' : ''} title="${title}">
             ${actionLabel}
           </button>
@@ -477,6 +478,46 @@ export function createEconomyFeature(deps) {
     wrap.innerHTML = cards.join('');
   };
 
+  /** Temporadas do clube (arquivos locais + temporada atual), sem busca remota. */
+  const buildHistorySeasons = clubName => {
+    try {
+      const career = getSavedNewGame?.() || {};
+      const years = listSeasonArchiveYears({ seasonIndex: career.seasonIndex });
+      const archives = years.map(year => loadSeasonArchive(year, { seed: career.seed })).filter(Boolean);
+      const historyStore = getPlayerHistory?.()?.getStore?.() || {};
+      const rankingTitles = getNationalRankingEntries?.()?.[clubName]?.titles || [];
+      const currentLogs = [...(getCurrentClubMatches?.() || []), ...(historyStore.matchLogs || [])];
+      return buildClubHistory({ clubName, currentSeason: getCareerSeason?.(), currentLogs, currentStanding: getCurrentClubStanding?.(clubName), archives, rankingTitles });
+    } catch {
+      return [];
+    }
+  };
+
+  const clubV2 = createClubV2({
+    $,
+    userClubState,
+    getUserClub,
+    getUserDivision,
+    getCareerSeason,
+    getCurrentRound,
+    getBalance,
+    formatBudget,
+    formatCapacity,
+    estimateRoundRecurringRevenue,
+    estimateRoundCostBill,
+    evaluateRosterPayroll,
+    bankLoanStatus,
+    getStructureLevel,
+    getPitchLevel,
+    getSeasonGoal,
+    getSeasonGoalLiveContext,
+    getSeasonObjectives,
+    getSeasonObjectivesResult,
+    getNationalRankingEntries,
+    openView,
+    buildHistorySeasons,
+  });
+
   const renderOffice = () => {
     const club = userClubState();
     if (!club) return;
@@ -527,6 +568,7 @@ export function createEconomyFeature(deps) {
     renderBankLoan();
     renderRadar();
     renderCashflow();
+    clubV2.renderFinanceExtras();
   };
 
   const renderRestrictionBanner = club => {
@@ -1302,6 +1344,7 @@ export function createEconomyFeature(deps) {
     });
     refreshDashboardStadiumPreview?.();
     renderTickets(club);
+    renderInvestments();
   };
 
   const renderTickets = club => {
@@ -1346,10 +1389,20 @@ export function createEconomyFeature(deps) {
         </div>`;
           })
           .join('');
+        // Clube v2: lotação e renda previstas com os preços atuais.
+        let forecast = '';
+        try {
+          const est = estimateGateReceipt(club, { channel: channel.id, division });
+          const fill = Math.round((Number(est.fillRate) || 0) * 100);
+          forecast = `<span class="stadium-ticket-forecast" data-tone="${fill >= 85 ? 'full' : fill >= 60 ? 'ok' : 'low'}"><span>Lotação prevista <b>${fill}%</b>${est.attendance ? ` · ${formatCapacity(est.attendance)}` : ''}</span><span>Renda por jogo <b>${formatBudget(est.revenue || 0)}</b></span></span>`;
+        } catch {
+          forecast = '';
+        }
         return `<div class="stadium-ticket-group">
         <div class="stadium-ticket-group-head">
           <b>${channel.label}</b>
           <small>${channel.description}</small>
+          ${forecast}
         </div>
         ${sectorRows}
       </div>`;
@@ -1844,6 +1897,7 @@ export function createEconomyFeature(deps) {
   };
 
   const bindHandlers = () => {
+    clubV2.bind();
     const loanBody = $('#officeBankLoanBody');
     if (loanBody && !loanBody.dataset.bankLoanFormBound) {
       loanBody.dataset.bankLoanFormBound = '1';
@@ -2091,6 +2145,8 @@ export function createEconomyFeature(deps) {
     renderInvestments,
     renderSponsors,
     renderStadium,
+    renderClubHub: () => clubV2.renderHub(),
+    renderClubHistory: () => clubV2.renderHistory(),
     bindHandlers,
     init: () => {
       bindHandlers();

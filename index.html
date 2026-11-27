@@ -159,8 +159,10 @@
       <button class="nav" type="button" data-view="calendar" data-section="jogos">Calendário</button>
       <button class="nav" type="button" data-view="table" data-section="jogos">Competições</button>
       <button class="nav" type="button" data-view="ranking" data-section="jogos">Ranking nacional</button>
-      <button class="nav" type="button" data-view="office" data-section="clube">Finanças e diretoria</button>
-      <button class="nav" type="button" data-view="stadium" data-section="clube">Estádio</button>
+      <button class="nav" type="button" data-view="clubhub" data-section="clube">Visão geral</button>
+      <button class="nav" type="button" data-view="office" data-section="clube">Finanças</button>
+      <button class="nav" type="button" data-view="stadium" data-section="clube">Estrutura</button>
+      <button class="nav" type="button" data-view="clubhistory" data-section="clube">História</button>
     </nav>
     <section id="dashboard" class="view active">
       <div class="hero"><div><p>CARREGANDO…</p><h1>—</h1><span>—</span></div><div class="crest">—</div></div>
@@ -221,9 +223,19 @@
       <article id="squadPerformance" class="card squad-performance" aria-label="Desempenho do elenco"></article>
     </section>
     <section id="tactics" class="view"><div class="title"><p>PREPARAÇÃO DA PARTIDA</p><h1>Táticas</h1></div><div class="tactics"><div class="pitch tactical-board"><div class="field-markings" aria-hidden="true"><i class="mid-line"></i><i class="centre-circle"></i><i class="centre-spot"></i><i class="area area-top"></i><i class="area area-bottom"></i><i class="six-yard six-top"></i><i class="six-yard six-bottom"></i><i class="spot spot-top"></i><i class="spot spot-bottom"></i><i class="goal goal-top"></i><i class="goal goal-bottom"></i></div><div id="pitchPlayers"></div></div><div class="card controls"><div class="tactic-suggestion-wrap"><button id="applyTacticSuggestion" type="button" class="tactic-suggestion-btn">✦ SUGESTÃO TÁTICA</button><span class="tactic-suggestion-tooltip">Monta automaticamente a melhor formação, escalação e ajustes de mentalidade, estilo de construção, intensidade de pressão e linha de impedimento com base apenas no seu elenco disponível.</span></div><label>FORMAÇÃO</label><div id="formations" class="formation-buttons"></div><p id="formationDescription"></p><div class="tactic-slider"><label>MENTALIDADE <output id="mentalityReadout"></output></label><div><small>DEFENSIVA</small><input id="mentalitySlider" type="range" min="0" max="100" value="50"><small>OFENSIVA</small></div></div><div class="tactic-slider"><label>ESTILO DE CONSTRUÇÃO <output id="possessionReadout"></output></label><div><small>CONTRA-ATAQUE</small><input id="possessionSlider" type="range" min="0" max="100" value="50"><small>POSSE</small></div></div><div class="tactic-slider"><label>INTENSIDADE DE PRESSÃO <output id="pressReadout"></output></label><div><small>BAIXA</small><input id="pressSlider" type="range" min="0" max="100" value="50"><small>ALTA</small></div></div><div class="tactic-slider"><label>LINHA DE IMPEDIMENTO <output id="offsideLineReadout"></output></label><div><small>BAIXA</small><input id="offsideLineSlider" type="range" min="0" max="100" value="50"><small>ALTA</small></div></div></div><aside class="card tactic-roster"><label>ELENCO PARA A PARTIDA</label><small class="tactic-roster-hint">Arraste entre titulares e reservas, ou solte na prancheta para ajustar a equipe.</small><section><h3>TITULARES</h3><div class="tactic-roster-head"><span>JOGADOR</span><span>POS</span><span>OVR</span><span>CANSAÇO</span></div><div id="tacticStarters"></div></section><section><h3>RESERVAS</h3><div class="tactic-roster-head"><span>JOGADOR</span><span>POS</span><span>OVR</span><span>CANSAÇO</span></div><div id="tacticBench"></div></section></aside></div></section>
+    <section id="clubhub" class="view clubhub-view">
+      <div class="title"><p>CLUBE · VISÃO GERAL</p><h1>Clube</h1></div>
+      <div id="clubHubBody" class="clubv2-hub"></div>
+    </section>
+    <section id="clubhistory" class="view clubhistory-view">
+      <div class="title"><p>SALA DE TROFÉUS E TEMPORADAS</p><h1>História</h1></div>
+      <div id="clubHistoryBody" class="clubv2-history"></div>
+    </section>
     <section id="office" class="view office-view">
-      <div class="title office-title"><p>GESTÃO FINANCEIRA DO CLUBE</p><h1>Escritório</h1><span>Administre o orçamento, invista na estrutura e acompanhe os movimentos de caixa.</span><button id="openClubHistoryCard" class="office-history-btn" type="button">HISTÓRICO</button></div>
+      <div class="title office-title"><p>DINHEIRO QUE ENTRA E SAI</p><h1>Finanças</h1><span>Receitas, custos, patrocínio, crédito e fluxo de caixa do clube.</span><button id="openClubHistoryCard" class="office-history-btn" type="button">HISTÓRICO</button></div>
       <div class="office-layout">
+        <article class="card clubv2-fin-chart" aria-label="Receitas e custos por rodada"><label>RECEITAS × CUSTOS POR RODADA</label><div id="clubFinanceChart"></div></article>
+        <article class="card clubv2-fin-saldo" aria-label="Saldo e projeção"><label>SALDO</label><div id="clubFinanceSaldo"></div></article>
         <article class="card office-budget-card">
           <div class="office-budget-header">
             <div class="office-budget-col">
@@ -254,24 +266,10 @@
           </div>
         </article>
         <article class="card office-bank-loan" id="officeBankLoan" aria-label="Empréstimo bancário">
-          <label>EMPRÉSTIMO BANCÁRIO</label>
+          <label>CRÉDITO BANCÁRIO</label>
+          <button type="button" class="clubv2-loan-toggle" data-clubv2-loan aria-expanded="false" aria-controls="officeBankLoanBody">SIMULAR EMPRÉSTIMO</button>
           <p class="office-bank-loan-meta" id="officeBankLoanMeta">Financiamento por parcelas · taxa travada no contrato · juros automáticos</p>
           <div id="officeBankLoanBody" class="office-bank-loan-body"></div>
-        </article>
-        <article class="card economy-investments" id="economyInvestments" aria-label="Investimentos do clube">
-          <label>INVESTIMENTOS DO CLUBE</label>
-          <div class="economy-invest-head"><span>INVESTIMENTO</span><span>NÍVEL</span><span>INVESTIR</span></div>
-          <div id="economyInvestmentsList" class="economy-investments-list"></div>
-          <div class="office-status-strip office-investment-levels" aria-label="Níveis dos investimentos">
-            <div class="office-meter" data-meter="medical">
-              <div class="office-meter-top"><small>DEP. MÉDICO</small><b id="officeMedicalLevel">0/5</b></div>
-              <div class="office-meter-track" aria-hidden="true"><i id="officeMedicalBar"></i></div>
-            </div>
-            <div class="office-meter" data-meter="prevention">
-              <div class="office-meter-top"><small>PREVENÇÃO</small><b id="officePreventionLevel">0/3</b></div>
-              <div class="office-meter-track" aria-hidden="true"><i id="officePreventionBar"></i></div>
-            </div>
-          </div>
         </article>
         <article class="card office-sponsors" id="officeSponsors" aria-label="Patrocínio">
           <label>PATROCÍNIO</label>
@@ -290,7 +288,7 @@
       </div>
     </section>
     <section id="stadium" class="view stadium-view">
-      <div class="title"><p>INFRAESTRUTURA E BILHETERIA</p><h1>Estádio</h1><span>Estrutura destrava setores; capacidade e ticket médio vêm da composição da arena.</span></div>
+      <div class="title"><p>ESTÁDIO, CENTRO DE TREINO E INGRESSOS</p><h1>Estrutura</h1><span>Obras destravam setores e melhoram o elenco; o preço do ingresso mexe na lotação e na renda.</span></div>
       <div class="office-stadium-layout">
         <article class="card stadium-summary-card">
           <label>ESTÁDIO</label>
@@ -314,9 +312,24 @@
           </div>
         </article>
         <article class="card stadium-upgrades" id="stadiumUpgrades" aria-label="Melhorias do estádio">
-          <label>INVESTIMENTOS DO ESTÁDIO</label>
+          <label>OBRAS DO ESTÁDIO</label>
           <div class="economy-invest-head"><span>MELHORIA</span><span>NÍVEL</span><span>INVESTIR</span></div>
           <div id="stadiumUpgradesList" class="economy-investments-list"></div>
+        </article>
+        <article class="card economy-investments" id="economyInvestments" aria-label="Investimentos do clube">
+          <label>CENTRO DE TREINO</label>
+          <div class="economy-invest-head"><span>INVESTIMENTO</span><span>NÍVEL</span><span>INVESTIR</span></div>
+          <div id="economyInvestmentsList" class="economy-investments-list"></div>
+          <div class="office-status-strip office-investment-levels" aria-label="Níveis dos investimentos">
+            <div class="office-meter" data-meter="medical">
+              <div class="office-meter-top"><small>DEP. MÉDICO</small><b id="officeMedicalLevel">0/5</b></div>
+              <div class="office-meter-track" aria-hidden="true"><i id="officeMedicalBar"></i></div>
+            </div>
+            <div class="office-meter" data-meter="prevention">
+              <div class="office-meter-top"><small>PREVENÇÃO</small><b id="officePreventionLevel">0/3</b></div>
+              <div class="office-meter-track" aria-hidden="true"><i id="officePreventionBar"></i></div>
+            </div>
+          </div>
         </article>
         <article class="card stadium-tickets" id="stadiumTickets" aria-label="Valores de ingresso">
           <label>VALORES DE INGRESSO</label>
