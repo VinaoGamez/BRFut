@@ -4,6 +4,7 @@ import { applyCompetitionBadge } from '../../ui/competition-badge.js';
 import { setHumanBadgeOnCrest } from '../../ui/human-badge.js';
 import { applyTeamCrestToElement, teamCrestHtml } from '../../ui/team-crest.js';
 import { resolveNationalTeam } from '../../engine/national-teams.js';
+import { boardCardMarkup } from '../shared/player-cells.js';
 import { isStateLeagueGame } from '../../engine/state-league-format.js';
 import {
   clubStandingContext,
@@ -854,11 +855,10 @@ export function createMatchLiveUiFeature(deps) {
           const player = club.roster[index];
           const vacant = card.red || !player;
           const top = point[1] === 91 ? 90 : point[1];
-          const energy = clamp(player?.fatigue ?? 0, 0, 100);
           const injured = !!card.injured;
           const label = vacant ? 'EXPULSO' : labelOf(player?.name || '—');
           const title = vacant ? 'Expulso' : `${player.name}${card.yellow ? ' · Advertido' : ''}${injured ? ' · Lesionado' : ''}`;
-          return `<div class="board-player ${vacant ? 'vacant' : ''}" data-slot="${index}" title="${title}" style="left:${point[0]}%;top:${top}%"><i style="--energy:${energy}%"><span>${vacant ? '×' : index + 1}</span></i>${badgesOf({ yellow: card.yellow, injured, atRisk: !!card.playThroughRisk })}<small>${label}</small></div>`;
+          return `<div class="board-player pp-v2 ${vacant ? 'vacant' : ''}" data-slot="${index}" title="${title}" style="left:${point[0]}%;top:${top}%">${boardCardMarkup(player, { vacant })}${badgesOf({ yellow: card.yellow, injured, atRisk: !!card.playThroughRisk })}<small>${label}</small></div>`;
         })
         .join('');
     }

@@ -1,7 +1,7 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
 import { clamp, on, onClick } from '../../ui/dom.js';
 import { bindBoardRosterHover, setBoardSlotHighlight } from '../../ui/board-roster-hover.js';
-import { rosterFatigueCell, positionLine } from '../shared/player-cells.js';
+import { rosterFatigueCell, positionLine, boardCardMarkup } from '../shared/player-cells.js';
 import { COMPATIBLE_ROLES } from '../../engine/match-core.js';
 import { renderTableFootIcon } from '../../lab/card-back.js';
 
@@ -331,6 +331,7 @@ export function createTacticsFeature(deps) {
     const formations = getFormations();
     const squad = getSquad();
     const highlightSlot = selectedSubstitutionOutSlot();
+    const slotRoles = getFormationRoles?.()?.[formation] || [];
     const board = $('#pausePitchPlayers')?.closest('.tactical-board');
     ensureBoardLegend(board);
     $('#pausePitchPlayers').innerHTML = formations[formation]
@@ -347,7 +348,9 @@ export function createTacticsFeature(deps) {
         const title = vacant
           ? 'Arraste um titular para esta vaga'
           : `${squad[i].name}${state.yellow ? ' · Advertido' : ''}${injured ? ' · Lesionado' : atRisk ? ' · Incômodo físico' : ''} · ${Math.round(energy)}% energia`;
-        return `<div class="board-player ${vacant ? 'vacant vacancy-target' : ''} ${canReposition ? 'repositionable' : ''} ${highlighted ? 'sub-highlight' : ''}" data-slot="${i}" draggable="${canReposition}" title="${title}" style="left:${p[0]}%;top:${displayTop}%"><i style="--energy:${energy}%"><span>${vacant ? '×' : boardJerseyNumber(squad[i], i)}</span></i>${boardPlayerBadges({ yellow: state.yellow, injured: state.injured, atRisk: state.playThroughRisk })}<small>${label}</small></div>`;
+        const role = slotRoles[i] || squad[i].pos;
+        const fit = vacant ? 'none' : squad[i].pos === role ? 'natural' : (COMPATIBLE_ROLES[role] || []).includes(squad[i].pos) ? 'adapted' : 'improvised';
+        return `<div class="board-player pp-v2 fit-${fit} ${vacant ? 'vacant vacancy-target' : ''} ${canReposition ? 'repositionable' : ''} ${highlighted ? 'sub-highlight' : ''}" data-slot="${i}" draggable="${canReposition}" title="${title}" style="left:${p[0]}%;top:${displayTop}%">${boardCardMarkup(squad[i], { vacant })}${boardPlayerBadges({ yellow: state.yellow, injured: state.injured, atRisk: state.playThroughRisk })}<small>${label}</small></div>`;
       })
       .join('');
     $$('#pauseFormations button').forEach(b => b.classList.toggle('selected', b.textContent === formation));

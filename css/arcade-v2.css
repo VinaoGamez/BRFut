@@ -2578,3 +2578,270 @@ html.is-mobile body #messages .message-item-main strong { font-size: 15px; }
 html.is-mobile body #messages .message-item time { font-size: 11px; padding-top: 2px; }
 /* Espaço para o CONTINUAR flutuante não cobrir as últimas mensagens. */
 html.is-mobile body #messages { padding-bottom: 96px; }
+
+/* =====================================================================
+ * Campinhos v2 em todo o jogo (análise do adversário, pausa ao vivo,
+ * adversário ao vivo): mesmo gramado escuro listrado e mini-cartas das
+ * Táticas no lugar das bolinhas numeradas verdes.
+ * ===================================================================== */
+html body .pause-pitch.tactical-board {
+  border: 2px solid #1c5a42 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: repeating-linear-gradient(180deg, #0f3a2a 0 7.1428%, #0c3324 7.1428% 14.2857%) !important;
+  outline: 0 !important;
+}
+html body .pause-pitch.tactical-board::before,
+html body .pause-pitch.tactical-board::after {
+  border-color: #ffffff38 !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+html body .pause-pitch .field-markings,
+html body .pause-pitch .field-markings * {
+  border-color: #ffffff38 !important;
+  color: #ffffff38 !important;
+  box-shadow: none !important;
+}
+html body .pause-pitch .field-markings .centre-spot,
+html body .pause-pitch .field-markings .spot {
+  background: #ffffff38 !important;
+}
+
+html body .tactical-board .board-player.pp-v2 {
+  --fit: #3a5478;
+  width: 64px !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transform: translate(-50%, -50%);
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+html body .tactical-board .board-player.pp-v2.repositionable { cursor: grab; }
+html body .tactical-board .board-player.pp-v2.fit-natural { --fit: var(--av-green); }
+html body .tactical-board .board-player.pp-v2.fit-adapted { --fit: var(--av-cyan); }
+html body .tactical-board .board-player.pp-v2.fit-improvised { --fit: var(--av-orange); }
+
+html body .tactical-board .board-player.pp-v2 .pp-card {
+  position: relative;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 48px;
+  padding: 3px 0 4px;
+  background: var(--av-panel) !important;
+  box-shadow: inset 0 0 0 2px var(--fit), 0 3px 0 var(--av-outline) !important;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+html body .tactical-board .board-player.pp-v2 .pp-top {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  position: static !important;
+  background: none !important;
+}
+html body .tactical-board .board-player.pp-v2 .pp-ovr {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 900 !important;
+  font-size: 15px !important;
+  line-height: 1;
+  color: var(--av-ink) !important;
+}
+html body .tactical-board .board-player.pp-v2 .pos-chip {
+  min-width: 0;
+  height: 13px;
+  padding: 0 4px !important;
+  font-size: 9px !important;
+  line-height: 13px;
+}
+html body .tactical-board .board-player.pp-v2 i.pp-cond {
+  position: static !important;
+  display: block !important;
+  width: 34px !important;
+  height: 3px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  box-shadow: none !important;
+  transform: skewX(-20deg) !important;
+}
+html body .tactical-board .board-player.pp-v2 i.pp-cond::before,
+html body .tactical-board .board-player.pp-v2 i.pp-cond::after { display: none !important; }
+html body .tactical-board .board-player.pp-v2 i.pp-cond b {
+  position: static !important;
+  display: block !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+  background: var(--av-green) !important;
+}
+html body .tactical-board .board-player.pp-v2 i.pp-cond[data-level="warn"] b { background: var(--av-orange) !important; }
+html body .tactical-board .board-player.pp-v2 i.pp-cond[data-level="low"] b { background: var(--av-red) !important; }
+html body .tactical-board .board-player.pp-v2 small {
+  max-width: 72px !important;
+  margin: 0 !important;
+  padding: 1px 5px !important;
+  background: #050c17cc !important;
+  color: var(--av-ink) !important;
+  font-family: var(--av-body) !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: none !important;
+  border-radius: 0 !important;
+}
+html body .tactical-board .board-player.pp-v2.vacant .pp-card {
+  --fit: var(--av-red);
+  background: #2a0d14 !important;
+}
+html body .tactical-board .board-player.pp-v2.vacant .pp-ovr { color: var(--av-red) !important; }
+html body .tactical-board .board-player.pp-v2.sub-highlight .pp-card {
+  box-shadow: inset 0 0 0 3px var(--av-lime), 0 3px 0 var(--av-outline) !important;
+}
+html body .tactical-board .board-player.pp-v2 .board-badge {
+  position: absolute !important;
+  top: -4px !important;
+  right: 4px !important;
+  left: auto !important;
+}
+
+/* Legenda do campinho: chips planos, sem fundo claro. */
+html body .board-stack .board-legend {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--av-muted) !important;
+  box-shadow: none !important;
+}
+
+/* Barra de cansaço das tabelas (análise do adversário, substituições):
+   mesma barra fina do Elenco. */
+html body .table-fatigue.roster-fatigue {
+  background: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+html body .table-fatigue.roster-fatigue i { width: 44px !important; }
+html body .roster-fatigue--compact i { width: 36px !important; height: 5px !important; }
+html body .roster-fatigue--compact em { font-size: 11px !important; }
+
+/* Indicadores do resumo do clube (OVERALL / AMBIENTE): placas angulares
+   com número grande e barra inclinada, sem anel colorido. */
+html body .overall-box.overall-box.overall-box,
+html body .environment-gauge.environment-gauge.environment-gauge {
+  position: relative;
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 2px;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 72px;
+  padding: 10px 14px 16px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: linear-gradient(225deg, transparent 10px, var(--av-panel) 10px) !important;
+  aspect-ratio: auto !important;
+}
+html body .environment-gauge.environment-gauge.environment-gauge > div {
+  position: static !important;
+  inset: auto !important;
+  display: flex !important;
+  flex-direction: column-reverse;
+  align-items: flex-start !important;
+  width: auto !important;
+  height: auto !important;
+  background: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+html body .overall-box.overall-box.overall-box small,
+html body .environment-gauge.environment-gauge.environment-gauge small {
+  order: -1;
+  color: var(--av-muted) !important;
+  font: italic 800 10px var(--av-display) !important;
+  letter-spacing: .08em;
+}
+html body .overall-box.overall-box.overall-box strong,
+html body .environment-gauge.environment-gauge.environment-gauge strong {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 900 !important;
+  font-size: 30px !important;
+  line-height: 1 !important;
+  color: var(--av-ink) !important;
+}
+html body .environment-gauge.environment-gauge.environment-gauge::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 8px;
+  height: 5px;
+  transform: skewX(-20deg);
+  background:
+    linear-gradient(90deg, var(--gauge, var(--av-cyan)) calc(var(--environment, 0) * 1%), var(--av-panel-hi) 0) !important;
+}
+html body .environment-gauge.environment-gauge.environment-gauge::before { display: none !important; }
+html body .environment-gauge.environment-gauge.environment-gauge.positive { --gauge: var(--av-green); }
+html body .environment-gauge.environment-gauge.environment-gauge.medium { --gauge: var(--av-orange); }
+html body .environment-gauge.environment-gauge.environment-gauge.negative { --gauge: var(--av-red); }
+html body .environment-gauge.environment-gauge.environment-gauge.positive strong { color: var(--av-green) !important; }
+html body .environment-gauge.environment-gauge.environment-gauge.medium strong { color: var(--av-orange) !important; }
+html body .environment-gauge.environment-gauge.environment-gauge.negative strong { color: var(--av-red) !important; }
+
+html body #teamScoutModal .summary-top .environment-gauge,
+html body #teamScoutModal .summary-top .overall-box {
+  width: auto !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  transform: none !important;
+}
+html body #teamScoutModal .summary-top {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Com qualquer janela aberta, o CONTINUAR flutuante do celular some. */
+html.is-mobile body:has(.modal:not(.hidden)) #headerContinue {
+  display: none !important;
+}
+html body .environment-gauge.environment-gauge.environment-gauge small { order: 0; }
+html body .overall-box.overall-box.overall-box,
+html body .environment-gauge.environment-gauge.environment-gauge {
+  background: linear-gradient(225deg, transparent 10px, var(--av-rail) 10px) !important;
+}
+html body .environment-gauge.environment-gauge.environment-gauge > div,
+html body .environment-gauge.environment-gauge.environment-gauge small,
+html body .environment-gauge.environment-gauge.environment-gauge strong {
+  transform: none !important;
+  rotate: none !important;
+  text-transform: uppercase;
+}
+
+/* Análise do adversário aberta durante a partida fica por cima do jogo. */
+html body #liveOpponentModal,
+html body #teamScoutModal { z-index: 60 !important; }
+html body .scout-manager {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(225deg, transparent 10px, var(--av-rail) 10px) !important;
+  box-shadow: inset 3px 0 var(--av-cyan) !important;
+}
+html body .scout-manager small { color: var(--av-cyan) !important; font: italic 800 10px var(--av-display) !important; letter-spacing: .08em; }
+html body .scout-manager strong { color: var(--av-ink) !important; font: italic 800 17px var(--av-display) !important; }

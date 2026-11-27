@@ -37,7 +37,7 @@ import { createTacticsFeature } from '../feature/tactics/index.js';
 import { createSeasonSummaryFeature } from '../feature/season-summary/index.js';
 import { createRetirementModalFeature } from '../feature/retirement-modal/index.js';
 import { processSeasonRetirements, markRetiredInHistoryStore } from '../engine/player-retirement.js';
-import { createPlayerCells, outfield, fatigueCell, rosterFatigueCell, positionLine } from '../feature/shared/player-cells.js';
+import { createPlayerCells, outfield, fatigueCell, rosterFatigueCell, positionLine, boardCardMarkup } from '../feature/shared/player-cells.js';
 import { renderTableFootIcon } from '../lab/card-back.js';
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
@@ -5070,7 +5070,7 @@ export async function bootEngine({
       const label=scoutBoardPlayerLabel(player?.name||'—');
       const title=player?.name||'—';
       const top=p[1]===91?90:p[1];
-      return `<div class="board-player" data-slot="${i}" title="${title}" style="left:${p[0]}%;top:${top}%"><i style="--energy:${clamp(player?.fatigue??0,0,100)}%"><span>${i+1}</span></i><small>${label}</small></div>`;
+      return `<div class="board-player pp-v2" data-slot="${i}" title="${title}" style="left:${p[0]}%;top:${top}%">${boardCardMarkup(player)}<small>${label}</small></div>`;
     }).join('');
     unbindScoutBoardHover?.();
     const scoutRoster=$('#teamScoutModal .scout-roster');

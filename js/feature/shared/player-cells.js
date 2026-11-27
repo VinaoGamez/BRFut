@@ -8,8 +8,9 @@ export const outfield = value => value || '—';
 
 /** Barra de cansaço padrão para tabelas e listagens. */
 export const fatigueCell = player => {
-  const fatigue = Number.isFinite(Number(player?.fatigue)) ? Number(player.fatigue) : 100;
-  return `<span class="table-fatigue"><i><b style="width:${clamp(fatigue, 0, 100)}%"></b></i>${Math.round(fatigue)}%</span>`;
+  const fatigue = Math.round(clamp(Number.isFinite(Number(player?.fatigue)) ? Number(player.fatigue) : 100, 0, 100));
+  const level = fatigue >= 70 ? 'ok' : fatigue >= 40 ? 'warn' : 'low';
+  return `<span class="table-fatigue roster-fatigue" data-level="${level}"><i><b style="width:${fatigue}%"></b></i><em>${fatigue}%</em></span>`;
 };
 
 /** Barra de cansaço do Elenco — percentual dentro da barra (sem texto externo). */
@@ -233,3 +234,17 @@ export function createPlayerCells({
 
   return { playerNameCell, playerStatusBadges, playerInjuryLine };
 }
+
+/**
+ * Mini-carta de jogador no campinho (padrão v2): OVR, chip de posição e
+ * barra de condição. Usada em Táticas, pausa ao vivo, análise de adversário.
+ * Com `vacant`, mostra um × no lugar (expulso/vaga).
+ */
+export const boardCardMarkup = (player, { vacant = false } = {}) => {
+  if (vacant || !player) {
+    return '<span class="pp-card pp-card--vacant"><span class="pp-top"><b class="pp-ovr">×</b></span></span>';
+  }
+  const energy = Math.round(clamp(Number.isFinite(Number(player.fatigue)) ? Number(player.fatigue) : 100, 0, 100));
+  const level = energy >= 80 ? 'ok' : energy >= 60 ? 'warn' : 'low';
+  return `<span class="pp-card"><span class="pp-top"><b class="pp-ovr">${player.overall ?? '—'}</b><em class="pos-chip" data-line="${positionLine(player.pos)}">${player.pos || ''}</em></span><i class="pp-cond" data-level="${level}"><b style="width:${energy}%"></b></i></span>`;
+};
