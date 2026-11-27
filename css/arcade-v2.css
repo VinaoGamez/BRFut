@@ -2451,3 +2451,130 @@ html.is-mobile body:has(#matchModal:not(.hidden)) #headerContinue {
 }
 html.is-mobile body #matchModal .post-match-tile { padding: 8px 8px; }
 html.is-mobile body #matchModal .post-match-tile strong { font-size: 16px; white-space: nowrap; }
+
+/* =====================================================================
+ * Mensagens v2: caixa de entrada no padrão Arcade Noturno.
+ * A barra empilha (contador + ação, depois filtros em chips) e os filtros
+ * rolam na horizontal no celular, sem invadir a lista.
+ * ===================================================================== */
+html body #messages .messages-panel {
+  padding: 0 !important;
+  overflow: hidden;
+}
+html body #messages .messages-toolbar {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 12px;
+  height: auto !important;
+  padding: 14px 16px !important;
+  background: var(--av-rail) !important;
+  border-bottom: 1px solid var(--av-line) !important;
+}
+html body #messages .messages-toolbar-top {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 0 !important;
+  width: 100% !important;
+  height: auto !important;
+}
+html body #messages .messages-toolbar-top small {
+  color: var(--av-cyan);
+  font: italic 800 11px var(--av-display);
+  letter-spacing: .08em;
+}
+html body #messages .messages-toolbar-top strong {
+  color: var(--av-ink);
+  font: italic 800 22px var(--av-display);
+}
+html body #messages #markAllMessagesRead {
+  min-height: 34px;
+  padding: 6px 16px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  background: var(--av-panel-hi) !important;
+  color: var(--av-ink) !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .04em;
+}
+html body #messages .message-filters {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+}
+html body #messages .message-filters button {
+  flex: 0 0 auto !important;
+  min-height: 32px;
+  padding: 6px 16px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  background: var(--av-panel) !important;
+  color: var(--av-muted) !important;
+  box-shadow: none !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .04em;
+}
+html body #messages .message-filters button.active {
+  background: var(--av-cyan) !important;
+  color: #04121c !important;
+}
+html body #messages .messages-list {
+  max-height: none;
+  overflow: visible;
+}
+html body #messages .message-item {
+  padding: 12px 16px;
+  border-top: 1px solid var(--av-line);
+  background: transparent;
+  box-shadow: none;
+}
+html body #messages .message-item.unread {
+  background: linear-gradient(90deg, rgba(17, 187, 237, .12), transparent 70%);
+  box-shadow: inset 4px 0 var(--av-lime);
+}
+html body #messages .message-item.message-action-required {
+  box-shadow: inset 4px 0 var(--av-orange);
+}
+html body #messages .message-item-main small {
+  color: var(--av-cyan);
+  font: 700 11px var(--av-body);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+html body #messages .message-item-main strong {
+  color: var(--av-ink);
+  font: italic 800 17px var(--av-display);
+  text-transform: uppercase;
+}
+html body #messages .message-item.read .message-item-main strong { color: var(--av-muted); }
+html body #messages .message-item time {
+  flex: 0 0 auto;
+  color: var(--av-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+html.is-mobile body #messages .messages-toolbar-top strong { font-size: 18px; }
+html.is-mobile body #messages #markAllMessagesRead { font-size: 10px !important; padding: 6px 12px !important; }
+html.is-mobile body #messages .message-filters {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -16px !important;
+  padding: 0 16px;
+  width: calc(100% + 32px) !important;
+}
+html.is-mobile body #messages .message-filters::-webkit-scrollbar { display: none; }
+html.is-mobile body #messages .message-item { align-items: flex-start; gap: 8px; }
+html.is-mobile body #messages .message-item-main strong { font-size: 15px; }
+html.is-mobile body #messages .message-item time { font-size: 11px; padding-top: 2px; }
+/* Espaço para o CONTINUAR flutuante não cobrir as últimas mensagens. */
+html.is-mobile body #messages { padding-bottom: 96px; }
