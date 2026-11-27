@@ -2845,3 +2845,227 @@ html body .scout-manager {
 }
 html body .scout-manager small { color: var(--av-cyan) !important; font: italic 800 10px var(--av-display) !important; letter-spacing: .08em; }
 html body .scout-manager strong { color: var(--av-ink) !important; font: italic 800 17px var(--av-display) !important; }
+
+/* =====================================================================
+ * Tags de campeonato v2 (todas as telas): etiqueta angular escura, troféu
+ * e filete na cor do campeonato, texto Kanit itálico. Sem pílula/brilho.
+ * ===================================================================== */
+html body .match-competition.match-competition {
+  --comp: var(--av-cyan);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(100%, 260px);
+  padding: 4px 14px 4px 12px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(0deg, var(--comp) 0 2px, var(--av-rail) 2px) !important;
+  box-shadow: none !important;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  color: var(--comp) !important;
+  transform: none !important;
+}
+html body .match-competition.match-competition.hidden { display: none !important; }
+html body .match-competition.match-competition .match-competition-trophy {
+  width: 14px !important;
+  height: 14px !important;
+  color: var(--comp) !important;
+  filter: none !important;
+}
+html body .match-competition.match-competition b {
+  color: var(--av-ink) !important;
+  font: italic 800 11px/1.2 var(--av-display) !important;
+  letter-spacing: .05em !important;
+  text-transform: uppercase;
+}
+html body .match-competition[data-kind="serie-a"],
+html body .match-competition[data-kind="serie-b"],
+html body .match-competition[data-kind="serie-c"],
+html body .match-competition[data-kind="serie-d"] { --comp: var(--av-cyan); }
+html body .match-competition[data-kind="estadual"] { --comp: var(--av-green); }
+html body .match-competition[data-kind="cup"] { --comp: var(--av-orange); }
+html body .match-competition[data-kind="sudamericana"] { --comp: var(--av-red); }
+html body .match-competition[data-kind="libertadores"],
+html body .match-competition[data-kind="recopa-sul"],
+html body .match-competition[data-kind="intercontinental"],
+html body .match-competition[data-kind="world-cup"] { --comp: var(--av-gold); }
+html body .match-competition[data-kind="idle"] { --comp: var(--av-muted); }
+html.is-mobile body .view#dashboard .match-competition { transform: none !important; }
+
+/* =====================================================================
+ * Próximos jogos v2: bloco de data | confronto (tag + escudos) | CASA/FORA
+ * ===================================================================== */
+html body .view#dashboard .club-upcoming-row.up-v2 {
+  display: grid !important;
+  grid-template-columns: 56px minmax(0, 1fr) auto !important;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 !important;
+  border-bottom: 1px solid var(--av-line) !important;
+  background: transparent !important;
+}
+html body .view#dashboard .club-upcoming-row.up-v2 > span {
+  margin: 0 !important;
+  padding: 0;
+  border: 0 !important;
+  background: none;
+  text-align: left !important;
+  width: auto !important;
+  min-width: 0;
+}
+html body .view#dashboard .up-v2 .up-date {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 0;
+  background: linear-gradient(225deg, transparent 8px, var(--av-rail) 8px);
+  line-height: 1;
+}
+html body .view#dashboard .up-v2 .up-date small {
+  color: var(--av-muted);
+  font: italic 800 9px var(--av-display);
+  letter-spacing: .08em;
+}
+html body .view#dashboard .up-v2 .up-date b {
+  color: var(--av-ink);
+  font: italic 900 22px var(--av-display);
+  margin: 1px 0;
+}
+html body .view#dashboard .up-v2 .up-date em {
+  margin-top: 3px;
+  color: var(--av-cyan);
+  font: 700 11px var(--av-body);
+  font-style: normal;
+}
+html body .view#dashboard .up-v2 .up-match {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+html body .view#dashboard .up-v2 .up-teams {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+html body .view#dashboard .up-v2 .up-teams > i {
+  flex: 0 0 auto;
+  color: var(--av-muted);
+  font: italic 800 13px var(--av-display);
+  font-style: italic;
+}
+html body .view#dashboard .up-v2 .up-team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+html body .view#dashboard .up-v2 .up-team i.up-crest {
+  flex: 0 0 22px;
+  width: 22px !important;
+  height: 22px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+html body .view#dashboard .up-v2 .up-team i.up-crest > *,
+html body .view#dashboard .up-v2 .up-team i.up-crest img,
+html body .view#dashboard .up-v2 .up-team i.up-crest svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+html body .view#dashboard .up-v2 .up-team b {
+  display: block !important;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--av-ink) !important;
+  font: italic 800 15px var(--av-display) !important;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+html body .view#dashboard .up-v2 .up-team.is-user b { color: var(--av-muted) !important; font-weight: 700 !important; }
+html body .view#dashboard .up-v2 .up-venue {
+  display: inline-block !important;
+  padding: 3px 12px;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  font: italic 800 10px var(--av-display);
+  letter-spacing: .06em;
+}
+html body .view#dashboard .up-v2 .up-venue.home { background: var(--av-green); color: #04121c; }
+html body .view#dashboard .up-v2 .up-venue.away { background: var(--av-panel-hi); color: var(--av-ink); }
+
+/* Celular: CASA/FORA desce para junto da tag; times em linha com elipse. */
+html.is-mobile body .view#dashboard .club-upcoming-row.up-v2 {
+  grid-template-columns: 52px minmax(0, 1fr) !important;
+  gap: 10px;
+}
+html.is-mobile body .view#dashboard .up-v2 .up-venue {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  align-self: start;
+  margin-top: 2px;
+}
+html.is-mobile body .view#dashboard .up-v2 .up-match { grid-column: 2; grid-row: 1; }
+html.is-mobile body .view#dashboard .up-v2 .up-match .match-competition { max-width: calc(100% - 64px); }
+html.is-mobile body .view#dashboard .up-v2 .up-team b { font-size: 14px !important; }
+html.is-mobile body .view#dashboard .up-v2 .up-teams { width: 100%; }
+html.is-mobile body .view#dashboard .up-v2 .up-team { flex: 1 1 0; }
+html.is-mobile body .view#dashboard .up-v2 .up-team:last-child { justify-content: flex-start; }
+html body .view#dashboard .club-upcoming-row.up-v2::before,
+html body .view#dashboard .club-upcoming-row.up-v2::after,
+html body .view#dashboard .club-upcoming-row.up-v2 > span::before { display: none !important; }
+html body .view#dashboard .club-upcoming-row.up-v2 > .up-date {
+  padding: 6px 0 !important;
+  background: linear-gradient(225deg, transparent 8px, var(--av-rail) 8px) !important;
+}
+html body .view#dashboard .club-upcoming-row.up-v2 > .up-venue {
+  min-width: 0 !important;
+  padding: 3px 12px !important;
+  line-height: 1.2;
+}
+html body .view#dashboard .club-upcoming-row.up-v2 > .up-venue.home { background: var(--av-green) !important; }
+html body .view#dashboard .club-upcoming-row.up-v2 > .up-venue.away { background: var(--av-panel-hi) !important; }
+/* Celular: um time por linha, nome inteiro. */
+html.is-mobile body .view#dashboard .up-v2 .up-teams {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+html.is-mobile body .view#dashboard .up-v2 .up-teams > i { display: none !important; }
+html.is-mobile body .view#dashboard .up-v2 .up-team { flex: none; max-width: 100%; }
+
+/* Celular: cards da Central sempre na largura toda. */
+html.is-mobile body .view#dashboard .hub-upcoming,
+html.is-mobile body .view#dashboard .hub-standings,
+html.is-mobile body .view#dashboard .hub-attention {
+  width: 100% !important;
+  align-self: stretch !important;
+  box-sizing: border-box;
+}
+html.is-mobile body .view#dashboard .up-v2 .up-match .match-competition { max-width: calc(100% - 70px); }
+
+/* Siglas de campeonato no calendário: mesmo código de cor das tags. */
+html body .calendar-comp-tag.calendar-comp-tag {
+  --comp: var(--av-cyan);
+  padding: 1px 8px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(0deg, var(--comp) 0 2px, var(--av-rail) 2px) !important;
+  box-shadow: none !important;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  color: var(--av-ink) !important;
+  font: italic 800 9px/1.5 var(--av-display) !important;
+  letter-spacing: .06em;
+}
+html body .calendar-comp-tag[data-code="EST"] { --comp: var(--av-green); }
+html body .calendar-comp-tag[data-code="CBR"] { --comp: var(--av-orange); }
+html body .calendar-comp-tag[data-code="CSU"] { --comp: var(--av-red); }
+html body .calendar-comp-tag:is([data-code="LIB"], [data-code="REC"], [data-code="CMU"], [data-code="FIF"], [data-code="SCB"]) { --comp: var(--av-gold); }
+html body .calendar-comp-tag[data-code="REG"] { --comp: var(--av-muted); }

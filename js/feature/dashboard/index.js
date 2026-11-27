@@ -809,7 +809,18 @@ export function createDashboardFeature(deps) {
               kind: badge.kind,
               extraClass: 'club-upcoming-badge',
             });
-            return `<div class="club-upcoming-row ${isCup || isKo || isState ? 'cup-row' : ''}"><span class="club-upcoming-fixture"><span class="club-upcoming-matchup"><b class="club-link" data-club="${game.home}" role="button" tabindex="0">${game.home}</b> <i>×</i> <b class="club-link" data-club="${game.away}" role="button" tabindex="0">${game.away}</b></span>${badgeHtml}</span><span>${details.display} · ${details.time}</span><span class="${atHome ? 'home' : 'away'}">${atHome ? 'CASA' : 'FORA'}</span></div>`;
+            // Próximos jogos v2: data em bloco, confronto com escudos e a
+            // tag do campeonato; o adversário fica em destaque.
+            const when = details.date instanceof Date ? details.date : parseCalendarDate(details.date);
+            const validWhen = when instanceof Date && !Number.isNaN(when.getTime());
+            const months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+            const weekdays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+            const dayHtml = validWhen
+              ? `<small>${weekdays[when.getDay()]}</small><b>${String(when.getDate()).padStart(2, '0')}</b><small>${months[when.getMonth()]}</small>`
+              : `<b>${details.display}</b>`;
+            const side = (team, isUser) => `<span class="up-team${isUser ? ' is-user' : ''}">${teamCrestHtml(team, { className: 'up-crest' })}<b class="club-link" data-club="${team}" role="button" tabindex="0">${team}</b></span>`;
+            const homeIsUser = atHome;
+            return `<div class="club-upcoming-row up-v2 ${isCup || isKo || isState ? 'cup-row' : ''}"><span class="up-date">${dayHtml}<em>${details.time}</em></span><span class="club-upcoming-fixture up-match">${badgeHtml}<span class="club-upcoming-matchup up-teams">${side(game.home, homeIsUser)}<i>×</i>${side(game.away, !homeIsUser)}</span></span><span class="up-venue ${atHome ? 'home' : 'away'}">${atHome ? 'CASA' : 'FORA'}</span></div>`;
           })
           .join('')
       : `<div class="club-upcoming-row idle-row"><span class="club-upcoming-fixture"><b>${idle ? 'Nenhum jogo restante do clube' : fullyComplete ? 'Temporada encerrada' : 'Agenda em atualização'}</b></span><span>${idle ? `Nacional na rodada ${currentRound}` : '—'}</span><span class="away">—</span></div>`;
