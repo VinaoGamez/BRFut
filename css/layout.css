@@ -3303,6 +3303,20 @@ main > .view.active.training-view {
     radial-gradient(circle at 18% 30%, #ffd76a40, transparent 55%),
     linear-gradient(135deg, #2b2210 0%, #10161f 100%);
 }
+.match-competition[data-kind='recopa-sul'] {
+  color: #f4c56b;
+  border-color: #7b5a2a;
+  background:
+    radial-gradient(circle at 18% 30%, #f4c56b33, transparent 55%),
+    linear-gradient(135deg, #2a1d10 0%, #10161f 100%);
+}
+.match-competition[data-kind='intercontinental'] {
+  color: #e8ecf5;
+  border-color: #6b7690;
+  background:
+    radial-gradient(circle at 18% 30%, #e8ecf540, transparent 55%),
+    linear-gradient(135deg, #1b2030 0%, #10161f 100%);
+}
 .match-competition[data-kind='sudamericana'] {
   color: #7fd6f2;
   border-color: #2f6a7e;

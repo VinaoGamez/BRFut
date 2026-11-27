@@ -1,3 +1,4 @@
+import { conmebolShortName, isConmebolGame } from '../../engine/conmebol-format.js';
 import { resolveNationalTeam } from '../../engine/national-teams.js';
 import { WORLD_CUP_COMPETITION } from '../../engine/world-cup-calendar.js';
 import { isKnockoutShootoutCompetition, serieDKnockoutPhaseLabel } from '../../engine/knockout-shootout.js';
@@ -18,8 +19,8 @@ export const serieDGroupLabel = groupIndex => (groupIndex >= 0 ? `Grupo A${group
 
 export const joinMatchMeta = (...parts) => parts.filter(Boolean).join(' · ');
 
-const isConmebolMatch = game => game?.competition === 'LIBERTADORES' || game?.competition === 'SUL-AMERICANA';
-const conmebolCompetitionName = game => (game?.competition === 'LIBERTADORES' ? 'Libertadores' : 'Sul-Americana');
+const isConmebolMatch = game => isConmebolGame(game);
+const conmebolCompetitionName = game => conmebolShortName(game);
 /** Fase da CONMEBOL como aparece no card: "Grupo C · 3ª rodada", "Oitavas de final · Volta". */
 const conmebolPhaseLabel = game => {
   if (!game) return '';

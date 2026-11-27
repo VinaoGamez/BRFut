@@ -1,3 +1,4 @@
+import { CONMEBOL_DISCIPLINE_KEYS } from '../engine/conmebol-format.js';
 import { createInternationalRuntime } from '../engine/international-runtime.js';
 import { storage as brfutStorage } from '../core/storage-backend.js';
 import { $, $$, on, onClick, redirectGame, clamp, cleanCareerText } from '../ui/dom.js';
@@ -2676,6 +2677,8 @@ export async function bootEngine({
   const creditUserHomeGate=game=>{
     // Só mando de campo — visitante nunca recebe bilheteria.
     if(!isUserHomeMatch(game)||!clubs[userClub])return null;
+    // Final continental e Intercontinental: campo neutro, bilheteria é da organizadora.
+    if(game?.neutral)return null;
     const venue=matchVenueFor(userClub);
     const userStadium=ensureStadium(clubs[userClub],userDivision);
     const result=creditHomeGate(clubs[userClub],game,{
@@ -6773,7 +6776,7 @@ export async function bootEngine({
     if(!availabilityCommitted)commitLiveAvailability();
     recordGameLeaders(liveMatchGame);
     playerHistory.persist();
-    const competitionKey=liveMatchGame.competition==='LIBERTADORES'?'LIBERTADORES':'SUDAMERICANA';
+    const competitionKey=CONMEBOL_DISCIPLINE_KEYS[liveMatchGame.competition]||'LIBERTADORES';
     serveCompetitionSuspensions(clubs,new Set([liveMatchGame.home,liveMatchGame.away]),competitionKey,currentRound);
     conmebolRuntime?.completeUserGame(liveMatchGame);
     rebuildCalendarGames();
@@ -7850,7 +7853,7 @@ export async function bootEngine({
     },
     getContinentalChampions:()=>{
       const summary=conmebolRuntime?.seasonSummary?.();
-      return summary?{LIBERTADORES:summary.LIBERTADORES,SUDAMERICANA:summary.SUDAMERICANA}:{};
+      return summary?{LIBERTADORES:summary.LIBERTADORES,SUDAMERICANA:summary.SUDAMERICANA,RECOPA_SUL:summary.RECOPA_SUL,INTERCONTINENTAL:summary.INTERCONTINENTAL}:{};
     },
     pruneClubMemory,
     getNationalRankingEntries:()=>nationalRankingEntries,
@@ -8498,6 +8501,12 @@ export async function bootEngine({
     out.libertadoresChampion=edition.libertadores.champion;
     out.sudamericanaChampion=edition.sudamericana.champion;
     out.libertadoresFinal=edition.libertadores.finalVenue;
+    out.recopa=edition.recopa?.stages?.F?`${edition.recopa.stages.F.ties[0].home} × ${edition.recopa.stages.F.ties[0].away} → ${edition.recopa.champion||'?'}`:null;
+    out.intercontinental=edition.intercontinental?.stages?.IF?`${Object.values(edition.intercontinental.stages).map(st=>`${st.stage}:${st.ties[0].home}×${st.ties[0].away}→${st.ties[0].winner||'?'}`).join(' | ')} @${edition.intercontinental.venue}`:null;
+    out.interGames=edition.fixtures.filter(g=>g.competitionId==='intercontinental'||g.competitionId==='recopa').map(g=>`${g.stage} ${calendarKey(new Date(g.date))} ${g.home} ${g.homeGoals}-${g.awayGoals} ${g.away} so=${g.shootoutWinner||''} et=${g.extraTimeWinner||''} w=${g.winner||''}`);
+    out.interMessages=(messages.getMessages?.()||[]).filter(m=>/Intercontinental|Recopa/.test(m.title||'')).map(m=>`${m.title}: ${m.body}`);
+    if(edition.recopa?.stages?.F&&!edition.recopa.champion)out.anomalies.push('no_recopa_champion');
+    if(edition.libertadores.champion&&!edition.intercontinental?.champion)out.anomalies.push('no_intercontinental_champion');
     const statusAtEnd=conmebolRuntime.userStatus();
     out.userResult=statusAtEnd?`${statusAtEnd.label} · ${statusAtEnd.stageLabel}${statusAtEnd.result?` · ${statusAtEnd.result}`:''}${statusAtEnd.eliminatedAt?` · eliminado em ${statusAtEnd.eliminatedAt}`:''}`:null;
     out.fixtures=edition.fixtures.length;

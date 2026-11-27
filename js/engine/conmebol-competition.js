@@ -17,13 +17,17 @@
 import {
   CONMEBOL_COMPETITIONS,
   LIBERTADORES,
-  LIBERTADORES_STAGES,
   STAGE_LABELS,
   SUDAMERICANA,
-  SUDAMERICANA_STAGES,
   conmebolPrize,
+  conmebolStageOrder,
   conmebolStageWindows,
 } from './conmebol-format.js';
+import { conmebolClubMeta, worldClubsOf } from './conmebol-clubs.js';
+
+/** Todas as competições da edição, na ordem em que aparecem. */
+export const EDITION_COMPETITIONS = Object.freeze(['libertadores', 'sudamericana', 'recopa', 'intercontinental']);
+const INTERCONTINENTAL_VENUES = ['Doha', 'Riade', 'Miami', 'Abu Dhabi', 'Jidá'];
 
 export const CONMEBOL_EDITION_VERSION = 1;
 const GROUP_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -74,7 +78,7 @@ function shuffle(edition, list) {
  * @param {Array<{start:Date,end:Date}>} [params.blocked] janelas proibidas (Data FIFA, Copa)
  * @param {string|null} [params.titleHolder] campeão da última Libertadores (cabeça do grupo A)
  */
-export function createConmebolEdition({ season, seed = 1, entries, ranking = {}, blocked = [], titleHolder = null } = {}) {
+export function createConmebolEdition({ season, seed = 1, entries, ranking = {}, blocked = [], titleHolder = null, recopa = null } = {}) {
   const edition = {
     version: CONMEBOL_EDITION_VERSION,
     season: Number(season),
@@ -85,9 +89,13 @@ export function createConmebolEdition({ season, seed = 1, entries, ranking = {},
     windows: {
       libertadores: serializeWindows(conmebolStageWindows('libertadores', season, { blocked })),
       sudamericana: serializeWindows(conmebolStageWindows('sudamericana', season, { blocked })),
+      recopa: serializeWindows(conmebolStageWindows('recopa', season, { blocked })),
+      intercontinental: serializeWindows(conmebolStageWindows('intercontinental', season, { blocked })),
     },
     libertadores: emptyCompetition('libertadores', entries?.libertadores),
     sudamericana: emptyCompetition('sudamericana', entries?.sudamericana),
+    recopa: emptyCompetition('recopa', recopa ? { final: recopa } : {}),
+    intercontinental: emptyCompetition('intercontinental', {}),
     fixtures: [],
     events: [],
     nextGameNumber: 1,
@@ -98,8 +106,10 @@ export function createConmebolEdition({ season, seed = 1, entries, ranking = {},
   Object.values(entries?.libertadores || {}).forEach(register);
   Object.values(entries?.sudamericana || {}).forEach(register);
 
+  if (recopa) register(recopa);
   openStage(edition, 'libertadores', 'F1');
   openStage(edition, 'sudamericana', 'FS');
+  if (recopa) openStage(edition, 'recopa', 'F');
   return edition;
 }
 
@@ -176,8 +186,7 @@ function makeGame(edition, competitionId, { stage, home, away, leg = null, match
 }
 
 function stageIndex(competitionId, stage) {
-  const order = competitionId === 'libertadores' ? LIBERTADORES_STAGES : SUDAMERICANA_STAGES;
-  return order.indexOf(stage) + 1;
+  return conmebolStageOrder(competitionId).indexOf(stage) + 1;
 }
 
 function gameById(edition, id) {
@@ -214,11 +223,11 @@ function stagePrize(competitionId, stage) {
 /** Quanto o clube já faturou de premiação nesta edição. */
 export function conmebolEarnings(edition, club) {
   let total = 0;
-  ['libertadores', 'sudamericana'].forEach(id => {
+  EDITION_COMPETITIONS.forEach(id => {
     const row = edition?.[id]?.progress?.[club];
     if (!row) return;
     row.stages.forEach(stage => { total += stagePrize(id, stage); });
-    total += row.groupWins * conmebolPrize(id, 'groupWin');
+    total += (row.groupWins || 0) * conmebolPrize(id, 'groupWin');
     if (row.result === 'champion') total += conmebolPrize(id, 'champion');
     if (row.result === 'runnerUp') total += conmebolPrize(id, 'runnerUp');
   });
@@ -273,6 +282,13 @@ function openStage(edition, competitionId, stage, participants = null) {
     const pairs = [];
     for (let i = 0; i < participants.length; i += 2) pairs.push(orderByCampaign(edition, competitionId, participants[i], participants[i + 1]));
     record = twoLegFromPairs(edition, competitionId, stage, pairs);
+  } else if (competitionId === 'recopa' && stage === 'F') {
+    // O campeão da Libertadores manda a volta.
+    const [lib, sud] = entrants.final || [];
+    record = lib && sud ? twoLegFromPairs(edition, competitionId, stage, [[lib.club, sud.club]]) : null;
+    if (record) record.ties[0].final = true;
+  } else if (competitionId === 'intercontinental') {
+    record = intercontinentalStage(edition, stage, participants);
   } else if (stage === 'F') {
     record = singleFinal(edition, competitionId, participants);
   }
@@ -409,6 +425,47 @@ function singleFinal(edition, competitionId, [a, b]) {
   game.venue = city;
   edition[competitionId].finalVenue = city;
   return { ties: [{ id: tieId, index: 1, home: first, away: second, games: [game.id], winner: null, loser: null, single: true, final: true }] };
+}
+
+/**
+ * Copa Intercontinental: o campeão da Libertadores estreia no Derby das
+ * Américas contra o campeão da CONCACAF; quem passa pega o vencedor da Copa
+ * África-Ásia-Pacífico no Desafio; a final é contra o campeão europeu.
+ * Todos os jogos em sede neutra, com prorrogação.
+ */
+function pickWorldChampion(edition, confederations) {
+  const pool = confederations.flatMap(confed => worldClubsOf(confed));
+  const club = pool[Math.floor(nextRandom(edition) * pool.length)];
+  if (club) edition.countries[club.name] = club.country;
+  return club?.name || null;
+}
+
+function intercontinentalStage(edition, stage, participants) {
+  const comp = edition.intercontinental;
+  if (!comp.venue) comp.venue = INTERCONTINENTAL_VENUES[Math.floor(nextRandom(edition) * INTERCONTINENTAL_VENUES.length)];
+  const venue = comp.venue;
+  let pair = null;
+  if (stage === 'DA') {
+    const libChampion = participants?.[0];
+    const concacaf = pickWorldChampion(edition, ['CONCACAF']);
+    if (!libChampion || !concacaf) return null;
+    comp.entrants = { conmebol: [{ club: libChampion, country: edition.countries[libChampion] || 'BRA', via: 'Campeão da Libertadores' }], concacaf: [{ club: concacaf, country: edition.countries[concacaf], via: 'Campeão da CONCACAF' }] };
+    pair = [libChampion, concacaf];
+  } else if (stage === 'CH') {
+    const asiaAfrica = pickWorldChampion(edition, ['CAF', 'AFC']);
+    comp.entrants.challenger = [{ club: asiaAfrica, country: edition.countries[asiaAfrica], via: 'Campeão da Copa África-Ásia-Pacífico' }];
+    pair = [participants[0], asiaAfrica];
+  } else if (stage === 'IF') {
+    const europe = pickWorldChampion(edition, ['UEFA']);
+    comp.entrants.uefa = [{ club: europe, country: edition.countries[europe], via: 'Campeão da Europa' }];
+    pair = [europe, participants[0]];
+  }
+  if (!pair || !pair.every(Boolean)) return null;
+  const tieId = `intercontinental-${edition.season}-${stage}-1`;
+  const game = makeGame(edition, 'intercontinental', { stage, home: pair[0], away: pair[1], leg: 'JOGO ÚNICO', tieId, neutral: true, index: 0 });
+  game.venue = venue;
+  if (stage === 'IF') comp.finalVenue = venue;
+  return { ties: [{ id: tieId, index: 1, home: pair[0], away: pair[1], games: [game.id], winner: null, loser: null, single: true, final: stage === 'IF' }] };
 }
 
 /* --------------------------------------------------------------------------
@@ -660,7 +717,43 @@ function cascade(edition, hooks) {
       changed = true;
     }
   });
+
+  // Recopa: confronto único de ida e volta.
+  const recopa = edition.recopa;
+  if (recopa?.stages?.F && !recopa.champion && stageComplete(edition, 'recopa', 'F', hooks)) {
+    crown(edition, 'recopa', recopa.stages.F.ties[0]);
+    changed = true;
+  }
+
+  // Intercontinental: abre quando a Libertadores tem campeão.
+  const inter = edition.intercontinental;
+  if (inter && lib.champion && !inter.stages.DA) open('intercontinental', 'DA', [lib.champion]);
+  if (inter?.stages?.DA && !inter.stages.CH && stageComplete(edition, 'intercontinental', 'DA', hooks)) {
+    eliminateLosers(edition, 'intercontinental', 'DA');
+    open('intercontinental', 'CH', winnersOf(edition, 'intercontinental', 'DA'));
+  }
+  if (inter?.stages?.CH && !inter.stages.IF && stageComplete(edition, 'intercontinental', 'CH', hooks)) {
+    eliminateLosers(edition, 'intercontinental', 'CH');
+    open('intercontinental', 'IF', winnersOf(edition, 'intercontinental', 'CH'));
+  }
+  if (inter?.stages?.IF && !inter.champion && stageComplete(edition, 'intercontinental', 'IF', hooks)) {
+    crown(edition, 'intercontinental', inter.stages.IF.ties[0]);
+    changed = true;
+  }
   return changed;
+}
+
+function crown(edition, competitionId, tie) {
+  const comp = edition[competitionId];
+  comp.champion = tie.winner;
+  comp.runnerUp = tie.loser;
+  [tie.winner, tie.loser].forEach(club => {
+    comp.progress[club] = comp.progress[club] || { stages: [], groupWins: 0, eliminatedAt: null, result: null };
+  });
+  comp.progress[tie.winner].result = 'champion';
+  comp.progress[tie.loser].result = 'runnerUp';
+  comp.progress[tie.loser].eliminatedAt = tie.final ? 'F' : comp.progress[tie.loser].eliminatedAt;
+  edition.events.push({ type: 'champion', competitionId, club: tie.winner, runnerUp: tie.loser });
 }
 
 /**
@@ -694,7 +787,7 @@ export function advanceConmebolThroughDate(edition, date, hooks = {}) {
         if (result.data) game.data = result.data;
         if (result.goals) game.goals = result.goals;
         game.completed = true;
-        if (game.stage === 'F' && game.homeGoals === game.awayGoals) {
+        if (game.homeGoals === game.awayGoals && (game.competitionId === 'intercontinental' || (game.stage === 'F' && game.competitionId !== 'recopa'))) {
           const extra = hooks.resolveExtraTime?.(game);
           if (extra) game.extraTimeWinner = extra;
         }

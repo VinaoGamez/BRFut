@@ -19,6 +19,8 @@ const LEAGUE_META = Object.freeze({
   RECOPA: { label: 'Recopa Nacional', subtitle: 'Campeão da Recopa Nacional', accent: '#ffd24a', cupStyle: false },
   LIBERTADORES: { label: 'Libertadores', subtitle: 'Campeão da Libertadores', accent: '#c9a227', cupStyle: false },
   SUDAMERICANA: { label: 'Sul-Americana', subtitle: 'Campeão da Sul-Americana', accent: '#ff7a52', cupStyle: false },
+  RECOPA_SUL: { label: 'Recopa Sul-Americana', subtitle: 'Campeão da Recopa Sul-Americana', accent: '#f4c56b', cupStyle: false },
+  INTERCONTINENTAL: { label: 'Intercontinental', subtitle: 'Campeão da Copa Intercontinental', accent: '#e8ecf5', cupStyle: false },
 });
 
 const ESTADUAL_META = Object.freeze({
@@ -29,7 +31,7 @@ const ESTADUAL_META = Object.freeze({
 });
 
 const PYRAMID_ORDER = ['A', 'B', 'C', 'D'];
-const NAV_ORDER = ['A', 'B', 'C', 'D', 'CUP', 'WORLD_CUP', 'RECOPA', 'LIBERTADORES', 'SUDAMERICANA'];
+const NAV_ORDER = ['A', 'B', 'C', 'D', 'CUP', 'WORLD_CUP', 'RECOPA', 'RECOPA_SUL', 'LIBERTADORES', 'SUDAMERICANA', 'INTERCONTINENTAL'];
 
 const layoutState = new WeakMap();
 let documentHandlersBound = false;
@@ -104,7 +106,7 @@ export function buildChampionEntries({
     });
     nav.push(entry);
     if (PYRAMID_ORDER.includes(key)) pyramid.push(entry);
-    else if (['WORLD_CUP', 'RECOPA', 'LIBERTADORES', 'SUDAMERICANA'].includes(key)) extra.push(entry);
+    else if (['WORLD_CUP', 'RECOPA', 'RECOPA_SUL', 'LIBERTADORES', 'SUDAMERICANA', 'INTERCONTINENTAL'].includes(key)) extra.push(entry);
   });
 
   const estaduais = [];

@@ -16,7 +16,17 @@ const STAGE_ORDER = Object.freeze({
   sudamericana: ['FS', 'G', 'PO', 'R16', 'QF', 'SF', 'F'],
 });
 
-const LABEL = Object.freeze({ libertadores: 'COPA LIBERTADORES', sudamericana: 'COPA SUL-AMERICANA' });
+const LABEL = Object.freeze({
+  libertadores: 'COPA LIBERTADORES',
+  sudamericana: 'COPA SUL-AMERICANA',
+  recopa: 'RECOPA SUL-AMERICANA',
+  intercontinental: 'COPA INTERCONTINENTAL',
+});
+
+/** A página da Libertadores abre com a Recopa e fecha com o Intercontinental. */
+const EXTRA_STEPS = Object.freeze({
+  libertadores: { before: [['recopa', 'F']], after: [['intercontinental', 'DA'], ['intercontinental', 'CH'], ['intercontinental', 'IF']] },
+});
 
 export function isConmebolPage(pageCompetition) {
   return !!CONMEBOL_PAGE_IDS[pageCompetition];
@@ -27,12 +37,18 @@ export function conmebolSteps(edition, competitionId) {
   const comp = edition?.[competitionId];
   if (!comp) return [];
   const steps = [];
+  const extra = EXTRA_STEPS[competitionId] || { before: [], after: [] };
+  const pushExtra = list => list.forEach(([comp, stage]) => {
+    if (edition?.[comp]?.stages?.[stage]) steps.push({ stage, comp });
+  });
+  pushExtra(extra.before);
   STAGE_ORDER[competitionId].forEach(stage => {
     const record = comp.stages?.[stage];
     if (!record) return;
-    if (stage === 'G') Object.keys(record.groups || {}).sort().forEach(group => steps.push({ stage, group }));
-    else steps.push({ stage });
+    if (stage === 'G') Object.keys(record.groups || {}).sort().forEach(group => steps.push({ stage, group, comp: competitionId }));
+    else steps.push({ stage, comp: competitionId });
   });
+  pushExtra(extra.after);
   return steps;
 }
 
@@ -40,13 +56,14 @@ export function conmebolSteps(edition, competitionId) {
 export function conmebolUserStep(edition, competitionId, userClub) {
   const steps = conmebolSteps(edition, competitionId);
   if (!steps.length) return 0;
-  const games = (edition.fixtures || []).filter(game => game.competitionId === competitionId && (game.home === userClub || game.away === userClub));
+  const comps = new Set(steps.map(step => step.comp));
+  const games = (edition.fixtures || []).filter(game => comps.has(game.competitionId) && (game.home === userClub || game.away === userClub));
   const target = games.find(game => !game.completed) || games[games.length - 1];
   if (!target) {
     // Sem o usuário: mostra a fase mais avançada.
     return steps.length - 1;
   }
-  const index = steps.findIndex(step => step.stage === target.stage && (!step.group || step.group === target.group));
+  const index = steps.findIndex(step => step.comp === target.competitionId && step.stage === target.stage && (!step.group || step.group === target.group));
   return index >= 0 ? index : steps.length - 1;
 }
 
@@ -64,6 +81,16 @@ export function conmebolHeader(edition, competitionId, stepIndex) {
   }
   const step = Math.max(0, Math.min(steps.length - 1, Number(stepIndex) || 0));
   const current = steps[step];
+  if (current.comp !== competitionId) {
+    const other = edition[current.comp];
+    return {
+      subText: `${LABEL[current.comp]}${other?.champion ? ' · ENCERRADA' : ''}`,
+      titleText: (current.comp === 'recopa' ? 'FINAL · IDA E VOLTA' : STAGE_LABELS[current.stage]).toUpperCase(),
+      canPrev: step > 0,
+      canNext: step < steps.length - 1,
+      step,
+    };
+  }
   const status = comp.champion
     ? 'ENCERRADA'
     : current.stage === 'G'
@@ -120,7 +147,7 @@ export function conmebolBody({ edition, competitionId, stepIndex, userClub, rend
     return { head: '', html: `<div class="championship-page-empty">${message}</div>` };
   }
   const current = steps[Math.max(0, Math.min(steps.length - 1, Number(stepIndex) || 0))];
-  const comp = edition[competitionId];
+  const comp = edition[current.comp || competitionId];
 
   if (current.stage === 'G') {
     const rows = conmebolGroupTable(edition, competitionId, current.group);
@@ -153,9 +180,18 @@ export function conmebolBody({ edition, competitionId, stepIndex, userClub, rend
     .sort((a, b) => Number(b.home === userClub || b.away === userClub) - Number(a.home === userClub || a.away === userClub))
     .map(tie => tieSummary(edition, tie, userClub, escapeHtml))
     .join('');
-  const final = current.stage === 'F'
-    ? `<div class="conmebol-final-note">Final em jogo único${comp.finalVenue ? ` em ${escapeHtml(comp.finalVenue)}` : ''}${comp.champion ? ` · <strong>${escapeHtml(comp.champion)}</strong> campeão` : ''}</div>`
-    : '';
+  const championNote = comp.champion ? ` · <strong>${escapeHtml(comp.champion)}</strong> campeão` : '';
+  let final = '';
+  if (current.comp === 'recopa') {
+    final = `<div class="conmebol-final-note">Campeão da Libertadores × campeão da Sul-Americana do ano anterior${championNote}</div>`;
+  } else if (current.comp === 'intercontinental') {
+    const tie = record?.ties?.[0];
+    const entrant = name => Object.values(comp.entrants || {}).flat().find(item => item.club === name)?.via;
+    const vias = tie ? [tie.home, tie.away].map(name => `${escapeHtml(name)}${entrant(name) ? ` <small>(${escapeHtml(entrant(name))})</small>` : ''}`).join(' × ') : '';
+    final = `<div class="conmebol-final-note">${vias}${comp.venue ? ` · jogo único em ${escapeHtml(comp.venue)}` : ''}${current.stage === 'IF' ? championNote : ''}</div>`;
+  } else if (current.stage === 'F') {
+    final = `<div class="conmebol-final-note">Final em jogo único${comp.finalVenue ? ` em ${escapeHtml(comp.finalVenue)}` : ''}${championNote}</div>`;
+  }
   const fixtures = renderFixtures(games, {
     completed: games.length > 0 && games.every(game => game.completed),
     roundLabel: STAGE_LABELS[current.stage],

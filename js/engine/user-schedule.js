@@ -1,3 +1,4 @@
+import { isConmebolGame } from './conmebol-format.js';
 import { FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { clamp } from '../ui/dom.js';
 import { findRecordedGame, gameMatchesRecordedCompat, resolveLeagueFixtureRound } from './competition-calendar.js';
@@ -75,7 +76,7 @@ export function createUserScheduleEngine({
     const stateLeagueEngine = getStateLeagueEngine();
     if (isStateLeagueGame(game)) return stateLeagueEngine.isGameComplete(game, userClub);
     if (isRecopaNationalGame(game)) return !!game.completed;
-    if (game.competition === 'LIBERTADORES' || game.competition === 'SUL-AMERICANA') return !!game.completed;
+    if (isConmebolGame(game)) return !!game.completed;
     if (game.competition === WORLD_CUP_COMPETITION) return !!game.completed || game.homeGoals != null;
     if (game.competition === 'COPA DO BRASIL' || isKnockoutShootoutCompetition(game)) {
       if (game.completed) return true;

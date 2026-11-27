@@ -145,7 +145,8 @@ export function createCalendarViewFeature(deps) {
         worldCupBit = ` · CMU ${phaseLabel}: ${worldCupCount} jogos`;
       }
     }
-    $('#calendar .title span').textContent = `Agenda nacional de janeiro a dezembro · ${championshipFixtures.flat().length} jogos do Brasileiro · ${copaDoBrasilFixtures.length} jogos confirmados da Copa do Brasil${worldCupBit} · ${calendarIntervalLabel(restConflictCount)}.`;
+    const calendarSubtitle = $('#calendar .title span');
+    if (calendarSubtitle) calendarSubtitle.textContent = `Agenda nacional de janeiro a dezembro · ${championshipFixtures.flat().length} jogos do Brasileiro · ${copaDoBrasilFixtures.length} jogos confirmados da Copa do Brasil${worldCupBit} · ${calendarIntervalLabel(restConflictCount)}.`;
   };
 
   const calendarGameResult = game => {
@@ -1037,7 +1038,8 @@ export function createCalendarViewFeature(deps) {
       : '';
 
     const continental = deps.getUserContinentalLabel?.() || '';
-    $('#calendar .title p').textContent = `TEMPORADA ${careerSeason} · BRASILEIRÃO SÉRIE ${userDivision} + COPA DO BRASIL${continental ? ` + ${continental.toUpperCase()}` : ''}${isWorldCupSeasonActive(careerSeason) ? ' + CMU' : ''}`;
+    const calendarTitle = $('#calendar .title p');
+    if (calendarTitle) calendarTitle.textContent = `TEMPORADA ${careerSeason} · BRASILEIRÃO SÉRIE ${userDivision} + COPA DO BRASIL${continental ? ` + ${continental.toUpperCase()}` : ''}${isWorldCupSeasonActive(careerSeason) ? ' + CMU' : ''}`;
     syncCalendarSubtitle();
     $('.calendar-toolbar').insertAdjacentHTML(
       'afterend',

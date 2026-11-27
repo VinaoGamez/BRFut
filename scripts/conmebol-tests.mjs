@@ -55,9 +55,10 @@ const makeEdition = (season = 2027, extra = {}) => buildConmebolEdition({
 
 console.log('CONMEBOL');
 
-test('catálogo tem 96 clubes e nenhum nome repetido', () => {
-  assert.equal(CONMEBOL_CLUBS.length, 96);
-  assert.equal(new Set(CONMEBOL_CLUBS.map(c => c.name)).size, 96);
+test('catálogo tem 96 sul-americanos + 18 de outras confederações, sem nome repetido', () => {
+  assert.equal(CONMEBOL_CLUBS.filter(c => c.confederation === 'CONMEBOL').length, 96);
+  assert.equal(CONMEBOL_CLUBS.length, 114);
+  assert.equal(new Set(CONMEBOL_CLUBS.map(c => c.name)).size, 114);
 });
 
 test('elenco estrangeiro é determinístico e maioria local', () => {
@@ -136,6 +137,47 @@ test('temporada completa: grupos, playoffs, mata-mata e campeões', () => {
   const groupOf = {};
   Object.entries(lib.stages.G.groups).forEach(([l, teams]) => teams.forEach(t => { groupOf[t] = l; }));
   lib.stages.R16.ties.forEach(t => assert.notEqual(groupOf[t.home], groupOf[t.away]));
+});
+
+test('Recopa: campeões do ano anterior, ida e volta no fim do verão, Liberta manda a volta', () => {
+  const ed = makeEdition(2027, { titleHolders: { libertadores: 'Clube BR 05', sudamericana: 'Millonarios de Núñez' } });
+  const tie = ed.recopa.stages.F.ties[0];
+  const games = ed.fixtures.filter(g => g.competitionId === 'recopa');
+  assert.equal(games.length, 2);
+  assert.equal(games[1].home, 'Clube BR 05');
+  assert.equal(games[0].home, 'Millonarios de Núñez');
+  games.forEach(g => assert.ok([1, 2].includes(new Date(g.date).getMonth()), 'Recopa fora de fev/mar'));
+  assert.ok(new Date(games[1].date) - new Date(games[0].date) >= 5 * 86400000);
+  advanceConmebolThroughDate(ed, new Date(2027, 2, 15), hooks(3));
+  assert.ok(ed.recopa.champion, 'Recopa sem campeão');
+  assert.equal(tie.winner, ed.recopa.champion);
+  assert.ok(!games.some(g => g.extraTimeWinner), 'Recopa não tem prorrogação');
+});
+
+test('Intercontinental: campeão da Liberta entra no Derby das Américas e vai até a final', () => {
+  const ed = makeEdition();
+  advanceConmebolThroughDate(ed, new Date(2027, 11, 31), hooks(5));
+  const inter = ed.intercontinental;
+  assert.ok(inter.stages.DA, 'sem Derby das Américas');
+  assert.equal(inter.stages.DA.ties[0].home, ed.libertadores.champion);
+  assert.ok(inter.stages.CH && inter.stages.IF, 'fases faltando');
+  assert.ok(inter.champion, 'sem campeão intercontinental');
+  const games = ed.fixtures.filter(g => g.competitionId === 'intercontinental');
+  assert.equal(games.length, 3);
+  games.forEach(g => { assert.equal(g.neutral, true); assert.equal(new Date(g.date).getMonth(), 11); });
+  assert.ok(new Date(games[0].date) > new Date(ed.fixtures.find(g => g.competitionId === 'libertadores' && g.stage === 'F').date));
+  assert.equal(conmebolClubMeta(inter.stages.IF.ties[0].home)?.confederation, 'UEFA');
+  // Empate em jogo único decide na prorrogação ou nos pênaltis, nunca fica aberto.
+  games.forEach(g => assert.ok(g.winner));
+});
+
+test('save antigo sem Recopa/Intercontinental continua avançando', () => {
+  const ed = makeEdition();
+  const old = serializeConmebolEdition(ed);
+  delete old.recopa; delete old.intercontinental; delete old.windows.recopa; delete old.windows.intercontinental;
+  const back = hydrateConmebolEdition(old);
+  advanceConmebolThroughDate(back, new Date(2027, 11, 31), hooks(5));
+  assert.ok(back.libertadores.champion);
 });
 
 test('final é jogo único em campo neutro', () => {

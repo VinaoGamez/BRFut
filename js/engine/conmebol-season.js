@@ -158,6 +158,9 @@ export function buildConmebolEdition(params = {}) {
     ranking[club] = conmebolRankingScore(club, { power, history });
     if (country === 'BRA') ranking[club] += 0;
   });
+  // Recopa Sul-Americana: os dois campeões continentais do ano anterior.
+  const holderOf = via => entries.libertadores.group.find(item => item.via === via) || null;
+  const recopa = [holderOf('Campeão da Libertadores'), holderOf('Campeão da Sul-Americana')];
   return createConmebolEdition({
     season,
     seed: (Number(careerSeed) * 7919 + Number(season) * 104729) >>> 0,
@@ -165,6 +168,7 @@ export function buildConmebolEdition(params = {}) {
     ranking,
     blocked,
     titleHolder: titleHolders.libertadores || null,
+    recopa: recopa.every(Boolean) ? recopa : null,
   });
 }
 

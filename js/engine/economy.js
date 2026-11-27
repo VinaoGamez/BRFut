@@ -1,3 +1,4 @@
+import { isConmebolGame } from './conmebol-format.js';
 import { storage as brfutStorage } from '../core/storage-backend.js';
 import { MODULE_VERSIONS } from '../core/constants.js';
 import { serieCTotalRounds } from './serie-c-format.js';
@@ -1954,7 +1955,7 @@ const isSerieDKnockoutGame = game => {
   return Boolean(game.twoLegged && game.leg && Number(game.round) > 10);
 };
 
-const isConmebolCompetition = game => game?.competition === 'LIBERTADORES' || game?.competition === 'SUL-AMERICANA';
+const isConmebolCompetition = game => isConmebolGame(game);
 
 /** Lotação extra nos jogos da CONMEBOL, por fase. */
 const CONMEBOL_ATTRACTION = Object.freeze({
@@ -2018,6 +2019,8 @@ export function competitionAttraction(game) {
   }
 
   if (isConmebolCompetition(game)) {
+    if (game.competition === 'RECOPA SUL-AMERICANA') return { boost: 0.2, label: 'Recopa Sul-Americana' };
+    if (game.competition === 'INTERCONTINENTAL') return { boost: 0, label: 'Intercontinental' };
     const table = game.competition === 'LIBERTADORES' ? CONMEBOL_ATTRACTION.libertadores : CONMEBOL_ATTRACTION.sudamericana;
     return { boost: table[game.stage] ?? 0.1, label: game.phase || game.competition };
   }

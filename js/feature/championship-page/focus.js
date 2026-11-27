@@ -32,6 +32,7 @@ export function createChampionshipPageFocus({
     if (game.competition === 'RECOPA NACIONAL') return 'RECOPA';
     if (game.competition === 'LIBERTADORES') return 'LIBERTADORES';
     if (game.competition === 'SUL-AMERICANA') return 'SUDAMERICANA';
+    if (game.competition === 'RECOPA SUL-AMERICANA' || game.competition === 'INTERCONTINENTAL') return 'LIBERTADORES';
     if (isStateLeagueGame(game)) {
       const userState = stateLeagueEngine.getUserDivision(userClub);
       const uf = String(game.stateUf || userState?.uf || getRealClub(userClub)?.uf || 'SP').toUpperCase();

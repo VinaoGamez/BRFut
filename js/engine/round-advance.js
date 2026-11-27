@@ -1,3 +1,4 @@
+import { isConmebolGame } from './conmebol-format.js';
 import { FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { queuePlayerStatsHistory } from '../core/player-stats-sync.js';
 import { clamp } from '../ui/dom.js';
@@ -344,7 +345,7 @@ export function createRoundAdvanceEngine(deps) {
       return;
     }
 
-    if (liveMatchGame?.competition === 'LIBERTADORES' || liveMatchGame?.competition === 'SUL-AMERICANA') {
+    if (isConmebolGame(liveMatchGame)) {
       deps.setRoundCommitted(true);
       try {
         // Placar primeiro: se algo da apresentação falhar, o resultado já está gravado.

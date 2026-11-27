@@ -37,6 +37,28 @@ export const CONMEBOL_FOREIGN_COUNTRIES = Object.freeze({
   VEN: Object.freeze({ code: 'VEN', name: 'Venezuela', nationality: 'Venezuela', flag: 'VE' }),
 });
 
+/**
+ * Clubes de outras confederações, só para a Copa Intercontinental (e, no
+ * futuro, o Mundial de Clubes). Também fictícios: apelido + bairro/cidade.
+ */
+export const WORLD_CLUB_COUNTRIES = Object.freeze({
+  ESP: Object.freeze({ code: 'ESP', name: 'Espanha', nationality: 'Espanha', flag: 'ES', confederation: 'UEFA' }),
+  ING: Object.freeze({ code: 'ING', name: 'Inglaterra', nationality: 'Inglaterra', flag: 'GB', confederation: 'UEFA' }),
+  ALE: Object.freeze({ code: 'ALE', name: 'Alemanha', nationality: 'Alemanha', flag: 'DE', confederation: 'UEFA' }),
+  FRA: Object.freeze({ code: 'FRA', name: 'França', nationality: 'França', flag: 'FR', confederation: 'UEFA' }),
+  ITA: Object.freeze({ code: 'ITA', name: 'Itália', nationality: 'Itália', flag: 'IT', confederation: 'UEFA' }),
+  MEX: Object.freeze({ code: 'MEX', name: 'México', nationality: 'México', flag: 'MX', confederation: 'CONCACAF' }),
+  USA: Object.freeze({ code: 'USA', name: 'Estados Unidos', nationality: 'Estados Unidos', flag: 'US', confederation: 'CONCACAF' }),
+  EGI: Object.freeze({ code: 'EGI', name: 'Egito', nationality: 'Egito', flag: 'EG', confederation: 'CAF' }),
+  MAR: Object.freeze({ code: 'MAR', name: 'Marrocos', nationality: 'Marrocos', flag: 'MA', confederation: 'CAF' }),
+  RSA: Object.freeze({ code: 'RSA', name: 'África do Sul', nationality: 'África do Sul', flag: 'ZA', confederation: 'CAF' }),
+  SAU: Object.freeze({ code: 'SAU', name: 'Arábia Saudita', nationality: 'Arábia Saudita', flag: 'SA', confederation: 'AFC' }),
+  KOR: Object.freeze({ code: 'KOR', name: 'Coreia do Sul', nationality: 'Coreia do Sul', flag: 'KR', confederation: 'AFC' }),
+  JPN: Object.freeze({ code: 'JPN', name: 'Japão', nationality: 'Japão', flag: 'JP', confederation: 'AFC' }),
+});
+
+const ALL_COUNTRIES = Object.freeze({ ...CONMEBOL_FOREIGN_COUNTRIES, ...WORLD_CLUB_COUNTRIES });
+
 /** Faixa de força por país e nível (1 = elite do país). */
 const POWER_BY_COUNTRY_TIER = Object.freeze({
   ARG: [[59, 62], [56, 59], [53, 56], [50, 53]],
@@ -48,6 +70,20 @@ const POWER_BY_COUNTRY_TIER = Object.freeze({
   PER: [[53, 56], [50, 53], [47, 50], [44, 47]],
   BOL: [[50, 53], [47, 50], [44, 47], [41, 44]],
   VEN: [[50, 53], [47, 50], [44, 47], [41, 44]],
+  // Europa joga acima da elite sul-americana; o resto do mundo, na faixa dela.
+  ESP: [[63, 66], [61, 63]],
+  ING: [[63, 66], [61, 63]],
+  ALE: [[62, 65], [60, 62]],
+  FRA: [[62, 65], [60, 62]],
+  ITA: [[62, 65], [60, 62]],
+  MEX: [[56, 59], [54, 57]],
+  USA: [[54, 57], [52, 55]],
+  EGI: [[55, 58], [53, 56]],
+  MAR: [[54, 57], [52, 55]],
+  RSA: [[53, 56], [51, 54]],
+  SAU: [[56, 59], [54, 57]],
+  KOR: [[54, 57], [52, 55]],
+  JPN: [[54, 57], [52, 55]],
 });
 
 /**
@@ -171,6 +207,54 @@ const CATALOG = Object.freeze({
   ],
 });
 
+/** Mesma ficha do CATALOG, para os clubes de fora da América do Sul. */
+const WORLD_CATALOG = Object.freeze({
+  ESP: [
+    ['Merengues de Chamartín', 'Madri', 'Coliseu de Chamartín', '#ffffff', '#3d2b8f', 1, 650],
+    ['Blaugranas de Les Corts', 'Barcelona', 'Estádio de Les Corts', '#a50044', '#004d98', 1, 40],
+  ],
+  ING: [
+    ['Citizens de Manchester', 'Manchester', 'Arena do Leste de Manchester', '#6cabdd', '#1c2c5b', 1, 40],
+    ['Reds de Anfield', 'Liverpool', 'Estádio de Anfield Road', '#c8102e', '#f6eb61', 1, 30],
+    ['Gunners do Norte de Londres', 'Londres', 'Arena de Holloway', '#ef0107', '#ffffff', 1, 40],
+  ],
+  ALE: [
+    ['Bávaros de Fröttmaning', 'Munique', 'Arena de Fröttmaning', '#dc052d', '#0066b2', 1, 520],
+  ],
+  FRA: [
+    ['Rouge-et-Bleu de Paris', 'Paris', 'Parque do Oeste de Paris', '#004170', '#da291c', 1, 35],
+  ],
+  ITA: [
+    ['Nerazzurri de San Siro', 'Milão', 'Estádio de San Siro', '#010e80', '#000000', 1, 120],
+  ],
+  MEX: [
+    ['Rayados de Monterrey', 'Monterrey', 'Estádio do Cerro de la Silla', '#002b5c', '#ffffff', 1, 540],
+    ['Águilas de Coyoacán', 'Cidade do México', 'Estádio de Santa Úrsula', '#ffd200', '#0a2240', 1, 2240],
+    ['Tuzos de Pachuca', 'Pachuca', 'Estádio Hidalgo de Pachuca', '#003b71', '#ffffff', 1, 2400],
+  ],
+  USA: [
+    ['Estrellas de Los Ángeles', 'Los Angeles', 'Parque de Carson', '#00245d', '#ffd200', 1, 20],
+  ],
+  EGI: [
+    ['Faraós do Cairo', 'Cairo', 'Estádio de Gezira', '#c8102e', '#ffffff', 1, 25],
+  ],
+  MAR: [
+    ['Vermelhos de Casablanca', 'Casablanca', 'Estádio de Anfa', '#d40000', '#ffffff', 1, 50],
+  ],
+  RSA: [
+    ['Canarinhos de Pretória', 'Pretória', 'Estádio de Loftus', '#ffd100', '#0b7a3e', 1, 1340],
+  ],
+  SAU: [
+    ['Azuis de Riade', 'Riade', 'Estádio do Reino', '#005eb8', '#ffffff', 1, 610],
+  ],
+  KOR: [
+    ['Tigres de Ulsan', 'Ulsan', 'Estádio de Munsu', '#0066b3', '#f2a900', 1, 20],
+  ],
+  JPN: [
+    ['Diabos Vermelhos de Saitama', 'Saitama', 'Estádio de Saitama', '#e60012', '#000000', 1, 20],
+  ],
+});
+
 const CREST_PATTERNS = ['vertical', 'horizontal', 'diagonal', 'stripes-v', 'chevron', 'half-arch', 'quarters', 'ring'];
 const CREST_SHAPES = ['classic', 'round', 'modern', 'banner', 'circle', 'hex'];
 const FORMATIONS = ['4-3-3', '4-4-2', '4-2-3-1', '3-5-2', '4-1-4-1', '5-3-2', '4-3-1-2'];
@@ -196,7 +280,7 @@ function initialsOf(name) {
 
 /** Ficha imutável de cada clube estrangeiro. */
 export const CONMEBOL_CLUBS = Object.freeze(
-  Object.entries(CATALOG).flatMap(([country, rows]) =>
+  [...Object.entries(CATALOG), ...Object.entries(WORLD_CATALOG)].flatMap(([country, rows]) =>
     rows.map(([name, city, stadium, primary, secondary, tier, altitude], index) => {
       const slug = slugify(name);
       const rng = createSeededRandom(hashSeedString(`crest:${slug}`));
@@ -204,8 +288,9 @@ export const CONMEBOL_CLUBS = Object.freeze(
         name,
         slug,
         country,
-        countryName: CONMEBOL_FOREIGN_COUNTRIES[country].name,
-        nationality: CONMEBOL_FOREIGN_COUNTRIES[country].nationality,
+        countryName: ALL_COUNTRIES[country].name,
+        nationality: ALL_COUNTRIES[country].nationality,
+        confederation: ALL_COUNTRIES[country].confederation || 'CONMEBOL',
         city,
         stadium,
         tier,
@@ -234,6 +319,11 @@ export function conmebolClubMeta(name) {
 
 export function isConmebolForeignClub(name) {
   return BY_NAME.has(name);
+}
+
+/** Clubes de uma confederação de fora (UEFA, CONCACAF, CAF, AFC). */
+export function worldClubsOf(confederation) {
+  return CONMEBOL_CLUBS.filter(club => club.confederation === confederation);
 }
 
 /** Clubes de um país, na ordem do catálogo. */

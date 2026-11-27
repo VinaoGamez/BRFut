@@ -31,20 +31,43 @@
 
 export const LIBERTADORES = 'LIBERTADORES';
 export const SUDAMERICANA = 'SUL-AMERICANA';
+export const RECOPA_SUL = 'RECOPA SUL-AMERICANA';
+export const INTERCONTINENTAL = 'INTERCONTINENTAL';
 
 export const CONMEBOL_COMPETITIONS = Object.freeze({
   libertadores: Object.freeze({ id: 'libertadores', key: LIBERTADORES, label: 'Copa Libertadores', short: 'Libertadores' }),
   sudamericana: Object.freeze({ id: 'sudamericana', key: SUDAMERICANA, label: 'Copa Sul-Americana', short: 'Sul-Americana' }),
+  recopa: Object.freeze({ id: 'recopa', key: RECOPA_SUL, label: 'Recopa Sul-Americana', short: 'Recopa Sul-Americana' }),
+  intercontinental: Object.freeze({ id: 'intercontinental', key: INTERCONTINENTAL, label: 'Copa Intercontinental da FIFA', short: 'Intercontinental' }),
 });
+
+/** Todas as chaves de `game.competition` que a edição CONMEBOL controla. */
+export const CONMEBOL_GAME_KEYS = Object.freeze(new Set([LIBERTADORES, SUDAMERICANA, RECOPA_SUL, INTERCONTINENTAL]));
+
+/** Chave de disciplina (cartões) por competição. */
+export const CONMEBOL_DISCIPLINE_KEYS = Object.freeze({
+  [LIBERTADORES]: 'LIBERTADORES',
+  [SUDAMERICANA]: 'SUDAMERICANA',
+  [RECOPA_SUL]: 'RECOPA_SUL',
+  [INTERCONTINENTAL]: 'INTERCONTINENTAL',
+});
+
+/** Nome curto da competição de um jogo (selo, manchete). */
+export function conmebolShortName(game) {
+  const id = conmebolCompetitionIdFromKey(game?.competition);
+  return id ? CONMEBOL_COMPETITIONS[id].short : '';
+}
 
 export function conmebolCompetitionIdFromKey(key) {
   if (key === LIBERTADORES) return 'libertadores';
   if (key === SUDAMERICANA) return 'sudamericana';
+  if (key === RECOPA_SUL) return 'recopa';
+  if (key === INTERCONTINENTAL) return 'intercontinental';
   return null;
 }
 
 export function isConmebolGame(game) {
-  return game?.competition === LIBERTADORES || game?.competition === SUDAMERICANA;
+  return CONMEBOL_GAME_KEYS.has(game?.competition);
 }
 
 /** Nome de cada fase, em português, como aparece na tela. */
@@ -59,10 +82,31 @@ export const STAGE_LABELS = Object.freeze({
   QF: 'Quartas de final',
   SF: 'Semifinal',
   F: 'Final',
+  DA: 'Derby das Américas',
+  CH: 'Desafio Intercontinental',
+  IF: 'Final',
 });
 
 export const LIBERTADORES_STAGES = Object.freeze(['F1', 'F2', 'F3', 'G', 'R16', 'QF', 'SF', 'F']);
 export const SUDAMERICANA_STAGES = Object.freeze(['FS', 'G', 'PO', 'R16', 'QF', 'SF', 'F']);
+export const RECOPA_STAGES = Object.freeze(['F']);
+export const INTERCONTINENTAL_STAGES = Object.freeze(['DA', 'CH', 'IF']);
+
+export function conmebolStageOrder(competitionId) {
+  return {
+    libertadores: LIBERTADORES_STAGES,
+    sudamericana: SUDAMERICANA_STAGES,
+    recopa: RECOPA_STAGES,
+    intercontinental: INTERCONTINENTAL_STAGES,
+  }[competitionId] || [];
+}
+
+/** Jogo único de mata-mata com prorrogação: finais de Liberta/Sula e todo o Intercontinental. */
+export function conmebolNeedsExtraTime(game) {
+  if (!game) return false;
+  if (game.competition === INTERCONTINENTAL) return true;
+  return (game.competition === LIBERTADORES || game.competition === SUDAMERICANA) && game.stage === 'F';
+}
 
 /**
  * Vagas de cada país. `group`, `f2`, `f1` (Liberta) e `group`, `fs` (Sul) são
@@ -180,7 +224,21 @@ const CALENDAR_2026 = Object.freeze({
     SF: { ida: [9, 20, 22], volta: [9, 27, 29] },
     F: { single: [10, 21] },
   }),
+  // Recopa 2026: 19 e 26 de fevereiro (quintas). O campeão da Libertadores manda a volta.
+  recopa: Object.freeze({
+    F: { ida: [1, 18, 19], volta: [1, 25, 26] },
+  }),
+  // Copa Intercontinental da FIFA (formato desde 2024): Derby das Américas,
+  // Desafio e final em sede neutra, em dezembro.
+  intercontinental: Object.freeze({
+    DA: { single: [11, 9] },
+    CH: { single: [11, 12] },
+    IF: { single: [11, 16] },
+  }),
 });
+
+/** Competições de datas fixas: não andam por causa de Data FIFA. */
+const FIXED_DATE_COMPETITIONS = new Set(['recopa', 'intercontinental']);
 
 const DAY_MS = 86_400_000;
 
@@ -241,6 +299,11 @@ export function conmebolStageWindows(competitionId, year, { blocked = [] } = {})
     });
   });
   items.sort((a, b) => a.window.start - b.window.start);
+  if (FIXED_DATE_COMPETITIONS.has(competitionId)) {
+    const fixed = {};
+    items.forEach(({ stage, key, window }) => { (fixed[stage] = fixed[stage] || {})[key] = window; });
+    return fixed;
+  }
 
   const isBlocked = window => blocked.some(b => window.start <= b.end && window.end >= b.start);
   const shift = (window, days) => ({
@@ -326,6 +389,17 @@ export const CONMEBOL_PRIZE_USD = Object.freeze({
     SF: 800_000,
     runnerUp: 2_500_000,
     champion: 10_000_000,
+  }),
+  recopa: Object.freeze({
+    runnerUp: 850_000,
+    champion: 1_850_000,
+  }),
+  intercontinental: Object.freeze({
+    DA: 1_000_000,
+    CH: 1_000_000,
+    IF: 1_000_000,
+    runnerUp: 2_000_000,
+    champion: 5_000_000,
   }),
 });
 

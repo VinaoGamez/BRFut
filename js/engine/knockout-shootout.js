@@ -6,6 +6,7 @@
  * Confrontos com o usuário NUNCA resolvem shootout no automático silencioso:
  * a disputa precisa ser jogada ao vivo (AO VIVO).
  */
+import { conmebolNeedsExtraTime } from './conmebol-format.js';
 import { simulateProbabilisticShootout } from './shootout-sim.js';
 import { STATE_LEAGUE_COMPETITION } from './state-league-format.js';
 import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
@@ -34,7 +35,7 @@ export const isWorldCupKnockout = game =>
 
 /** Final de Libertadores / Sul-Americana: jogo único com prorrogação. */
 export const isConmebolFinal = game =>
-  !!game && (game.competition === 'LIBERTADORES' || game.competition === 'SUL-AMERICANA') && game.stage === 'F';
+  conmebolNeedsExtraTime(game);
 
 /** Copa do Mundo e finais CONMEBOL: empate → prorrogação (90–120) e só então pênaltis. */
 export const knockoutNeedsExtraTime = game => isWorldCupKnockout(game) || isConmebolFinal(game);
@@ -103,6 +104,8 @@ export const knockoutCompetitionLabel = game => {
   if (isStateKnockoutPhase(game)) return 'Campeonato Estadual · Mata-mata';
   if (game.competition === 'LIBERTADORES') return `Libertadores${game.phase ? ` · ${game.phase}` : ''}`;
   if (game.competition === 'SUL-AMERICANA') return `Sul-Americana${game.phase ? ` · ${game.phase}` : ''}`;
+  if (game.competition === 'RECOPA SUL-AMERICANA') return 'Recopa Sul-Americana';
+  if (game.competition === 'INTERCONTINENTAL') return `Intercontinental${game.phase ? ` · ${game.phase}` : ''}`;
   return game.competition || 'Eliminatórias';
 };
 

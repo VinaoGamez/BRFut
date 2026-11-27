@@ -18,6 +18,8 @@ import {
   STAGE_LABELS,
   SUDAMERICANA,
   conmebolPrize,
+  conmebolShortName,
+  isConmebolGame,
 } from './conmebol-format.js';
 import {
   advanceConmebolThroughDate,
@@ -69,7 +71,7 @@ export function conmebolBlockedWindows(year) {
 }
 
 function gameStageLabel(game) {
-  const comp = game.competition === LIBERTADORES ? 'Libertadores' : 'Sul-Americana';
+  const comp = conmebolShortName(game) || 'CONMEBOL';
   const stage = STAGE_LABELS[game.stage] || game.phase || '';
   if (game.stage === 'G') return `${comp} · Grupo ${game.group} · ${game.matchday}ª rodada`;
   if (game.leg && game.leg !== 'JOGO ÚNICO') return `${comp} · ${stage} · ${game.leg === 'IDA' ? 'ida' : 'volta'}`;
@@ -81,7 +83,7 @@ export function conmebolGameLabel(game) {
 }
 
 export function isConmebolCompetitionGame(game) {
-  return game?.competition === LIBERTADORES || game?.competition === SUDAMERICANA;
+  return isConmebolGame(game);
 }
 
 /**
@@ -289,7 +291,7 @@ export function createConmebolRuntime(deps) {
     const userClub = getUserClub();
     const events = drainConmebolEvents(edition);
     events.forEach(event => {
-      if (event.club && event.club !== userClub && event.winner !== userClub && event.loser !== userClub) {
+      if (event.club && event.club !== userClub && event.winner !== userClub && event.loser !== userClub && event.runnerUp !== userClub) {
         if (event.type === 'champion') {
           deps.pushMessage?.({
             category: 'competition',
@@ -315,7 +317,7 @@ export function createConmebolRuntime(deps) {
               meta: { competition: label, phase: 'Fase de grupos' },
             });
           }
-        } else if (['F2', 'F3', 'PO', 'R16', 'QF', 'SF', 'F'].includes(event.stage)) {
+        } else if (['F2', 'F3', 'PO', 'R16', 'QF', 'SF', 'F', 'DA', 'CH', 'IF'].includes(event.stage)) {
           const tie = (edition[event.competitionId].stages[event.stage]?.ties || []).find(t => t.home === userClub || t.away === userClub);
           const rival = tie ? (tie.home === userClub ? tie.away : tie.home) : null;
           deps.pushMessage?.({
@@ -323,7 +325,7 @@ export function createConmebolRuntime(deps) {
             type: 'conmebol',
             title: `${label} · ${STAGE_LABELS[event.stage]}`,
             body: rival
-              ? `${userClub} enfrenta ${rival} ${event.stage === 'F' ? `na final em ${edition[event.competitionId].finalVenue}` : `na ${STAGE_LABELS[event.stage].toLowerCase()}`}.`
+              ? `${userClub} enfrenta ${rival} ${(event.stage === 'F' || event.stage === 'IF') && edition[event.competitionId].finalVenue ? `na final em ${edition[event.competitionId].finalVenue}` : event.competitionId === 'recopa' ? 'na Recopa Sul-Americana, em ida e volta' : event.competitionId === 'intercontinental' ? `no ${STAGE_LABELS[event.stage]}, em ${edition.intercontinental.venue}` : `na ${STAGE_LABELS[event.stage].toLowerCase()}`}.`
               : `${userClub} avança para ${STAGE_LABELS[event.stage]}.`,
             meta: { competition: label, phase: STAGE_LABELS[event.stage] },
           });
@@ -338,7 +340,9 @@ export function createConmebolRuntime(deps) {
           title: `${label} · ${dropped ? 'Vaga na Sul-Americana' : 'Eliminação'}`,
           body: dropped
             ? `${userClub} sai da Libertadores e segue na Copa Sul-Americana.`
-            : `${userClub} se despede da ${label} na ${(STAGE_LABELS[event.stage] || '').toLowerCase()}.`,
+            : event.competitionId === 'intercontinental'
+              ? `${userClub} se despede da ${label} no ${STAGE_LABELS[event.stage] || 'torneio'}.`
+              : `${userClub} se despede da ${label} na ${(STAGE_LABELS[event.stage] || '').toLowerCase()}.`,
           meta: { competition: label },
         });
       }
@@ -348,12 +352,23 @@ export function createConmebolRuntime(deps) {
           category: 'competition',
           type: 'conmebol',
           title: `${label} · CAMPEÃO`,
-          body: `${userClub} é campeão da ${label} ${edition.season}! Vaga garantida nos grupos da próxima Libertadores.`,
+          body: event.competitionId === 'intercontinental'
+            ? `${userClub} é campeão do mundo! Conquista a ${label} ${edition.season} em ${edition.intercontinental.venue}.`
+            : event.competitionId === 'recopa'
+              ? `${userClub} conquista a ${label} ${edition.season}.`
+              : `${userClub} é campeão da ${label} ${edition.season}! Vaga garantida nos grupos da próxima Libertadores e na Recopa Sul-Americana.${event.competitionId === 'libertadores' ? ' Em dezembro tem Copa Intercontinental.' : ''}`,
           meta: { competition: label, phase: 'Final' },
         });
       }
       if (event.type === 'champion' && event.runnerUp === userClub) {
         deps.creditUserPrize?.(conmebolPrize(event.competitionId, 'runnerUp'), `${label} · Vice-campeão`);
+        deps.pushMessage?.({
+          category: 'competition',
+          type: 'conmebol',
+          title: `${label} · Vice-campeão`,
+          body: `${userClub} perde para ${event.club} e fica com o vice da ${label} ${edition.season}.`,
+          meta: { competition: label, phase: 'Final' },
+        });
       }
     });
     // Bônus de vitória na fase de grupos sai quando o grupo fecha.
@@ -423,6 +438,8 @@ export function createConmebolRuntime(deps) {
       season: edition.season,
       LIBERTADORES: edition.libertadores.champion || null,
       SUDAMERICANA: edition.sudamericana.champion || null,
+      RECOPA_SUL: edition.recopa?.champion || null,
+      INTERCONTINENTAL: edition.intercontinental?.champion || null,
       history: conmebolHistoryAfterEdition(edition, getHistory() || {}),
     };
   };
