@@ -15,10 +15,10 @@ const ICONS = Object.freeze({
 });
 
 const TONES = Object.freeze({
-  warn: { bg: '#3a2a0a', fg: '#ffc94f' },
-  info: { bg: '#0f2a38', fg: '#7fd6f2' },
-  ok: { bg: '#1b2f12', fg: '#bbeb27' },
-  danger: { bg: '#3a1212', fg: '#ff7b7b' },
+  warn: { bg: '#ff8a2b22', fg: '#ff8a2b' },
+  info: { bg: '#11bbed22', fg: '#11bbed' },
+  ok: { bg: '#3ddc8422', fg: '#3ddc84' },
+  danger: { bg: '#ff4d5e22', fg: '#ff4d5e' },
 });
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -40,14 +40,18 @@ export function createHubV2() {
     }
     list.innerHTML = shown.map((item, index) => {
       const tone = TONES[item.tone] || TONES.info;
-      return `<button type="button" class="hub-attention-item" data-hub-action="${index}"><i style="--tone-bg:${tone.bg};--tone-fg:${tone.fg}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[item.icon] || ICONS.mail}"/></svg></i><span><strong>${esc(item.title)}</strong><small>${esc(item.meta)}</small></span><b aria-hidden="true">›</b></button>`;
+      return `<button type="button" class="hub-attention-item" data-hub-action="${index}" style="--tone-fg:${tone.fg}"><i style="--tone-bg:${tone.bg};--tone-fg:${tone.fg}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[item.icon] || ICONS.mail}"/></svg></i><span><strong>${esc(item.title)}</strong><small>${esc(item.meta)}</small></span><b aria-hidden="true">›</b></button>`;
     }).join('');
   };
 
   const renderTiles = (tiles = []) => {
     const root = document.getElementById('hubTiles');
     if (!root) return;
-    root.innerHTML = tiles.map(tile => `<button type="button" class="card hub-tile" data-hub-tile="${esc(tile.id)}"><label>${esc(tile.label)}</label><strong style="color:${tile.color || '#edf8f5'}">${esc(tile.value)}</strong><small>${esc(tile.note)}</small></button>`).join('');
+    root.innerHTML = tiles.map(tile => {
+      const color = tile.color || '#eaf2ff';
+      const pct = Math.max(0, Math.min(100, Number(tile.pct) || 0));
+      return `<button type="button" class="card hub-tile" data-hub-tile="${esc(tile.id)}" style="--tile-color:${esc(color)};--tile-pct:${pct}%"><label>${esc(tile.label)}</label><strong style="color:${esc(color)}">${esc(tile.value)}</strong><small>${esc(tile.note)}</small><i class="hub-tile-bar" aria-hidden="true"></i></button>`;
+    }).join('');
     root.querySelectorAll('[data-hub-tile]').forEach(button => {
       const tile = tiles.find(item => item.id === button.dataset.hubTile);
       if (tile?.run) button.addEventListener('click', tile.run);

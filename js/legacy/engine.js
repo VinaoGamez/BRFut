@@ -4688,11 +4688,12 @@ export async function bootEngine({
       const leaguePos=user.position;
       const environment=Number(user.environment)||0;
       const board=Number(user.board)||0;
-      const tone=value=>value>=70?'#bbeb27':value>=45?'#ffb020':'#ff7b7b';
+      const tone=value=>value>=70?'#3ddc84':value>=45?'#ff8a2b':'#ff4d5e';
+      const standingPct=pos=>pos?Math.max(8,100-(Number(pos)-1)*5):0;
       hubV2.renderTiles([
-        {id:'standing',label:'CLASSIFICAÇÃO',value:posMatch?`${posMatch[1]}º`:(leaguePos?`${leaguePos}º`:'—'),color:'#edf8f5',note:posMatch?`${competitionName||'Competição'} · ${positionText.replace(/^\d+º\s*/,'')}`:`Série ${userDivision}`,run:open('table')},
-        {id:'morale',label:'MORAL DO ELENCO',value:`${environment}%`,color:tone(environment),note:environment>75?'Vestiário em alta':environment>40?'Ambiente estável':'Vestiário pressionado',run:open('squad')},
-        {id:'board',label:'CONFIANÇA DA DIRETORIA',value:`${board}%`,color:tone(board),note:board>=70?'Diretoria satisfeita':board>=45?'Diretoria atenta aos resultados':'Cargo sob pressão',run:open('office')},
+        {id:'standing',label:'CLASSIFICAÇÃO',value:posMatch?`${posMatch[1]}º`:(leaguePos?`${leaguePos}º`:'—'),color:'#11bbed',pct:standingPct(posMatch?posMatch[1]:leaguePos),note:posMatch?`${competitionName||'Competição'} · ${positionText.replace(/^\d+º\s*/,'')}`:`Série ${userDivision}`,run:open('table')},
+        {id:'morale',label:'MORAL DO ELENCO',value:`${environment}%`,color:tone(environment),pct:environment,note:environment>75?'Vestiário em alta':environment>40?'Ambiente estável':'Vestiário pressionado',run:open('squad')},
+        {id:'board',label:'CONFIANÇA DA DIRETORIA',value:`${board}%`,color:tone(board),pct:board,note:board>=70?'Diretoria satisfeita':board>=45?'Diretoria atenta aos resultados':'Cargo sob pressão',run:open('office')},
       ]);
       sectionsNav?.refreshContinue();
     }catch(error){

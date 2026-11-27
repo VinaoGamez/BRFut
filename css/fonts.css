@@ -7,3 +7,10 @@
 @import '@fontsource/dm-sans/500.css';
 @import '@fontsource/dm-sans/600.css';
 @import '@fontsource/dm-sans/700.css';
+/* Arcade Noturno v2: títulos em Kanit itálico, texto em Barlow */
+@import '@fontsource/kanit/700-italic.css';
+@import '@fontsource/kanit/800-italic.css';
+@import '@fontsource/kanit/900-italic.css';
+@import '@fontsource/barlow/500.css';
+@import '@fontsource/barlow/600.css';
+@import '@fontsource/barlow/700.css';

@@ -1,0 +1,484 @@
+/*
+ * Arcade Noturno v2 (claude/marca-arcade-noturno.md)
+ * Interface angular que segue a logo: paralelogramos na inclinação da marca,
+ * cartões com canto cortado, faixa de velocidade como divisor.
+ * Cor com função: limão = ação, ciano = marca/navegação, ouro = recompensa,
+ * vermelho/laranja/verde só em dados. Fundo e painéis neutros, sem brilho.
+ * Carregado depois de navigation-v2.css; seletores com "html body" para
+ * vencer os temas antigos que usam !important.
+ */
+
+:root {
+  --av-night: #050c17;
+  --av-rail: #08121f;
+  --av-panel: #0f1c30;
+  --av-panel-hi: #16294a;
+  --av-line: #1c3350;
+  --av-outline: #02060d;
+  --av-ink: #eaf2ff;
+  --av-muted: #9fb2cc;
+  --av-lime: #bbeb27;
+  --av-lime-edge: #8db81a;
+  --av-cyan: #11bbed;
+  --av-gold: #ffc82e;
+  --av-red: #ff4d5e;
+  --av-orange: #ff8a2b;
+  --av-green: #3ddc84;
+  --av-display: 'Kanit', 'Barlow Condensed', sans-serif;
+  --av-body: 'Barlow', 'DM Sans', sans-serif;
+  --av-slant: 12px;
+  --av-cut: 12px;
+
+  /* temas anteriores apontam para os novos tokens */
+  --md-night: var(--av-night);
+  --md-surface: var(--av-panel);
+  --md-surface-2: var(--av-panel-hi);
+  --md-line: var(--av-line);
+  --md-text: var(--av-ink);
+  --md-muted: var(--av-muted);
+  --md-lime: var(--av-lime);
+  --md-cyan: var(--av-cyan);
+  --md-yellow: var(--av-gold);
+  --md-red: var(--av-red);
+  --nav2-lime: var(--av-lime);
+  --nav2-ink: var(--av-ink);
+  --nav2-muted: var(--av-muted);
+  --nav2-panel: var(--av-panel);
+  --nav2-line: var(--av-line);
+  --nav2-active: var(--av-panel-hi);
+}
+
+/* ---------------- Base ---------------- */
+html body,
+html body.dark-mode {
+  background: var(--av-night) !important;
+  color: var(--av-ink) !important;
+  font-family: var(--av-body);
+}
+
+/* Cartões: canto cortado sem clip-path (não corta menus nem tooltips). */
+html body .card,
+html body.dark-mode .card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: linear-gradient(225deg, transparent var(--av-cut), var(--av-panel) var(--av-cut)) !important;
+  color: var(--av-ink) !important;
+}
+
+html body .modal-card,
+html body.dark-mode .modal-card {
+  border-radius: 0 !important;
+  border-color: var(--av-line) !important;
+  background: linear-gradient(225deg, transparent 18px, var(--av-panel) 18px) !important;
+  box-shadow: 0 18px 48px #000a !important;
+}
+
+/* Títulos de cartão: Kanit itálico + faixa de velocidade da logo. */
+html body .card > label,
+html body.dark-mode .card > label {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  letter-spacing: .4px !important;
+  color: var(--av-cyan) !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+html body .card > label::after {
+  content: '';
+  flex: 1 1 auto;
+  min-width: 24px;
+  height: 3px;
+  background:
+    linear-gradient(90deg, var(--av-cyan) calc(100% - 22px), transparent calc(100% - 22px) calc(100% - 18px), var(--av-cyan) calc(100% - 18px) calc(100% - 11px), transparent calc(100% - 11px) calc(100% - 7px), var(--av-cyan) calc(100% - 7px));
+  transform: skewX(-30deg);
+  opacity: .55;
+}
+
+html body .card > label em {
+  font-style: italic;
+  color: var(--av-muted) !important;
+}
+
+/* ---------------- Botões ---------------- */
+/* Ação principal: paralelogramo limão com borda inferior "de brinquedo". */
+html body #playMatch,
+html body #headerContinue,
+html body #resumeMatch,
+html body.dark-mode #playMatch,
+html body.dark-mode #headerContinue,
+html body.dark-mode #resumeMatch {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 4px), var(--av-lime-edge) calc(100% - 4px)) !important;
+  color: var(--av-night) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 900 !important;
+  letter-spacing: .5px !important;
+  clip-path: polygon(var(--av-slant) 0, 100% 0, calc(100% - var(--av-slant)) 100%, 0 100%);
+  padding-left: calc(var(--av-slant) + 14px) !important;
+  padding-right: calc(var(--av-slant) + 14px) !important;
+}
+
+html body #playMatch:hover,
+html body #headerContinue:hover:not(:disabled),
+html body #resumeMatch:hover {
+  background: linear-gradient(180deg, #c9f53d calc(100% - 4px), var(--av-lime-edge) calc(100% - 4px)) !important;
+}
+
+html body #headerContinue:disabled {
+  background: var(--av-panel-hi) !important;
+  color: var(--av-muted) !important;
+}
+
+html body #headerContinue small {
+  font-family: var(--av-body);
+  font-style: normal;
+  color: #050c17b3 !important;
+}
+
+/* Secundários dentro dos cartões: paralelogramo escuro, texto ciano. */
+html body .card .scout-button,
+html body .match-actions-buttons button:not(#playMatch),
+html body .club-upcoming-actions button,
+html body.dark-mode .card .scout-button {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}
+
+html body .card .scout-button:hover,
+html body .match-actions-buttons button:not(#playMatch):hover,
+html body .club-upcoming-actions button:hover {
+  background: #1d3560 !important;
+  color: var(--av-ink) !important;
+}
+
+/* ---------------- Topo ---------------- */
+html body .app-header,
+html body.dark-mode .app-header,
+html body main > header.app-header {
+  background: var(--av-night) !important;
+  border-color: #11bbed22 !important;
+}
+
+html body .header-actions .header-icon-btn.header-icon-btn {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel) !important;
+  color: var(--av-ink) !important;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+
+html body .header-actions .header-icon-btn.header-icon-btn:hover,
+html body .header-actions .header-icon-btn.header-icon-btn.active {
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+}
+
+html body .header-actions .header-icon-btn .nav-badge {
+  border-radius: 0 !important;
+  background: var(--av-red) !important;
+  color: #fff !important;
+}
+
+/* Sub-abas da seção: chips inclinados. */
+html body .section-tabs .nav {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel) !important;
+  color: var(--av-muted) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+html body .section-tabs .nav:hover {
+  background: var(--av-panel-hi) !important;
+  color: var(--av-ink) !important;
+}
+
+html body .section-tabs .nav.active {
+  background: var(--av-cyan) !important;
+  color: var(--av-night) !important;
+}
+
+/* ---------------- Trilho lateral (PC) ---------------- */
+html body .sidebar,
+html body.dark-mode .sidebar {
+  background: var(--av-rail) !important;
+  border-right: 2px solid #11bbed22 !important;
+}
+
+html body .sidebar::before {
+  display: none !important;
+}
+
+html body .brand-lockup {
+  max-width: 176px !important;
+  filter: none !important;
+}
+
+html body .sidebar .season {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700;
+  color: var(--av-cyan) !important;
+}
+
+html body .sidebar .section-nav .section-btn.section-btn {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--av-muted) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+
+html body .sidebar .section-nav .section-btn.section-btn:hover {
+  background: var(--av-panel) !important;
+  color: var(--av-ink) !important;
+}
+
+html body .sidebar .section-nav .section-btn.section-btn.active {
+  background: var(--av-lime) !important;
+  color: var(--av-night) !important;
+}
+
+html body .sidebar .section-nav .section-btn.section-btn .nav-badge {
+  border-radius: 0 !important;
+  background: var(--av-red) !important;
+  color: #fff !important;
+}
+
+/* ---------------- Celular: barra inferior com botão ativo elevado ---------------- */
+html.is-mobile body .sidebar,
+html.is-mobile body.dark-mode .sidebar {
+  overflow: visible !important;
+  background: var(--av-panel) !important;
+  border-right: 0 !important;
+  border-top: 2px solid #11bbed33 !important;
+  padding-top: 8px !important;
+}
+
+html.is-mobile body .sidebar .section-nav {
+  overflow: visible !important;
+}
+
+html.is-mobile body .sidebar .section-nav .section-btn.section-btn {
+  position: relative;
+  overflow: visible !important;
+  clip-path: none !important;
+  justify-content: flex-end !important;
+  gap: 3px !important;
+  min-height: 56px;
+  padding: 4px 2px 6px !important;
+  background: transparent !important;
+  color: var(--av-muted) !important;
+  font-family: var(--av-body) !important;
+  font-style: normal;
+  font-weight: 700 !important;
+  text-transform: none;
+}
+
+html.is-mobile body .sidebar .section-nav .section-btn.section-btn svg {
+  position: relative;
+  z-index: 2;
+  transition: transform .15s ease;
+}
+
+html.is-mobile body .sidebar .section-nav .section-btn.section-btn.active {
+  background: transparent !important;
+  color: var(--av-ink) !important;
+}
+
+html.is-mobile body .sidebar .section-nav .section-btn.section-btn.active svg {
+  transform: translateY(-16px);
+  color: var(--av-night) !important;
+  stroke: var(--av-night) !important;
+}
+
+html.is-mobile body .sidebar .section-nav .section-btn.section-btn.active::before,
+html.is-mobile body .sidebar .section-nav .section-btn.section-btn.active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 54px;
+  height: 40px;
+  transform: translateX(-50%);
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+  pointer-events: none;
+}
+
+html.is-mobile body .sidebar .section-nav .section-btn.section-btn.active::after {
+  top: -14px;
+  z-index: 0;
+  background: var(--av-outline);
+}
+
+html.is-mobile body .sidebar .section-nav .section-btn.section-btn.active::before {
+  top: -18px;
+  z-index: 1;
+  background: var(--av-lime);
+}
+
+/* CONTINUAR mais alto: folga clara entre ele e o botão elevado. */
+html.is-mobile body #headerContinue {
+  bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+}
+
+html.is-mobile body .game-shell > main {
+  padding-bottom: calc(160px + env(safe-area-inset-bottom)) !important;
+}
+
+/* ---------------- Central ---------------- */
+html body .view#dashboard .card.match,
+html body.dark-mode .view#dashboard .card.match {
+  background: linear-gradient(225deg, transparent 18px, var(--av-panel-hi) 18px) !important;
+}
+
+html body .view#dashboard .card.match > label {
+  align-self: flex-start;
+  width: max-content;
+  max-width: 100%;
+  padding: 5px calc(var(--av-slant) + 12px) 5px 12px;
+  background: var(--av-cyan);
+  color: var(--av-night) !important;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+
+html body .view#dashboard .card.match > label::after {
+  display: none;
+}
+
+html body .view#dashboard .card.match > label em {
+  color: #050c17b3 !important;
+}
+
+html body .view#dashboard .match .teams b {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  color: var(--av-ink) !important;
+}
+
+html body .view#dashboard .match .match-vs-label {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 900 !important;
+  color: var(--av-ink) !important;
+}
+
+html body #hubAttentionList .hub-attention-item,
+html body.dark-mode #hubAttentionList .hub-attention-item {
+  border: 0 !important;
+  border-left: 3px solid var(--tone-fg, var(--av-cyan)) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: linear-gradient(225deg, transparent 10px, var(--av-panel-hi) 10px) !important;
+  color: var(--av-ink) !important;
+}
+
+html body #hubAttentionList .hub-attention-item:not(.is-clear):hover {
+  background: linear-gradient(225deg, transparent 10px, #1d3560 10px) !important;
+}
+
+html body #hubAttentionList .hub-attention-item > i {
+  border-radius: 0 !important;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+
+html body #hubAttentionList .hub-attention-item > b {
+  color: var(--av-cyan) !important;
+}
+
+html body #hubTiles .hub-tile,
+html body.dark-mode #hubTiles .hub-tile {
+  position: relative;
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: linear-gradient(225deg, transparent 10px, var(--av-panel) 10px) !important;
+  padding-bottom: 14px !important;
+}
+
+html body #hubTiles .hub-tile:hover {
+  background: linear-gradient(225deg, transparent 10px, var(--av-panel-hi) 10px) !important;
+}
+
+html body #hubTiles .hub-tile > label {
+  color: var(--av-muted) !important;
+  font-family: var(--av-body) !important;
+  font-style: normal;
+  font-weight: 700 !important;
+}
+
+html body #hubTiles .hub-tile > label::after {
+  display: none;
+}
+
+html body #hubTiles .hub-tile strong {
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+}
+
+html body #hubTiles .hub-tile .hub-tile-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--tile-color, var(--av-cyan)) var(--tile-pct, 0%), var(--av-panel-hi) var(--tile-pct, 0%));
+}
+
+/* ---------------- Tabelas e listas ---------------- */
+html body .standing-row.highlight,
+html body .league-row.highlight,
+html body .champ-row.highlight {
+  background: #11bbed26 !important;
+  color: var(--av-ink) !important;
+}
+
+html body .roster-head,
+html body .league-head,
+html body .champ-head {
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.is-mobile body .sidebar .section-nav .section-btn.section-btn svg {
+    transition: none;
+  }
+}
+
+/* Secundários dentro do cartão do próximo jogo (fundo já é o painel destaque). */
+html body .view#dashboard .card.match .match-actions-buttons button:not(#playMatch),
+html body .view#dashboard .card.match .club-upcoming-actions button {
+  background: var(--av-panel) !important;
+}
