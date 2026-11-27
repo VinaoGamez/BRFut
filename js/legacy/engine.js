@@ -3674,6 +3674,20 @@ export async function bootEngine({
     formatMatchRating,
     formatVenueCrowdLine,
     getMarketDayBrief:date=>transfersEngine?.getMarketDayBrief?.(date)||null,
+    getTiredStarters:()=>(squad||[]).slice(0,11).filter(p=>p&&Number(p.fatigue??100)<80).length,
+    getMatchOdds:game=>{
+      try{
+        if(!game||!hubV2?.estimateOdds)return null;
+        const user=clubs[userClub];
+        const oppName=game.home===userClub?game.away:game.home;
+        const opp=clubs[oppName];
+        if(!user||!opp)return null;
+        const mean=list=>list.length?list.reduce((t,p)=>t+(Number(p.overall)||0),0)/list.length:0;
+        const myXI=(user.roster||[]).slice(0,11).filter(Boolean);
+        const oppXI=probableXI(opp.roster||[],formationRoles[opp.formation]||formationRoles['4-4-2']||[]).filter(Boolean);
+        return hubV2.estimateOdds({mine:mean(myXI),theirs:mean(oppXI),home:game.home===userClub});
+      }catch{return null;}
+    },
   });
   const calendarLazy=createLazyFeature(async()=>{
     const {createCalendarViewFeature}=await import('../feature/calendar-view/index.js');
@@ -6505,6 +6519,7 @@ export async function bootEngine({
   };
   championshipPage=createChampionshipPageFeature({
     $,$$,onClick,clamp,router,
+    getClubForm:clubFormFromHistory,
     getConmebolEdition:()=>conmebolRuntime?.edition||null,
     getConmebolQualifiers:()=>savedNewGame?.conmebolQualifiers||null,
     // Destaque na tabela: a seleção do usuário, se for sul-americana; senão o Brasil.

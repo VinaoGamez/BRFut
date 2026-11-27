@@ -92,6 +92,8 @@ export function serieDViewModelFromArchive(archive) {
   return { ...source, groups, phases };
 }
 
+import { createChampionshipV2 } from './v2.js';
+
 export function createChampionshipPageFeature(deps) {
   const {
     $,
@@ -1492,7 +1494,13 @@ export function createChampionshipPageFeature(deps) {
     }
     if (isStateChampionshipPage(competitionId)) {
       pageStateRound = stateLeagueEngine.getCurrentRound(competitionId, userClub);
+      // Abre no grupo do seu time (formato com dois grupos).
       pageStateGroup = 0;
+      try {
+        if ((stateGroupRows(competitionId, 1) || []).some(row => row.club === userClub)) pageStateGroup = 1;
+      } catch {
+        pageStateGroup = 0;
+      }
       pageStateFixturesMode = 'round';
       pageStateFixturesOpen = false;
     }
@@ -1817,7 +1825,10 @@ export function createChampionshipPageFeature(deps) {
     openChampionshipLastGames = typeof fn === 'function' ? fn : () => {};
   };
 
+  const champV2 = createChampionshipV2({ $, getUserClub: () => getUserClub(), getClubForm: deps.getClubForm });
+
   const init = () => {
+    champV2.init();
     bindHandlers();
     renderChampionshipPage();
   };

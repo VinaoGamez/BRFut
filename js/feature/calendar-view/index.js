@@ -12,6 +12,7 @@ import { isWorldCupFixture } from '../../engine/world-cup-calendar.js';
 import { isStateLeagueGame, stateLeagueBadgeName, stateLeaguePhaseLabel } from '../../engine/state-league-format.js';
 import { tipKey, buildPlayerTipIndex, ownGoalTipCount } from './match-report-tips.js';
 import { DEVELOPMENT_FOCUSES, formatTrainingWeeklyReportHtml } from '../../engine/training-development.js';
+import { createCalendarV2 } from './calendar-v2.js';
 import goalBallUrl from '../../../assets/ui/goal-ball.png?url';
 import ownGoalBallUrl from '../../../assets/ui/goal-ball-own.png?url';
 import assistBootUrl from '../../../assets/ui/assist-boot.webp?url';
@@ -73,6 +74,8 @@ export function createCalendarViewFeature(deps) {
     formatMatchRating = defaultFormatMatchRating,
     formatVenueCrowdLine,
     getMarketDayBrief,
+    getMatchOdds,
+    getTiredStarters,
   } = deps;
 
   const formatMarketFee = value => {
@@ -906,13 +909,15 @@ export function createCalendarViewFeature(deps) {
           `<div class="agenda-item training"><i>MF</i><div><small>${activity.type === 'before' ? 'PRÉ-JOGO' : activity.type === 'after' ? 'PÓS-JOGO' : 'DIA LIVRE'}</small><strong>${activity.label}</strong></div></div>`
       )
       .join('');
-    const marketRows = renderMarketDayAgenda();
+    // Calendário v2: mercado sai da agenda do dia (prazos ficam no painel).
+    const marketRows = '';
     const freeDayLabel = freeDaySummary(trainingRules);
     const freeRow =
       !games.length && !activities.length && !marketRows
         ? `<div class="agenda-item free"><i>—</i><div><small>DIA SEM PARTIDA</small><strong>${freeDayLabel}</strong></div></div>`
         : '';
     $('#calendarDayAgenda').innerHTML = gameRows + trainingRows + marketRows + freeRow;
+    $('#calendar .day-agenda-card')?.classList.toggle('cal2-empty-day', !games.length);
   };
 
   const calendarCompetitionTagMarkup = key => {
@@ -926,7 +931,39 @@ export function createCalendarViewFeature(deps) {
       .join('')}</span>`;
   };
 
+  const calendarV2 = createCalendarV2({
+    $,
+    calendarKey,
+    getUserClub,
+    getUserDivision,
+    getCareerSeason,
+    getCareerCalendarDate,
+    getCalendarGames,
+    isUserFixture,
+    isFixtureCompleted,
+    fixtureDetails,
+    fixtureResultLabel,
+    getTrainingRules,
+    freeDaySummary,
+    getSelected: () => selectedCalendarDate,
+    selectDate: date => {
+      setSelectedCalendarDate(date);
+      renderCalendar();
+    },
+    moveMonth: direction => moveCalendarMonth(direction),
+    getReport: game => calendarGameResult(game),
+    openReport: entry => openCalendarMatchReport(entry),
+    openView,
+    getMatchOdds,
+    getTiredStarters,
+    rerender: () => renderCalendar(),
+  });
+
   const renderCalendar = () => {
+    if (calendarV2.syncToday()) {
+      // Dia da carreira mudou (avançou semana): foca o dia de hoje.
+      setSelectedCalendarDate(getCareerCalendarDate());
+    }
     const userClub = getUserClub();
     const currentRound = getCurrentRound();
     const careerSeason = getCareerSeason();
@@ -1000,6 +1037,7 @@ export function createCalendarViewFeature(deps) {
     renderTrainingRules();
     renderCalendarRoutine();
     renderCalendarAgenda(trainingMap);
+    calendarV2.render(trainingMap);
   };
 
   const openDashboardCalendarView = () => {
@@ -1007,6 +1045,7 @@ export function createCalendarViewFeature(deps) {
     const careerSeason = getCareerSeason();
     selectedCalendarDate = new Date(careerCalendarDate);
     calendarCursor = new Date(careerSeason, careerCalendarDate.getMonth(), 1);
+    calendarV2.resetWeek();
     openView('calendar');
     renderCalendar();
   };
@@ -1056,6 +1095,7 @@ export function createCalendarViewFeature(deps) {
       `${worldCupSidebar}<article class="card calendar-routine-card"><label>ROTINA DA SEMANA</label><div id="calendarRoutineSummary" class="calendar-routine-summary"></div></article><article class="card cup-calendar-card"><label>COPA DO BRASIL ${careerSeason}</label><strong>126 CLUBES · 9 FASES</strong><p>1ª à 4ª fase em jogo único. Da 5ª fase à semifinal em ida e volta. Os 20 clubes da Série A entram na 5ª fase.</p><div><span>INÍCIO<b>18 FEV</b></span><span>FINAL ÚNICA<b>06 DEZ</b></span></div></article>`
     );
 
+    calendarV2.inject();
     document.body.insertAdjacentHTML(
       'beforeend',
       `<div id="calendarMatchReportModal" class="modal hidden"><div class="modal-card match-report-modal"><button id="closeCalendarMatchReport" class="close">×</button><div id="matchReportContent"></div></div></div>`
@@ -1063,6 +1103,7 @@ export function createCalendarViewFeature(deps) {
   };
 
   const bindHandlers = () => {
+    calendarV2.bind();
     onClick('#calendarDays', event => {
       const day = event.target.closest('[data-calendar-date]');
       if (!day) return;

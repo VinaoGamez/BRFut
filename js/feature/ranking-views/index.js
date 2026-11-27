@@ -70,9 +70,8 @@ export function createRankingViewsFeature(deps) {
 
   const nationalRankingRowHtml = (entry, position, { pinned = false } = {}) => {
     const userClub = getUserClub();
-    const clubMarkup = pinned
-      ? `<span class="national-ranking-club-cell">${teamCrestHtml(entry.club, { className: 'national-ranking-row-crest' })}<span class="club-link">${entry.club}</span></span>`
-      : `<span class="club-link">${entry.club}</span>`;
+    // Ranking v2: escudo em todas as linhas.
+    const clubMarkup = `<span class="national-ranking-club-cell">${teamCrestHtml(entry.club, { className: 'national-ranking-row-crest' })}<span class="club-link">${entry.club}</span></span>`;
     const userRow = entry.club === userClub;
     const scoreHint = `Base ${entry.base.toFixed(1)} + Campeonatos ${entry.championshipPoints.toFixed(1)} + Títulos ${entry.titlePoints.toFixed(1)}`;
     return `<div class="national-ranking-row${pinned ? ' national-ranking-user-row user-ranking' : userRow ? ' user-ranking' : ''}" data-club="${entry.club}" role="button" tabindex="0" aria-label="${entry.club} · ${scoreHint} · Total ${entry.total.toFixed(1)}"><span>${position}</span>${clubMarkup}<span>${entry.division}</span><span class="national-ranking-base national-ranking-col-hidden" aria-hidden="true">${entry.base.toFixed(1)}</span><span class="national-ranking-championships national-ranking-col-hidden" aria-hidden="true">${entry.championshipPoints.toFixed(1)}</span><span class="national-ranking-titles">${entry.titlePoints.toFixed(1)}</span><span class="national-ranking-total" title="${scoreHint}">${entry.total.toFixed(1)}</span></div>`;
@@ -86,7 +85,15 @@ export function createRankingViewsFeature(deps) {
     const userSlot = $('#nationalRankingUserRow');
     const userMatches = !query || (userIndex >= 0 && normalizeClubSearch(ranking[userIndex].club).includes(query));
     if (userIndex >= 0 && userMatches) {
-      userSlot.innerHTML = nationalRankingRowHtml(ranking[userIndex], userIndex + 1, { pinned: true });
+      // Ranking v2: cartão "Você" com a distância para o líder e para quem está à frente.
+      const mine = ranking[userIndex];
+      const leader = ranking[0];
+      const ahead = userIndex > 0 ? ranking[userIndex - 1] : null;
+      const behind = ranking[userIndex + 1] || null;
+      const fmt = value => value.toFixed(1).replace('.', ',');
+      const gapLeader = leader && leader !== mine ? `<div><small>PARA O LÍDER</small><strong>${fmt(leader.total - mine.total)} pts</strong></div>` : behind ? `<div><small>VANTAGEM</small><strong>+${fmt(mine.total - behind.total)} pts</strong></div>` : '';
+      const gapAhead = ahead && ahead !== leader ? `<div><small>PARA O ${userIndex}º</small><strong>${fmt(ahead.total - mine.total)} pts</strong></div>` : '';
+      userSlot.innerHTML = `<div class="ranking-v2-you" data-club="${mine.club}" role="button" tabindex="0"><span class="ranking-v2-you-pos"><small>VOCÊ</small><strong>${userIndex + 1}º</strong></span>${teamCrestHtml(mine.club, { className: 'ranking-v2-you-crest' })}<span class="ranking-v2-you-name"><b>${mine.club}</b><small>Série ${mine.division} · ${fmt(mine.total)} pts</small></span><div class="ranking-v2-you-stats">${gapLeader}${gapAhead}<div><small>TÍTULOS</small><strong>${fmt(mine.titlePoints)}</strong></div></div></div>`;
       userSlot.hidden = false;
     } else {
       userSlot.innerHTML = '';
@@ -96,6 +103,16 @@ export function createRankingViewsFeature(deps) {
       ? ranking.map((entry, index) => ({ entry, position: index + 1 })).filter(({ entry }) => normalizeClubSearch(entry.club).includes(query))
       : ranking.map((entry, index) => ({ entry, position: index + 1 }));
     const table = $('#nationalRankingTable');
+    // Ranking v2: pódio dos 3 primeiros (fora da busca).
+    let podium = $('#nationalRankingPodium');
+    if (!podium) {
+      $('#ranking .national-ranking-table')?.insertAdjacentHTML('beforebegin', '<div id="nationalRankingPodium" class="ranking-v2-podium"></div>');
+      podium = $('#nationalRankingPodium');
+    }
+    if (podium) {
+      podium.hidden = !!query || ranking.length < 3;
+      podium.innerHTML = query ? '' : ranking.slice(0, 3).map((entry, index) => `<div class="ranking-v2-podium-card${entry.club === userClub ? ' is-user' : ''}" data-place="${index + 1}" data-club="${entry.club}" role="button" tabindex="0"><span class="ranking-v2-place">${index + 1}º</span>${teamCrestHtml(entry.club, { className: 'ranking-v2-podium-crest' })}<b>${entry.club}</b><small>Série ${entry.division}</small><strong>${entry.total.toFixed(1).replace('.', ',')} <em>PTS</em></strong></div>`).join('');
+    }
     table.innerHTML = filtered.length
       ? filtered.map(({ entry, position }) => nationalRankingRowHtml(entry, position, { pinned: false })).join('')
       : '<div class="national-ranking-empty">Nenhum time encontrado.</div>';

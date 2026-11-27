@@ -75,6 +75,7 @@ const SUITES = [
   { label: 'serie-d-format', steps: [['scripts/serie-d-format-tests.mjs']] },
   { label: 'serie-d-knockout-legs', steps: [['scripts/serie-d-knockout-legs-tests.mjs']] },
   { label: 'messages-stale', steps: [['scripts/messages-stale-tests.mjs']] },
+  { label: 'calendar-v2', steps: [['scripts/calendar-v2-tests.mjs']] },
   { label: 'save-sync-controller', steps: [['scripts/save-sync-controller-tests.mjs']] },
   { label: 'club-solvency', steps: [['scripts/club-solvency-tests.mjs']] },
   { label: 'bank-loan', steps: [['scripts/bank-loan-tests.mjs']] },
