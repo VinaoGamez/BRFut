@@ -247,6 +247,7 @@ export function createSeasonTransitionEngine(deps) {
     if (continentalChampions.SUDAMERICANA) champions.SUDAMERICANA = continentalChampions.SUDAMERICANA;
     if (continentalChampions.RECOPA_SUL) champions.RECOPA_SUL = continentalChampions.RECOPA_SUL;
     if (continentalChampions.INTERCONTINENTAL) champions.INTERCONTINENTAL = continentalChampions.INTERCONTINENTAL;
+    if (continentalChampions.MUNDIAL_CLUBES) champions.MUNDIAL_CLUBES = continentalChampions.MUNDIAL_CLUBES;
     const worldCupChampion = deps.getWorldCupChampion?.();
     if (worldCupChampion) champions.WORLD_CUP = worldCupChampion;
     const championEstaduais = deps.getStateLeagueChampions?.() || [];

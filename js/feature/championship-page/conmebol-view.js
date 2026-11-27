@@ -9,11 +9,12 @@ import { conmebolGroupTable } from '../../engine/conmebol-competition.js';
 import { STAGE_LABELS } from '../../engine/conmebol-format.js';
 import { conmebolClubMeta } from '../../engine/conmebol-clubs.js';
 
-export const CONMEBOL_PAGE_IDS = Object.freeze({ LIBERTADORES: 'libertadores', SUDAMERICANA: 'sudamericana' });
+export const CONMEBOL_PAGE_IDS = Object.freeze({ LIBERTADORES: 'libertadores', SUDAMERICANA: 'sudamericana', MUNDIAL: 'mundial' });
 
 const STAGE_ORDER = Object.freeze({
   libertadores: ['F1', 'F2', 'F3', 'G', 'R16', 'QF', 'SF', 'F'],
   sudamericana: ['FS', 'G', 'PO', 'R16', 'QF', 'SF', 'F'],
+  mundial: ['G', 'R16', 'QF', 'SF', 'F'],
 });
 
 const LABEL = Object.freeze({
@@ -21,6 +22,7 @@ const LABEL = Object.freeze({
   sudamericana: 'COPA SUL-AMERICANA',
   recopa: 'RECOPA SUL-AMERICANA',
   intercontinental: 'COPA INTERCONTINENTAL',
+  mundial: 'MUNDIAL DE CLUBES DA FIFA',
 });
 
 /** A página da Libertadores abre com a Recopa e fecha com o Intercontinental. */
@@ -151,12 +153,14 @@ export function conmebolBody({ edition, competitionId, stepIndex, userClub, rend
 
   if (current.stage === 'G') {
     const rows = conmebolGroupTable(edition, competitionId, current.group);
-    const advance = competitionId === 'libertadores' ? 2 : 1;
+    const advance = competitionId === 'sudamericana' ? 1 : 2;
     const rowsHtml = rows.map((row, index) => {
-      const zone = index < advance ? 'promotion' : index === advance ? 'playoff' : '';
+      const zone = index < advance ? 'promotion' : index === advance && competitionId !== 'mundial' ? 'playoff' : '';
       return `<div class="league-row ${zone} ${row.club === userClub ? 'highlight' : ''}" data-club="${escapeHtml(row.club)}" role="button" tabindex="0"><span>${index + 1}</span>${clubCell(row.club, escapeHtml)}<span>${row.played}</span><span>${row.won}</span><span>${row.drawn}</span><span>${row.lost}</span><span>${row.goalDiff >= 0 ? '+' : ''}${row.goalDiff}</span><span>${row.points}</span></div>`;
     }).join('');
-    const legend = competitionId === 'libertadores'
+    const legend = competitionId === 'mundial'
+      ? '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>1º e 2º · Oitavas de final</span></div>'
+      : competitionId === 'libertadores'
       ? '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>1º e 2º · Oitavas de final</span><span><i class="playoff" aria-hidden="true"></i>3º · Playoffs da Sul-Americana</span></div>'
       : '<div class="championship-page-zone-legend"><span><i class="promotion" aria-hidden="true"></i>1º · Oitavas de final</span><span><i class="playoff" aria-hidden="true"></i>2º · Playoffs contra 3º da Libertadores</span></div>';
     const games = edition.fixtures

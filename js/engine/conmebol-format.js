@@ -33,16 +33,29 @@ export const LIBERTADORES = 'LIBERTADORES';
 export const SUDAMERICANA = 'SUL-AMERICANA';
 export const RECOPA_SUL = 'RECOPA SUL-AMERICANA';
 export const INTERCONTINENTAL = 'INTERCONTINENTAL';
+export const CLUB_WORLD_CUP = 'MUNDIAL DE CLUBES';
+
+/** Copa do Mundo de Clubes da FIFA, 32 clubes, de quatro em quatro anos desde 2025. */
+export function isClubWorldCupYear(year) {
+  const y = Number(year);
+  return Number.isFinite(y) && y >= 2029 && (y - 2029) % 4 === 0;
+}
+
+/** Junho–julho do ano do Mundial: período em que os clubes brasileiros param (como em 2025). */
+export function clubWorldCupWindow(year) {
+  return { start: [5, 12], end: [6, 14] };
+}
 
 export const CONMEBOL_COMPETITIONS = Object.freeze({
   libertadores: Object.freeze({ id: 'libertadores', key: LIBERTADORES, label: 'Copa Libertadores', short: 'Libertadores' }),
   sudamericana: Object.freeze({ id: 'sudamericana', key: SUDAMERICANA, label: 'Copa Sul-Americana', short: 'Sul-Americana' }),
   recopa: Object.freeze({ id: 'recopa', key: RECOPA_SUL, label: 'Recopa Sul-Americana', short: 'Recopa Sul-Americana' }),
   intercontinental: Object.freeze({ id: 'intercontinental', key: INTERCONTINENTAL, label: 'Copa Intercontinental da FIFA', short: 'Intercontinental' }),
+  mundial: Object.freeze({ id: 'mundial', key: CLUB_WORLD_CUP, label: 'Copa do Mundo de Clubes da FIFA', short: 'Mundial de Clubes' }),
 });
 
 /** Todas as chaves de `game.competition` que a edição CONMEBOL controla. */
-export const CONMEBOL_GAME_KEYS = Object.freeze(new Set([LIBERTADORES, SUDAMERICANA, RECOPA_SUL, INTERCONTINENTAL]));
+export const CONMEBOL_GAME_KEYS = Object.freeze(new Set([LIBERTADORES, SUDAMERICANA, RECOPA_SUL, INTERCONTINENTAL, CLUB_WORLD_CUP]));
 
 /** Chave de disciplina (cartões) por competição. */
 export const CONMEBOL_DISCIPLINE_KEYS = Object.freeze({
@@ -50,6 +63,7 @@ export const CONMEBOL_DISCIPLINE_KEYS = Object.freeze({
   [SUDAMERICANA]: 'SUDAMERICANA',
   [RECOPA_SUL]: 'RECOPA_SUL',
   [INTERCONTINENTAL]: 'INTERCONTINENTAL',
+  [CLUB_WORLD_CUP]: 'MUNDIAL_CLUBES',
 });
 
 /** Nome curto da competição de um jogo (selo, manchete). */
@@ -63,6 +77,7 @@ export function conmebolCompetitionIdFromKey(key) {
   if (key === SUDAMERICANA) return 'sudamericana';
   if (key === RECOPA_SUL) return 'recopa';
   if (key === INTERCONTINENTAL) return 'intercontinental';
+  if (key === CLUB_WORLD_CUP) return 'mundial';
   return null;
 }
 
@@ -91,6 +106,7 @@ export const LIBERTADORES_STAGES = Object.freeze(['F1', 'F2', 'F3', 'G', 'R16', 
 export const SUDAMERICANA_STAGES = Object.freeze(['FS', 'G', 'PO', 'R16', 'QF', 'SF', 'F']);
 export const RECOPA_STAGES = Object.freeze(['F']);
 export const INTERCONTINENTAL_STAGES = Object.freeze(['DA', 'CH', 'IF']);
+export const CLUB_WORLD_CUP_STAGES = Object.freeze(['G', 'R16', 'QF', 'SF', 'F']);
 
 export function conmebolStageOrder(competitionId) {
   return {
@@ -98,6 +114,7 @@ export function conmebolStageOrder(competitionId) {
     sudamericana: SUDAMERICANA_STAGES,
     recopa: RECOPA_STAGES,
     intercontinental: INTERCONTINENTAL_STAGES,
+    mundial: CLUB_WORLD_CUP_STAGES,
   }[competitionId] || [];
 }
 
@@ -105,6 +122,7 @@ export function conmebolStageOrder(competitionId) {
 export function conmebolNeedsExtraTime(game) {
   if (!game) return false;
   if (game.competition === INTERCONTINENTAL) return true;
+  if (game.competition === CLUB_WORLD_CUP) return game.stage !== 'G';
   return (game.competition === LIBERTADORES || game.competition === SUDAMERICANA) && game.stage === 'F';
 }
 
@@ -284,6 +302,7 @@ function windowOf(year, [month, start, end]) {
  * @param {Array<{start:Date,end:Date}>} [options.blocked] janelas proibidas (FIFA, Copa)
  */
 export function conmebolStageWindows(competitionId, year, { blocked = [] } = {}) {
+  if (competitionId === 'mundial') return clubWorldCupStageWindows(year);
   const template = CALENDAR_2026[competitionId];
   if (!template) return {};
 
@@ -354,6 +373,22 @@ export function conmebolStageWindows(competitionId, year, { blocked = [] } = {})
   return out;
 }
 
+/**
+ * Datas do Mundial de Clubes no próprio ano (formato de 2025: 14/jun–13/jul).
+ * Grupos em turno único (3 rodadas) e mata-mata em jogo único.
+ */
+function clubWorldCupStageWindows(year) {
+  const y = Number(year);
+  const w = (month, start, end = start) => ({ start: new Date(y, month, start, 12), end: new Date(y, month, end, 12) });
+  return {
+    G: [w(5, 14, 17), w(5, 19, 22), w(5, 23, 26)],
+    R16: { single: w(5, 28, 30) },
+    QF: { single: w(6, 4, 5) },
+    SF: { single: w(6, 8, 9) },
+    F: { single: w(6, 13) },
+  };
+}
+
 /* --------------------------------------------------------------------------
  * Premiação
  * ------------------------------------------------------------------------ */
@@ -393,6 +428,17 @@ export const CONMEBOL_PRIZE_USD = Object.freeze({
   recopa: Object.freeze({
     runnerUp: 850_000,
     champion: 1_850_000,
+  }),
+  // Mundial 2025: participação da CONMEBOL US$ 15,21 mi, US$ 2 mi por vitória
+  // na fase de grupos, US$ 7,5 / 13,125 / 21 mi por fase e US$ 40 mi ao campeão.
+  mundial: Object.freeze({
+    G: 15_210_000,
+    groupWin: 2_000_000,
+    R16: 7_500_000,
+    QF: 13_125_000,
+    SF: 21_000_000,
+    runnerUp: 30_000_000,
+    champion: 40_000_000,
   }),
   intercontinental: Object.freeze({
     DA: 1_000_000,

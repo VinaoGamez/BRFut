@@ -55,6 +55,10 @@ export const WORLD_CLUB_COUNTRIES = Object.freeze({
   SAU: Object.freeze({ code: 'SAU', name: 'Arábia Saudita', nationality: 'Arábia Saudita', flag: 'SA', confederation: 'AFC' }),
   KOR: Object.freeze({ code: 'KOR', name: 'Coreia do Sul', nationality: 'Coreia do Sul', flag: 'KR', confederation: 'AFC' }),
   JPN: Object.freeze({ code: 'JPN', name: 'Japão', nationality: 'Japão', flag: 'JP', confederation: 'AFC' }),
+  POR: Object.freeze({ code: 'POR', name: 'Portugal', nationality: 'Portugal', flag: 'PT', confederation: 'UEFA' }),
+  QAT: Object.freeze({ code: 'QAT', name: 'Catar', nationality: 'Catar', flag: 'QA', confederation: 'AFC' }),
+  TUN: Object.freeze({ code: 'TUN', name: 'Tunísia', nationality: 'Tunísia', flag: 'TN', confederation: 'CAF' }),
+  NZL: Object.freeze({ code: 'NZL', name: 'Nova Zelândia', nationality: 'Nova Zelândia', flag: 'NZ', confederation: 'OFC' }),
 });
 
 const ALL_COUNTRIES = Object.freeze({ ...CONMEBOL_FOREIGN_COUNTRIES, ...WORLD_CLUB_COUNTRIES });
@@ -84,6 +88,10 @@ const POWER_BY_COUNTRY_TIER = Object.freeze({
   SAU: [[56, 59], [54, 57]],
   KOR: [[54, 57], [52, 55]],
   JPN: [[54, 57], [52, 55]],
+  POR: [[61, 64], [59, 62]],
+  QAT: [[53, 56], [51, 54]],
+  TUN: [[53, 56], [51, 54]],
+  NZL: [[46, 49], [44, 47]],
 });
 
 /**
@@ -212,6 +220,7 @@ const WORLD_CATALOG = Object.freeze({
   ESP: [
     ['Merengues de Chamartín', 'Madri', 'Coliseu de Chamartín', '#ffffff', '#3d2b8f', 1, 650],
     ['Blaugranas de Les Corts', 'Barcelona', 'Estádio de Les Corts', '#a50044', '#004d98', 1, 40],
+    ['Colchoneros do Manzanares', 'Madri', 'Arena do Manzanares', '#cb3524', '#262e61', 2, 650],
   ],
   ING: [
     ['Citizens de Manchester', 'Manchester', 'Arena do Leste de Manchester', '#6cabdd', '#1c2c5b', 1, 40],
@@ -220,12 +229,17 @@ const WORLD_CATALOG = Object.freeze({
   ],
   ALE: [
     ['Bávaros de Fröttmaning', 'Munique', 'Arena de Fröttmaning', '#dc052d', '#0066b2', 1, 520],
+    ['Aurinegros do Ruhr', 'Dortmund', 'Estádio do Ruhr', '#fde100', '#000000', 2, 90],
   ],
   FRA: [
     ['Rouge-et-Bleu de Paris', 'Paris', 'Parque do Oeste de Paris', '#004170', '#da291c', 1, 35],
   ],
   ITA: [
     ['Nerazzurri de San Siro', 'Milão', 'Estádio de San Siro', '#010e80', '#000000', 1, 120],
+    ['Bianconeri de Turim', 'Turim', 'Arena de Turim', '#000000', '#ffffff', 2, 240],
+  ],
+  POR: [
+    ['Dragões do Porto', 'Porto', 'Estádio das Antas', '#003c8f', '#ffffff', 1, 100],
   ],
   MEX: [
     ['Rayados de Monterrey', 'Monterrey', 'Estádio do Cerro de la Silla', '#002b5c', '#ffffff', 1, 540],
@@ -234,6 +248,7 @@ const WORLD_CATALOG = Object.freeze({
   ],
   USA: [
     ['Estrellas de Los Ángeles', 'Los Angeles', 'Parque de Carson', '#00245d', '#ffd200', 1, 20],
+    ['Marinheiros de Seattle', 'Seattle', 'Estádio do Estreito', '#5d9741', '#236192', 2, 50],
   ],
   EGI: [
     ['Faraós do Cairo', 'Cairo', 'Estádio de Gezira', '#c8102e', '#ffffff', 1, 25],
@@ -244,6 +259,9 @@ const WORLD_CATALOG = Object.freeze({
   RSA: [
     ['Canarinhos de Pretória', 'Pretória', 'Estádio de Loftus', '#ffd100', '#0b7a3e', 1, 1340],
   ],
+  TUN: [
+    ['Sang et Or de Túnis', 'Túnis', 'Estádio de Radès', '#e30613', '#f6c700', 1, 10],
+  ],
   SAU: [
     ['Azuis de Riade', 'Riade', 'Estádio do Reino', '#005eb8', '#ffffff', 1, 610],
   ],
@@ -252,6 +270,12 @@ const WORLD_CATALOG = Object.freeze({
   ],
   JPN: [
     ['Diabos Vermelhos de Saitama', 'Saitama', 'Estádio de Saitama', '#e60012', '#000000', 1, 20],
+  ],
+  QAT: [
+    ['Leões de Al Rayyan', 'Doha', 'Estádio de Al Rayyan', '#7a1f3d', '#ffffff', 1, 10],
+  ],
+  NZL: [
+    ['Navegantes de Auckland', 'Auckland', 'Parque de Kiwitea', '#0057b8', '#ffffff', 1, 20],
   ],
 });
 

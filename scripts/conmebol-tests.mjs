@@ -13,7 +13,8 @@ import {
   hydrateConmebolEdition,
   serializeConmebolEdition,
 } from '../js/engine/conmebol-competition.js';
-import { buildConmebolEdition, conmebolHistoryAfterEdition } from '../js/engine/conmebol-season.js';
+import { buildClubWorldCupParticipants, buildConmebolEdition, conmebolHistoryAfterEdition } from '../js/engine/conmebol-season.js';
+import { getSeasonBlackouts } from '../js/engine/season-calendar-mold.js';
 
 let passed = 0;
 const test = (name, fn) => {
@@ -55,10 +56,10 @@ const makeEdition = (season = 2027, extra = {}) => buildConmebolEdition({
 
 console.log('CONMEBOL');
 
-test('catálogo tem 96 sul-americanos + 18 de outras confederações, sem nome repetido', () => {
+test('catálogo tem 96 sul-americanos + 26 de outras confederações, sem nome repetido', () => {
   assert.equal(CONMEBOL_CLUBS.filter(c => c.confederation === 'CONMEBOL').length, 96);
-  assert.equal(CONMEBOL_CLUBS.length, 114);
-  assert.equal(new Set(CONMEBOL_CLUBS.map(c => c.name)).size, 114);
+  assert.equal(CONMEBOL_CLUBS.length, 122);
+  assert.equal(new Set(CONMEBOL_CLUBS.map(c => c.name)).size, 122);
 });
 
 test('elenco estrangeiro é determinístico e maioria local', () => {
@@ -178,6 +179,40 @@ test('save antigo sem Recopa/Intercontinental continua avançando', () => {
   const back = hydrateConmebolEdition(old);
   advanceConmebolThroughDate(back, new Date(2027, 11, 31), hooks(5));
   assert.ok(back.libertadores.champion);
+});
+
+test('Mundial de Clubes 2029: 32 clubes, 6 sul-americanos, grupos sem confederação repetida (UEFA até 2)', () => {
+  const parts = buildClubWorldCupParticipants({
+    season: 2029,
+    libertadoresChampions: { 2025: 'Clube BR 01', 2026: 'Millonarios de Núñez', 2027: 'Clube BR 04', 2028: 'Clube BR 01' },
+    history: { 'Clube BR 02': { points: 30 }, 'Xeneizes de La Ribera': { titles: 1, points: 25 } },
+    powerOf,
+  });
+  assert.equal(parts.length, 32);
+  const sul = parts.filter(p => p.confederation === 'CONMEBOL');
+  assert.equal(sul.length, 6);
+  assert.ok(!sul.some(p => p.club === 'Clube BR 02'), 'terceiro brasileiro com dois campeões do país');
+  const ed = makeEdition(2029, { clubWorldCup: { participants: parts } });
+  const confed = club => parts.find(p => p.club === club).confederation;
+  Object.values(ed.mundial.stages.G.groups).forEach(group => {
+    assert.equal(group.length, 4);
+    const counts = {};
+    group.forEach(club => { counts[confed(club)] = (counts[confed(club)] || 0) + 1; });
+    Object.entries(counts).forEach(([c, n]) => assert.ok(n <= (c === 'UEFA' ? 2 : 1), `grupo com ${n} da ${c}`));
+  });
+  advanceConmebolThroughDate(ed, new Date(2029, 11, 31), hooks(8));
+  assert.ok(ed.mundial.champion, 'Mundial sem campeão');
+  const games = ed.fixtures.filter(g => g.competitionId === 'mundial');
+  assert.equal(games.length, 63);
+  assert.ok(games.every(g => g.neutral && g.completed));
+  games.forEach(g => assert.ok([5, 6].includes(new Date(g.date).getMonth()), 'jogo do Mundial fora de jun/jul'));
+  assert.ok(games.filter(g => g.stage !== 'G').every(g => g.winner), 'mata-mata sem vencedor');
+});
+
+test('2029 tem paragem de clubes no Mundial; 2027 e 2028 não', () => {
+  assert.ok(getSeasonBlackouts(2029).some(b => b.id === 'club_world_cup' && b.hard));
+  assert.ok(!getSeasonBlackouts(2027).some(b => b.id === 'club_world_cup'));
+  assert.ok(!getSeasonBlackouts(2028).some(b => b.id === 'club_world_cup'));
 });
 
 test('final é jogo único em campo neutro', () => {

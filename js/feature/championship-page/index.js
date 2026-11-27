@@ -189,12 +189,16 @@ export function createChampionshipPageFeature(deps) {
 
   const PAGE_COMPETITION_OPTIONS = buildPageCompetitionOptions({ FEATURES, savedNewGame: getSavedNewGame() });
   const getPageCompetitionOptions = () => {
+    // Mundial de Clubes só no ano do torneio (2029, 2033…).
+    const base = getConmebolEdition()?.mundial
+      ? [...PAGE_COMPETITION_OPTIONS, { id: 'MUNDIAL', label: 'Mundial de Clubes', trophyKey: 'world-cup' }]
+      : PAGE_COMPETITION_OPTIONS;
     const worldCupCompetition = worldCupForView();
     const archiveHasWorldCup = !!getViewArchive()?.worldCupCompetition;
-    if (!worldCupCompetition && !archiveHasWorldCup) return PAGE_COMPETITION_OPTIONS;
+    if (!worldCupCompetition && !archiveHasWorldCup) return base;
     const cmu = { id: 'CMU', label: 'Copa do Mundo', trophyKey: 'world-cup' };
-    if (PAGE_COMPETITION_OPTIONS.some(option => option.id === 'CMU')) return PAGE_COMPETITION_OPTIONS;
-    return [cmu, ...PAGE_COMPETITION_OPTIONS];
+    if (base.some(option => option.id === 'CMU')) return base;
+    return [cmu, ...base];
   };
   const worldCupForView = () =>
     isArchiveView() ? worldCupViewModelFromArchive(getViewArchive()) : getWorldCupCompetition();

@@ -2388,6 +2388,7 @@ export async function bootEngine({
       getSavedEdition:()=>validSavedSeason?savedSeason.conmebolEdition:null,
       getPriorSeasonChampions:()=>priorSeasonChampions,
       getHistory:()=>savedNewGame?.conmebolHistory||{},
+      getLibertadoresChampions:()=>savedNewGame?.libertadoresChampions||{},
       getFirstNames:()=>firstNames,
       getLastNames:()=>lastNames,
       simulateRoundMatch:(home,away,game)=>simulateRoundMatch(home,away,game),
@@ -7618,6 +7619,8 @@ export async function bootEngine({
       // Pontos de ranking CONMEBOL acumulam entre temporadas (potes do sorteio).
       const continental=conmebolRuntime?.seasonSummary?.();
       if(continental?.history)savedNewGame.conmebolHistory=continental.history;
+      // Campeões da Libertadores por ano: definem os sul-americanos do Mundial de Clubes.
+      if(continental?.libertadoresChampions)savedNewGame.libertadoresChampions=continental.libertadoresChampions;
       persistCareer(savedNewGame);
     },
     getGeneratedClubPool:()=>generatedClubPool,
@@ -7888,7 +7891,7 @@ export async function bootEngine({
     },
     getContinentalChampions:()=>{
       const summary=conmebolRuntime?.seasonSummary?.();
-      return summary?{LIBERTADORES:summary.LIBERTADORES,SUDAMERICANA:summary.SUDAMERICANA,RECOPA_SUL:summary.RECOPA_SUL,INTERCONTINENTAL:summary.INTERCONTINENTAL}:{};
+      return summary?{LIBERTADORES:summary.LIBERTADORES,SUDAMERICANA:summary.SUDAMERICANA,RECOPA_SUL:summary.RECOPA_SUL,INTERCONTINENTAL:summary.INTERCONTINENTAL,MUNDIAL_CLUBES:summary.MUNDIAL_CLUBES}:{};
     },
     pruneClubMemory,
     getNationalRankingEntries:()=>nationalRankingEntries,
@@ -8584,7 +8587,11 @@ export async function bootEngine({
     });
     out.tightDates=tight.length;
     out.tightSample=tight.slice(0,8);
-    const blocked=edition.fixtures.filter(game=>isClubCalendarBlackout(new Date(game.date),careerSeason));
+    const blocked=edition.fixtures.filter(game=>game.competitionId!=='mundial'&&isClubCalendarBlackout(new Date(game.date),careerSeason));
+    out.leagueInBlackout=(nationalCompetitions[userDivision]?.fixtures||[]).flat().filter(game=>game?.home&&isClubCalendarBlackout(gameScheduledDate(game,game.round?fixtureDateFor(userDivision,game.round):null),careerSeason)).length;
+    if(out.leagueInBlackout)out.anomalies.push(`league_in_blackout:${out.leagueInBlackout}`);
+    out.mundial=edition.mundial?{champion:edition.mundial.champion,runnerUp:edition.mundial.runnerUp,clubs:(edition.mundial.entrants?.all||[]).length,games:edition.fixtures.filter(g=>g.competitionId==='mundial').length,pending:edition.fixtures.filter(g=>g.competitionId==='mundial'&&!g.completed).length,conmebol:(edition.mundial.entrants?.all||[]).filter(e=>e.confederation==='CONMEBOL').map(e=>`${e.club} (${e.via})`),user:(edition.mundial.progress?.[userClub]||null)}:null;
+    if(edition.mundial&&!edition.mundial.champion)out.anomalies.push('no_club_world_cup_champion');
     if(blocked.length)out.anomalies.push(`in_blackout:${blocked.length}`);
     out.userBudget=getBalance(clubs[userClub]);
     out.prizeLedger=(clubs[userClub]?.budgetLedger||[]).filter(entry=>entry.reason==='continental_prize').map(entry=>`${entry.label}: ${entry.amount}`).slice(0,12);

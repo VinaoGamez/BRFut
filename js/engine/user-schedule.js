@@ -149,7 +149,10 @@ export function createUserScheduleEngine({
     return userScheduleCache;
   };
 
-  const isWorldCupFixture = game => game?.competition === WORLD_CUP_COMPETITION || game?.competition === QUALIFIERS_COMPETITION;
+  // Jogos que acontecem dentro das paragens de clube: seleção e Mundial de Clubes.
+  const isWorldCupFixture = game => game?.competition === WORLD_CUP_COMPETITION
+    || game?.competition === QUALIFIERS_COMPETITION
+    || game?.competition === 'MUNDIAL DE CLUBES';
 
   const isClubFixtureBlockedByWorldCup = entry => {
     if (!entry?.game || isWorldCupFixture(entry.game)) return false;

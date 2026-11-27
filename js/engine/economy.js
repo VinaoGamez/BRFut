@@ -2021,6 +2021,7 @@ export function competitionAttraction(game) {
   if (isConmebolCompetition(game)) {
     if (game.competition === 'RECOPA SUL-AMERICANA') return { boost: 0.2, label: 'Recopa Sul-Americana' };
     if (game.competition === 'INTERCONTINENTAL') return { boost: 0, label: 'Intercontinental' };
+    if (game.competition === 'MUNDIAL DE CLUBES') return { boost: 0, label: 'Mundial de Clubes' };
     const table = game.competition === 'LIBERTADORES' ? CONMEBOL_ATTRACTION.libertadores : CONMEBOL_ATTRACTION.sudamericana;
     return { boost: table[game.stage] ?? 0.1, label: game.phase || game.competition };
   }

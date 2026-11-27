@@ -29,7 +29,8 @@ import {
   onConmebolGameCompleted,
   serializeConmebolEdition,
 } from './conmebol-competition.js';
-import { bootstrapStandingsByPower, buildConmebolEdition, conmebolHistoryAfterEdition } from './conmebol-season.js';
+import { bootstrapStandingsByPower, buildClubWorldCupParticipants, buildConmebolEdition, conmebolHistoryAfterEdition } from './conmebol-season.js';
+import { isClubWorldCupYear } from './conmebol-format.js';
 import { getHardClubBlackouts, moldToDate } from './season-calendar-cycle.js';
 
 export { LIBERTADORES, SUDAMERICANA };
@@ -99,6 +100,7 @@ export function createConmebolRuntime(deps) {
     getSavedEdition = () => null,
     getPriorSeasonChampions = () => null,
     getHistory = () => ({}),
+    getLibertadoresChampions = () => ({}),
     getFirstNames = () => [],
     getLastNames = () => [],
   } = deps;
@@ -150,6 +152,18 @@ export function createConmebolRuntime(deps) {
       history: getHistory() || {},
       powerOf,
       blocked: conmebolBlockedWindows(season),
+      clubWorldCup: isClubWorldCupYear(season)
+        ? {
+          participants: buildClubWorldCupParticipants({
+            season,
+            careerSeed: getCareerSeed(),
+            libertadoresChampions: getLibertadoresChampions() || {},
+            history: getHistory() || {},
+            powerOf,
+            exists,
+          }),
+        }
+        : null,
     });
   };
 
@@ -352,7 +366,9 @@ export function createConmebolRuntime(deps) {
           category: 'competition',
           type: 'conmebol',
           title: `${label} · CAMPEÃO`,
-          body: event.competitionId === 'intercontinental'
+          body: event.competitionId === 'mundial'
+            ? `${userClub} é campeão da ${label} ${edition.season}! O título mundial que faltava.`
+            : event.competitionId === 'intercontinental'
             ? `${userClub} é campeão do mundo! Conquista a ${label} ${edition.season} em ${edition.intercontinental.venue}.`
             : event.competitionId === 'recopa'
               ? `${userClub} conquista a ${label} ${edition.season}.`
@@ -372,7 +388,8 @@ export function createConmebolRuntime(deps) {
       }
     });
     // Bônus de vitória na fase de grupos sai quando o grupo fecha.
-    ['libertadores', 'sudamericana'].forEach(id => {
+    ['libertadores', 'sudamericana', 'mundial'].forEach(id => {
+      if (!edition[id]) return;
       const row = edition[id].progress[userClub];
       const record = edition[id].stages.G;
       if (!row || !record?.closed || row.groupWinsCredited) return;
@@ -440,6 +457,14 @@ export function createConmebolRuntime(deps) {
       SUDAMERICANA: edition.sudamericana.champion || null,
       RECOPA_SUL: edition.recopa?.champion || null,
       INTERCONTINENTAL: edition.intercontinental?.champion || null,
+      MUNDIAL_CLUBES: edition.mundial?.champion || null,
+      libertadoresChampions: (() => {
+        const map = { ...(getLibertadoresChampions() || {}) };
+        const holder = edition.libertadores.entrants?.group?.find(entry => entry.via === 'Campeão da Libertadores')?.club;
+        if (holder && !map[edition.season - 1]) map[edition.season - 1] = holder;
+        if (edition.libertadores.champion) map[edition.season] = edition.libertadores.champion;
+        return map;
+      })(),
       history: conmebolHistoryAfterEdition(edition, getHistory() || {}),
     };
   };

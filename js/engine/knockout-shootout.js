@@ -106,6 +106,7 @@ export const knockoutCompetitionLabel = game => {
   if (game.competition === 'SUL-AMERICANA') return `Sul-Americana${game.phase ? ` · ${game.phase}` : ''}`;
   if (game.competition === 'RECOPA SUL-AMERICANA') return 'Recopa Sul-Americana';
   if (game.competition === 'INTERCONTINENTAL') return `Intercontinental${game.phase ? ` · ${game.phase}` : ''}`;
+  if (game.competition === 'MUNDIAL DE CLUBES') return `Mundial de Clubes${game.phase ? ` · ${game.phase}` : ''}`;
   return game.competition || 'Eliminatórias';
 };
 

@@ -7,6 +7,7 @@
  * Novas competições: registrar em FUTURE_COMPETITION_MOLD + COMPETITION_WEEK_SLOT_MAP.
  */
 
+import { clubWorldCupWindow, isClubWorldCupYear } from './conmebol-format.js';
 import { FEATURES } from '../core/constants.js';
 import {
   WORLD_CUP_CLUB_RELEASE_LEAD_DAYS,
@@ -162,6 +163,25 @@ export function getSeasonBlackouts(seasonYear) {
       anchorYear: year,
       exact: copa.exact,
       hosts: [...copa.hosts],
+      soft: false,
+    });
+  }
+  if (isClubWorldCupYear(year)) {
+    // Mundial de Clubes (formato 2025, 32 clubes): o Brasileirão para durante
+    // o torneio, como parou em 2025.
+    const cwc = clubWorldCupWindow(year);
+    list.push({
+      id: 'club_world_cup',
+      code: 'CWC',
+      label: 'Copa do Mundo de Clubes da FIFA (clubes parados)',
+      start: [...cwc.start],
+      end: [...cwc.end],
+      blocksClubs: true,
+      locked: true,
+      hard: true,
+      cadence: 'quadrennial',
+      anchorYear: year,
+      exact: false,
       soft: false,
     });
   }
@@ -577,6 +597,7 @@ export function resolveFixtureCompetitionCode(game, { division = null } = {}) {
   if (comp === 'RECOPA SUL-AMERICANA') return 'RSA';
   if (comp === 'ELIMINATÓRIAS') return 'ELI';
   if (comp === 'INTERCONTINENTAL') return 'CIF';
+  if (comp === 'MUNDIAL DE CLUBES') return 'CWC';
   if (comp === 'SÉRIE D ELIMINATÓRIAS' || (game.tieId && game.knockoutRound != null)) {
     return LEAGUE_CODE_BY_DIVISION.D || 'BSD';
   }

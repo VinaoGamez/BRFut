@@ -26,7 +26,16 @@ import {
 import { conmebolClubMeta, worldClubsOf } from './conmebol-clubs.js';
 
 /** Todas as competições da edição, na ordem em que aparecem. */
-export const EDITION_COMPETITIONS = Object.freeze(['libertadores', 'sudamericana', 'recopa', 'intercontinental']);
+export const EDITION_COMPETITIONS = Object.freeze(['libertadores', 'sudamericana', 'recopa', 'intercontinental', 'mundial']);
+const CLUB_WORLD_CUP_CITIES = ['Nova York', 'Los Angeles', 'Miami', 'Atlanta', 'Filadélfia', 'Seattle', 'Dallas', 'Houston'];
+/** Turno único em grupo de 4: 3 rodadas, todos em campo neutro. */
+const SINGLE_ROUND_GROUP = Object.freeze([
+  [[0, 3], [1, 2]],
+  [[0, 2], [3, 1]],
+  [[1, 0], [2, 3]],
+]);
+/** Chave fixa das oitavas do Mundial (1º de um grupo × 2º do vizinho). */
+const CLUB_WORLD_CUP_R16 = Object.freeze([['A', 'B'], ['C', 'D'], ['E', 'F'], ['G', 'H'], ['B', 'A'], ['D', 'C'], ['F', 'E'], ['H', 'G']]);
 const INTERCONTINENTAL_VENUES = ['Doha', 'Riade', 'Miami', 'Abu Dhabi', 'Jidá'];
 
 export const CONMEBOL_EDITION_VERSION = 1;
@@ -78,7 +87,7 @@ function shuffle(edition, list) {
  * @param {Array<{start:Date,end:Date}>} [params.blocked] janelas proibidas (Data FIFA, Copa)
  * @param {string|null} [params.titleHolder] campeão da última Libertadores (cabeça do grupo A)
  */
-export function createConmebolEdition({ season, seed = 1, entries, ranking = {}, blocked = [], titleHolder = null, recopa = null } = {}) {
+export function createConmebolEdition({ season, seed = 1, entries, ranking = {}, blocked = [], titleHolder = null, recopa = null, clubWorldCup = null } = {}) {
   const edition = {
     version: CONMEBOL_EDITION_VERSION,
     season: Number(season),
@@ -91,11 +100,13 @@ export function createConmebolEdition({ season, seed = 1, entries, ranking = {},
       sudamericana: serializeWindows(conmebolStageWindows('sudamericana', season, { blocked })),
       recopa: serializeWindows(conmebolStageWindows('recopa', season, { blocked })),
       intercontinental: serializeWindows(conmebolStageWindows('intercontinental', season, { blocked })),
+      ...(clubWorldCup ? { mundial: serializeWindows(conmebolStageWindows('mundial', season)) } : {}),
     },
     libertadores: emptyCompetition('libertadores', entries?.libertadores),
     sudamericana: emptyCompetition('sudamericana', entries?.sudamericana),
     recopa: emptyCompetition('recopa', recopa ? { final: recopa } : {}),
     intercontinental: emptyCompetition('intercontinental', {}),
+    ...(clubWorldCup ? { mundial: emptyCompetition('mundial', { all: clubWorldCup.participants }) } : {}),
     fixtures: [],
     events: [],
     nextGameNumber: 1,
@@ -110,6 +121,13 @@ export function createConmebolEdition({ season, seed = 1, entries, ranking = {},
   openStage(edition, 'libertadores', 'F1');
   openStage(edition, 'sudamericana', 'FS');
   if (recopa) openStage(edition, 'recopa', 'F');
+  if (clubWorldCup) {
+    register(clubWorldCup.participants);
+    clubWorldCup.participants.forEach(entry => {
+      if (entry.strength != null && edition.ranking[entry.club] == null) edition.ranking[entry.club] = entry.strength;
+    });
+    openStage(edition, 'mundial', 'G');
+  }
   return edition;
 }
 
@@ -256,7 +274,9 @@ function openStage(edition, competitionId, stage, participants = null) {
   const entrants = comp.entrants;
   let record = null;
 
-  if (competitionId === 'libertadores' && stage === 'F1') {
+  if (competitionId === 'mundial') {
+    record = clubWorldCupStage(edition, stage, participants);
+  } else if (competitionId === 'libertadores' && stage === 'F1') {
     const teams = byRanking(edition, clubsOf(entrants.f1));
     record = seededTwoLeg(edition, competitionId, stage, teams);
   } else if (competitionId === 'libertadores' && stage === 'F2') {
@@ -289,6 +309,7 @@ function openStage(edition, competitionId, stage, participants = null) {
     if (record) record.ties[0].final = true;
   } else if (competitionId === 'intercontinental') {
     record = intercontinentalStage(edition, stage, participants);
+
   } else if (stage === 'F') {
     record = singleFinal(edition, competitionId, participants);
   }
@@ -466,6 +487,107 @@ function intercontinentalStage(edition, stage, participants) {
   game.venue = venue;
   if (stage === 'IF') comp.finalVenue = venue;
   return { ties: [{ id: tieId, index: 1, home: pair[0], away: pair[1], games: [game.id], winner: null, loser: null, single: true, final: stage === 'IF' }] };
+}
+
+/**
+ * Copa do Mundo de Clubes (formato 2025): 32 clubes em 8 grupos de 4, turno
+ * único, dois por grupo nas oitavas; mata-mata em jogo único com prorrogação.
+ * Tudo em sede neutra. Sorteio em 4 potes pela força; clubes da mesma
+ * confederação não se cruzam no grupo, exceto UEFA (no máximo 2).
+ */
+function confederationOf(edition, club) {
+  return (edition.mundial?.entrants?.all || []).find(entry => entry.club === club)?.confederation || 'CONMEBOL';
+}
+
+function drawClubWorldCupGroups(edition, clubs) {
+  const letters = GROUP_LETTERS.slice(0, 8);
+  const ranked = byRanking(edition, clubs);
+  const pots = [0, 1, 2, 3].map(i => shuffle(edition, ranked.slice(i * 8, i * 8 + 8)));
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const groups = Object.fromEntries(letters.map(letter => [letter, []]));
+    let ok = true;
+    for (const pot of pots) {
+      const order = attempt ? shuffle(edition, pot) : pot;
+      for (const club of order) {
+        const confed = confederationOf(edition, club);
+        const limit = confed === 'UEFA' ? 2 : 1;
+        const target = letters.find(letter => groups[letter].length < pots.indexOf(pot) + 1
+          && groups[letter].filter(other => confederationOf(edition, other) === confed).length < limit);
+        if (!target) { ok = false; break; }
+        groups[target].push(club);
+      }
+      if (!ok) break;
+    }
+    if (ok) return groups;
+  }
+  // Sem saída respeitando confederação: distribui pote a pote.
+  const groups = Object.fromEntries(letters.map(letter => [letter, []]));
+  pots.forEach(pot => pot.forEach((club, i) => groups[letters[i]].push(club)));
+  return groups;
+}
+
+function clubWorldCupStage(edition, stage, participants) {
+  const comp = edition.mundial;
+  const city = () => CLUB_WORLD_CUP_CITIES[Math.floor(nextRandom(edition) * CLUB_WORLD_CUP_CITIES.length)];
+  if (stage === 'G') {
+    const groups = drawClubWorldCupGroups(edition, (comp.entrants.all || []).map(entry => entry.club));
+    let index = 0;
+    Object.keys(groups).sort().forEach(letter => {
+      const teams = groups[letter];
+      const venue = city();
+      SINGLE_ROUND_GROUP.forEach((pairs, md) => pairs.forEach(([h, a]) => {
+        const game = makeGame(edition, 'mundial', { stage: 'G', home: teams[h], away: teams[a], matchday: md + 1, group: letter, neutral: true, index: index++ });
+        game.venue = venue;
+      }));
+    });
+    return { groups };
+  }
+  const pairs = stage === 'R16'
+    ? CLUB_WORLD_CUP_R16.map(([first, second]) => [participants.first[first], participants.second[second]])
+    : (() => { const out = []; for (let i = 0; i < participants.length; i += 2) out.push([participants[i], participants[i + 1]]); return out; })();
+  const ties = pairs.filter(([a, b]) => a && b).map(([home, away], i) => {
+    const tieId = `mundial-${edition.season}-${stage}-${i + 1}`;
+    const game = makeGame(edition, 'mundial', { stage, home, away, leg: 'JOGO ÚNICO', tieId, neutral: true, index: i });
+    game.venue = stage === 'F' ? (comp.finalVenue = comp.finalVenue || 'Nova York') : city();
+    return { id: tieId, index: i + 1, home, away, games: [game.id], winner: null, loser: null, single: true, final: stage === 'F' };
+  });
+  return { ties };
+}
+
+function cascadeClubWorldCup(edition, hooks, open) {
+  const comp = edition.mundial;
+  if (!comp?.stages?.G) return false;
+  let changed = false;
+  if (!comp.stages.R16 && stageComplete(edition, 'mundial', 'G', hooks)) {
+    const first = {};
+    const second = {};
+    Object.keys(comp.stages.G.groups).sort().forEach(letter => {
+      const table = conmebolGroupTable(edition, 'mundial', letter);
+      first[letter] = table[0]?.club;
+      second[letter] = table[1]?.club;
+      table.slice(2).forEach(row => markEliminated(edition, 'mundial', row.club, 'G'));
+    });
+    // Vitórias de grupo pagam bônus.
+    edition.fixtures
+      .filter(game => game.competitionId === 'mundial' && game.stage === 'G' && isDone(game))
+      .forEach(game => {
+        const winner = game.homeGoals > game.awayGoals ? game.home : game.awayGoals > game.homeGoals ? game.away : null;
+        if (winner && comp.progress[winner]) comp.progress[winner].groupWins += 1;
+      });
+    comp.stages.G.closed = true;
+    open('mundial', 'R16', { first, second });
+  }
+  [['R16', 'QF'], ['QF', 'SF'], ['SF', 'F']].forEach(([from, to]) => {
+    if (comp.stages[from] && !comp.stages[to] && stageComplete(edition, 'mundial', from, hooks)) {
+      eliminateLosers(edition, 'mundial', from);
+      open('mundial', to, winnersOf(edition, 'mundial', from));
+    }
+  });
+  if (comp.stages.F && !comp.champion && stageComplete(edition, 'mundial', 'F', hooks)) {
+    crown(edition, 'mundial', comp.stages.F.ties[0]);
+    changed = true;
+  }
+  return changed;
 }
 
 /* --------------------------------------------------------------------------
@@ -740,6 +862,7 @@ function cascade(edition, hooks) {
     crown(edition, 'intercontinental', inter.stages.IF.ties[0]);
     changed = true;
   }
+  if (cascadeClubWorldCup(edition, hooks, open)) changed = true;
   return changed;
 }
 
@@ -787,7 +910,7 @@ export function advanceConmebolThroughDate(edition, date, hooks = {}) {
         if (result.data) game.data = result.data;
         if (result.goals) game.goals = result.goals;
         game.completed = true;
-        if (game.homeGoals === game.awayGoals && (game.competitionId === 'intercontinental' || (game.stage === 'F' && game.competitionId !== 'recopa'))) {
+        if (game.homeGoals === game.awayGoals && (game.competitionId === 'intercontinental' || (game.competitionId === 'mundial' && game.stage !== 'G') || (game.stage === 'F' && game.competitionId !== 'recopa'))) {
           const extra = hooks.resolveExtraTime?.(game);
           if (extra) game.extraTimeWinner = extra;
         }

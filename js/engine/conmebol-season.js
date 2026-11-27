@@ -145,7 +145,7 @@ export function buildConmebolEntries({
  * @param {Array<{start:Date,end:Date}>} [params.blocked]
  */
 export function buildConmebolEdition(params = {}) {
-  const { season, careerSeed = 0, powerOf = () => 55, history = {}, blocked = [], titleHolders = {} } = params;
+  const { season, careerSeed = 0, powerOf = () => 55, history = {}, blocked = [], titleHolders = {}, clubWorldCup = null } = params;
   const entries = buildConmebolEntries(params);
   const ranking = {};
   const all = [
@@ -169,7 +169,73 @@ export function buildConmebolEdition(params = {}) {
     blocked,
     titleHolder: titleHolders.libertadores || null,
     recopa: recopa.every(Boolean) ? recopa : null,
+    clubWorldCup,
   });
+}
+
+/**
+ * Os 32 do Mundial de Clubes: 6 sul-americanos (os quatro últimos campeões da
+ * Libertadores e os dois melhores do ranking, no máximo dois por país fora os
+ * campeões) e os 26 clubes das outras confederações.
+ *
+ * @param {object} params
+ * @param {number} params.season ano do Mundial
+ * @param {Record<number,string>} params.libertadoresChampions campeão por ano
+ * @param {object} params.history histórico continental (ranking)
+ * @param {(club:string) => number} params.powerOf força do clube brasileiro
+ * @param {(club:string) => string} [params.countryOf]
+ */
+export function buildClubWorldCupParticipants({ season, careerSeed = 0, libertadoresChampions = {}, history = {}, powerOf = () => 55, countryOf = () => 'BRA', exists = () => true } = {}) {
+  const y = Number(season);
+  const countryFor = club => conmebolClubMeta(club)?.country || countryOf(club);
+  const strengthFor = club => {
+    const meta = conmebolClubMeta(club);
+    return meta ? conmebolClubBasePower(meta, { careerSeed, seasonYear: y }) : Number(powerOf(club)) || 55;
+  };
+  const conmebol = [];
+  const taken = new Set();
+  [y - 4, y - 3, y - 2, y - 1].forEach(year => {
+    const club = libertadoresChampions[year];
+    if (!club || taken.has(club) || !(exists(club) || conmebolClubMeta(club))) return;
+    taken.add(club);
+    conmebol.push({ club, country: countryFor(club), confederation: 'CONMEBOL', via: `Campeão da Libertadores ${year}`, strength: strengthFor(club) });
+  });
+  const perCountry = {};
+  const ranked = Object.keys(history || {})
+    .filter(club => !taken.has(club) && (exists(club) || conmebolClubMeta(club)))
+    .map(club => ({ club, score: conmebolRankingScore(club, { power: strengthFor(club), history }) }))
+    .sort((a, b) => b.score - a.score || a.club.localeCompare(b.club, 'pt-BR'));
+  for (const { club } of ranked) {
+    if (conmebol.length >= 6) break;
+    const country = countryFor(club);
+    const championsHere = conmebol.filter(entry => entry.country === country).length;
+    if ((perCountry[country] || 0) >= 2 || championsHere >= 2) continue;
+    perCountry[country] = (perCountry[country] || 0) + 1;
+    taken.add(club);
+    conmebol.push({ club, country, confederation: 'CONMEBOL', via: 'Ranking da CONMEBOL', strength: strengthFor(club) });
+  }
+  // Histórico curto (começo de carreira): completa com os mais fortes do continente.
+  if (conmebol.length < 6) {
+    const pool = CONMEBOL_CLUBS
+      .filter(meta => meta.confederation === 'CONMEBOL' && !taken.has(meta.name))
+      .map(meta => ({ club: meta.name, country: meta.country, strength: conmebolClubBasePower(meta, { careerSeed, seasonYear: y }) }))
+      .sort((a, b) => b.strength - a.strength || a.club.localeCompare(b.club, 'pt-BR'));
+    for (const entry of pool) {
+      if (conmebol.length >= 6) break;
+      const sameCountry = conmebol.filter(item => item.country === entry.country).length;
+      if (sameCountry >= 2) continue;
+      taken.add(entry.club);
+      conmebol.push({ ...entry, confederation: 'CONMEBOL', via: 'Ranking da CONMEBOL' });
+    }
+  }
+  const world = CONMEBOL_CLUBS.filter(meta => meta.confederation && meta.confederation !== 'CONMEBOL').map(meta => ({
+    club: meta.name,
+    country: meta.country,
+    confederation: meta.confederation,
+    via: meta.name === 'Marinheiros de Seattle' ? 'País-sede' : `Vaga da ${meta.confederation}`,
+    strength: conmebolClubBasePower(meta, { careerSeed, seasonYear: y }),
+  }));
+  return [...conmebol, ...world];
 }
 
 /** Ordem inicial da Série A no 1º ano: força do elenco. */

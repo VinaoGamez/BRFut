@@ -33,6 +33,7 @@ export function createChampionshipPageFocus({
     if (game.competition === 'LIBERTADORES') return 'LIBERTADORES';
     if (game.competition === 'SUL-AMERICANA') return 'SUDAMERICANA';
     if (game.competition === 'RECOPA SUL-AMERICANA' || game.competition === 'INTERCONTINENTAL') return 'LIBERTADORES';
+    if (game.competition === 'MUNDIAL DE CLUBES') return 'MUNDIAL';
     if (isStateLeagueGame(game)) {
       const userState = stateLeagueEngine.getUserDivision(userClub);
       const uf = String(game.stateUf || userState?.uf || getRealClub(userClub)?.uf || 'SP').toUpperCase();
@@ -64,7 +65,7 @@ export function createChampionshipPageFocus({
       renderChampionshipPage();
       return;
     }
-    if (competitionId === 'LIBERTADORES' || competitionId === 'SUDAMERICANA') {
+    if (competitionId === 'LIBERTADORES' || competitionId === 'SUDAMERICANA' || competitionId === 'MUNDIAL') {
       // selectChampionshipPageCompetition já posiciona no passo do usuário.
       renderChampionshipPage();
       return;

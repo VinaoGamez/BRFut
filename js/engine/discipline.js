@@ -79,6 +79,7 @@ export function competitionLabel(competitionKey) {
   if (competitionKey === 'RECOPA_SUL') return 'Recopa Sul-Americana';
   if (competitionKey === 'ELIMINATORIAS') return 'Eliminatórias';
   if (competitionKey === 'INTERCONTINENTAL') return 'Intercontinental';
+  if (competitionKey === 'MUNDIAL_CLUBES') return 'Mundial de Clubes';
   if (String(competitionKey).startsWith('LEAGUE:')) {
     return `Brasileirão Série ${String(competitionKey).slice(7)}`;
   }
