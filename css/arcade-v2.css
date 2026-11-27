@@ -4943,3 +4943,61 @@ html body .modal:not(#matchModal):not(#playerCardModal) .modal-card h2 {
   hyphens: none !important;
 }
 html.is-mobile body :is(#teamScoutModal, #liveOpponentModal) .modal-card h2 { padding-right: 0 !important; font-size: 21px !important; }
+
+/* =====================================================================
+   Nada cortado no celular.
+   Com qualquer pop-up aberto, a navegação inferior e o botão Continuar
+   saem de cena: o pop-up usa a tela inteira e o fim do conteúdo sempre
+   pode ser rolado até ficar visível.
+   ===================================================================== */
+html.is-mobile body:has(.modal:not(.hidden):not([hidden]), .nto-modal:not(.hidden):not([hidden])) .sidebar,
+html.is-mobile body:has(.modal:not(.hidden):not([hidden]), .nto-modal:not(.hidden):not([hidden])) #headerContinue {
+  display: none !important;
+}
+html.is-mobile body #matchModal > .modal-card {
+  max-height: calc(100dvh - 16px) !important;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+/* Treinamento: título e texto do planejamento quebram linha. */
+html.is-mobile body .training-planner-head {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+html.is-mobile body .training-planner-head > * {
+  min-width: 0 !important;
+  white-space: normal !important;
+}
+
+/* Tabela do campeonato no pop-up: colunas cabem em 360 px. */
+html.is-mobile body .championship-modal :is(.champ-head, .champ-row) {
+  grid-template-columns: 24px minmax(0, 1fr) repeat(6, 26px) !important;
+  gap: 3px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+html.is-mobile body .championship-modal .champ-row > span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html.is-mobile body .transfers-pagination {
+  gap: 6px !important;
+  padding: 7px 8px !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+html.is-mobile body .transfers-pagination button {
+  min-width: 0 !important;
+  flex: 0 1 auto;
+  padding: 7px 10px !important;
+}
+html.is-mobile body .transfers-pagination span {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-size: 10px;
+}
+html.is-mobile body #matchModal:not(.hidden) { background: var(--av-night) !important; }

@@ -82,6 +82,15 @@ Definida pelo dono do projeto em 27/11/2026. **Nenhuma tela pode quebrar esta re
 - Checagem: toda revisão de tela roda uma auditoria automática no navegador que mede os cartões e colunas da mesma linha e acusa diferença de borda inferior acima de 4 px (PC em 1366×768, 1600×900 e 1920×1080).
 - Colunas com conteúdo longo (ex.: Táticas) ficam na altura da coluna principal e rolam por dentro, em vez de crescer e deixar as vizinhas para trás.
 
+## Regra de conteúdo visível no celular (obrigatória)
+
+Definida pelo dono do projeto em 27/11/2026. **Nenhuma tela ou pop-up pode cortar informação.**
+
+- O fim de qualquer tela ou pop-up tem de poder ser rolado até ficar inteiro **acima** da navegação inferior e do botão Continuar, e **abaixo** do cabeçalho.
+- Nada passa da largura da tela: colunas de tabela usam `minmax(0, 1fr)` para o nome e larguras fixas pequenas para números; textos quebram linha.
+- Com qualquer pop-up aberto no celular, a navegação inferior e o botão Continuar somem; o pop-up usa a tela inteira (inclusive a partida ao vivo e o pós-jogo).
+- Checagem: auditoria automática em 360×640, 390×844 e 412×915 que, em cada tela e cada pop-up, coloca um marcador no fim do conteúdo, rola até o fim e acusa se ele fica atrás de alguma barra fixa ou se algo passa da borda direita.
+
 ---
 
 ## CSS
