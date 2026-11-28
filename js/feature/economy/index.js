@@ -18,6 +18,7 @@ import { buildClubHistory, buildClubHistoryV2 } from '../../engine/club-history.
 import { CLUB_HISTORY_V2_HTML, renderClubHistoryV2, clubHistoryCrestHtml } from '../../ui/club-history-v2.js';
 import { fetchStructuredSeasonHistory } from '../../core/career-history-sync.js';
 import { createClubV2 } from './club-v2.js';
+import { showAlertV2 } from '../../ui/alert-v2.js';
 
 const NAMING_MODAL_HTML = `
 <div id="namingPickerModal" class="modal hidden">
@@ -261,12 +262,15 @@ export function createEconomyFeature(deps) {
   };
 
   const showStadiumInvestmentAlert = ({ title, lead }) => {
-    ensureStadiumAlertModal();
-    const titleEl = $('#stadiumInvestmentAlertTitle');
-    const leadEl = $('#stadiumInvestmentAlertLead');
-    if (titleEl) titleEl.textContent = title;
-    if (leadEl) leadEl.textContent = lead;
-    $('#stadiumInvestmentAlertModal')?.classList.remove('hidden');
+    const club = userClubState();
+    showAlertV2({
+      id: 'stadiumInvestmentAlertModal',
+      tone: 'warn',
+      kicker: 'ESTÁDIO · INVESTIMENTO',
+      title,
+      lead,
+      rows: club ? [['Seu caixa', formatBudget(getBalance(club))]] : [],
+    });
   };
 
 
@@ -894,9 +898,31 @@ export function createEconomyFeature(deps) {
   };
 
   const buildBankLoanBorrowModalBody = (status, amount, term) => {
-    const simulation = bankLoanBorrowPreviewHtml(status, amount, term, { includeHint: true });
-    const breakdown = bankLoanBreakdownWindowHtml(buildBorrowRateBreakdown(status, term));
-    return `${simulation}${breakdown}`;
+    const fee = Math.min(Math.max(0, Math.round(Number(amount) || 0)), status.available || amount);
+    const t = BANK_LOAN_TERM_OPTIONS.includes(Number(term)) ? Number(term) : DEFAULT_BANK_LOAN_TERM;
+    const offerRate = status.offerRate ?? status.rate ?? 0;
+    const contractRate = Math.round(offerRate * loanTermRateMultiplier(t) * 10000) / 10000;
+    const plan = previewLoanPlan(fee, contractRate, t);
+    const club = userClubState();
+    const cash = club ? getBalance(club) : 0;
+    const tile = (label, value, sub, tone = '') => `<div class="av2-tile${tone ? ` is-${tone}` : ''}"><span>${label}</span><strong>${value}</strong>${sub ? `<small>${sub}</small>` : ''}</div>`;
+    const terms = BANK_LOAN_TERM_OPTIONS.map(option => `<button type="button" class="ln2-term${option === t ? ' is-active' : ''}" data-ln2-term="${option}">${option}x</button>`).join('');
+    const bd = buildBorrowRateBreakdown(status, t);
+    return `
+      <div class="av2-tiles" style="--av2-cols:3">
+        ${tile('VALOR', formatBudget(fee), 'você recebe na hora')}
+        ${tile('PRAZO', `${t} rodadas`, 'parcelas do principal')}
+        ${tile('CUSTO POR RODADA', formatBudget(plan.roundCostEstimate), 'parcela + juros', 'gold')}
+      </div>
+      <div class="ln2-terms"><span>Parcelas</span>${terms}</div>
+      <div class="ln2-sec">COMO A TAXA FOI CALCULADA</div>
+      <div class="av2-rows ln2-rows">${bankLoanBreakdownRowsHtml(bd)}</div>
+      <div class="ln2-sec">IMPACTO NO CAIXA</div>
+      <div class="av2-tiles" style="--av2-cols:3">
+        ${tile('JUROS TOTAIS', formatBudget(plan.totalInterest), `1ª rodada ${formatBudget(plan.firstInterest)}`, 'red')}
+        ${tile('CAIXA HOJE → DEPOIS', `${formatBudget(cash)} → ${formatBudget(cash + fee)}`, '', 'green')}
+        ${tile('PARCELA DO PRINCIPAL', formatBudget(plan.installmentPrincipal), 'você paga no Escritório')}
+      </div>`;
   };
 
   const renderBankLoan = () => {
@@ -1031,33 +1057,20 @@ export function createEconomyFeature(deps) {
 </div>`;
 
   const BANK_LOAN_BORROW_MODAL_HTML = `
-<div id="officeBankLoanBorrowModal" class="modal hidden">
-  <div class="modal-card office-bank-loan-info-modal" role="dialog" aria-modal="true" aria-labelledby="officeBankLoanBorrowTitle">
-    <header class="office-bank-loan-info-modal-header">
-      <div class="office-bank-loan-info-modal-heading">
-        <h2 id="officeBankLoanBorrowTitle">Simulador do empréstimo</h2>
-      </div>
-    </header>
-    <div class="office-bank-loan-info-modal-body" id="officeBankLoanBorrowContent"></div>
-    <footer class="office-bank-loan-info-modal-actions office-bank-loan-borrow-modal-actions">
-      <button id="officeBankLoanBorrowDeny" type="button" class="office-bank-loan-info-dismiss">NEGAR</button>
-      <button id="officeBankLoanBorrowConfirm" type="button" class="office-bank-loan-borrow-confirm">CONFIRMAR</button>
-    </footer>
+<div id="officeBankLoanBorrowModal" class="modal hidden av2-modal ln2-modal">
+  <div class="modal-card av2 ln2" data-tone="info" role="dialog" aria-modal="true" aria-labelledby="officeBankLoanBorrowTitle">
+    <header class="av2-head"><span class="av2-icon" aria-hidden="true">R$</span><div class="av2-titles"><span class="av2-kicker">FINANÇAS · EMPRÉSTIMO BANCÁRIO</span><h2 id="officeBankLoanBorrowTitle" class="av2-title">Simulador do empréstimo</h2></div></header>
+    <div class="av2-body" id="officeBankLoanBorrowContent"></div>
+    <footer class="av2-foot"><span class="ln2-foot-note" id="officeBankLoanBorrowNote"></span><button id="officeBankLoanBorrowDeny" type="button" class="av2-btn">NEGAR</button><button id="officeBankLoanBorrowConfirm" type="button" class="av2-btn is-primary">CONFIRMAR EMPRÉSTIMO</button></footer>
   </div>
 </div>`;
 
   const BANK_LOAN_INFO_MODAL_HTML = `
-<div id="officeBankLoanInfoModal" class="modal hidden">
-  <div class="modal-card office-bank-loan-info-modal" role="dialog" aria-modal="true" aria-labelledby="officeBankLoanInfoTitle">
-    <header class="office-bank-loan-info-modal-header">
-      <div class="office-bank-loan-info-modal-heading">
-        <h2 id="officeBankLoanInfoTitle">Simulador do empréstimo</h2>
-      </div>
-    </header>
-    <div class="office-bank-loan-info-modal-body" id="officeBankLoanInfoContent"></div>
-    <footer class="office-bank-loan-info-modal-actions">
-      <button id="officeBankLoanInfoDismiss" type="button" class="office-bank-loan-info-dismiss">FECHAR</button>
-    </footer>
+<div id="officeBankLoanInfoModal" class="modal hidden av2-modal ln2-modal">
+  <div class="modal-card av2 ln2" data-tone="info" role="dialog" aria-modal="true" aria-labelledby="officeBankLoanInfoTitle">
+    <header class="av2-head"><span class="av2-icon" aria-hidden="true">R$</span><div class="av2-titles"><span class="av2-kicker">FINANÇAS · EMPRÉSTIMO BANCÁRIO</span><h2 id="officeBankLoanInfoTitle" class="av2-title">Seu empréstimo</h2></div></header>
+    <div class="av2-body" id="officeBankLoanInfoContent"></div>
+    <footer class="av2-foot"><span class="ln2-foot-note" id="officeBankLoanInfoNote"></span><button id="officeBankLoanInfoDismiss" type="button" class="av2-btn is-primary">FECHAR</button></footer>
   </div>
 </div>`;
 
@@ -1091,13 +1104,16 @@ export function createEconomyFeature(deps) {
   };
 
   /** Aviso efêmero do empréstimo — não grava na inbox. */
-  const showBankLoanAlert = ({ title = 'Empréstimo bancário', lead = '' } = {}) => {
-    ensureBankLoanAlertModal();
-    const titleEl = $('#officeBankLoanAlertTitle');
-    const leadEl = $('#officeBankLoanAlertLead');
-    if (titleEl) titleEl.textContent = title;
-    if (leadEl) leadEl.textContent = lead;
-    $('#officeBankLoanAlertModal')?.classList.remove('hidden');
+  const showBankLoanAlert = ({ title = 'Empréstimo bancário', lead = '', tone = 'bad' } = {}) => {
+    const club = userClubState();
+    showAlertV2({
+      id: 'officeBankLoanAlertModal',
+      tone,
+      kicker: 'FINANÇAS · EMPRÉSTIMO BANCÁRIO',
+      title,
+      lead,
+      rows: club ? [['Seu caixa', formatBudget(getBalance(club))]] : [],
+    });
   };
 
   let bankLoanBorrowState = null;
@@ -1151,6 +1167,7 @@ export function createEconomyFeature(deps) {
     const t = BANK_LOAN_TERM_OPTIONS.includes(Number(term)) ? Number(term) : DEFAULT_BANK_LOAN_TERM;
     if (!(fee >= 50_000)) {
       showBankLoanAlert({
+        tone: 'warn',
         title: 'Valor insuficiente',
         lead: 'Informe pelo menos R$ 50 mil para simular o empréstimo.',
       });
@@ -1178,6 +1195,16 @@ export function createEconomyFeature(deps) {
     bankLoanBorrowState = { amount: fee, term: t };
     const content = $('#officeBankLoanBorrowContent');
     if (content) content.innerHTML = buildBankLoanBorrowModalBody(status, fee, t);
+    const note = $('#officeBankLoanBorrowNote');
+    if (note) note.textContent = 'Juros saem do caixa a cada rodada nacional.';
+    if (content && !content.dataset.ln2Bound) {
+      content.dataset.ln2Bound = '1';
+      content.addEventListener('click', event => {
+        const termBtn = event.target.closest('[data-ln2-term]');
+        if (!termBtn || !bankLoanBorrowState) return;
+        openBankLoanBorrowModal(bankLoanBorrowState.amount, Number(termBtn.dataset.ln2Term));
+      });
+    }
     $('#officeBankLoanBorrowModal')?.classList.remove('hidden');
   };
 
@@ -1225,7 +1252,15 @@ export function createEconomyFeature(deps) {
     }
     ensureBankLoanInfoModal();
     const content = $('#officeBankLoanInfoContent');
-    if (content) content.innerHTML = breakdownHtml;
+    const tile = (label, value, sub, tone = '') => `<div class="av2-tile${tone ? ` is-${tone}` : ''}"><span>${label}</span><strong>${value}</strong>${sub ? `<small>${sub}</small>` : ''}</div>`;
+    const head = status.active
+      ? `<div class="av2-tiles" style="--av2-cols:3">${tile('CONTRATO', status.installmentLabel || '—', status.delinquent ? `atraso de ${status.delinquencyStreak} rodada(s)` : 'em dia', status.delinquent ? 'red' : 'green')}${tile('JUROS DESTA RODADA', formatBudget(status.interestDue || 0), 'automáticos')}${tile('TAXA', `${status.contractRatePct ?? status.ratePct ?? '—'}%`, 'travada na assinatura', 'gold')}</div>`
+      : '<p class="av2-lead">Você não tem empréstimo ativo. Veja como o banco calcula a taxa do seu clube hoje.</p>';
+    const rows = status.active ? status.rateBreakdown : buildBorrowRateBreakdown(status, Number(document.querySelector('[data-bank-term].is-active')?.dataset.bankTerm) || DEFAULT_BANK_LOAN_TERM);
+    if (content) content.innerHTML = `${head}<div class="ln2-sec">COMO A TAXA FOI CALCULADA</div><div class="av2-rows ln2-rows">${bankLoanBreakdownRowsHtml(rows, { delinquent: status.delinquent, effectiveRatePct: status.effectiveRatePct })}</div>`;
+    const note = $('#officeBankLoanInfoNote');
+    if (note) note.textContent = status.active ? 'Valores congelados na assinatura do contrato.' : '';
+    void breakdownHtml;
     $('#officeBankLoanInfoModal')?.classList.remove('hidden');
   };
 
@@ -1257,13 +1292,8 @@ export function createEconomyFeature(deps) {
   };
 
   /** Modal efêmero — não grava na inbox. */
-  const openTvAdvanceModal = ({ title, lead }) => {
-    ensureTvAdvanceModal();
-    const titleEl = $('#officeTvAdvanceModalTitle');
-    const leadEl = $('#officeTvAdvanceModalLead');
-    if (titleEl) titleEl.textContent = title;
-    if (leadEl) leadEl.textContent = lead;
-    $('#officeTvAdvanceModal')?.classList.remove('hidden');
+  const openTvAdvanceModal = ({ title, lead, tone = 'info', tiles = [] }) => {
+    showAlertV2({ id: 'officeTvAdvanceModal', tone, kicker: 'FINANÇAS · DIREITOS DE TV', title, lead, tiles });
   };
 
   const submitTvAdvance = () => {
@@ -1276,6 +1306,7 @@ export function createEconomyFeature(deps) {
     });
     if (!result.ok) {
       openTvAdvanceModal({
+        tone: 'warn',
         title: 'Adiantamento indisponível',
         lead: tvAdvanceRejectCopy(result.reason),
       });
@@ -1284,8 +1315,14 @@ export function createEconomyFeature(deps) {
       return;
     }
     openTvAdvanceModal({
-      title: `${formatBudget(result.payout)} creditados`,
-      lead: `Você antecipou os direitos de TV com deságio de ${result.haircutPct}% (bruto ${formatBudget(result.remaining)}). No decorrer desta temporada não haverá mais ganhos com TV nos mandos de campo. Orçamento atual: ${formatBudget(result.clubBalance)}.`,
+      tone: 'ok',
+      title: 'Adiantamento recebido',
+      lead: 'Nesta temporada não haverá mais receita de TV nos jogos em casa.',
+      tiles: [
+        ['CREDITADO AGORA', formatBudget(result.payout), `bruto ${formatBudget(result.remaining)}`, 'green'],
+        ['DESÁGIO', `${result.haircutPct}%`, 'cobrado pela emissora', 'red'],
+        ['CAIXA AGORA', formatBudget(result.clubBalance), '', ''],
+      ],
     });
     renderOffice();
     onBudgetChanged?.();

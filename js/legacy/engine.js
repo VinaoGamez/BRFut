@@ -45,7 +45,7 @@ import { renderTableFootIcon } from '../lab/card-back.js';
 import { createPlayerRenameFeature } from '../feature/player-rename/index.js';
 import { createRosterContractsFeature } from '../feature/roster-contracts/index.js';
 import { createSquadPerformance } from '../feature/squad-performance/index.js';
-import { renderTransferHistoryCard } from '../ui/transfer-history-card.js';
+import { TRANSFER_HISTORY_V2_HTML, renderTransferHistoryV2 } from '../ui/transfer-history-v2.js';
 import { SAVE_KEYS, SAVE_VERSION, FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { getAuthToken, isCloudStorageActive, probeBackend } from '../core/storage-api.js';
 import { fetchClubSeasonStats } from '../core/player-stats-sync.js';
@@ -4219,42 +4219,49 @@ export async function bootEngine({
       try{renderEnvironmentCard();}catch{/* boot */}
     },
   }):null;
+  // Histórico de transferências v2: balanço, abas por ano, filtro e linhas completas.
+  const transferHistoryView={seasons:[],year:null,filter:'all',page:0};
+  const renderTransferHistoryView=()=>{
+    const body=$('#transferHistoryCardBody');
+    if(body)body.innerHTML=renderTransferHistoryV2(transferHistoryView);
+  };
   const ensureTransferHistoryModal=()=>{
+    const old=$('#transferHistoryCardModal');
+    if(old&&!old.querySelector('.th2'))old.remove();
     if($('#transferHistoryCardModal'))return;
-    document.body.insertAdjacentHTML('beforeend','<div id="transferHistoryCardModal" class="transfer-history-modal" role="dialog" aria-modal="true" aria-label="Histórico de transferências" hidden><div id="transferHistoryCardBody" class="transfer-history-modal-body"></div></div>');
-    onClick('#transferHistoryCardModal',event=>{if(event.target?.id==='transferHistoryCardModal')closeTransferHistory();});
-    onClick('#transferHistoryCardBody',event=>{
-      const toggle=event.target.closest('.transfer-history-season-toggle');
-      if(toggle){
-        const selected=toggle.closest('.transfer-history-season');
-        selected.parentElement.querySelectorAll('.transfer-history-season').forEach(season=>{
-          const active=season===selected;
-          season.classList.toggle('is-expanded',active);
-          season.querySelector('.transfer-history-season-toggle')?.setAttribute('aria-expanded',String(active));
-          const content=season.querySelector('.transfer-history-season-content');
-          if(content)content.hidden=!active;
-        });
-        return;
-      }
-      event.target.closest('.transfer-history-card')?.classList.toggle('is-flipped');
+    document.body.insertAdjacentHTML('beforeend',TRANSFER_HISTORY_V2_HTML);
+    onClick('#transferHistoryCardModal',event=>{
+      if(event.target?.id==='transferHistoryCardModal'||event.target.closest('#closeTransferHistory')){closeTransferHistory();return;}
+      const yearBtn=event.target.closest('[data-th2-year]');
+      if(yearBtn){transferHistoryView.year=Number(yearBtn.dataset.th2Year);transferHistoryView.page=0;renderTransferHistoryView();return;}
+      const filterBtn=event.target.closest('[data-th2-filter]');
+      if(filterBtn){transferHistoryView.filter=filterBtn.dataset.th2Filter;transferHistoryView.page=0;renderTransferHistoryView();return;}
+      if(event.target.closest('[data-th2-more]')){transferHistoryView.page+=1;renderTransferHistoryView();}
     });
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#transferHistoryCardModal')?.classList.contains('hidden'))closeTransferHistory();});
   };
   const closeTransferHistory=()=>{
-    const modal=$('#transferHistoryCardModal');
-    if(modal)modal.hidden=true;
+    $('#transferHistoryCardModal')?.classList.add('hidden');
     document.body.classList.remove('transfer-history-open');
+  };
+  const transferPlayerPos=deal=>{
+    const pool=[...(clubs[deal.to]?.roster||[]),...(clubs[deal.from]?.roster||[]),...squad];
+    const found=pool.find(player=>(deal.playerId&&player.playerId===deal.playerId)||player.name===deal.playerName);
+    return found?.pos||null;
   };
   const transferHistorySeason=(year,deals=[],{available=true}={})=>({
     year,
     available,
     transfers:(Array.isArray(deals)?deals:[])
       .filter(deal=>deal&&deal.type!=='watch'&&deal.from&&deal.to&&(deal.from===userClub||deal.to===userClub))
-      .map(deal=>{
-        if(deal.to===userClub)return {playerName:deal.playerName||'—',direction:'in',club:deal.from||'Livre'};
-        if(deal.from===userClub)return {playerName:deal.playerName||'—',direction:'out',club:deal.to||'Livre'};
-        return {playerName:deal.playerName||'—',direction:'market',from:deal.from,to:deal.to};
-      })
-      .filter(Boolean)
+      .map(deal=>({
+        playerName:deal.playerName||'—',
+        direction:deal.to===userClub?'in':'out',
+        club:deal.to===userClub?(deal.from||'Livre'):(deal.to||'Livre'),
+        fee:Number(deal.fee)||0,
+        type:deal.type||null,
+        pos:transferPlayerPos(deal),
+      }))
       .reverse(),
   });
   const openTransferHistory=()=>{
@@ -4270,11 +4277,10 @@ export async function bootEngine({
     const seasons=[current,...archived]
       .filter((season,index,all)=>all.findIndex(item=>Number(item.year)===Number(season.year))===index)
       .sort((a,b)=>Number(b.year)-Number(a.year));
-    const body=$('#transferHistoryCardBody');
-    body.innerHTML=renderTransferHistoryCard({seasons});
-    $('#transferHistoryCardModal').hidden=false;
+    Object.assign(transferHistoryView,{seasons,year:seasons[0]?.year??null,filter:'all',page:0});
+    renderTransferHistoryView();
+    $('#transferHistoryCardModal').classList.remove('hidden');
     document.body.classList.add('transfer-history-open');
-    body.querySelector('.transfer-history-card')?.focus();
   };
   onClick('#openTransferHistoryCard',openTransferHistory);
   document.addEventListener('keydown',event=>{
@@ -5601,7 +5607,7 @@ export async function bootEngine({
   
   
   
-  document.body.insertAdjacentHTML('beforeend',`<div id="competitionRulesModal" class="modal hidden"><div class="modal-card competition-rules-modal"><button id="closeCompetitionRules" class="close" type="button">×</button><label id="competitionRulesKicker">REGULAMENTO</label><h2 id="competitionRulesTitle">Regras</h2><div id="competitionRulesBody" class="competition-rules-body"></div></div></div>`);
+  document.body.insertAdjacentHTML('beforeend',`<div id="competitionRulesModal" class="modal hidden"><div class="modal-card competition-rules-modal rl2"><header class="rl2-head"><div class="rl2-title"><span class="rl2-kicker" id="competitionRulesKicker">REGULAMENTO</span><h2 id="competitionRulesTitle">Regulamento</h2></div><button id="closeCompetitionRules" class="close" type="button" aria-label="Fechar">×</button></header><div id="competitionRulesBody" class="rl2-body"></div></div></div>`);
   document.body.insertAdjacentHTML('beforeend',`<div id="championshipModal" class="modal hidden"><div class="modal-card championship-modal"><button id="closeChampionship" class="close">×</button><label id="championshipDivisionLabel">CAMPEONATO BRASILEIRO · SÉRIE A</label><h2>Brasileirão 2026</h2><small id="championshipFormat" class="championship-format"></small><div id="divisionTabs" class="division-tabs">${Object.keys(divisionRules).map(division=>`<button data-division="${division}">SÉRIE ${division}</button>`).join('')}<button data-competition="CUP">COPA DO BRASIL</button></div><div id="serieDModeTabs" class="serie-d-mode-tabs hidden" role="tablist" aria-label="Fase da Série D"><button type="button" data-serie-d-mode="groups">GRUPOS</button><button type="button" data-serie-d-mode="knockout">MATA-MATA</button></div><div class="championship-grid"><section><h3>Tabela</h3><div class="champ-head"><span>#</span><span>CLUBE</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span></div><div id="championshipTable"></div></section><aside class="championship-sidebar"></aside></div></div></div>`);
   let championshipRoundView=currentRound,championshipGroupView=userSerieDGroupIndex,championshipLeaderMode='scorers';
   const serieCRelegationZone=serieCRelegationSlots(careerSeason);

@@ -83,20 +83,38 @@ export function createYouthAcademyFeature(deps) {
   const structureLabel = level =>
     typeof structureLabelFn === 'function' ? structureLabelFn(level) : structureLevelLabel(level);
 
+  // Relatório do olheiro v2: um cartão por talento, decisão dentro do relatório.
+  let scoutReportSlot = null;
   const ensureScoutReportModal = () => {
+    const old = document.getElementById('youthScoutReportModal');
+    if (old && !old.querySelector('.sr3')) old.remove();
     if (document.getElementById('youthScoutReportModal')) return;
     document.body.insertAdjacentHTML('beforeend', `
-      <div id="youthScoutReportModal" class="youth-scout-report-modal hidden" role="dialog" aria-modal="true" aria-labelledby="youthScoutReportTitle">
-        <div class="youth-scout-report-modal__panel">
-          <h2 id="youthScoutReportTitle">RELATÓRIO OLHEIRO</h2>
-          <p id="youthScoutReportBody" class="youth-scout-report-modal__body"></p>
-          <button type="button" id="youthScoutReportClose" class="youth-scout-report-modal__close">FECHAR</button>
+      <div id="youthScoutReportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="youthScoutReportTitle">
+        <div class="modal-card sr3">
+          <header class="sr3-head"><div class="sr3-title"><span class="sr3-kicker">BASE · RELATÓRIO DO OLHEIRO</span><h2 id="youthScoutReportTitle">Relatório</h2></div><button type="button" class="close" id="youthScoutReportX" aria-label="Fechar">×</button></header>
+          <div class="sr3-body" id="youthScoutReportBody"></div>
+          <footer class="sr3-foot"><button type="button" id="youthScoutReportClose" class="av2-btn">FECHAR</button></footer>
         </div>
       </div>
     `);
-    onClick('#youthScoutReportClose', () => closeScoutReportModal());
-    onClick('#youthScoutReportModal', event => {
-      if (event.target.id === 'youthScoutReportModal') closeScoutReportModal();
+    const modal = document.getElementById('youthScoutReportModal');
+    modal.addEventListener('click', event => {
+      if (event.target === modal || event.target.closest('#youthScoutReportClose') || event.target.closest('#youthScoutReportX')) { closeScoutReportModal(); return; }
+      const sign = event.target.closest('[data-sr3-sign]');
+      const dismiss = event.target.closest('[data-sr3-dismiss]');
+      if (!sign && !dismiss) return;
+      const club = userClubState();
+      if (sign) {
+        const res = signScoutReport(club, sign.dataset.sr3Sign, ctx());
+        if (res?.ok) pushMessage?.({ category: 'club', type: 'info', title: 'Base U-20', body: `${res.player.name} assinou contrato de formação.` });
+        else if (res?.error) sign.closest('.sr3-card')?.querySelector('.sr3-err')?.replaceChildren(document.createTextNode(res.error === 'no_slots' || res.error === 'full' ? 'Sem vaga na base.' : 'Não foi possível assinar agora.'));
+      } else {
+        dismissScoutReport(club, dismiss.dataset.sr3Dismiss);
+      }
+      onBudgetChanged?.();
+      render();
+      openScoutReportModal(scoutReportSlot);
     });
   };
 
@@ -104,12 +122,39 @@ export function createYouthAcademyFeature(deps) {
     const club = userClubState();
     ensureYouthState(club);
     syncScoutSlots(club);
+    scoutReportSlot = slotIndex;
+    const careerDate = getCareerDate?.() || new Date();
+    purgeExpiredScoutReports(club, careerDate);
     const slot = club.scouts.find(row => Number(row.slot) === Number(slotIndex));
     ensureScoutReportModal();
     const modal = $('#youthScoutReportModal');
     const body = $('#youthScoutReportBody');
+    const title = $('#youthScoutReportTitle');
     if (!modal || !body) return;
-    body.textContent = formatScoutReportBody(club, slot, getCareerDate?.() || new Date());
+    const reports = (club.scoutReports || []).filter(report => Number(report.scoutSlot) === Number(slot?.slot));
+    const name = slot?.scoutName || reports[0]?.scoutName || `Olheiro ${slot?.slot ?? ''}`;
+    const grade = scoutGradeLabel(reports[0]?.scoutGrade || slot?.scoutGrade);
+    const region = scoutRegionLabel(reports[0]?.originRegion || slot?.region) || reports[0]?.originUf || '—';
+    if (title) title.textContent = reports.length ? `Missão: ${region}` : name;
+    const esc2 = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    const stars = n => Array.from({ length: 5 }, (_, i) => `<span class="${i < n ? 'is-on' : ''}">★</span>`).join('');
+    const locked = slot && isScoutLocked(slot, careerDate) && slot.lockedUntil ? ` · em missão até ${formatScoutLockDate(slot.lockedUntil)}` : '';
+    const head = `<div class="sr3-scout"><span class="sr3-grade">${esc2(grade || '—')}</span><div><strong>${esc2(name)} · classe ${esc2(grade || '—')}</strong><small>Região ${esc2(region)}${locked}</small></div>${reports.length ? `<em class="sr3-count">${reports.length} TALENTO${reports.length === 1 ? '' : 'S'}</em>` : ''}</div>`;
+    const cards = reports.length
+      ? `<div class="sr3-cards">${reports.map(report => {
+          const p = report.player || {};
+          const legacy = p.legacyOf?.retiredName ? `<small class="sr3-legacy">LEGADO · ${esc2(p.legacyOf.retiredName)}</small>` : `<small>visto em ${esc2(report.originUf || region)}</small>`;
+          return `<article class="sr3-card${(report.estimatedStars || 0) >= 4 ? ' is-top' : ''}">
+            <div class="sr3-card-head"><i class="sr3-pos">${esc2(p.pos || '—')}</i><strong>${esc2(p.name || '—')}</strong><small>${esc2(p.age ?? '—')} anos</small></div>
+            <div class="sr3-stars">${stars(Number(report.estimatedStars) || 0)}<small>estimativa · confiança ${esc2(String(report.confidence || '—').toLowerCase())}</small></div>
+            ${legacy}
+            <small class="sr3-err"></small>
+            <div class="sr3-actions"><button type="button" class="av2-btn" data-sr3-dismiss="${esc2(report.id)}">DISPENSAR</button><button type="button" class="av2-btn is-primary" data-sr3-sign="${esc2(report.id)}">LEVAR PARA A BASE</button></div>
+          </article>`;
+        }).join('')}</div>`
+      : `<p class="sr3-empty">${esc2(slot?.lastMissionReport?.summary || 'Este olheiro ainda não realizou buscas de captação.')}</p>`;
+    const expires = reports[0]?.expiresAt ? `<small class="sr3-note">Relatório vale até ${esc2(formatScoutLockDate(reports[0].expiresAt))}. Depois disso os jogadores vão para outros clubes.</small>` : '';
+    body.innerHTML = `${head}${cards}${expires}`;
     modal.classList.remove('hidden');
   };
 

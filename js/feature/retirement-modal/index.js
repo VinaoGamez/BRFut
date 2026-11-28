@@ -1,14 +1,13 @@
 const MODAL_HTML = `
-<div id="retirementModal" class="modal hidden">
-  <div class="modal-card retirement-modal-card">
-    <label>DESPEDIDAS</label>
-    <h2 id="retirementModalTitle">Aposentadorias</h2>
-    <p id="retirementModalLead" class="retirement-modal-lead"></p>
-    <ul id="retirementModalList" class="retirement-modal-list"></ul>
-    <p id="retirementModalFootnote" class="retirement-modal-footnote hidden"></p>
-    <div class="retirement-modal-actions">
-      <button id="confirmRetirementContinue" type="button">CONTINUAR TEMPORADA →</button>
+<div id="retirementModal" class="modal hidden av2-modal">
+  <div class="modal-card av2 retirement-modal-card" data-tone="info">
+    <header class="av2-head"><span class="av2-icon is-star" aria-hidden="true">★</span><div class="av2-titles"><span class="av2-kicker" id="retirementModalKicker">FIM DE TEMPORADA · DESPEDIDAS</span><h2 id="retirementModalTitle" class="av2-title">Aposentadorias</h2></div></header>
+    <div class="av2-body">
+      <p id="retirementModalLead" class="av2-lead"></p>
+      <ul id="retirementModalList" class="av2-list"></ul>
+      <p id="retirementModalFootnote" class="av2-note hidden"></p>
     </div>
+    <footer class="av2-foot"><button id="confirmRetirementContinue" type="button" class="av2-btn is-primary">CONTINUAR TEMPORADA →</button></footer>
   </div>
 </div>
 `;
@@ -42,18 +41,21 @@ export function createRetirementModalFeature(deps) {
     injectDom();
     onContinue = typeof continueFn === 'function' ? continueFn : null;
     const year = Number(season) || '—';
-    $('#retirementModalTitle').textContent = `Despedidas · ${year}`;
+    $('#retirementModalTitle').textContent = departures.length === 1 ? 'Um jogador se aposentou' : `${departures.length} jogadores se aposentaram`;
+    const kicker = $('#retirementModalKicker');
+    if (kicker) kicker.textContent = `FIM DE TEMPORADA · DESPEDIDAS ${year}`;
     $('#retirementModalLead').textContent =
       departures.length === 1
-        ? 'Um jogador encerrou a carreira no seu elenco.'
-        : `${departures.length} jogadores encerraram a carreira no seu elenco.`;
+        ? 'Ele encerrou a carreira no seu elenco ao fim da temporada.'
+        : 'Eles encerraram a carreira no seu elenco ao fim da temporada.';
     const list = $('#retirementModalList');
     if (list) {
       list.innerHTML = departures
         .map(
-          row => `<li>
+          row => `<li class="av2-item">
+            <i class="av2-pos">${posLabel(row.pos)}</i>
             <strong>${row.name}</strong>
-            <span>${row.retiredAge} anos · ${posLabel(row.pos)} · OVR ${row.lastOverall}</span>
+            <span>${row.retiredAge} anos · OVR ${row.lastOverall}</span>
           </li>`,
         )
         .join('');

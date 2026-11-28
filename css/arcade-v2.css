@@ -8258,3 +8258,205 @@ html body #cupBracketModal .cb2 .cb2-side.is-user b.club-link { color: var(--av-
 html body #cupBracketModal .cb2 .cb2-side.is-winner { background: #22406A; }
 html body #cupBracketModal .cb2 .cb2-side.is-out em { color: var(--av-muted); }
 html body #cupBracketModal .cb2 button.cb2-phase i { border-radius: 50% !important; flex: none; }
+
+/* ===== Aviso v2 (av2) — componente único de avisos ===== */
+html body .modal.av2-modal:not(#matchModal):not(#playerCardModal) > .modal-card.av2 {
+  --av2-tone: var(--av-cyan);
+  width: min(560px, calc(100vw - 32px)) !important; max-width: none !important; max-height: none !important; height: auto !important; min-height: 0 !important;
+  padding: 0 !important; margin: auto !important; overflow: visible !important; text-align: left; display: flex !important; flex-direction: column;
+  background: linear-gradient(225deg, transparent 16px, var(--av-panel) 16px) !important; box-shadow: inset 0 3px var(--av2-tone), 0 24px 60px #000b !important; border: 0 !important; border-radius: 0 !important;
+}
+html body .modal.av2-modal:not(#matchModal):not(#playerCardModal) > .modal-card.av2[data-tone="ok"] { --av2-tone: var(--av-green); }
+html body .modal.av2-modal:not(#matchModal):not(#playerCardModal) > .modal-card.av2[data-tone="warn"] { --av2-tone: var(--av-gold); }
+html body .modal.av2-modal:not(#matchModal):not(#playerCardModal) > .modal-card.av2[data-tone="bad"] { --av2-tone: var(--av-red); }
+html body .modal-card.av2 > * { flex: none; }
+html body .modal.av2-modal .av2 > header.av2-head { display: flex !important; align-items: center; gap: 14px; height: auto !important; min-height: 0 !important; padding: 16px 20px 12px !important; border-bottom: 1px solid var(--av-line); background: none !important; box-sizing: border-box; }
+html body .av2-icon { flex: none; width: 44px; height: 44px; display: grid; place-items: center; font: italic 900 22px var(--av-display); color: var(--av2-tone); background: color-mix(in srgb, var(--av2-tone) 14%, transparent); box-shadow: inset 0 0 0 2px var(--av2-tone); }
+html body .av2-icon.is-star { color: var(--av-gold); box-shadow: inset 0 0 0 2px var(--av-gold); background: color-mix(in srgb, var(--av-gold) 14%, transparent); }
+html body .av2-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html body .modal .modal-card.av2 .av2-kicker { font: italic 800 12px var(--av-display); letter-spacing: .12em; color: var(--av2-tone); }
+html body .modal .modal-card.av2 .av2-title { margin: 2px 0 0 !important; font: italic 900 24px/1.15 var(--av-display) !important; color: var(--av-ink) !important; text-transform: none !important; }
+html body .modal .modal-card.av2 .av2-x { position: static !important; flex: none; }
+html body .av2-body { display: flex; flex-direction: column; gap: 10px; padding: 14px 20px; }
+html body .modal .modal-card.av2 .av2-lead { margin: 0 !important; font-size: 14px !important; line-height: 1.5; color: var(--av-muted) !important; }
+html body .av2-tiles { display: grid; grid-template-columns: repeat(var(--av2-cols, 3), minmax(0, 1fr)); gap: 8px; }
+html body .av2-tile { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 9px 12px; background: var(--av-rail); }
+html body .av2-tile span { font: italic 800 11px var(--av-display); letter-spacing: .1em; color: var(--av-muted); }
+html body .av2-tile strong { font: italic 900 18px var(--av-display); color: var(--av-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body .av2-tile small { font-size: 12px; color: var(--av-muted); }
+html body .av2-tile.is-green strong, html body .av2-row b.is-green { color: var(--av-green); }
+html body .av2-tile.is-red strong, html body .av2-row b.is-red { color: var(--av-red); }
+html body .av2-tile.is-gold strong, html body .av2-row b.is-gold { color: var(--av-gold); }
+html body .av2-tile.is-cyan strong, html body .av2-row b.is-cyan { color: var(--av-cyan); }
+html body .av2-rows { display: flex; flex-direction: column; gap: 3px; }
+html body .av2-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 12px; background: var(--av-rail); font-size: 13px; }
+html body .av2-row span { color: var(--av-muted); } html body .av2-row b { color: var(--av-ink); }
+html body .modal .modal-card.av2 .av2-list { list-style: none; margin: 0 !important; padding: 0 !important; display: flex; flex-direction: column; gap: 4px; }
+html body .modal .modal-card.av2 .av2-item { display: flex !important; align-items: center; gap: 12px; padding: 8px 12px !important; background: var(--av-rail) !important; border: 0 !important; }
+html body .av2-item strong { flex: 1; font: 700 14px var(--av-body); color: var(--av-ink); }
+html body .av2-item span { font-size: 12px; color: var(--av-muted); }
+html body .av2-pos { min-width: 36px; padding: 3px 6px; text-align: center; font: italic 900 11px var(--av-display); font-style: italic; color: var(--av-cyan); background: color-mix(in srgb, var(--av-cyan) 14%, transparent); }
+html body .modal .modal-card.av2 .av2-note { margin: 0 !important; font-size: 12px !important; color: var(--av-muted) !important; }
+html body .modal .modal-card.av2 .av2-note.hidden { display: none !important; }
+html body .av2-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 20px 16px; border-top: 1px solid var(--av-line); }
+html body .modal.av2-modal:not(#matchModal):not(#playerCardModal) .av2 button.av2-btn {
+  min-height: 0 !important; padding: 10px 20px !important; border: 0 !important; border-radius: 0 !important; transform: none !important;
+  background: transparent !important; box-shadow: inset 0 0 0 1px var(--av-line) !important; color: var(--av-ink) !important;
+  font: italic 900 12px var(--av-display) !important; letter-spacing: .05em !important; clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%); cursor: pointer;
+}
+html body .modal.av2-modal:not(#matchModal):not(#playerCardModal) .av2 button.av2-btn.is-primary { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -3px var(--av-lime-edge) !important; }
+@media (max-width: 560px) { html body .av2-tiles { grid-template-columns: minmax(0, 1fr); } }
+/* Empréstimo v2 (sobre o av2) */
+html body .modal.av2-modal:not(#matchModal):not(#playerCardModal) > .modal-card.av2.ln2 { width: min(760px, calc(100vw - 32px)) !important; }
+html body .ln2 .av2-icon { font-size: 15px; }
+html body .ln2-sec { display: flex; align-items: center; gap: 10px; margin-top: 2px; font: italic 800 11px var(--av-display); letter-spacing: .12em; color: var(--av-cyan); }
+html body .ln2-sec::after { content: ''; flex: 1; height: 1px; background: var(--av-line); }
+html body .ln2-rows .office-bank-loan-preview-row { display: flex !important; justify-content: space-between; align-items: center; gap: 12px; margin: 0 !important; padding: 8px 12px !important; background: var(--av-rail) !important; border: 0 !important; font-size: 13px !important; }
+html body .ln2-rows .office-bank-loan-preview-row span { color: var(--av-muted) !important; }
+html body .ln2-rows .office-bank-loan-preview-row b { color: var(--av-ink) !important; font-weight: 800; }
+html body .ln2-rows .office-bank-loan-preview-row--total b { color: var(--av-gold) !important; }
+html body .ln2-rows .office-bank-loan-preview-row--warn b, html body .ln2-rows b.spend { color: var(--av-red) !important; }
+html body .ln2-terms { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+html body .ln2-terms span { margin-right: 6px; font-size: 12px; color: var(--av-muted); }
+html body .modal.av2-modal .ln2 button.ln2-term {
+  min-height: 0 !important; padding: 7px 12px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; transform: none !important;
+  background: var(--av-rail) !important; color: var(--av-muted) !important; font: italic 900 12px var(--av-display) !important; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); cursor: pointer;
+}
+html body .modal.av2-modal .ln2 button.ln2-term.is-active { background: var(--av-cyan) !important; color: #06131b !important; }
+html body .ln2-foot-note { flex: 1; align-self: center; font-size: 12px; color: var(--av-muted); }
+
+/* ===== Prioridade média v2: regulamento (rl2), contratos (ct2), transferências (th2), olheiro (sr3), carreiras (cs2) ===== */
+html body :is(#competitionRulesModal, #rosterContractModal, #transferHistoryCardModal, #youthScoutReportModal):not(#matchModal):not(#playerCardModal) > .modal-card:is(.rl2, .ct2, .th2, .sr3),
+html body #loadCareerModal .career-slots-card.cs2 {
+  max-width: none !important; max-height: none !important; height: auto !important; min-height: 0 !important;
+  padding: 0 !important; margin: auto !important; overflow: visible !important; text-align: left; display: flex !important; flex-direction: column;
+  background: linear-gradient(225deg, transparent 16px, var(--av-panel) 16px) !important; box-shadow: inset 0 3px var(--av-cyan), 0 24px 60px #000b !important; border: 0 !important; border-radius: 0 !important;
+}
+html body #competitionRulesModal > .modal-card.rl2 { width: min(1000px, calc(100vw - 32px)) !important; }
+html body #rosterContractModal > .modal-card.ct2 { width: min(1180px, calc(100vw - 32px)) !important; }
+html body #transferHistoryCardModal > .modal-card.th2 { width: min(1100px, calc(100vw - 32px)) !important; }
+html body #youthScoutReportModal > .modal-card.sr3 { width: min(1000px, calc(100vw - 32px)) !important; box-shadow: inset 0 3px var(--av-gold), 0 24px 60px #000b !important; }
+html body #loadCareerModal .career-slots-card.cs2 { width: min(820px, calc(100vw - 32px)) !important; box-shadow: inset 0 3px var(--av-lime), 0 24px 60px #000b !important; }
+html body :is(.rl2, .ct2, .th2, .sr3, .cs2) > * { flex: none; }
+html body :is(.rl2, .ct2, .th2, .sr3, .cs2) > header:is(.rl2-head, .ct2-head, .th2-head, .sr3-head, .cs2-head) {
+  display: flex !important; align-items: center; gap: 14px; height: auto !important; min-height: 0 !important; padding: 16px 22px 12px !important; margin: 0 !important;
+  border-bottom: 1px solid var(--av-line); background: none !important; box-sizing: border-box;
+}
+html body :is(.rl2-title, .ct2-title, .th2-title, .sr3-title, .cs2-title) { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html body :is(.rl2-kicker, .ct2-kicker, .th2-kicker, .sr3-kicker, .cs2-kicker) { font: italic 800 12px var(--av-display); letter-spacing: .12em; color: var(--av-cyan); }
+html body .sr3-kicker { color: var(--av-gold); } html body .cs2-kicker { color: var(--av-lime); }
+html body :is(.rl2, .ct2, .th2, .sr3, .cs2) h2 { margin: 2px 0 0 !important; font: italic 900 26px/1.1 var(--av-display) !important; color: var(--av-ink) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body :is(.rl2, .ct2, .th2, .sr3, .cs2) .close, html body .cs2 .cs2-x { position: static !important; flex: none; }
+html body :is(.rl2-body, .ct2-body, .th2-body, .sr3-body, .cs2-list) { display: flex; flex-direction: column; gap: 10px; padding: 14px 22px 18px; max-height: none !important; overflow: visible !important; }
+html body :is(.ct2-foot, .sr3-foot, .cs2-foot) { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 12px 22px 16px; border-top: 1px solid var(--av-line); }
+html body .cs2-foot small { flex: 1; font-size: 12px; color: var(--av-muted); }
+html body :is(.ct2-foot, .sr3-foot, .sr3-body, .cs2) button.av2-btn, html body .cs2 button.cs2-btn, html body .ct2 button.ct2-btn, html body .th2 button.th2-more, html body .modal:not(#matchModal):not(#playerCardModal) :is(.ct2, .sr3, .th2) button:is(.av2-btn, .ct2-btn, .th2-more) {
+  min-height: 0 !important; padding: 9px 16px !important; border: 0 !important; border-radius: 0 !important; transform: none !important;
+  background: transparent !important; box-shadow: inset 0 0 0 1px var(--av-line) !important; color: var(--av-ink) !important;
+  font: italic 900 12px var(--av-display) !important; letter-spacing: .05em !important; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); cursor: pointer; width: auto !important;
+}
+html body :is(.ct2, .sr3, .cs2) button:is(.av2-btn, .cs2-btn, .ct2-btn).is-primary, html body .modal:not(#matchModal):not(#playerCardModal) :is(.ct2, .sr3) button:is(.av2-btn, .ct2-btn).is-primary { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -3px var(--av-lime-edge) !important; }
+html body .cs2 button.cs2-delete[data-armed="1"] { background: var(--av-red) !important; color: #06131b !important; box-shadow: none !important; }
+/* abas comuns */
+html body :is(.rl2-tabs, .th2-tabs) { display: flex; gap: 3px; flex-wrap: wrap; }
+html body :is(#competitionRulesModal, #transferHistoryCardModal) :is(.rl2-tabs, .th2-tabs) button {
+  min-height: 0 !important; padding: 8px 14px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; transform: none !important;
+  background: var(--av-rail) !important; color: var(--av-muted) !important; font: italic 900 12px var(--av-display) !important; letter-spacing: .04em !important;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%); white-space: nowrap; cursor: pointer;
+}
+html body :is(#competitionRulesModal, #transferHistoryCardModal) :is(.rl2-tabs, .th2-tabs) button.is-active { background: var(--av-cyan) !important; color: #06131b !important; }
+/* tiles comuns */
+html body :is(.ct2-summary, .th2-summary) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+html body :is(.ct2-tile, .th2-tile) { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 9px 12px; background: var(--av-rail); }
+html body :is(.ct2-tile, .th2-tile) span { font: italic 800 11px var(--av-display); letter-spacing: .1em; color: var(--av-muted); }
+html body :is(.ct2-tile, .th2-tile) strong { font: italic 900 22px var(--av-display); color: var(--av-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body :is(.ct2-tile, .th2-tile) small { font-size: 12px; color: var(--av-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body :is(.ct2-tile, .th2-tile).is-gold strong { color: var(--av-gold); } html body :is(.ct2-tile, .th2-tile).is-red strong { color: var(--av-red); }
+html body :is(.ct2-tile, .th2-tile).is-cyan strong { color: var(--av-cyan); } html body :is(.ct2-tile, .th2-tile).is-green strong { color: var(--av-green); }
+html body .th2-tile.is-lime strong { color: var(--av-lime); }
+html body :is(.rl2-sec, .ct2-sec) { display: flex; align-items: center; gap: 10px; margin-top: 2px; font: italic 800 11px var(--av-display); letter-spacing: .12em; color: var(--av-cyan); }
+html body :is(.rl2-sec, .ct2-sec)::after { content: ''; flex: 1; height: 1px; background: var(--av-line); }
+html body :is(.ct2-empty, .th2-empty, .sr3-empty) { margin: 0 !important; padding: 20px; text-align: center; font-size: 13px; color: var(--av-muted) !important; background: var(--av-rail); }
+/* regulamento */
+html body #competitionRulesModal .rl2-items { margin: 0 !important; padding: 0 !important; list-style: none; counter-reset: rl2; display: flex; flex-direction: column; gap: 4px; }
+html body #competitionRulesModal .rl2-items li { counter-increment: rl2; display: flex; gap: 12px; align-items: baseline; padding: 10px 12px; background: var(--av-rail); font-size: 14px; line-height: 1.45; color: var(--av-ink); }
+html body #competitionRulesModal .rl2-items li::before { content: counter(rl2); flex: none; min-width: 22px; font: italic 900 14px var(--av-display); color: var(--av-cyan); }
+html body .rl2-strip { display: grid; grid-template-columns: repeat(var(--rl2-n, 20), minmax(0, 1fr)); gap: 3px; }
+html body .rl2-strip span { height: 32px; display: grid; place-items: center; background: var(--av-panel-hi, #16294A); font: italic 900 12px var(--av-display); color: var(--av-ink); }
+html body .rl2-strip span.is-gold { background: var(--av-gold); color: #06131b; } html body .rl2-strip span.is-lime { background: var(--av-lime); color: #06131b; }
+html body .rl2-strip span.is-cyan { background: var(--av-cyan); color: #06131b; } html body .rl2-strip span.is-red { background: var(--av-red); color: #06131b; }
+html body .rl2-strip span.is-user { outline: 2px solid var(--av-ink); outline-offset: -2px; }
+html body .rl2-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--av-muted); }
+html body .rl2-legend span { display: inline-flex; align-items: center; gap: 6px; }
+html body .rl2-legend i { width: 12px; height: 12px; } html body .rl2-legend i.is-gold { background: var(--av-gold); } html body .rl2-legend i.is-lime { background: var(--av-lime); } html body .rl2-legend i.is-cyan { background: var(--av-cyan); } html body .rl2-legend i.is-red { background: var(--av-red); }
+html body .rl2-user { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--av-rail); box-shadow: inset 3px 0 var(--av-lime); font-size: 13px; color: var(--av-ink); }
+html body .rl2-user b { font: italic 900 13px var(--av-display); color: var(--av-lime); }
+/* contratos */
+html body .ct2-row { display: grid; grid-template-columns: 46px minmax(0, 1fr) 130px 190px 230px; gap: 12px; align-items: center; min-height: 56px; padding: 6px 12px; background: var(--av-panel-hi, #16294A); box-shadow: inset 3px 0 var(--av-line); }
+html body .ct2-row.is-bad { box-shadow: inset 3px 0 var(--av-red); } html body .ct2-row.is-warn { box-shadow: inset 3px 0 var(--av-gold); }
+html body :is(.ct2-pos, .th2-pos, .sr3-pos) { display: inline-block; min-width: 38px; padding: 3px 6px; text-align: center; font: italic 900 11px var(--av-display); font-style: italic; color: var(--av-cyan); background: color-mix(in srgb, var(--av-cyan) 14%, transparent); }
+html body .ct2-who { display: flex; flex-direction: column; min-width: 0; } html body .ct2-who strong { font: 700 15px var(--av-body); color: var(--av-ink); } html body .ct2-who small, html body .ct2-until small, html body .ct2-wage small, html body .ct2-actions small { font-size: 12px; color: var(--av-muted); }
+html body .ct2-until { display: flex; flex-direction: column; } html body .ct2-until b { font: italic 900 16px var(--av-display); color: var(--av-gold); }
+html body .ct2-row.is-bad .ct2-until b { color: var(--av-red); } html body .ct2-row.is-soft .ct2-until b { color: var(--av-ink); }
+html body .ct2-wage { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; font-size: 13px; } html body .ct2-wage span { color: var(--av-muted); } html body .ct2-wage b { color: var(--av-ink); } html body .ct2-wage small { flex-basis: 100%; }
+html body .ct2-actions { display: flex; justify-content: flex-end; gap: 6px; }
+/* transferências */
+html body .th2-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+html body .th2-filters button { font-size: 11px !important; }
+html body .th2-list { display: flex; flex-direction: column; gap: 4px; }
+html body .th2-row { display: grid; grid-template-columns: 28px 46px minmax(0, 1fr) minmax(0, 1.2fr) 150px 110px; gap: 12px; align-items: center; min-height: 48px; padding: 5px 12px; background: var(--av-panel-hi, #16294A); }
+html body .th2-row.is-in { box-shadow: inset 3px 0 var(--av-green); } html body .th2-row.is-out { box-shadow: inset 3px 0 var(--av-red); }
+html body .th2-dir { font: italic 900 18px var(--av-display); } html body .th2-row.is-in .th2-dir, html body .th2-row.is-in .th2-fee { color: var(--av-green); } html body .th2-row.is-out .th2-dir, html body .th2-row.is-out .th2-fee { color: var(--av-red); }
+html body .th2-name { font: 700 14px var(--av-body); color: var(--av-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .th2-club { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; color: var(--av-muted); } html body .th2-club b { color: var(--av-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .th2-club img, html body .th2-club svg, html body .th2-club .th2-crest { width: 22px !important; height: 25px !important; flex: none; }
+html body .th2-type { justify-self: start; padding: 3px 10px; font: italic 800 10px var(--av-display); font-style: italic; letter-spacing: .05em; color: var(--av-muted); background: var(--av-rail); clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+html body .th2-fee { text-align: right; font: italic 900 16px var(--av-display); }
+html body .th2-pager { display: flex; align-items: center; justify-content: center; gap: 12px; } html body .th2-pager small { font-size: 12px; color: var(--av-muted); }
+/* olheiro */
+html body .sr3-scout { display: flex; align-items: center; gap: 14px; padding: 10px 12px; background: var(--av-rail); }
+html body .sr3-grade { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: var(--av-panel-hi, #16294A); font: italic 900 20px var(--av-display); color: var(--av-gold); }
+html body .sr3-scout div { flex: 1; display: flex; flex-direction: column; } html body .sr3-scout strong { font: 700 15px var(--av-body); color: var(--av-ink); } html body .sr3-scout small { font-size: 12px; color: var(--av-muted); }
+html body .sr3-count { padding: 3px 10px; background: var(--av-gold); color: #06131b; font: italic 800 11px var(--av-display); clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+html body .sr3-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+html body .sr3-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--av-panel-hi, #16294A); box-shadow: inset 0 3px var(--av-cyan); }
+html body .sr3-card.is-top { box-shadow: inset 0 3px var(--av-gold); }
+html body .sr3-card-head { display: flex; align-items: center; gap: 8px; } html body .sr3-card-head strong { flex: 1; font: 700 15px var(--av-body); color: var(--av-ink); } html body .sr3-card small { font-size: 12px; color: var(--av-muted); }
+html body .sr3-stars span { font-size: 16px; color: var(--av-line); } html body .sr3-stars span.is-on { color: var(--av-gold); } html body .sr3-stars small { margin-left: 6px; }
+html body .sr3-card .sr3-legacy { color: var(--av-gold); } html body .sr3-card .sr3-err { color: var(--av-red); } html body .sr3-err:empty { display: none; }
+html body .sr3-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+html body .sr3-note { font-size: 12px; color: var(--av-muted); }
+/* carreiras */
+html body #loadCareerModal.cs2-modal { background: rgba(3, 8, 16, .82) !important; }
+html body .cs2-slot { display: flex; align-items: center; gap: 14px; padding: 14px; background: var(--av-rail); box-shadow: inset 0 3px var(--av-line); }
+html body .cs2-slot.is-last { background: var(--av-panel-hi, #16294A); box-shadow: inset 0 3px var(--av-lime); }
+html body .cs2-crest { flex: none; display: inline-flex; } html body .cs2-crest img, html body .cs2-crest svg, html body .cs2-crest .cs2-crest-img { width: 46px !important; height: 52px !important; }
+html body .cs2-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+html body .cs2-info strong { font: italic 900 19px var(--av-display); color: var(--av-ink); } html body .cs2-info small { font-size: 12px; color: var(--av-muted); } html body .cs2-info .cs2-name { color: var(--av-cyan); }
+html body .cs2-badge { padding: 3px 10px; background: var(--av-lime); color: #06131b; font: italic 800 10px var(--av-display); font-style: italic; letter-spacing: .05em; clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); white-space: nowrap; }
+html body .cs2-actions { display: flex; gap: 6px; }
+html body .cs2-free { padding: 14px; text-align: center; font-size: 13px; color: var(--av-muted); box-shadow: inset 0 0 0 1px var(--av-line); }
+html body .cs2-list .career-slots-empty { margin: 0; padding: 20px; text-align: center; color: var(--av-muted); background: var(--av-rail); }
+@media (max-width: 860px) {
+  html body :is(#competitionRulesModal, #rosterContractModal, #transferHistoryCardModal, #youthScoutReportModal):not(#matchModal):not(#playerCardModal) { align-items: start !important; align-content: start !important; overflow-y: auto !important; padding: 0 !important; }
+  html body :is(#competitionRulesModal, #rosterContractModal, #transferHistoryCardModal, #youthScoutReportModal):not(#matchModal):not(#playerCardModal) > .modal-card:is(.rl2, .ct2, .th2, .sr3) { width: 100vw !important; min-height: 100dvh; margin: 0 !important; padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important; }
+  html body :is(.rl2, .ct2, .th2, .sr3, .cs2) > header { padding: 14px 14px 10px !important; }
+  html body :is(.rl2, .ct2, .th2, .sr3, .cs2) h2 { font-size: 21px !important; }
+  html body :is(.rl2-body, .ct2-body, .th2-body, .sr3-body, .cs2-list) { padding: 10px 12px 14px; }
+  html body :is(.ct2-summary, .th2-summary) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  html body :is(.ct2-tile, .th2-tile) strong { font-size: 18px; }
+  html body .rl2-strip { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+  html body .ct2-row { grid-template-columns: 42px minmax(0, 1fr) auto; grid-template-areas: "pos who until" "wage wage wage" "act act act"; gap: 6px 10px; padding: 10px; }
+  html body .ct2-pos { grid-area: pos; } html body .ct2-who { grid-area: who; } html body .ct2-until { grid-area: until; text-align: right; } html body .ct2-wage { grid-area: wage; } html body .ct2-actions { grid-area: act; justify-content: flex-start; }
+  html body .th2-row { grid-template-columns: 22px 42px minmax(0, 1fr) auto; grid-template-areas: "dir pos name fee" "dir club club type"; gap: 4px 10px; padding: 8px 10px; }
+  html body .th2-dir { grid-area: dir; } html body .th2-pos { grid-area: pos; } html body .th2-name { grid-area: name; } html body .th2-fee { grid-area: fee; } html body .th2-club { grid-area: club; } html body .th2-type { grid-area: type; justify-self: end; }
+  html body .sr3-cards { grid-template-columns: minmax(0, 1fr); }
+  html body .cs2-slot { flex-wrap: wrap; } html body .cs2-actions { flex-basis: 100%; justify-content: flex-end; }
+  html body #loadCareerModal .career-slots-card.cs2 { width: calc(100vw - 16px) !important; }
+}
+html.is-mobile body :is(#competitionRulesModal, #rosterContractModal, #transferHistoryCardModal, #youthScoutReportModal):not(#matchModal):not(#playerCardModal) { align-items: start !important; align-content: start !important; overflow-y: auto !important; padding: 0 !important; }
+
+/* Botões do empréstimo: vencem as regras antigas por id */
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card.av2 footer.av2-foot button#officeBankLoanBorrowDeny { background: transparent !important; color: var(--av-ink) !important; box-shadow: inset 0 0 0 1px var(--av-line) !important; border: 0 !important; }
+html body .modal:not(#matchModal):not(#playerCardModal) .modal-card.av2 footer.av2-foot :is(button#officeBankLoanBorrowConfirm, button#officeBankLoanInfoDismiss) { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -3px var(--av-lime-edge) !important; border: 0 !important; }
+html body :is(#officeBankLoanBorrowModal, #officeBankLoanInfoModal) .av2 button.av2-btn { min-height: 0 !important; padding: 10px 20px !important; border-radius: 0 !important; transform: none !important; font: italic 900 12px var(--av-display) !important; letter-spacing: .05em !important; clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%); width: auto !important; }

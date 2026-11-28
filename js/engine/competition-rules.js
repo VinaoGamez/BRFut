@@ -208,6 +208,11 @@ export function buildCompetitionRules(competitionId, season) {
     return {
       kicker: `BRASILEIRÃO SÉRIE C · ${year}`,
       title: 'Regulamento da Série C',
+      size: clubs,
+      zones: [
+        { from: 1, to: SERIE_C_QUALIFIED, label: 'Fase 2 (grupos do acesso)', tone: 'cyan' },
+        { from: clubs - relegated + 1, to: clubs, label: 'Rebaixamento à Série D', tone: 'red' },
+      ],
       sections: [
         section('Formato', [
           `Fase 1: ${clubs} clubes em turno único, ${phase1} rodadas.`,
@@ -238,6 +243,12 @@ export function buildCompetitionRules(competitionId, season) {
     return {
       kicker: `BRASILEIRÃO SÉRIE B · ${year}`,
       title: 'Regulamento da Série B',
+      size: 20,
+      zones: [
+        { from: 1, to: 2, label: 'Acesso direto à Série A', tone: 'lime' },
+        { from: 3, to: 6, label: 'Playoffs de acesso', tone: 'cyan' },
+        { from: 17, to: 20, label: 'Rebaixamento à Série C', tone: 'red' },
+      ],
       sections: [
         section('Formato', [
           '20 clubes em pontos corridos (turno e returno · 38 rodadas).',
@@ -258,6 +269,11 @@ export function buildCompetitionRules(competitionId, season) {
   return {
     kicker: `BRASILEIRÃO SÉRIE A · ${year}`,
     title: 'Regulamento da Série A',
+    size: 20,
+    zones: [
+      { from: 1, to: 1, label: 'Campeão brasileiro', tone: 'gold' },
+      { from: 17, to: 20, label: 'Rebaixamento à Série B', tone: 'red' },
+    ],
     sections: [
       section('Formato', [
         '20 clubes em pontos corridos (turno e returno · 38 rodadas).',
@@ -286,5 +302,8 @@ export function competitionRulesHtml(competitionId, season) {
     kicker: rules.kicker,
     title: rules.title,
     bodyHtml: sections,
+    sections: rules.sections,
+    zones: rules.zones || null,
+    size: rules.size || null,
   };
 }

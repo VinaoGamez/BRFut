@@ -17,6 +17,7 @@ import { markSkipSessionEndOnce, markFreshCareerBoot } from '../../core/save.js'
 import { CAREER_SLOT_LIMIT } from '../../core/constants.js';
 import { deleteCareerStats } from '../../core/player-stats-sync.js';
 import { escapeHtml, escapeHtmlAttribute } from '../../core/html-safe.js';
+import { teamCrestHtml } from '../../ui/team-crest.js';
 
 function ensureModalRoot() {
   let root = document.getElementById('careerSlotsModalRoot');
@@ -24,16 +25,16 @@ function ensureModalRoot() {
   root = document.createElement('div');
   root.id = 'careerSlotsModalRoot';
   root.innerHTML = `
-    <div id="loadCareerModal" class="career-slots-modal hidden" role="dialog" aria-modal="true" aria-labelledby="loadCareerTitle">
-      <div class="career-slots-card">
-        <header class="career-slots-header">
-          <h2 id="loadCareerTitle">Suas carreiras</h2>
-          <button type="button" id="closeLoadCareer" class="career-slots-close" aria-label="Fechar">×</button>
+    <div id="loadCareerModal" class="career-slots-modal cs2-modal hidden" role="dialog" aria-modal="true" aria-labelledby="loadCareerTitle">
+      <div class="career-slots-card cs2">
+        <header class="cs2-head">
+          <div class="cs2-title"><span class="cs2-kicker" id="loadCareerKicker">CARREIRAS</span><h2 id="loadCareerTitle">Suas carreiras</h2></div>
+          <button type="button" id="closeLoadCareer" class="career-slots-close cs2-x" aria-label="Fechar">×</button>
         </header>
-        <div id="loadCareerList" class="career-slots-list"></div>
-        <footer class="career-slots-footer">
+        <div id="loadCareerList" class="cs2-list"></div>
+        <footer class="cs2-foot">
           <small id="loadCareerLimit"></small>
-          <button type="button" id="loadCareerNewBtn" class="career-slots-new">+ Nova carreira</button>
+          <button type="button" id="loadCareerNewBtn" class="cs2-btn is-primary">NOVA CARREIRA</button>
         </footer>
       </div>
     </div>
@@ -44,27 +45,25 @@ function ensureModalRoot() {
 
 function slotCardMarkup(slot, { isLast = false } = {}) {
   const division = escapeHtml(formatSlotDivision(slot.division));
-  const year = slot.seasonYear ? `Temp. ${escapeHtml(slot.seasonYear)}` : 'Sem temporada';
-  const round = slot.currentRound != null ? ` · Rod. ${escapeHtml(slot.currentRound)}` : '';
-  const badge = isLast ? '<span class="career-slots-badge">último</span>' : '';
+  const year = slot.seasonYear ? `temporada ${escapeHtml(slot.seasonYear)}` : 'sem temporada';
+  const round = slot.currentRound != null ? ` · rodada ${escapeHtml(slot.currentRound)}` : '';
   const slotId = escapeHtmlAttribute(slot.id);
-  const slotName = escapeHtml(slot.name || 'Carreira');
   const clubName = escapeHtml(slot.clubName || 'Clube');
   const updatedAt = escapeHtml(formatSlotUpdatedAt(slot.updatedAt));
+  const label = slot.name && slot.name !== slot.clubName ? `<small class="cs2-name">${escapeHtml(slot.name)}</small>` : '';
   return `
-    <article class="career-slots-item" data-slot-id="${slotId}">
-      <div class="career-slots-item-head">
-        <strong>${slotName}</strong>
-        ${badge}
-        <button type="button" class="career-slots-delete" data-delete-slot="${slotId}" aria-label="Excluir ${escapeHtmlAttribute(slot.name || 'carreira')}" title="Excluir save">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/>
-          </svg>
-        </button>
+    <article class="cs2-slot${isLast ? ' is-last' : ''}" data-slot-id="${slotId}">
+      <span class="cs2-crest">${slot.clubName ? teamCrestHtml(slot.clubName, { className: 'cs2-crest-img' }) : ''}</span>
+      <div class="cs2-info">
+        <strong>${clubName}</strong>${label}
+        <small>${division} · ${year}${round}</small>
+        <small>salvo ${updatedAt}</small>
       </div>
-      <p class="career-slots-item-meta">${clubName} · ${division} · ${year}${round}</p>
-      <p class="career-slots-item-date">Atualizado: ${updatedAt}</p>
-      <button type="button" class="career-slots-play" data-play-slot="${slotId}">JOGAR</button>
+      ${isLast ? '<em class="cs2-badge">ÚLTIMA JOGADA</em>' : ''}
+      <div class="cs2-actions">
+        <button type="button" class="cs2-btn cs2-delete" data-delete-slot="${slotId}" aria-label="Excluir ${escapeHtmlAttribute(slot.name || slot.clubName || 'carreira')}">EXCLUIR</button>
+        <button type="button" class="cs2-btn is-primary" data-play-slot="${slotId}">JOGAR</button>
+      </div>
     </article>
   `;
 }
@@ -98,6 +97,10 @@ export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } 
         .map(slot => slotCardMarkup(slot, { isLast: slot.id === lastId }))
         .join('');
     }
+    const free = Math.max(0, CAREER_SLOT_LIMIT - sorted.length);
+    if (sorted.length && free > 0) listEl.insertAdjacentHTML('beforeend', `<div class="cs2-free">Espaço livre para mais ${free} carreira${free === 1 ? '' : 's'}</div>`);
+    const kicker = document.getElementById('loadCareerKicker');
+    if (kicker) kicker.textContent = `CARREIRAS · ${sorted.length} DE ${CAREER_SLOT_LIMIT}`;
     if (limitEl) limitEl.textContent = slotLimitLabel();
     if (newBtn) newBtn.disabled = !canCreateSlot();
     onSlotsChanged?.();
@@ -134,14 +137,18 @@ export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } 
     await onNewCareer?.(slotId);
   };
 
-  const removeSlot = async slotId => {
+  const removeSlot = async (slotId, button) => {
     const slot = readCareerIndex().slots.find(entry => entry.id === slotId);
     if (!slot) return;
-    const confirmed = window.confirm(
-      `Excluir o save "${slot.name || 'Carreira'}"?\n\nEsta ação removerá a carreira deste navegador e da nuvem.`,
-    );
-    if (!confirmed) return;
-    const button = listEl?.querySelector(`[data-delete-slot="${slotId}"]`);
+    // Exclusão em duas etapas: o primeiro toque arma, o segundo confirma.
+    if (button && button.dataset.armed !== '1') {
+      listEl?.querySelectorAll('[data-delete-slot][data-armed="1"]').forEach(other => { other.dataset.armed = ''; other.textContent = 'EXCLUIR'; });
+      button.dataset.armed = '1';
+      button.textContent = 'TOQUE DE NOVO PARA EXCLUIR';
+      clearTimeout(button._disarm);
+      button._disarm = setTimeout(() => { button.dataset.armed = ''; button.textContent = 'EXCLUIR'; }, 4000);
+      return;
+    }
     if (button) button.disabled = true;
     const result = await deleteCareerSlot(slotId);
     if (!result.ok) {
@@ -159,7 +166,7 @@ export function mountCareerSlotsUi({ onSlotsChanged, onStartSlot, onNewCareer } 
   listEl?.addEventListener('click', event => {
     const deleteBtn = event.target.closest('[data-delete-slot]');
     if (deleteBtn) {
-      void removeSlot(deleteBtn.getAttribute('data-delete-slot'));
+      void removeSlot(deleteBtn.getAttribute('data-delete-slot'), deleteBtn);
       return;
     }
     const btn = event.target.closest('[data-play-slot]');

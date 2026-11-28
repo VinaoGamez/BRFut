@@ -1960,6 +1960,14 @@ export function createChampionshipPageFeature(deps) {
     competitionRulesModal.bindHandlers({
       getPageCompetition: () => pageCompetition,
       getCareerSeason,
+      getUserStanding: competitionId => {
+        const division = String(competitionId || '').toUpperCase();
+        if (!['A', 'B', 'C'].includes(division)) return null;
+        const rows = getNationalCompetitions()?.[division]?.standings || [];
+        const sorted = [...rows].sort((a, b) => (b.points || 0) - (a.points || 0) || (b.goalDiff || 0) - (a.goalDiff || 0) || (b.wins || 0) - (a.wins || 0));
+        const index = sorted.findIndex(row => row.club === getUserClub());
+        return index >= 0 ? { club: getUserClub(), position: index + 1 } : null;
+      },
     });
 
     document.addEventListener('click', event => {
