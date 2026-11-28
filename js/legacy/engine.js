@@ -10,6 +10,7 @@ import { storage as brfutStorage } from '../core/storage-backend.js';
 import { $, $$, on, onClick, redirectGame, clamp, cleanCareerText } from '../ui/dom.js';
 import { clubLabelHtml, clubCrestTitleHtml } from '../ui/club-label.js';
 import { statCompareRow } from '../feature/shared/stat-compare.js';
+import { MODAL_HTML as MEDICAL_BULLETIN_HTML, renderMedicalBulletin } from '../feature/medical-bulletin/index.js';
 import { installMatchLiveLayout } from '../feature/match-live-layout/index.js';
 import { applyTeamCrestToElement, teamCrestHtml, clubCrestInitials as teamCrestInitials } from '../ui/team-crest.js';
 import { bindBoardRosterHover } from '../ui/board-roster-hover.js';
@@ -996,33 +997,46 @@ export async function bootEngine({
   const populateTreatmentModal=(player,injury,club)=>{
     const division=club?.division||userDivision||'A';
     const options=buildTreatmentOptions(injury,club,division);
-    const consMeta=$('#treatmentConservativeMeta'),surgeryMeta=$('#treatmentSurgeryMeta'),medMeta=$('#treatmentMedicalMeta');
-    if(consMeta)consMeta.textContent=`${formatBudget(options.conservative.cost)} · ~${options.conservative.days} dias${formatTreatmentRecurrenceDelta(options.conservative.recurrenceDelta)?` · ${formatTreatmentRecurrenceDelta(options.conservative.recurrenceDelta)}`:''}`;
-    if(surgeryMeta)surgeryMeta.textContent=`${formatBudget(options.surgery.cost)} · ~${options.surgery.days} dias${formatTreatmentRecurrenceDelta(options.surgery.recurrenceDelta)?` · ${formatTreatmentRecurrenceDelta(options.surgery.recurrenceDelta)}`:''}`;
-    if(medMeta){
-      const medLevel=options.conservative.medLevel;
-      medMeta.textContent=medLevel>0?`Departamento médico ${medLevel}/5 · ${medicalDiscountPreview(medLevel)}`:'Sem desconto médico ainda — invista no departamento no Escritório.';
-    }
-    const surgeryBtn=$('#treatmentSurgery');
-    if(surgeryBtn){
-      const affordable=canAfford(club,options.surgery.cost);
-      surgeryBtn.disabled=!affordable;
-      surgeryBtn.classList.toggle('treatment-choice-disabled',!affordable);
-      surgeryBtn.title=affordable?'':`Saldo insuficiente para cirurgia (${formatBudget(options.surgery.cost)})`;
-    }
-    $('#treatmentPlayerName').textContent=player.name;
-    $('#treatmentInjuryName').textContent=injury.name;
+    const cash=getBalance(club);
+    const canSurgery=canAfford(club,options.surgery.cost);
+    const medLevel=options.conservative.medLevel;
+    const base=new Date(careerCalendarDate);
+    const fmtDate=date=>`${String(date.getDate()).padStart(2,'0')} ${['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][date.getMonth()]}`;
+    const dateAfter=days=>{const d=new Date(base);d.setDate(d.getDate()+Math.max(0,Number(days)||0));return d;};
+    const gamesUntil=limit=>{
+      try{
+        return (seasonCalendarFixtures||[]).filter(game=>(game.home===userClub||game.away===userClub)&&!game.completed&&game.homeGoals==null).filter(game=>{
+          const date=fixtureDetails(game).date;return date>base&&date<=limit;
+        }).length;
+      }catch(error){return 0;}
+    };
+    const roster=(club?.roster||squad).filter(Boolean);
+    const starter=(activeUserSquad||roster).slice(0,11).includes(player);
+    const substitute=roster.filter(p=>p!==player&&p.pos===player.pos&&!(p.injury?.daysRemaining>0))
+      .sort((a,b)=>(Number(b.overall)||0)-(Number(a.overall)||0))[0]||null;
+    const c=options.conservative,s=options.surgery;
+    const recommended=injury.treatment==='surgery'||(s.days<c.days*0.8&&(s.recurrenceDelta||0)<=(c.recurrenceDelta||0))?'surgery':'conservative';
+    const caseTotal=1+postMatchMedicalQueue.length+(pendingTreatmentDecision?.caseOffset||0);
+    renderMedicalBulletin($,{
+      player:{name:player.name,pos:player.pos,age:Number(player.age)||null,overall:Number(player.overall)||null},
+      injury,options,money:formatBudget,cash,canSurgery,recommended,starter,
+      caseIndex:(pendingTreatmentDecision?.caseOffset||0)+1,caseTotal,
+      dateLabel:fmtDate(base),
+      returnDates:{conservative:fmtDate(dateAfter(c.days)),surgery:fmtDate(dateAfter(s.days))},
+      gamesMissed:{conservative:gamesUntil(dateAfter(c.days)),surgery:gamesUntil(dateAfter(s.days))},
+      substitute:substitute?{name:substitute.name,pos:substitute.pos,overall:Number(substitute.overall)||0}:null,
+      medLabel:medLevel>0?`Departamento médico ${medLevel}/5 · ${medicalDiscountPreview(medLevel)}`:'',
+    });
   };
   const applyTreatmentChoice=(player,injury,choice,club)=>{
     const adjusted=applyMedicalLevelClinicalEffects(injury,club,choice);
     return assignPlayerInjury(player,adjusted,currentRound,{skipTreatmentPrompt:true,club});
   };
-  let pendingTreatmentDecision=null,postMatchMedicalQueue=[];
+  let pendingTreatmentDecision=null,postMatchMedicalQueue=[],medicalCasesDone=0;
   const processPostMatchMedicalQueue=()=>{
     if(pendingTreatmentDecision||!postMatchMedicalQueue.length)return;
     const next=postMatchMedicalQueue.shift();
-    pendingTreatmentDecision={player:next.player,injury:next.injury,club:next.club,liveContext:null};
-    $('#treatmentModalText').textContent='O departamento médico aguarda sua decisão pós-jogo. Compare custo, prazo de retorno e risco de recaída antes de confirmar.';
+    pendingTreatmentDecision={player:next.player,injury:next.injury,club:next.club,liveContext:null,caseOffset:medicalCasesDone};
     populateTreatmentModal(next.player,next.injury,next.club);
     $('#treatmentModal').classList.remove('hidden');
   };
@@ -1034,7 +1048,6 @@ export async function bootEngine({
     }
     if(pendingTreatmentDecision)return assignPlayerInjury(player,injury,currentRound,{skipTreatmentPrompt:true,club});
     pendingTreatmentDecision={player,injury,club,liveContext:null};
-    $('#treatmentModalText').textContent='O departamento médico recomenda avaliar o tratamento. Compare custo, prazo de retorno e risco de recaída antes de confirmar.';
     populateTreatmentModal(player,injury,club);
     $('#treatmentModal').classList.remove('hidden');
     return null;
@@ -1054,6 +1067,7 @@ export async function bootEngine({
     }
     const record=applyTreatmentChoice(player,injury,choice,club);
     pendingTreatmentDecision=null;
+    medicalCasesDone=postMatchMedicalQueue.length?medicalCasesDone+1:0;
     $('#treatmentModal').classList.add('hidden');
     renderClubBudget?.();
     // Enquanto houver fila, a ação médica continua pendente no badge vermelho.
@@ -3663,8 +3677,20 @@ export async function bootEngine({
   const isOnPendingMatchDay=()=>!!userMatchOnDate(careerCalendarDate);
   const trainingTypeForDate=date=>{const tomorrow=new Date(date);tomorrow.setDate(tomorrow.getDate()+1);if(userMatchOnDate(tomorrow))return'before';const yesterday=new Date(date);yesterday.setDate(yesterday.getDate()-1);if(completedUserMatchOnDate(yesterday))return'after';return'free';};
   const calendarTrainingMap=()=>{const map=new Map(),add=(date,type)=>{const key=calendarKey(date);if(!map.has(key))map.set(key,[]);if(!map.get(key).some(item=>item.type===type)){const label=type==='free'&&trainingRules.freeMode===TRAINING_FREE_MODES.development?`Desenvolvimento · ${DEVELOPMENT_FOCUSES[trainingRules.developmentFocus]?.label||'Individual'}`:trainingRules[type];map.get(key).push({type,label});}};seasonCalendarFixtures.filter(isUserFixture).forEach(game=>{const matchDate=fixtureDetails(game).date,before=new Date(matchDate),after=new Date(matchDate);before.setDate(before.getDate()-1);after.setDate(after.getDate()+1);add(before,'before');add(after,'after');});const {start,end}=weekBounds(careerCalendarDate);for(let cursor=new Date(start);cursor<=end;cursor.setDate(cursor.getDate()+1)){const key=calendarKey(cursor);if(map.has(key))continue;if(!(calendarGames.get(key)||[]).some(isUserFixture))add(new Date(cursor),'free');}return map;};
-  document.body.insertAdjacentHTML('beforeend',`<div id="treatmentModal" class="modal hidden"><div class="modal-card treatment-modal"><button id="closeTreatmentModal" class="close" type="button">×</button><label>DECISÃO MÉDICA</label><h2 id="treatmentPlayerName"></h2><p id="treatmentInjuryName" class="treatment-injury-name"></p><p id="treatmentModalText"></p><p id="treatmentMedicalMeta" class="treatment-medical-meta"></p><div class="treatment-actions"><button id="treatmentConservative" type="button"><span class="treatment-choice-label">TRATAMENTO CONSERVADOR</span><span id="treatmentConservativeMeta" class="treatment-choice-meta"></span></button><button id="treatmentSurgery" type="button"><span class="treatment-choice-label">CIRURGIA</span><span id="treatmentSurgeryMeta" class="treatment-choice-meta"></span></button></div></div></div>`);
-  onClick('#closeTreatmentModal',()=>{if(pendingTreatmentDecision)finishTreatmentChoice('conservative');});
+  document.body.insertAdjacentHTML('beforeend',MEDICAL_BULLETIN_HTML);
+  // VER FINANÇAS: esconde o boletim e abre o Escritório; a decisão volta ao tentar avançar/jogar.
+  onClick('#treatmentFinance',()=>{
+    if(!pendingTreatmentDecision)return;
+    $('#treatmentModal').classList.add('hidden');
+    document.querySelector('.nav[data-view="office"]')?.click();
+  });
+  window.addEventListener('click',event=>{
+    if(!pendingTreatmentDecision||!$('#treatmentModal')?.classList.contains('hidden'))return;
+    if(!event.target.closest('#playMatch,#advanceTransferCalendar,#calendarAdvanceWeek,#openDashboardCalendar,#simulateRemainder'))return;
+    event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+    populateTreatmentModal(pendingTreatmentDecision.player,pendingTreatmentDecision.injury,pendingTreatmentDecision.club);
+    $('#treatmentModal').classList.remove('hidden');
+  },true);
   onClick('#treatmentConservative',()=>finishTreatmentChoice('conservative'));
   onClick('#treatmentSurgery',()=>finishTreatmentChoice('surgery'));
   const isCompletedDashboardGame=game=>game&&(game.completed||game.homeGoals!=null||game.awayGoals!=null);
@@ -9511,6 +9537,7 @@ export async function bootEngine({
         return {player:player.name,budget:club.budget};
       },
       qaBudget:()=>getBalance(clubs[userClub]),
+      qaPendingMedical:()=>!!pendingTreatmentDecision,
       nextUserEntry:()=>{const entry=nextPendingUserEntry();return entry?{competition:entry.game.competition,home:entry.game.home,away:entry.game.away,date:String(entry.details?.date)}:null;}};
   }
   if(new URLSearchParams(location.search).has('conmebolAudit')&&savedNewGame){

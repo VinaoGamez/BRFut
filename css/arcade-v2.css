@@ -7321,3 +7321,88 @@ html body .modal .modal-card.retro2 > header.retro-head { height: auto !importan
   html body #seasonTransitionModal > .modal-card.retro2 { min-height: 100dvh !important; }
   html body .retro2 .retro-foot { margin-top: auto; }
 }
+
+/* ===================== Boletim médico v2 ===================== */
+html body #treatmentModal { overflow-y: auto !important; align-items: flex-start !important; padding: 24px 16px !important; }
+html body #treatmentModal > .modal-card.mb2 {
+  width: min(1020px, calc(100vw - 32px)) !important; max-width: none !important; max-height: none !important;
+  overflow: visible !important; padding: 0 !important; margin: auto !important; text-align: left;
+  display: flex !important; flex-direction: column; box-shadow: inset 0 3px var(--av-red), 0 24px 60px #000b !important;
+}
+html body .modal .modal-card.mb2 > header.mb2-head { display: flex !important; align-items: center; gap: 14px; height: auto !important; min-height: 0 !important; padding: 14px 22px 12px !important; border-bottom: 1px solid var(--av-line); background: none !important; }
+html body .mb2 > * { flex: none !important; }
+html body .mb2-cross { flex: none; width: 42px; height: 42px; display: grid; place-items: center; background: var(--av-red); color: #06131b; font: 900 26px var(--av-body); clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+html body .mb2-head-copy { flex: 1; min-width: 0; }
+html body .modal .modal-card.mb2 .mb2-kicker { display: block; font: italic 800 12px var(--av-display) !important; letter-spacing: .12em; color: var(--av-red) !important; }
+html body .modal .modal-card.mb2 .mb2-head h2 { margin: 2px 0 0 !important; font: italic 900 25px/1.1 var(--av-display) !important; color: var(--av-ink) !important; text-transform: none !important; }
+html body .mb2-case { flex: none; font-size: 13px; color: var(--av-muted); }
+html body .mb2-body-wrap { display: flex; flex-direction: column; gap: 12px; padding: 14px 22px; }
+html body .mb2-player { display: flex; gap: 14px; align-items: center; padding: 12px 14px; background: var(--av-rail); }
+html body .mb2-body { flex: none; }
+html body .mb2-player-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+html body .mb2-player-line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+html body .mb2-player-line strong { font: italic 900 19px var(--av-display); color: var(--av-ink); }
+html body .mb2-player-line small { font-size: 13px; color: var(--av-muted); }
+html body .mb2-pos { padding: 2px 7px; background: #11BBED22; color: var(--av-cyan); font: italic 900 11px var(--av-display); clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%); }
+html body .mb2-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+html body .mb2-chip { padding: 3px 10px; font: italic 900 11px var(--av-display); letter-spacing: .06em; color: #06131b; background: var(--av-orange); clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+html body .mb2-chip.is-out { background: var(--av-red); }
+html body .mb2-chip.g-1 { background: var(--av-gold); }
+html body .modal .modal-card.mb2 .mb2-player-copy p { margin: 0 !important; font-size: 14px !important; line-height: 1.5 !important; color: #c9d6e8 !important; }
+html body .mb2-player-copy p b { color: var(--av-ink); }
+html body .mb2-sub { font-size: 13px; font-weight: 700; color: var(--av-cyan); }
+html body .modal .modal-card.mb2 header.mb2-sec { display: flex !important; align-items: center; gap: 10px; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; }
+html body .modal .modal-card.mb2 header.mb2-sec::after { content: ''; flex: 1; height: 1px; background: var(--av-line); }
+html body .modal .modal-card.mb2 .mb2-sec h3 { margin: 0 !important; font: italic 800 11px var(--av-display) !important; letter-spacing: .12em; text-transform: uppercase; color: var(--av-cyan) !important; }
+html body .mb2-compare { display: flex; flex-direction: column; gap: 4px; }
+html body .mb2-row { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--av-line); padding: 2px 0; }
+html body .mb2-row.is-head { border: 0; }
+html body .mb2-label { width: 150px; flex: none; font-size: 13px; color: var(--av-muted); }
+html body .mb2-cell { flex: 1; text-align: center; padding: 6px 0; font: italic 900 17px var(--av-display); color: var(--av-ink); }
+html body .mb2-cell.is-best { background: var(--av-panel-hi, #16294A); }
+html body .mb2-cell.is-good { color: var(--av-green); }
+html body .mb2-cell.is-bad { color: var(--av-red); }
+html body .mb2-cell.is-muted { color: var(--av-muted); }
+html body .mb2-choice { flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px 0; background: var(--av-rail); box-shadow: inset 0 3px var(--av-cyan); font: italic 900 14px var(--av-display); letter-spacing: .06em; color: var(--av-ink); }
+html body .mb2-choice.is-reco { box-shadow: inset 0 3px var(--av-lime); }
+html body .mb2-choice.is-off { color: var(--av-muted); box-shadow: inset 0 3px var(--av-muted); }
+html body .mb2-choice em { font-style: normal; padding: 2px 8px; background: var(--av-gold); color: #06131b; font: italic 900 10px var(--av-display); letter-spacing: .06em; }
+html body .mb2-choice em.is-red { background: var(--av-red); }
+html body .mb2-cash { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--av-rail); font-size: 13px; color: var(--av-muted); line-height: 1.4; }
+html body .mb2-cash b { flex: none; font: italic 900 13px var(--av-display); color: var(--av-gold); white-space: nowrap; }
+html body .mb2-cash.is-alert { background: #FF4D5E1f; box-shadow: inset 3px 0 var(--av-red); color: #ffd5d9; }
+html body .mb2-cash.is-alert b { color: var(--av-red); }
+html body .mb2-foot { display: flex; align-items: center; gap: 10px; padding: 12px 22px 16px; border-top: 1px solid var(--av-line); }
+html body .mb2-foot-note { flex: 1; font-size: 12px; color: var(--av-muted); }
+html body .modal .modal-card.mb2 .mb2-btn {
+  min-height: 44px; padding: 10px 20px !important; border: 0 !important; border-radius: 0 !important; cursor: pointer; width: auto !important;
+  font: italic 900 13px var(--av-display) !important; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%); display: inline-flex !important; align-items: center; justify-content: center; flex-direction: row !important;
+}
+html body .modal .modal-card.mb2 .mb2-btn.hidden { display: none !important; }
+html body .modal .modal-card.mb2 .mb2-btn.is-primary { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -4px var(--av-lime-edge) !important; }
+html body .modal .modal-card.mb2 .mb2-btn.is-sec { background: var(--av-panel-hi, #16294A) !important; color: var(--av-cyan) !important; }
+html body .modal .modal-card.mb2 .mb2-btn.is-ghost { background: transparent !important; color: var(--av-ink) !important; box-shadow: inset 0 0 0 2px var(--av-line) !important; }
+@media (max-width: 760px) {
+  html body #treatmentModal { padding: 0 !important; }
+  html body #treatmentModal > .modal-card.mb2 { width: 100vw !important; min-height: 100dvh !important; margin: 0 !important; }
+  html body .modal .modal-card.mb2 > header.mb2-head { flex-wrap: wrap; padding: 14px 14px 8px !important; gap: 10px; }
+  html body .mb2-cross { width: 34px; height: 34px; font-size: 20px; }
+  html body .modal .modal-card.mb2 .mb2-head h2 { font-size: 20px !important; }
+  html body .mb2-case { width: 100%; order: 3; }
+  html body .mb2-body-wrap { padding: 10px 14px; gap: 10px; }
+  html body .mb2-player { padding: 10px; gap: 10px; align-items: flex-start; }
+  html body .mb2-player .mb2-body { width: 56px; height: 98px; }
+  html body .mb2-label { width: 92px; font-size: 12px; }
+  html body .mb2-cell { font-size: 15px; }
+  html body .mb2-choice { font-size: 12px; flex-direction: column; gap: 3px; padding: 7px 0; }
+  html body .mb2-cash { flex-direction: column; align-items: flex-start; gap: 4px; }
+  html body .mb2-foot { position: sticky; bottom: 0; z-index: 5; margin-top: auto; background: var(--av-panel); flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 14px calc(16px + env(safe-area-inset-bottom)); }
+  html body .mb2-foot-note { order: 9; text-align: center; }
+  html body .modal .modal-card.mb2 .mb2-btn { width: 100% !important; white-space: normal; }
+}
+html body #treatmentModal:not(#matchModal):not(#playerCardModal) .mb2-foot button#treatmentConservative.is-primary,
+html body #treatmentModal:not(#matchModal):not(#playerCardModal) .mb2-foot button#treatmentSurgery.is-primary { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -4px var(--av-lime-edge) !important; border: 0 !important; }
+html body #treatmentModal:not(#matchModal):not(#playerCardModal) .mb2-foot button#treatmentConservative.is-sec,
+html body #treatmentModal:not(#matchModal):not(#playerCardModal) .mb2-foot button#treatmentSurgery.is-sec { background: #16294A !important; color: var(--av-cyan) !important; box-shadow: none !important; border: 0 !important; }
+html body #treatmentModal:not(#matchModal):not(#playerCardModal) .mb2-foot button#treatmentFinance { background: transparent !important; color: var(--av-ink) !important; box-shadow: inset 0 0 0 2px var(--av-line) !important; border: 0 !important; }
