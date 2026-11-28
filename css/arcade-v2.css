@@ -7889,3 +7889,134 @@ html body #calendarMatchReportModal .match-report-events { display: inline-flex;
 html body #calendarMatchReportModal .mr2-ev-icon { width: 22px !important; height: 22px !important; background: none !important; margin: 0 !important; display: grid; place-items: center; }
 html body #calendarMatchReportModal .mr2-ev-icon img { width: 22px; height: 22px; }
 html body #calendarMatchReportModal img.match-report-icon { width: 16px !important; height: 16px !important; display: inline-block; }
+
+/* ===== Jogos do time v2 (tg2) ===== */
+html body #teamGamesModal:not(#matchModal):not(#playerCardModal) > .modal-card.tg2 {
+  --mv2-accent: var(--av-cyan) !important;
+  width: min(1260px, calc(100vw - 32px)) !important; max-width: none !important; max-height: none !important; height: auto !important; min-height: 0 !important;
+  padding: 0 !important; margin: auto !important; overflow: visible !important; text-align: left;
+  display: flex !important; flex-direction: column; background: linear-gradient(225deg, transparent 16px, var(--av-panel) 16px) !important;
+  box-shadow: inset 0 3px var(--av-cyan), 0 24px 60px #000b !important; border: 0 !important; border-radius: 0 !important;
+}
+html body #teamGamesModal:not(#matchModal):not(#playerCardModal) .tg2 > header.tg2-head { display: flex !important; box-sizing: border-box; align-items: center; gap: 14px; height: auto !important; min-height: 0 !important; padding: 16px 22px 12px !important; border-bottom: 1px solid var(--av-line); background: none !important; }
+html body .modal-card.tg2 > *, html body .tg2-body > * { flex: none; }
+html body .tg2-crest { flex: none; display: inline-flex; }
+html body .tg2-crest .tg2-crest-img, html body .tg2-crest img, html body .tg2-crest svg { width: 40px !important; height: 46px !important; }
+html body .tg2-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html body .modal .modal-card.tg2 .tg2-kicker { font: italic 800 12px var(--av-display); letter-spacing: .12em; color: var(--av-cyan); }
+html body .modal .modal-card.tg2 h2#teamGamesTitle { margin: 2px 0 0 !important; font: italic 900 28px/1.1 var(--av-display) !important; color: var(--av-ink) !important; text-transform: none !important; }
+html body .modal .modal-card.tg2 #closeTeamGames { position: static !important; flex: none; }
+html body .tg2-body { display: flex; flex-direction: column; gap: 10px; padding: 14px 22px 18px; }
+html body .tg2-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+html body .tg2-tile { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 9px 12px; background: var(--av-rail); }
+html body .tg2-tile > span { font: italic 800 11px var(--av-display); letter-spacing: .1em; color: var(--av-muted); }
+html body .tg2-tile > strong { font: italic 900 22px/1.15 var(--av-display); color: var(--av-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body .tg2-tile > small { font-size: 12px; color: var(--av-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body .tg2-tile.is-lime > strong { color: var(--av-lime); }
+html body .tg2-tile.is-cyan > strong { color: var(--av-cyan); }
+html body .tg2-tile b.is-win { color: var(--av-green); } html body .tg2-tile b.is-draw { color: var(--av-muted); } html body .tg2-tile b.is-loss { color: var(--av-red); }
+html body .tg2-filters { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+html body .tg2-tabs { display: flex; gap: 3px; flex-wrap: wrap; }
+html body #teamGamesModal .tg2 .tg2-tabs button {
+  min-height: 0 !important; padding: 8px 14px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; transform: none !important;
+  background: var(--av-rail) !important; color: var(--av-muted) !important; font: italic 900 12px var(--av-display) !important; letter-spacing: .04em !important;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%); white-space: nowrap; cursor: pointer;
+}
+html body #teamGamesModal .tg2 .tg2-tabs button.is-active { background: var(--av-cyan) !important; color: #06131b !important; }
+html body #teamGamesModal .tg2 .tg2-modes button { font-size: 11px !important; }
+html body .tg2-list { display: flex; flex-direction: column; gap: 4px; }
+html body .tg2-month { display: flex; align-items: center; gap: 10px; margin-top: 4px; font: italic 900 13px var(--av-display); letter-spacing: .1em; color: var(--av-muted); }
+html body .tg2-month::after { content: ''; flex: 1; height: 1px; background: var(--av-line); }
+html body .tg2-row {
+  display: grid; grid-template-columns: 64px 160px minmax(0, 1fr) 118px minmax(0, 1fr) minmax(150px, 220px) 118px; gap: 12px; align-items: center;
+  min-height: 62px; padding: 6px 12px; background: var(--av-panel-hi, #16294A); box-shadow: inset 3px 0 var(--av-line);
+}
+html body .tg2-row.is-upcoming { background: var(--av-rail); min-height: 54px; }
+html body .tg2-row.res-V { box-shadow: inset 3px 0 var(--av-green); } html body .tg2-row.res-E { box-shadow: inset 3px 0 var(--av-muted); } html body .tg2-row.res-D { box-shadow: inset 3px 0 var(--av-red); }
+html body .tg2-row.is-next { box-shadow: inset 0 0 0 1px var(--av-lime); }
+html body .tg2-date { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+html body .tg2-date b { font: italic 900 22px var(--av-display); color: var(--av-ink); }
+html body .tg2-date small { margin-top: 3px; font-size: 11px; color: var(--av-muted); white-space: nowrap; }
+html body .tg2-comp { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+html body .tg2-comp small { font-size: 12px; color: var(--av-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+html body .tg2-tag {
+  --tg-tone: var(--av-cyan); display: inline-block; max-width: 100%; padding: 3px 10px; font: italic 800 11px var(--av-display); letter-spacing: .05em; color: var(--av-ink);
+  background: linear-gradient(0deg, var(--tg-tone) 0 2px, var(--av-rail) 2px); clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+html body .tg2-tag[data-tone="green"] { --tg-tone: var(--av-green); } html body .tg2-tag[data-tone="orange"] { --tg-tone: var(--av-orange); }
+html body .tg2-tag[data-tone="gold"] { --tg-tone: var(--av-gold); } html body .tg2-tag[data-tone="mut"] { --tg-tone: var(--av-muted); }
+html body .tg2-team { display: flex; align-items: center; gap: 10px; min-width: 0; }
+html body .tg2-team.tg2-home { justify-content: flex-end; text-align: right; }
+html body .tg2-team b { font: 700 15px var(--av-body); color: var(--av-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; cursor: pointer; }
+html body .tg2-team.is-user b { color: var(--av-lime); }
+html body .tg2-team .tg2-team-crest, html body .tg2-team img, html body .tg2-team svg { flex: none; width: 30px !important; height: 34px !important; }
+html body .tg2-score { display: flex; align-items: center; justify-content: center; gap: 8px; }
+html body .tg2-score strong { font: italic 900 24px var(--av-display); color: var(--av-ink); white-space: nowrap; }
+html body .tg2-score.tg2-time, html body .tg2-score.tg2-norecord { font: italic 900 18px var(--av-display); color: var(--av-muted); }
+html body .tg2-res { width: 26px; height: 26px; display: inline-grid; place-items: center; font: normal 900 14px var(--av-display); font-style: italic; color: #06131b; background: var(--av-muted); }
+html body .tg2-res[data-res="V"] { background: var(--av-green); } html body .tg2-res[data-res="D"] { background: var(--av-red); }
+html body .tg2-events { display: flex; flex-wrap: wrap; gap: 4px 10px; min-width: 0; }
+html body .tg2-events small { font-size: 12px; color: var(--av-muted); }
+html body .tg2-ev { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--av-muted); white-space: nowrap; }
+html body .tg2-next { padding: 3px 10px; background: var(--av-lime); color: #06131b; font: italic 800 11px var(--av-display); letter-spacing: .05em; clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+html body #teamGamesModal .tg2 button.tg2-report {
+  justify-self: end; min-height: 0 !important; padding: 9px 16px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; transform: none !important;
+  background: #16294A !important; color: var(--av-cyan) !important; font: italic 900 12px var(--av-display) !important; letter-spacing: .05em !important;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); cursor: pointer;
+}
+html body .tg2-row.is-played { background: var(--av-panel-hi, #16294A); }
+html body #teamGamesModal .tg2 .tg2-row.is-played button.tg2-report { background: var(--av-panel) !important; }
+html body .tg2-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 4px; }
+html body .tg2-pager small { font-size: 12px; color: var(--av-muted); }
+html body #teamGamesModal .tg2 button.tg2-more {
+  min-height: 0 !important; padding: 9px 18px !important; border: 0 !important; border-radius: 0 !important; transform: none !important;
+  background: transparent !important; box-shadow: inset 0 0 0 1px var(--av-line) !important; color: var(--av-ink) !important; font: italic 900 12px var(--av-display) !important; letter-spacing: .05em !important;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); cursor: pointer;
+}
+html body .tg2-empty { padding: 24px; text-align: center; font-size: 13px; color: var(--av-muted); background: var(--av-rail); }
+@media (max-width: 1100px) {
+  html body .tg2-row { grid-template-columns: 56px 130px minmax(0, 1fr) 104px minmax(0, 1fr) 104px; }
+  html body .tg2-row .tg2-events { display: none; }
+}
+@media (max-width: 760px) {
+  html body #teamGamesModal { padding: 0 !important; align-items: flex-start !important; overflow-y: auto !important; }
+  html body #teamGamesModal:not(#matchModal):not(#playerCardModal) > .modal-card.tg2 { width: 100vw !important; min-height: 100dvh; margin: 0 !important; padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important; }
+  html body #teamGamesModal:not(#matchModal):not(#playerCardModal) .tg2 > header.tg2-head { padding: 14px 14px 10px !important; }
+  html body .modal .modal-card.tg2 h2#teamGamesTitle { font-size: 22px !important; }
+  html body .tg2-body { padding: 10px 12px 16px; }
+  html body .tg2-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  html body .tg2-tile > strong { font-size: 18px; }
+  html body .tg2-filters { flex-direction: column; align-items: stretch; gap: 6px; }
+  html body .tg2-tabs { flex-wrap: wrap; }
+  html body .tg2-row {
+    grid-template-columns: 44px minmax(0, 1fr) auto; grid-template-areas: "date comp score" "date home score" "date away act" "ev ev ev";
+    gap: 4px 10px; padding: 10px; min-height: 0;
+  }
+  html body .tg2-date { grid-area: date; } html body .tg2-comp { grid-area: comp; flex-direction: row; align-items: center; gap: 6px; }
+  html body .tg2-team.tg2-home { grid-area: home; flex-direction: row-reverse; justify-content: flex-end; text-align: left; }
+  html body .tg2-team.tg2-away { grid-area: away; }
+  html body .tg2-team b { font-size: 13px; }
+  html body .tg2-team .tg2-team-crest, html body .tg2-team img, html body .tg2-team svg { width: 18px !important; height: 21px !important; }
+  html body .tg2-score { grid-area: score; flex-direction: column; align-items: flex-end; gap: 4px; }
+  html body .tg2-score strong { font-size: 20px; }
+  html body .tg2-row .tg2-events { grid-area: ev; display: flex; }
+  html body .tg2-row .tg2-events:empty { display: none; }
+  html body #teamGamesModal .tg2 button.tg2-report, html body .tg2-report-slot { grid-area: act; padding: 7px 10px !important; font-size: 11px !important; }
+  html body .tg2-date b { font-size: 18px; }
+}
+/* tg2 no celular: pop-up em tela cheia rolando do topo (o padrão "bottom sheet" cortava o topo). */
+html.is-mobile body #teamGamesModal:not(#matchModal):not(#playerCardModal),
+html body #teamGamesModal:not(#matchModal):not(#playerCardModal).tg2-full {
+  align-items: start !important; align-content: start !important; justify-items: stretch !important; overflow-y: auto !important; padding: 0 !important;
+}
+@media (max-width: 760px) {
+  html body #teamGamesModal:not(#matchModal):not(#playerCardModal) { align-items: start !important; align-content: start !important; overflow-y: auto !important; padding: 0 !important; }
+}
+@media (max-width: 760px) {
+  html body .tg2-comp { flex-wrap: wrap; }
+  html body .tg2-comp .tg2-tag { max-width: none; overflow: visible; }
+  html body .tg2-comp small { white-space: normal; }
+}
+html.is-mobile body .tg2-comp { flex-wrap: wrap; }
+html.is-mobile body .tg2-comp .tg2-tag { max-width: none; overflow: visible; }
+html.is-mobile body .tg2-comp small { white-space: normal; }

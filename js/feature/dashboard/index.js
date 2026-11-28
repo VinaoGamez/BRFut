@@ -3,6 +3,7 @@ import { formatKnockoutFixtureScore, isKnockoutShootoutCompetition as isKnockout
 import { applyCompetitionBadge, competitionBadgeMarkup, resolveCompetitionBadge } from '../../ui/competition-badge.js';
 import { setHumanBadgeOnCrest } from '../../ui/human-badge.js';
 import { applyTeamCrestToElement, teamCrestHtml } from '../../ui/team-crest.js';
+import { eventIconHtml } from '../../core/event-icons.js';
 import { esc, goalStatusText, money, ratingText, retroCompCard, retroTile, shortPlayerName } from '../season-summary/retro-view.js';
 import { resolveNationalTeam } from '../../engine/national-teams.js';
 import { formatMatchRating } from '../../engine/player-match-stats.js';
@@ -104,19 +105,27 @@ export function createDashboardFeature(deps) {
   let persistSeason = () => {};
   const dashboardReportGames = new Map();
   const teamGamesReportGames = new Map();
+  let returnToTeamGames = false;
 
   const ensureTeamGamesModal = () => {
     if ($('#teamGamesModal')) return;
     document.body.insertAdjacentHTML(
       'beforeend',
       `<div id="teamGamesModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="teamGamesTitle">
-        <div class="modal-card team-games-modal">
-          <button id="closeTeamGames" class="close" type="button" aria-label="Fechar">×</button>
-          <label>TEMPORADA ${getCareerSeason?.() || '—'}</label>
-          <h2 id="teamGamesTitle">Jogos do Time</h2>
-          <p id="teamGamesSummary">Calendário completo do clube.</p>
-          <div class="team-games-head"><span>PARTIDA</span><span>PLACAR</span><span>ESTATÍSTICAS</span></div>
-          <div id="teamGamesList" class="team-games-list"></div>
+        <div class="modal-card team-games-modal tg2">
+          <header class="tg2-head">
+            <span class="tg2-crest" id="teamGamesCrest"></span>
+            <div class="tg2-title"><span class="tg2-kicker" id="teamGamesKicker">TEMPORADA</span><h2 id="teamGamesTitle">Jogos do time</h2></div>
+            <button id="closeTeamGames" class="close" type="button" aria-label="Fechar">×</button>
+          </header>
+          <div class="tg2-body">
+            <div class="tg2-summary" id="teamGamesSummary"></div>
+            <div class="tg2-filters">
+              <nav class="tg2-tabs" id="teamGamesComps" role="tablist" aria-label="Competição"></nav>
+              <nav class="tg2-tabs tg2-modes" id="teamGamesModes" role="tablist" aria-label="Mostrar"></nav>
+            </div>
+            <div id="teamGamesList" class="tg2-list"></div>
+          </div>
         </div>
       </div>`,
     );
@@ -1088,49 +1097,204 @@ export function createDashboardFeature(deps) {
     return entries.sort((a, b) => compareSortDate(a, b));
   };
 
-  const renderTeamGamesModal = () => {
-    ensureTeamGamesModal();
-    const games = allUserSeasonGames();
-    const list = $('#teamGamesList');
-    const summary = $('#teamGamesSummary');
-    teamGamesReportGames.clear();
-    const completedCount = games.filter(({ game }) => isCompletedDashboardGame(game)).length;
-    if (summary) {
-      summary.textContent = `${games.length} partida${games.length === 1 ? '' : 's'} · ${completedCount} encerrada${completedCount === 1 ? '' : 's'}`;
+  // Jogos do time v2: resumo, filtros por competição, meses e páginas (sem rolagem interna).
+  const teamGamesView = { comp: 'all', mode: 'all', start: null, page: 0 };
+  const TG_COMP_STYLE = {
+    state: { label: 'ESTADUAL', color: 'green' },
+    league: { label: 'BRASILEIRÃO', color: 'cyan' },
+    cup: { label: 'COPA DO BRASIL', color: 'orange' },
+    conmebol: { label: 'CONTINENTAL', color: 'gold' },
+    worldcup: { label: 'COPA DO MUNDO', color: 'gold' },
+    other: { label: 'OUTROS', color: 'mut' },
+  };
+  const tgKind = game => {
+    const comp = String(game.dashboardCompetition || game.competition || '').toUpperCase();
+    if (comp === 'STATE' || isStateLeagueGame(game)) return 'state';
+    if (comp === 'CUP' || comp.includes('COPA DO BRASIL')) return 'cup';
+    if (comp === 'WORLDCUP' || isWorldCupFixture(game)) return 'worldcup';
+    if (/LIBERTADORES|SUL-AMERICANA|RECOPA|MUNDIAL/.test(comp)) return 'conmebol';
+    return 'league';
+  };
+  const tgCompLabel = game => {
+    const kind = tgKind(game);
+    if (kind === 'league') {
+      const division = getClubs?.()?.[getUserClub()]?.division || getUserDivision?.();
+      return division ? `SÉRIE ${division}` : 'BRASILEIRÃO';
     }
-    if (!list) return;
-    if (!games.length) {
-      list.innerHTML = '<div class="team-games-empty">Nenhuma partida encontrada nesta temporada.</div>';
-      return;
-    }
-    list.innerHTML = games
-      .map(({ game, sortDate }, index) => {
-        const completed = isCompletedDashboardGame(game);
-        const report = completed ? dashboardGameReport(game) : null;
-        const reportKey = `team-${index}`;
-        if (report) teamGamesReportGames.set(reportKey, report);
-        const date = parseCalendarDate(sortDate || fixtureSortDate(game));
-        const dateLabel = date
-          ? date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toUpperCase()
-          : 'SEM DATA';
-        const score = completed ? dashboardScoreLabel(game) : game.playedWithoutRecord ? '—' : '×';
-        const result = completed ? userMatchResultLetter(game, isWorldCupFixture(game) ? getUserNationalTeamName?.() : getUserClub()) : '';
-        const tone = result === 'V' ? 'win' : result === 'E' ? 'draw' : result === 'D' ? 'loss' : 'scheduled';
-        return `<div class="team-game-row ${tone}">
-          <div class="team-game-fixture">
-            <small>${dateLabel} · ${dashboardRecentLabel(game)}</small>
-            <strong><span class="club-link" data-club="${game.home}" role="button" tabindex="0">${game.home}</span><i>×</i><span class="club-link" data-club="${game.away}" role="button" tabindex="0">${game.away}</span></strong>
-          </div>
-          <b class="team-game-score">${score}</b>
-          <button type="button" class="dashboard-match-report" data-team-match-report="${reportKey}" ${report ? '' : 'disabled'} title="${report ? 'Ver estatísticas finais' : game.playedWithoutRecord ? 'Jogo disputado antes desta versão: detalhes não guardados' : 'Estatísticas disponíveis após a partida'}" aria-label="Ver estatísticas de ${game.home} contra ${game.away}">▤</button>
-        </div>`;
-      })
-      .join('');
+    if (kind === 'conmebol') return String(game.competition || 'CONTINENTAL').toUpperCase();
+    return TG_COMP_STYLE[kind].label;
+  };
+  const tgStageLabel = game => {
+    const kind = tgKind(game);
+    if (kind === 'cup') return [game.phase, game.leg].filter(Boolean).join(' · ') || 'Copa';
+    if (kind === 'conmebol' || kind === 'worldcup') return [game.phase || (game.group ? `Grupo ${game.group}` : ''), game.leg].filter(Boolean).join(' · ') || '—';
+    if (game.competition === 'knockout' || isKnockoutShootoutCompetition(game)) return [game.phase, game.leg].filter(Boolean).join(' · ') || 'Mata-mata';
+    const PHASES = { quarters: 'Quartas de final', semis: 'Semifinal', semi: 'Semifinal', final: 'Final', round16: 'Oitavas de final', playoff: 'Repescagem' };
+    if (game.phase && !/grupo|group/i.test(game.phase)) return [PHASES[game.phase] || game.phase, game.leg].filter(Boolean).join(' · ');
+    return game.round ? `Rodada ${game.round}` : '—';
+  };
+  const tgShortName = name => {
+    const parts = String(name || '').trim().split(/\s+/);
+    return parts.length > 1 ? `${parts[0][0]}. ${parts[parts.length - 1]}` : parts[0] || '—';
+  };
+  const tgMinute = item => `${Number(item?.minute) || 0}'${item?.stoppage ? `+${item.stoppage}` : ''}`;
+  /** Lances do usuário na linha: gols (com tipo) e expulsões, no máximo 3. */
+  const tgUserEvents = (game, userSide) => {
+    const log = typeof findUserMatchLog === 'function' ? findUserMatchLog(game) : null;
+    const goals = (game.goals && ((game.goals.home || []).length + (game.goals.away || []).length) ? game.goals : log?.goals) || null;
+    const out = [];
+    (goals?.[userSide] || []).forEach(goal => {
+      if (goal?.type === 'own') return;
+      out.push({ kind: goal?.type === 'penalty' ? 'penalty-goal' : 'goal', text: `${tgShortName(goal?.name)} ${tgMinute(goal)}`, sort: Number(goal?.minute) || 0 });
+    });
+    const oppSide = userSide === 'home' ? 'away' : 'home';
+    (goals?.[oppSide] || []).filter(goal => goal?.type === 'own').forEach(goal => out.push({ kind: 'own-goal', text: `Contra ${tgMinute(goal)}`, sort: Number(goal?.minute) || 0 }));
+    (log?.incidents || []).filter(item => item.side === userSide && item.type === 'red').forEach(item => out.push({ kind: 'red', text: `${tgShortName(item.name)} ${tgMinute(item)}`, sort: Number(item.minute) || 0 }));
+    out.sort((x, y) => x.sort - y.sort);
+    const shown = out.slice(0, 3).map(ev => `<span class="tg2-ev">${eventIconHtml(ev.kind, { size: 14 })}${esc(ev.text)}</span>`).join('');
+    return shown + (out.length > 3 ? `<span class="tg2-ev tg2-ev-more">+${out.length - 3}</span>` : '');
   };
 
-  const openTeamGamesModal = () => {
+  // Quantos jogos cabem sem rolagem: no desktop depende da altura da janela.
+  const tgPageSize = () => {
+    if (document.documentElement.classList.contains('is-mobile')) return 6;
+    const h = Number(globalThis.innerHeight) || 900;
+    return Math.max(4, Math.min(10, Math.floor((h - 360) / 70)));
+  };
+
+  const renderTeamGamesModal = () => {
+    ensureTeamGamesModal();
+    const all = allUserSeasonGames();
+    const list = $('#teamGamesList');
+    const userName = name => (isWorldCupFixture(name) ? getUserNationalTeamName?.() : getUserClub());
+    teamGamesReportGames.clear();
+    const season = getCareerSeason?.() || '—';
+    const userClub = getUserClub();
+    const kicker = $('#teamGamesKicker');
+    if (kicker) kicker.textContent = `TEMPORADA ${season} · ${String(userClub || '').toUpperCase()}`;
+    const crestSlot = $('#teamGamesCrest');
+    if (crestSlot) crestSlot.innerHTML = teamCrestHtml(userClub, { className: 'tg2-crest-img' });
+
+    const games = all.map(({ game, sortDate }, index) => {
+      const completed = isCompletedDashboardGame(game);
+      const sideName = userName(game);
+      const userSide = game.home === sideName ? 'home' : 'away';
+      const result = completed ? userMatchResultLetter(game, sideName) : '';
+      const report = completed ? dashboardGameReport(game) : null;
+      const reportKey = `team-${index}`;
+      if (report) teamGamesReportGames.set(reportKey, report);
+      return { game, sortDate, completed, result, report, reportKey, userSide, kind: tgKind(game), index };
+    });
+
+    // Resumo da campanha.
+    const played = games.filter(item => item.completed);
+    const count = letter => played.filter(item => item.result === letter).length;
+    const goalsFor = played.reduce((sum, item) => sum + (Number(item.userSide === 'home' ? item.game.homeGoals : item.game.awayGoals) || 0), 0);
+    const goalsAgainst = played.reduce((sum, item) => sum + (Number(item.userSide === 'home' ? item.game.awayGoals : item.game.homeGoals) || 0), 0);
+    const points = count('V') * 3 + count('E');
+    const pct = played.length ? Math.round((points / (played.length * 3)) * 100) : 0;
+    const next = games.find(item => !item.completed && !item.game.playedWithoutRecord);
+    const nextDetails = next && typeof fixtureDetails === 'function' ? fixtureDetails(next.game) : null;
+    const nextOpp = next ? (next.userSide === 'home' ? next.game.away : next.game.home) : '';
+    const tile = (label, value, sub, tone = '') => `<div class="tg2-tile${tone ? ` is-${tone}` : ''}"><span>${label}</span><strong>${value}</strong><small>${sub}</small></div>`;
+    const summary = $('#teamGamesSummary');
+    if (summary) {
+      summary.innerHTML =
+        tile('CAMPANHA', `<b class="is-win">${count('V')}V</b> <b class="is-draw">${count('E')}E</b> <b class="is-loss">${count('D')}D</b>`, `${played.length} de ${games.length} jogos disputados`) +
+        tile('GOLS', `${goalsFor} pró · ${goalsAgainst} contra`, `saldo ${goalsFor - goalsAgainst >= 0 ? '+' : ''}${goalsFor - goalsAgainst}`) +
+        tile('APROVEITAMENTO', `${pct}%`, `${points} de ${played.length * 3} pontos`, 'lime') +
+        tile('PRÓXIMO', next ? `${formatDashboardDate(next.sortDate)}${nextDetails?.time ? ` · ${esc(nextDetails.time)}` : ''}` : '—', next ? `${esc(nextOpp)} · ${next.userSide === 'home' ? 'em casa' : 'fora'}` : 'temporada encerrada', 'cyan');
+    }
+
+    // Abas de competição (só as que existem) + modo.
+    const kinds = ['state', 'league', 'cup', 'conmebol', 'worldcup'].filter(kind => games.some(item => item.kind === kind));
+    if (teamGamesView.comp !== 'all' && !kinds.includes(teamGamesView.comp)) teamGamesView.comp = 'all';
+    const compLabel = kind => {
+      const sample = games.find(item => item.kind === kind)?.game;
+      return kind === 'league' || kind === 'conmebol' ? tgCompLabel(sample) : TG_COMP_STYLE[kind].label;
+    };
+    const comps = $('#teamGamesComps');
+    if (comps) {
+      comps.innerHTML = [['all', 'TODOS', games.length], ...kinds.map(kind => [kind, compLabel(kind), games.filter(item => item.kind === kind).length])]
+        .map(([id, label, n]) => `<button type="button" role="tab" data-tg-comp="${id}" class="${teamGamesView.comp === id ? 'is-active' : ''}" aria-selected="${teamGamesView.comp === id}">${label} · ${n}</button>`)
+        .join('');
+    }
+    const modes = $('#teamGamesModes');
+    if (modes) {
+      modes.innerHTML = [['all', 'CALENDÁRIO'], ['played', 'DISPUTADOS'], ['next', 'PRÓXIMOS']]
+        .map(([id, label]) => `<button type="button" role="tab" data-tg-mode="${id}" class="${teamGamesView.mode === id ? 'is-active' : ''}" aria-selected="${teamGamesView.mode === id}">${label}</button>`)
+        .join('');
+    }
+    if (!list) return;
+    const filtered = games
+      .filter(item => teamGamesView.comp === 'all' || item.kind === teamGamesView.comp)
+      .filter(item => teamGamesView.mode === 'all' || (teamGamesView.mode === 'played' ? item.completed || item.game.playedWithoutRecord : !item.completed && !item.game.playedWithoutRecord));
+    if (!filtered.length) {
+      list.innerHTML = '<div class="tg2-empty">Nenhuma partida neste filtro.</div>';
+      return;
+    }
+    // Página de 8 jogos; no calendário começa perto do jogo atual (últimos 3 disputados).
+    const PAGE = tgPageSize();
+    if (teamGamesView.start == null) {
+      // Ancora no próximo jogo: 3 disputados antes dele e os seguintes.
+      const anchor = filtered.findIndex(item => !item.completed && !item.game.playedWithoutRecord);
+      teamGamesView.start = teamGamesView.mode === 'played' || anchor < 0
+        ? Math.max(0, filtered.length - PAGE)
+        : Math.max(0, Math.min(anchor - 3, filtered.length - PAGE));
+    }
+    const start = Math.max(0, Math.min(teamGamesView.start, Math.max(0, filtered.length - 1)));
+    const end = Math.min(filtered.length, start + PAGE + teamGamesView.page * PAGE);
+    const nextGame = next?.index;
+    let lastMonth = '';
+    const rows = filtered.slice(start, end).map(item => {
+      const { game, completed, result, report, reportKey, userSide } = item;
+      const date = parseCalendarDate(item.sortDate || fixtureSortDate(game));
+      const month = date ? date.toLocaleDateString('pt-BR', { month: 'long' }).toUpperCase() : 'SEM DATA';
+      const sep = month !== lastMonth ? `<div class="tg2-month">${month}</div>` : '';
+      lastMonth = month;
+      const day = date ? String(date.getDate()).padStart(2, '0') : '—';
+      const dayMeta = date
+        ? `${date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase()} · ${date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase()}`
+        : '';
+      const kind = item.kind;
+      const style = TG_COMP_STYLE[kind] || TG_COMP_STYLE.other;
+      const team = (name, side) => `<span class="tg2-team tg2-${side}${(side === userSide) ? ' is-user' : ''}">${side === 'home' ? `<b class="club-link" data-club="${esc(name)}" role="button" tabindex="0">${esc(name)}</b>${teamCrestHtml(name, { className: 'tg2-team-crest' })}` : `${teamCrestHtml(name, { className: 'tg2-team-crest' })}<b class="club-link" data-club="${esc(name)}" role="button" tabindex="0">${esc(name)}</b>`}</span>`;
+      const details = !completed && typeof fixtureDetails === 'function' ? fixtureDetails(game) : null;
+      const center = completed
+        ? `<span class="tg2-score"><strong>${dashboardScoreLabel(game).replace('—', '×')}</strong><i class="tg2-res" data-res="${result}" aria-label="${result === 'V' ? 'Vitória' : result === 'E' ? 'Empate' : 'Derrota'}">${result}</i></span>`
+        : game.playedWithoutRecord
+          ? '<span class="tg2-score tg2-norecord" title="Jogo disputado antes desta versão: placar não guardado">—</span>'
+          : `<span class="tg2-score tg2-time">${esc(details?.time || '—')}</span>`;
+      const isNext = item.index === nextGame;
+      const side = completed
+        ? `<span class="tg2-events">${tgUserEvents(game, userSide)}</span>`
+        : `<span class="tg2-events">${isNext ? '<em class="tg2-next">PRÓXIMO JOGO</em>' : `<small>${userSide === 'home' ? 'CASA' : 'FORA'}</small>`}</span>`;
+      const action = report
+        ? `<button type="button" class="tg2-report" data-team-match-report="${reportKey}" aria-label="Relatório de ${esc(game.home)} contra ${esc(game.away)}">RELATÓRIO</button>`
+        : '<span class="tg2-report-slot"></span>';
+      return `${sep}<div class="tg2-row ${completed ? `is-played res-${result}` : 'is-upcoming'}${isNext ? ' is-next' : ''}">
+          <span class="tg2-date"><b>${day}</b><small>${dayMeta}</small></span>
+          <span class="tg2-comp"><i class="tg2-tag" data-tone="${style.color}">${esc(tgCompLabel(game))}</i><small>${esc(tgStageLabel(game))}</small></span>
+          ${team(game.home, 'home')}${center}${team(game.away, 'away')}
+          ${side}${action}
+        </div>`;
+    }).join('');
+    const prev = start > 0 ? `<button type="button" class="tg2-more" data-tg-prev>VER ${Math.min(PAGE, start)} ANTERIORES</button>` : '';
+    const remaining = filtered.length - end;
+    const more = remaining > 0 ? `<button type="button" class="tg2-more" data-tg-more>VER MAIS ${Math.min(PAGE, remaining)} JOGOS</button>` : '';
+    list.innerHTML = `${prev ? `<div class="tg2-pager">${prev}</div>` : ''}${rows}<div class="tg2-pager"><small>Mostrando ${end - start} de ${filtered.length}</small>${more}</div>`;
+  };
+
+  const openTeamGamesModal = ({ keepView = false } = {}) => {
+    if (!keepView) Object.assign(teamGamesView, { comp: 'all', mode: 'all', start: null, page: 0 });
     renderTeamGamesModal();
-    $('#teamGamesModal')?.classList.remove('hidden');
+
+    const overlay = $('#teamGamesModal');
+    overlay?.classList.remove('hidden');
+    if (overlay && !keepView) {
+      overlay.scrollTop = 0;
+      requestAnimationFrame(() => { overlay.scrollTop = 0; });
+    }
   };
 
   const closeTeamGamesModal = () => $('#teamGamesModal')?.classList.add('hidden');
@@ -1194,13 +1358,47 @@ export function createDashboardFeature(deps) {
         closeTeamGamesModal();
         return;
       }
+      const compTab = event.target.closest('[data-tg-comp]');
+      if (compTab) {
+        Object.assign(teamGamesView, { comp: compTab.dataset.tgComp, start: null, page: 0 });
+        renderTeamGamesModal();
+        return;
+      }
+      const modeTab = event.target.closest('[data-tg-mode]');
+      if (modeTab) {
+        Object.assign(teamGamesView, { mode: modeTab.dataset.tgMode, start: null, page: 0 });
+        renderTeamGamesModal();
+        return;
+      }
+      if (event.target.closest('[data-tg-more]')) {
+        teamGamesView.page += 1;
+        renderTeamGamesModal();
+        return;
+      }
+      if (event.target.closest('[data-tg-prev]')) {
+        const pageSize = tgPageSize();
+        teamGamesView.start = Math.max(0, (teamGamesView.start || 0) - pageSize);
+        teamGamesView.page += 1;
+        renderTeamGamesModal();
+        return;
+      }
       const button = event.target.closest('[data-team-match-report]');
       if (!button) return;
       const report = teamGamesReportGames.get(button.dataset.teamMatchReport);
       if (report) {
+        // Ao fechar o relatório, volta para a lista no mesmo ponto.
         closeTeamGamesModal();
+        returnToTeamGames = true;
         openCalendarMatchReport(report);
       }
+    });
+    document.addEventListener('click', event => {
+      if (!returnToTeamGames) return;
+      const closeReport = event.target.closest?.('#closeCalendarMatchReport');
+      const backdrop = event.target?.id === 'calendarMatchReportModal';
+      if (!closeReport && !backdrop) return;
+      returnToTeamGames = false;
+      setTimeout(() => openTeamGamesModal({ keepView: true }), 0);
     });
     onClick('.leader-tabs', event => {
       const tab = event.target.closest('[data-leader-tab]');
