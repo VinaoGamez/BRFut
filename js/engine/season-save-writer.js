@@ -91,6 +91,7 @@ export function createSeasonSaveWriter({
   calendarKey,
   getTrainingRules,
   getContractAlertKeys,
+  getPendingMedicalDecisions,
   getUserSeasonCrowds,
   getFormation,
   getSerieDGroups,
@@ -160,6 +161,7 @@ export function createSeasonSaveWriter({
     const careerCalendarDate = getCareerCalendarDate();
     const trainingRules = getTrainingRules();
     const contractAlertKeys = getContractAlertKeys();
+    const pendingMedical = typeof getPendingMedicalDecisions === 'function' ? getPendingMedicalDecisions() : [];
     const recopaCompetition = getRecopaCompetition();
     const worldCupCompetition = getWorldCupCompetition();
     const nationalRankingFinalizedSeasons = getNationalRankingFinalizedSeasons();
@@ -330,6 +332,7 @@ export function createSeasonSaveWriter({
         }
         : null,
       contractAlertKeys: [...contractAlertKeys],
+      pendingMedical: Array.isArray(pendingMedical) ? pendingMedical : [],
       userBankLoan: opts.resetUserEconomy ? null : serializeBankLoan(userClubState),
       userClubStatus: statusSnapshot,
       userStadium,

@@ -1044,10 +1044,14 @@ export async function bootEngine({
     const {player,injury,club,liveContext}=pendingTreatmentDecision;
     const division=club?.division||userDivision||'A';
     const quote=computeTreatmentQuote(injury,club,division,choice);
+    // Cirurgia exige caixa. O tratamento conservador é obrigação do clube (como a folha):
+    // entra no cheque especial quando o caixa está negativo — nunca trava o jogo.
     if(choice==='surgery'&&!canAfford(club,quote.cost))return;
-    if(!canAfford(club,quote.cost))return;
-    const payment=spend(club,quote.cost,{reason:treatmentLedgerReason(choice),label:treatmentLedgerLabel(choice,player.name),meta:{player:player.name,injury:injury.name,injuryType:injury.type,grade:injury.grade,days:quote.days,cost:quote.cost}});
-    if(!payment.ok)return;
+    const payment=spend(club,quote.cost,{reason:treatmentLedgerReason(choice),label:treatmentLedgerLabel(choice,player.name),allowNegative:choice!=='surgery',meta:{player:player.name,injury:injury.name,injuryType:injury.type,grade:injury.grade,days:quote.days,cost:quote.cost}});
+    if(!payment.ok){
+      if(choice==='surgery')return finishTreatmentChoice('conservative');
+      return;
+    }
     const record=applyTreatmentChoice(player,injury,choice,club);
     pendingTreatmentDecision=null;
     $('#treatmentModal').classList.add('hidden');
@@ -3218,6 +3222,19 @@ export async function bootEngine({
   }
   autoMarkStaleMessages();
   updateMessageBadge();renderDashboardMessagesFeed();
+  // Retoma decisões médicas salvas (antes eram perdidas ao recarregar e o aviso reabria sem saída).
+  if(savedNewGame&&validSavedSeason&&Array.isArray(savedSeason?.pendingMedical)&&!postMatchMedicalQueue.length&&!pendingTreatmentDecision){
+    const roster=clubs[userClub]?.roster||squad;
+    savedSeason.pendingMedical.forEach(item=>{
+      const player=roster.find(p=>p?.name===item?.player);
+      if(player&&item.injury)postMatchMedicalQueue.push({player,injury:{...item.injury},club:clubs[userClub]});
+    });
+  }
+  // Mensagem médica pendente sem decisão correspondente (save antigo): encerra para não travar o jogo.
+  if(savedNewGame&&!postMatchMedicalQueue.length&&!pendingTreatmentDecision&&messages.getMedicalActionMessages?.().length){
+    messages.resolveActionRequiredMessages?.({category:'medical'});
+    messages.resolveActionRequiredMessages?.({type:'treatment-pending'});
+  }
   // Retoma ação médica pendente (badge vermelho + janelas).
   if(savedNewGame&&(messages.getMedicalActionMessages?.().length||postMatchMedicalQueue.length||pendingTreatmentDecision)){
     queueMicrotask(()=>openMedicalActionFlow());
@@ -7301,6 +7318,10 @@ export async function bootEngine({
     calendarKey,
     getTrainingRules:()=>trainingRules,
     getContractAlertKeys:()=>contractAlertKeys,
+    getPendingMedicalDecisions:()=>[
+      ...(pendingTreatmentDecision?[pendingTreatmentDecision]:[]),
+      ...postMatchMedicalQueue,
+    ].filter(item=>item?.player?.name&&item.injury).map(item=>({player:item.player.name,injury:{...item.injury}})),
     getUserSeasonCrowds:()=>userSeasonCrowds,
     getFormation:()=>formation,
     getSerieDGroups:()=>serieDGroups,
@@ -9479,6 +9500,17 @@ export async function bootEngine({
         return {competition:game.competition,home:game.home,away:game.away,score:`${h}-${a}`,completed:!!game.completed};
       },
       qaRetro:()=>buildSeasonRetro(),
+      // QA: simula lesão com decisão médica pós-jogo, com o caixa no valor informado.
+      qaMedicalCase:(cash=-300000)=>{
+        const club=clubs[userClub];
+        club.budget=Number(cash);
+        const player=(club.roster||squad).find(p=>!p.injury)||squad[0];
+        const injury=normalizeInjury({type:'meniscus_injury',category:'knee',name:'Lesão meniscal',bodyPart:'knee',side:'right',grade:3,severity:'Grave',days:120,totalDays:120,daysRemaining:120,recurrenceRisk:.22,treatment:'surgery',treatmentChoice:true});
+        postMatchMedicalQueue.push({player,injury,club});
+        processPostMatchMedicalQueue();
+        return {player:player.name,budget:club.budget};
+      },
+      qaBudget:()=>getBalance(clubs[userClub]),
       nextUserEntry:()=>{const entry=nextPendingUserEntry();return entry?{competition:entry.game.competition,home:entry.game.home,away:entry.game.away,date:String(entry.details?.date)}:null;}};
   }
   if(new URLSearchParams(location.search).has('conmebolAudit')&&savedNewGame){
