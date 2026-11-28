@@ -14,9 +14,7 @@ import { isStateLeagueGame, stateLeagueBadgeName, stateLeaguePhaseLabel } from '
 import { tipKey, buildPlayerTipIndex, ownGoalTipCount } from './match-report-tips.js';
 import { DEVELOPMENT_FOCUSES, formatTrainingWeeklyReportHtml } from '../../engine/training-development.js';
 import { createCalendarV2 } from './calendar-v2.js';
-import goalBallUrl from '../../../assets/ui/goal-ball.png?url';
-import ownGoalBallUrl from '../../../assets/ui/goal-ball-own.png?url';
-import assistBootUrl from '../../../assets/ui/assist-boot.webp?url';
+import { eventIconHtml, EVENT_ICON_SIZE } from '../../core/event-icons.js';
 
 /**
  * Calendário de carreira — grade mensal, agenda diária e relatório de partida.
@@ -370,10 +368,9 @@ export function createCalendarViewFeature(deps) {
     return `data-tip="${escapeTip(text)}"`;
   };
 
-  const cardIconMarkup = (kind, tip) =>
-    `<span class="match-report-card-icon ${kind}" aria-label="${
-      kind === 'yellow' ? 'Cartão Amarelo' : 'Cartão Vermelho'
-    }" ${tipAttrs(tip)}><i></i></span>`;
+  const LIST_ICON = EVENT_ICON_SIZE.list;
+  const reportIcon = (kind, tip) => eventIconHtml(kind, { size: LIST_ICON, className: 'match-report-icon', attrs: tipAttrs(tip) });
+  const cardIconMarkup = (kind, tip) => reportIcon(kind, tip);
 
   /** Um único melhor em campo — desempate: nota → gols → assistências → minutos. */
   const pickManOfTheMatch = sheets => {
@@ -413,19 +410,19 @@ export function createCalendarViewFeature(deps) {
     const balls = Array.from({ length: Math.min(goals, 5) }, (_, i) => {
       const stamp = tips.goals[i] || tips.goals[0];
       const text = tipText('Gol', stamp?.minute, stamp?.stoppage);
-      return `<img class="match-report-icon match-report-goal-icon" src="${goalBallUrl}" alt="Gol" ${tipAttrs(text)} />`;
+      return reportIcon('goal', text);
     }).join('');
 
     const ownBalls = Array.from({ length: Math.min(ownGoals, 3) }, (_, i) => {
       const stamp = tips.ownGoals[i] || tips.ownGoals[0];
       const text = tipText('Gol contra', stamp?.minute, stamp?.stoppage);
-      return `<img class="match-report-icon match-report-own-goal-icon" src="${ownGoalBallUrl}" alt="Gol contra" ${tipAttrs(text)} />`;
+      return reportIcon('own-goal', text);
     }).join('');
 
     const boots = Array.from({ length: Math.min(assists, 4) }, (_, i) => {
       const stamp = tips.assists[i] || tips.assists[0];
       const text = tipText('Assistência', stamp?.minute, stamp?.stoppage);
-      return `<img class="match-report-icon match-report-assist-icon" src="${assistBootUrl}" alt="Assistência" ${tipAttrs(text)} />`;
+      return reportIcon('assist', text);
     }).join('');
 
     const cards =
@@ -441,9 +438,9 @@ export function createCalendarViewFeature(deps) {
     const subIcon = subs
       .map(({ kind, stamp }) => {
         if (kind === 'in') {
-          return `<i class="match-report-sub in" aria-label="Entrou" ${tipAttrs(tipText('Entrou', stamp.minute, stamp.stoppage))}></i>`;
+          return reportIcon('sub-in', tipText('Entrou', stamp.minute, stamp.stoppage));
         }
-        return `<i class="match-report-sub out" aria-label="Saiu" ${tipAttrs(tipText('Saiu', stamp.minute, stamp.stoppage))}></i>`;
+        return reportIcon('sub-out', tipText('Saiu', stamp.minute, stamp.stoppage));
       })
       .join('');
 
@@ -487,7 +484,7 @@ export function createCalendarViewFeature(deps) {
         ]
           .filter(Boolean)
           .join(' ');
-        return `<li class="${isBest ? 'match-report-best' : ''}"><span class="match-report-pos pos-chip" data-line="${positionLine(pos)}">${pos}</span><span class="match-report-player${isBest ? ' is-best' : ''}"><span class="match-report-name">${sheet.name}</span>${playerEventIcons(sheet, tipIndex)}</span><strong class="match-report-rating ${ratingClass}" data-tier="${ratingTier(sheet.rating)}">${formatMatchRating(sheet.rating)}</strong></li>`;
+        return `<li class="${isBest ? 'match-report-best' : ''}"><span class="match-report-pos pos-chip" data-line="${positionLine(pos)}">${pos}</span><span class="match-report-player${isBest ? ' is-best' : ''}"><span class="match-report-name">${sheet.name}</span>${isBest ? reportIcon('motm', 'Craque do jogo') : ''}${playerEventIcons(sheet, tipIndex)}</span><strong class="match-report-rating ${ratingClass}" data-tier="${ratingTier(sheet.rating)}">${formatMatchRating(sheet.rating)}</strong></li>`;
       })
       .join('');
     return `<article class="match-report-ratings-side"><header class="mr2-side-head">${teamCrestHtml(clubName, { className: 'mr2-crest' })}<b>${clubName}</b><small>média</small><strong class="match-report-rating" data-tier="${ratingTier(avg)}">${avg ? formatMatchRating(avg) : '—'}</strong></header><ul>${rows}</ul></article>`;
@@ -619,28 +616,33 @@ export function createCalendarViewFeature(deps) {
         side,
         minute: goal.minute,
         stoppage: goal.stoppage,
-        kind: 'goal',
-        icon: '⚽',
+        kind: goal.type === 'own' ? 'own-goal' : goal.type === 'penalty' ? 'penalty-goal' : 'goal',
         title: `${esc(goal.name)}${goal.type === 'own' ? ' <em>(contra)</em>' : goal.type === 'penalty' ? ' <em>(pênalti)</em>' : ''}`,
         sub: goal.assist ? `Assistência: ${esc(goal.assist)}` : '',
       }));
     });
+    const yellowSeen = new Set();
     (incidents || []).forEach(item => {
       const side = item.side === 'away' ? 'away' : item.side === 'home' ? 'home' : null;
       if (!side || !item.name) return;
       if (item.type === 'yellow' || item.type === 'red') {
-        events.push({ side, minute: item.minute, stoppage: item.stoppage, kind: item.type, icon: '', title: esc(item.name), sub: item.type === 'red' ? 'Cartão vermelho' : 'Cartão amarelo' });
+        const who = `${side}|${item.name}`;
+        // Vermelho depois de um amarelo do mesmo jogador = segundo amarelo.
+        const second = item.type === 'red' && yellowSeen.has(who);
+        if (item.type === 'yellow') yellowSeen.add(who);
+        const kind = second ? 'second-yellow' : item.type;
+        events.push({ side, minute: item.minute, stoppage: item.stoppage, kind, title: esc(item.name), sub: second ? 'Segundo amarelo · expulso' : item.type === 'red' ? 'Cartão vermelho' : 'Cartão amarelo' });
       } else if (item.type === 'substitution') {
         const [outName, inName] = String(item.name).split(/\s*(?:→|->)\s*/).map(part => part.trim());
         if (!outName || !inName) return;
-        events.push({ side, minute: item.minute, stoppage: item.stoppage, kind: 'sub', icon: '⇄', title: esc(inName), sub: `Sai ${esc(outName)}` });
+        events.push({ side, minute: item.minute, stoppage: item.stoppage, kind: 'substitution', title: esc(inName), sub: `Sai ${esc(outName)}` });
       }
     });
     events.sort((a, b) => sortKey(a) - sortKey(b));
     const lancesHtml = events.length
       ? `<div class="mr2-events"><div class="mr2-events-head"><b>${esc(game.home)}</b><span></span><b>${esc(game.away)}</b></div>${events
           .map(ev => {
-            const cell = `<div class="mr2-ev-body"><i class="mr2-ev-icon" data-kind="${ev.kind}">${ev.icon}</i><span><b>${ev.title}</b>${ev.sub ? `<small>${ev.sub}</small>` : ''}</span></div>`;
+            const cell = `<div class="mr2-ev-body"><i class="mr2-ev-icon" data-kind="${ev.kind}">${eventIconHtml(ev.kind, { size: 22 })}</i><span><b>${ev.title}</b>${ev.sub ? `<small>${ev.sub}</small>` : ''}</span></div>`;
             return `<div class="mr2-ev" data-side="${ev.side}">${ev.side === 'home' ? cell : '<div></div>'}<strong class="mr2-ev-min">${minuteLabel(ev)}</strong>${ev.side === 'away' ? cell : '<div></div>'}</div>`;
           })
           .join('')}</div>`

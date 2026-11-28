@@ -19,9 +19,7 @@ import {
   toChartMinute,
   chartSpan,
 } from '../../engine/match-clock.js';
-import goalBallUrl from '../../../assets/ui/goal-ball.png?url';
-import ownGoalBallUrl from '../../../assets/ui/goal-ball-own.png?url';
-import subArrowsUrl from '../../../assets/ui/sub-arrows.webp?url';
+import { eventIconSvg, EVENT_ICON_SIZE } from '../../core/event-icons.js';
 
 /**
  * Fatia de UI da partida ao vivo — modal do adversário, relógio, placar,
@@ -660,35 +658,9 @@ export function createMatchLiveUiFeature(deps) {
       })[kind] || kind;
     const markerIcon = (kind, x, y) => {
       const t = `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(1 / scaleX).toFixed(4)} ${(1 / scaleY).toFixed(4)})`;
-      if (kind === 'goal') {
-        return `<g transform="${t}"><image href="${goalBallUrl}" xlink:href="${goalBallUrl}" x="-10" y="-10" width="20" height="20" preserveAspectRatio="xMidYMid meet"/></g>`;
-      }
-      if (kind === 'own-goal') {
-        return `<g transform="${t}"><image href="${ownGoalBallUrl}" xlink:href="${ownGoalBallUrl}" x="-10" y="-10" width="20" height="20" preserveAspectRatio="xMidYMid meet"/></g>`;
-      }
-      if (kind === 'substitution') {
-        return `<g transform="${t}"><image href="${subArrowsUrl}" xlink:href="${subArrowsUrl}" x="-11" y="-11" width="22" height="22" preserveAspectRatio="xMidYMid meet"/></g>`;
-      }
-      if (kind === 'penalty-miss') {
-        return `<g transform="${t}">
-          <image href="${goalBallUrl}" xlink:href="${goalBallUrl}" x="-10" y="-10" width="20" height="20" preserveAspectRatio="xMidYMid meet"/>
-          <line x1="-7.2" y1="-7.2" x2="7.2" y2="7.2" stroke="#fff" stroke-width="4.2" stroke-linecap="round"/>
-          <line x1="7.2" y1="-7.2" x2="-7.2" y2="7.2" stroke="#fff" stroke-width="4.2" stroke-linecap="round"/>
-          <line x1="-7.2" y1="-7.2" x2="7.2" y2="7.2" stroke="#e31b1b" stroke-width="2.6" stroke-linecap="round"/>
-          <line x1="7.2" y1="-7.2" x2="-7.2" y2="7.2" stroke="#e31b1b" stroke-width="2.6" stroke-linecap="round"/>
-        </g>`;
-      }
-      if (kind === 'yellow' || kind === 'red') {
-        const fill = kind === 'yellow' ? '#ffcc33' : '#e31b1b';
-        const stroke = kind === 'yellow' ? '#a67c00' : '#8b1010';
-        return `<g transform="${t}"><rect x="-4" y="-5.5" width="8" height="11" rx="1.2" fill="${fill}" stroke="${stroke}" stroke-width="0.9"/></g>`;
-      }
-      // Lesão: cruz branca em círculo vermelho (legível mesmo no gráfico esticado)
-      return `<g transform="${t}">
-        <circle r="9" fill="#d32f2f" stroke="#ffffff" stroke-width="1.8"/>
-        <rect x="-5.5" y="-1.6" width="11" height="3.2" rx="0.7" fill="#ffffff"/>
-        <rect x="-1.6" y="-5.5" width="3.2" height="11" rx="0.7" fill="#ffffff"/>
-      </g>`;
+      // Conjunto único de ícones (js/core/event-icons.js).
+      const iconKind = kind === 'second-yellow' ? 'second-yellow' : kind;
+      return `<g transform="${t}">${eventIconSvg(iconKind, EVENT_ICON_SIZE.chart)}</g>`;
     };
     const markerBand = kind => {
       if (kind === 'goal' || kind === 'own-goal' || kind === 'penalty-miss') return 0.88;

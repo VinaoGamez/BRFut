@@ -7854,3 +7854,38 @@ html body #optionsModal:not(#matchModal) .op2 #paceChoices button.op2-pace.selec
   html body #optionsModal:not(#matchModal):not(#playerCardModal) .op2 .op2-status button.op2-btn { flex: 1 1 100%; width: 100% !important; }
   html body .op2-status .op2-row-copy { flex: 1 1 0; }
 }
+
+/* ===== Ícones de lance únicos (assets/ui/icons, js/core/event-icons.js) ===== */
+html body img.bf-ev-icon { display: inline-block; flex: none; object-fit: contain; vertical-align: middle; image-rendering: auto; }
+/* Legenda do Volume de jogo */
+html body .live-volume-legend :is(.lg-goal, .lg-own-goal, .lg-sub, .lg-penalty-miss, .lg-yellow, .lg-red, .lg-injury) {
+  width: 16px !important; height: 16px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+  transform: none !important; background: transparent center / contain no-repeat !important; position: relative;
+}
+html body .live-volume-legend :is(.lg-goal, .lg-own-goal, .lg-sub, .lg-penalty-miss, .lg-yellow, .lg-red, .lg-injury)::before,
+html body .live-volume-legend :is(.lg-goal, .lg-own-goal, .lg-sub, .lg-penalty-miss, .lg-yellow, .lg-red, .lg-injury)::after { display: none !important; }
+html body .live-volume-legend .lg-goal { background-image: url('../assets/ui/icons/goal.webp') !important; }
+html body .live-volume-legend .lg-own-goal { background-image: url('../assets/ui/icons/own-goal.webp') !important; }
+html body .live-volume-legend .lg-sub { background-image: url('../assets/ui/icons/sub.webp') !important; }
+html body .live-volume-legend .lg-penalty-miss { background-image: url('../assets/ui/icons/penalty-miss.webp') !important; }
+html body .live-volume-legend .lg-yellow { background-image: url('../assets/ui/icons/yellow.webp') !important; }
+html body .live-volume-legend .lg-red { background-image: url('../assets/ui/icons/red.webp') !important; }
+html body .live-volume-legend .lg-injury { background-image: url('../assets/ui/icons/injury.webp') !important; }
+/* Selos de status do jogador (elenco, escalação, cartão do jogador) */
+html body :is(.player-badge-yellow, .player-badge-red, .player-badge-suspended, .player-badge-injury) {
+  width: 16px !important; height: 16px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+  background: transparent center / contain no-repeat !important; filter: none !important;
+}
+html body :is(.player-badge-suspended, .player-badge-injury)::before,
+html body :is(.player-badge-suspended, .player-badge-injury)::after { display: none !important; }
+html body .player-badge-yellow { background-image: url('../assets/ui/icons/yellow.webp') !important; }
+html body .player-badge-red { background-image: url('../assets/ui/icons/red.webp') !important; }
+html body .player-badge-suspended { background-image: url('../assets/ui/icons/suspended.webp') !important; }
+html body .player-badge-injury { background-image: url('../assets/ui/icons/injury.webp') !important; }
+html body .player-badge-injury.mild { background-image: url('../assets/ui/icons/knock.webp') !important; }
+html body .player-badge-yellow-match { outline: 1px solid #EAF2FF88; outline-offset: 1px; }
+/* Relatório: ícones de lance e da nota */
+html body #calendarMatchReportModal .match-report-events { display: inline-flex; align-items: center; gap: 3px; }
+html body #calendarMatchReportModal .mr2-ev-icon { width: 22px !important; height: 22px !important; background: none !important; margin: 0 !important; display: grid; place-items: center; }
+html body #calendarMatchReportModal .mr2-ev-icon img { width: 22px; height: 22px; }
+html body #calendarMatchReportModal img.match-report-icon { width: 16px !important; height: 16px !important; display: inline-block; }
