@@ -5896,3 +5896,221 @@ html.is-mobile body #transfers .tf2-more { position: static; margin: 0 0 8px; }
 html.is-mobile body #training .training-layout { display: flex !important; flex-direction: column; }
 html.is-mobile body #training .training-main { order: -1; }
 html body .youth-v2-perks b { white-space: nowrap; }
+
+/* =====================================================================
+   Partida ao vivo e pausa técnica v2.
+   ===================================================================== */
+/* Contexto da competição já está no topo: não repete embaixo dos times. */
+html body #matchModal .match-team-context { display: none !important; }
+html body #matchModal .live-team b {
+  font-family: var(--av-display) !important;
+  font-style: italic !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+}
+html body #matchModal #liveMatchLabel {
+  color: var(--av-red) !important;
+  font: italic 900 11px var(--av-display) !important;
+  letter-spacing: .14em !important;
+}
+html body #matchModal #liveMatchLabel::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  background: var(--av-red);
+  animation: av-live-blink 1.2s steps(2, start) infinite;
+}
+@keyframes av-live-blink { to { visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { html body #matchModal #liveMatchLabel::before { animation: none; } }
+
+/* Ações da partida: botões secundários no padrão (paralelogramo). */
+html body #matchModal #matchActions:not(:has(#finalNext)) {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px !important;
+}
+html body #matchModal #matchActions:not(:has(#finalNext)) > button {
+  min-height: 40px;
+  padding: 10px 18px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+  box-shadow: none !important;
+  font: italic 800 12px var(--av-display) !important;
+  letter-spacing: .04em !important;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+html body #matchModal #matchActions:not(:has(#finalNext)) > #pauseMatch {
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important;
+  color: var(--av-night) !important;
+}
+html body #matchModal #matchActions #pauseCounter { font: inherit; opacity: .75; }
+html body #matchModal #matchStatus { color: var(--av-muted) !important; font-size: 12px !important; }
+
+/* Estatísticas ao vivo. */
+html body #matchModal:not(:has(.has-post-match)) #stats {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-rail) !important;
+  padding: 12px 14px !important;
+}
+html body #matchModal #stats > .stat-group {
+  margin: 10px 0 4px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  color: var(--av-cyan) !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase;
+}
+html body #matchModal #stats > .stat {
+  padding: 6px 4px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--av-line) !important;
+  background: none !important;
+  font-size: 13px;
+}
+html body #matchModal #stats > .stat > span:first-child,
+html body #matchModal #stats > .stat > span:last-child { font: italic 900 14px var(--av-display); }
+html body #matchModal #stats > .stat.possession { border: 0 !important; background: var(--av-panel) !important; padding: 8px 10px !important; }
+
+/* Pausa técnica. */
+html body #matchModal #pausePanel :is(.pause-heading label, #pauseTitle) {
+  color: var(--av-cyan) !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .12em !important;
+}
+html body #matchModal #pausePanel .pause-heading h2 {
+  font: italic 900 26px/1.1 var(--av-display) !important;
+  letter-spacing: 0 !important;
+  color: var(--av-ink) !important;
+}
+html body #matchModal #pausePanel .pause-heading small { color: var(--av-muted) !important; }
+html body #matchModal #pausePanel *:not(img):not(svg):not(svg *):not(.centre-circle):not(.centre-spot):not(.spot):not([class*="crest"]):not(input[type="range"]) { border-radius: 0 !important; }
+html body #matchModal #pausePanel :is(.pause-controls, .substitution-panel, .pause-tactic-adjust) {
+  border: 0 !important;
+  background: var(--av-rail) !important;
+  box-shadow: none !important;
+}
+html body #matchModal #pausePanel :is(.substitution-panel > label, .pause-tactic-adjust > label, .tactic-slider label) {
+  color: var(--av-cyan) !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .1em !important;
+}
+html body #matchModal #pausePanel :is(#togglePauseTactics, .live-day-matches-btn, #makeSubstitution, .tactic-suggestion-btn) {
+  min-height: 40px;
+  border: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+  box-shadow: none !important;
+  font: italic 800 12px var(--av-display) !important;
+  letter-spacing: .04em !important;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+html body #matchModal #pausePanel #makeSubstitution:not(:disabled) {
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important;
+  color: var(--av-night) !important;
+}
+html body #matchModal #pausePanel #makeSubstitution:disabled { opacity: .5; }
+html body #matchModal #pausePanel :is([class*="sub-list"], [class*="substitution-list"], [class*="sub-table"], .substitution-panel table, .substitution-panel [class*="column"]) {
+  border-color: var(--av-line) !important;
+  background: var(--av-panel) !important;
+}
+html body #matchModal #pausePanel .formation-buttons button {
+  border: 0 !important;
+  background: var(--av-panel) !important;
+  color: var(--av-ink) !important;
+  font: italic 800 13px var(--av-display) !important;
+}
+html body #matchModal #pausePanel .formation-buttons button.selected {
+  background: var(--av-cyan) !important;
+  color: var(--av-night) !important;
+}
+
+/* Celular: ações em linha, sem quebrar palavra. */
+html.is-mobile body #matchModal #matchActions:not(:has(#finalNext)) > button {
+  flex: 1 1 30%;
+  padding: 10px 6px !important;
+  font-size: 11px !important;
+  line-height: 1.15;
+}
+
+/* Disputa de pênaltis: gramado escuro igual aos campos v2 e moldura reta. */
+html body #penaltyDuelModal .penalty-duel-stage {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-rail) !important;
+  box-shadow: none !important;
+}
+html body #penaltyDuelModal .penalty-duel-stage-label {
+  color: var(--av-cyan) !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .12em !important;
+}
+html body #penaltyDuelModal .penalty-duel-pitch {
+  border: 1px solid #1d5a40 !important;
+  border-radius: 0 !important;
+  background: repeating-linear-gradient(180deg, #0f3a2a 0 14px, #0c3324 14px 28px) !important;
+  box-shadow: inset 0 0 28px #0009 !important;
+}
+html body #penaltyDuelModal .penalty-duel-goal {
+  border-color: #dfe9f5 !important;
+  border-radius: 0 !important;
+  background:
+    repeating-linear-gradient(90deg, #ffffff12 0 3px, transparent 3px 7px),
+    repeating-linear-gradient(0deg, #ffffff0e 0 3px, transparent 3px 7px),
+    #081c14cc !important;
+  box-shadow: none !important;
+}
+html body #penaltyDuelModal .penalty-duel-boards {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-rail) !important;
+  box-shadow: none !important;
+}
+
+/* Opções: seções em grade de 2 colunas (mesma altura por linha). */
+html:not(.is-mobile) body #optionsModal > .modal-card.options-modal {
+  width: min(900px, calc(100vw - 32px)) !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+html:not(.is-mobile) body #optionsModal > .modal-card > :is(label, h2, .close) { grid-column: 1 / -1; }
+html:not(.is-mobile) body #optionsModal > .modal-card > .close { position: absolute !important; }
+html body #optionsModal .option-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 !important;
+  padding: 14px !important;
+}
+html body #optionsModal .option-section > label {
+  color: var(--av-cyan) !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .12em !important;
+}
+html body #optionsModal .option-section p { margin: 0 !important; color: var(--av-muted) !important; font-size: 12px !important; }
+html body #optionsModal .option-section strong { font-family: var(--av-display) !important; font-style: italic; font-weight: 800 !important; }
+html body #optionsModal .pace-choice {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel) !important;
+  box-shadow: none !important;
+  text-align: left;
+}
+html body #optionsModal .pace-choice b { font-family: var(--av-display) !important; font-style: italic; }
+html body #optionsModal .pace-choice:is(.active, .selected, [aria-pressed="true"]) {
+  background: var(--av-panel-hi) !important;
+  box-shadow: inset 3px 0 var(--av-lime) !important;
+}
+html body #optionsModal .pace-choice:is(.active, .selected, [aria-pressed="true"]) b { color: var(--av-lime) !important; }
+html body #optionsModal .option-section > :last-child { margin-top: auto; }
+html body #matchModal .live-team b { color: var(--av-ink) !important; }
