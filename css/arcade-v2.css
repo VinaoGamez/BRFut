@@ -7717,3 +7717,140 @@ html body .yb2-row.is-report .yb2-actions .yb2-btn { padding: 8px 10px !importan
   html body .yb2-row.is-report > .yb2-actions { grid-area: act; justify-content: stretch; }
   html body .yb2-row.is-report > .yb2-actions .yb2-btn { flex: 1; }
 }
+
+/* ===================== Opções do jogo v2 ===================== */
+html body #optionsModal { overflow-y: auto !important; align-items: flex-start !important; padding: 24px 16px !important; }
+html body #optionsModal:not(#matchModal):not(#playerCardModal) > .modal-card.op2 {
+  --mv2-accent: var(--av-cyan) !important;
+  width: min(1000px, calc(100vw - 32px)) !important; max-width: none !important; height: 640px; max-height: none !important;
+  overflow: hidden !important; padding: 0 !important; margin: auto !important; text-align: left;
+  display: flex !important; flex-direction: column;
+}
+html body .op2 > * { flex: none; }
+html body .modal .modal-card.op2 > header.op2-head { display: flex !important; align-items: center; gap: 14px; height: auto !important; min-height: 0 !important; padding: 16px 22px 12px !important; border-bottom: 1px solid var(--av-line); background: none !important; }
+html body .op2-head-copy { flex: 1; }
+html body .modal .modal-card.op2 .op2-kicker { font: italic 800 12px var(--av-display) !important; letter-spacing: .12em; }
+html body .modal .modal-card.op2 .op2-head h2 { margin: 2px 0 0 !important; font: italic 900 28px/1.1 var(--av-display) !important; color: var(--av-ink) !important; text-transform: none !important; }
+html body .modal .modal-card.op2 #closeOptions { position: static !important; flex: none; }
+html body .op2 > .op2-main { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+html body .op2-nav { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; border-right: 1px solid var(--av-line); }
+html body .modal .modal-card.op2 button.op2-tab {
+  display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 2px; width: 100% !important; min-height: 0 !important;
+  padding: 12px 14px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; clip-path: none !important; cursor: pointer; text-align: left; text-transform: none !important; letter-spacing: 0 !important;
+}
+html body .op2-tab b { font: italic 900 14px var(--av-display); letter-spacing: .06em; color: var(--av-muted); }
+html body .op2-tab small { font: 600 12px var(--av-body); color: var(--av-muted); }
+html body .modal .modal-card.op2 button.op2-tab.is-active { background: #16294A !important; box-shadow: inset 3px 0 var(--av-cyan) !important; }
+html body .op2-tab.is-active b { color: var(--av-ink); }
+html body .op2-version { margin-top: auto; padding: 12px 14px; font-size: 12px; color: var(--av-muted); }
+html body .op2-panes { min-height: 0; overflow: hidden; }
+html body .op2-pane { display: none; flex-direction: column; gap: 12px; padding: 18px 22px; }
+html body .op2-pane.is-active { display: flex; }
+html body .modal .modal-card.op2 header.op2-sec { display: flex !important; align-items: center; gap: 10px; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; }
+html body .modal .modal-card.op2 header.op2-sec::after { content: ''; flex: 1; height: 1px; background: var(--av-line); }
+html body .modal .modal-card.op2 .op2-sec h3 { margin: 0 !important; font: italic 800 11px var(--av-display) !important; letter-spacing: .12em; text-transform: uppercase; color: var(--av-cyan) !important; }
+html body .modal .modal-card.op2 .op2-sec.is-gold h3 { color: var(--av-gold) !important; }
+html body .modal .modal-card.op2 .op2-sec.is-red h3 { color: var(--av-red) !important; }
+html body .modal .modal-card.op2 .op2-lead, html body .modal .modal-card.op2 .op2-note { margin: 0 !important; font-size: 13px !important; color: var(--av-muted) !important; }
+html body .op2-row, html body .op2-career, html body .op2-status { display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: var(--av-rail); }
+html body .modal .modal-card.op2 .op2-row.option-section { margin: 0 !important; border: 0 !important; }
+html body .op2-row-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html body .op2-row-copy strong { font: italic 900 17px var(--av-display); color: var(--av-ink); }
+html body .op2-row-copy small { font-size: 13px; line-height: 1.45; color: var(--av-muted); }
+html body .op2-career { box-shadow: inset 0 3px var(--av-lime); }
+html body .op2-career:empty { display: none; }
+html body .op2-career-crest, html body .op2-career-crest :is(img, svg, .crest--club, i) { flex: none; width: 56px !important; height: 56px !important; }
+html body .modal .modal-card.op2 .op2-career-kicker { font: italic 800 11px var(--av-display) !important; letter-spacing: .1em; color: var(--av-lime) !important; }
+html body .op2-career .op2-row-copy strong { font-size: 24px; }
+html body .op2-chip { flex: none; padding: 3px 10px; background: var(--av-lime); color: #06131b; font: italic 900 11px var(--av-display); clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+html body .op2-universe { display: flex; flex-direction: column; gap: 8px; }
+html body .op2-universe-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; grid-auto-rows: 1fr; }
+html body .op2-tile { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; background: var(--av-rail); min-width: 0; }
+html body .op2-tile span { font: italic 800 11px var(--av-display); letter-spacing: .1em; color: var(--av-muted); }
+html body .op2-tile strong { font: italic 900 18px var(--av-display); color: var(--av-ink); }
+html body .op2-tile small { font-size: 12px; color: var(--av-muted); line-height: 1.35; }
+html body .op2-tile strong.t-good { color: var(--av-green); } html body .op2-tile strong.t-mid { color: var(--av-gold); } html body .op2-tile strong.t-bad { color: var(--av-red); }
+html body .op2-paces { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; grid-auto-rows: 1fr; margin: 0 !important; }
+html body .modal .modal-card.op2 button.op2-pace {
+  display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 4px; padding: 12px !important; min-height: 0 !important; width: auto !important;
+  border: 0 !important; border-radius: 0 !important; background: var(--av-rail) !important; box-shadow: inset 0 3px var(--av-line) !important; clip-path: none !important; cursor: pointer; text-align: left; text-transform: none !important; letter-spacing: 0 !important; color: var(--av-ink) !important;
+}
+html body .modal .modal-card.op2 button.op2-pace.selected { background: #16294A !important; box-shadow: inset 0 3px var(--av-lime) !important; }
+html body .op2-pace-name { font: italic 900 13px var(--av-display); letter-spacing: .06em; color: var(--av-ink); }
+html body .op2-pace.selected .op2-pace-name { color: var(--av-lime); }
+html body .op2-pace strong { font: italic 900 28px var(--av-display); color: var(--av-ink); }
+html body .op2-pace strong small { font: italic 800 13px var(--av-display); color: var(--av-muted); }
+html body .op2-pace-detail { font: 600 12px var(--av-body); color: var(--av-muted); }
+html body .op2-selected { display: none; font-style: normal; padding: 2px 8px; background: var(--av-lime); color: #06131b; font: italic 900 10px var(--av-display); letter-spacing: .06em; }
+html body .op2-pace.selected .op2-selected { display: inline-block; }
+html body .op2-audio { display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: var(--av-rail); }
+html body .op2-audio .live-audio-options { flex: 1; display: flex !important; align-items: center; gap: 18px; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; }
+html body .op2-audio .live-audio-toggle { display: flex !important; align-items: center; gap: 10px; margin: 0 !important; cursor: pointer; font-size: 14px; color: var(--av-ink); white-space: nowrap; }
+html body .op2-audio .live-audio-toggle input { appearance: none; -webkit-appearance: none; flex: none; width: 44px; height: 24px; border-radius: 12px; background: #16294A; position: relative; margin: 0; cursor: pointer; transition: background .15s; }
+html body .op2-audio .live-audio-toggle input::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--av-muted); transition: left .15s, background .15s; }
+html body .op2-audio .live-audio-toggle input:checked { background: var(--av-lime); }
+html body .op2-audio .live-audio-toggle input:checked::after { left: 23px; background: #06131b; }
+html body .op2-audio .live-audio-volume { flex: 1; display: flex !important; align-items: center; gap: 10px; margin: 0 !important; font-size: 13px; color: var(--av-muted); }
+html body .op2-audio .live-audio-volume input { flex: 1; accent-color: var(--av-cyan); }
+html body .op2-volume-label { min-width: 40px; font-size: 13px; font-weight: 800; color: var(--av-ink); }
+html body .op2-status { box-shadow: inset 0 3px var(--st, var(--av-gold)); }
+html body .op2-status[data-tone="good"] { --st: var(--av-green); } html body .op2-status[data-tone="mid"] { --st: var(--av-gold); } html body .op2-status[data-tone="bad"] { --st: var(--av-red); }
+html body .op2-dot { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--st, var(--av-gold)); box-shadow: 0 0 0 5px color-mix(in srgb, var(--st, var(--av-gold)) 22%, transparent); }
+html body .op2-status .op2-row-copy strong { font-size: 20px; }
+html body .op2-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; grid-auto-rows: 1fr; }
+html body .modal .modal-card.op2 button.op2-choice, html body .modal .modal-card.op2 button.op2-card {
+  display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 4px; padding: 12px !important; min-height: 0 !important; width: auto !important;
+  border: 0 !important; border-radius: 0 !important; background: var(--av-rail) !important; box-shadow: inset 0 3px var(--av-line) !important; clip-path: none !important; cursor: pointer; text-align: left; text-transform: none !important; letter-spacing: 0 !important; color: var(--av-ink) !important;
+}
+html body .modal .modal-card.op2 button.op2-choice.is-on { background: #16294A !important; box-shadow: inset 0 3px var(--av-lime) !important; }
+html body .op2-choice strong, html body .op2-card strong { font: italic 900 15px var(--av-display); color: var(--av-ink); }
+html body .op2-choice.is-on strong { color: var(--av-lime); }
+html body .op2-choice small, html body .op2-card small { font: 600 12px/1.4 var(--av-body); color: var(--av-muted); }
+html body .op2-card small { flex: 1; }
+html body .op2-card em { font-style: normal; font: 800 13px var(--av-body); color: var(--av-cyan); }
+html body .op2-where { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+html body .op2-testers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; grid-auto-rows: 1fr; }
+html body .op2-updates #desktopUpdates { width: 100%; }
+html body .op2-foot { display: flex; align-items: center; gap: 10px; padding: 12px 22px 14px; border-top: 1px solid var(--av-line); }
+html body #optionsFootNote { flex: 1; font-size: 12px; color: var(--av-muted); }
+html body #optionsModal:not(#matchModal):not(#playerCardModal) .op2 button.op2-btn {
+  flex: none; min-height: 40px; padding: 9px 18px !important; border: 0 !important; border-radius: 0 !important; cursor: pointer; width: auto !important; white-space: nowrap;
+  font: italic 900 12px var(--av-display) !important; letter-spacing: .05em; text-transform: uppercase; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+html body #optionsModal:not(#matchModal):not(#playerCardModal) .op2 button.op2-btn.is-primary { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -3px var(--av-lime-edge) !important; }
+html body #optionsModal:not(#matchModal):not(#playerCardModal) .op2 button.op2-btn.is-sec { background: #16294A !important; color: var(--av-cyan) !important; box-shadow: none !important; }
+html body #optionsModal:not(#matchModal):not(#playerCardModal) .op2 button.op2-btn.is-ghost { background: transparent !important; color: var(--av-ink) !important; box-shadow: inset 0 0 0 2px var(--av-line) !important; }
+html body #optionsModal:not(#matchModal):not(#playerCardModal) .op2 button.op2-btn.is-danger { background: transparent !important; color: var(--av-red) !important; box-shadow: inset 0 0 0 2px var(--av-red) !important; }
+html body #optionsModal:not(#matchModal):not(#playerCardModal) .op2 button.op2-btn.is-danger.is-armed { background: var(--av-red) !important; color: #06131b !important; }
+@media (max-width: 760px) {
+  html body #optionsModal { padding: 0 !important; }
+  html body #optionsModal:not(#matchModal):not(#playerCardModal) > .modal-card.op2 { width: 100vw !important; height: auto; min-height: 100dvh; margin: 0 !important; overflow: visible !important; }
+  html body .op2 > .op2-main { grid-template-columns: minmax(0, 1fr); }
+  html body .op2-nav { flex-direction: row; gap: 3px; padding: 0 14px; border: 0; }
+  html body .modal .modal-card.op2 button.op2-tab { flex: 1 1 0; align-items: center !important; padding: 9px 2px !important; background: var(--av-rail) !important; }
+  html body .modal .modal-card.op2 button.op2-tab.is-active { background: var(--av-cyan) !important; box-shadow: none !important; }
+  html body .op2-tab b { font-size: 11px; letter-spacing: 0; }
+  html body .op2-tab.is-active b { color: #06131b; }
+  html body .op2-tab small, html body .op2-version { display: none; }
+  html body .op2-pane { padding: 12px 14px; }
+  html body .op2-row, html body .op2-status { flex-wrap: wrap; }
+  html body .op2-row .op2-btn, html body .op2-status .op2-btn { width: 100% !important; }
+  html body .op2-universe-grid, html body .op2-paces, html body .op2-where { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html body .op2-choices, html body .op2-testers { grid-template-columns: minmax(0, 1fr); }
+  html body .op2-audio { flex-wrap: wrap; }
+  html body .op2-audio .live-audio-options { flex-direction: column; align-items: stretch; width: 100%; flex: 1 1 100%; }
+  html body .op2-foot { position: sticky; bottom: 0; margin-top: auto; background: var(--av-panel); padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); }
+}
+html body #optionsModal:not(#matchModal) .op2 #paceChoices.op2-paces { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; flex-direction: unset !important; gap: 8px !important; }
+html body #optionsModal:not(#matchModal) .op2 #paceChoices .op2-pace { margin: 0 !important; }
+@media (max-width: 760px) { html body #optionsModal:not(#matchModal) .op2 #paceChoices.op2-paces { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+html body #optionsModal:not(#matchModal) .op2 .op2-row.op2-updates { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; text-align: left !important; padding: 12px 14px !important; background: var(--av-rail) !important; }
+html body #optionsModal:not(#matchModal) .op2 .op2-updates .op2-row-copy { align-items: flex-start !important; text-align: left !important; }
+html body #optionsModal:not(#matchModal) .op2 #paceChoices button.op2-pace { background: var(--av-rail) !important; }
+html body #optionsModal:not(#matchModal) .op2 #paceChoices button.op2-pace.selected { background: #16294A !important; }
+@media (max-width: 760px) {
+  html body #optionsModal:not(#matchModal) .op2 button.op2-tab { min-height: 38px !important; height: auto !important; justify-content: center !important; }
+  html body #optionsModal:not(#matchModal):not(#playerCardModal) .op2 .op2-row button.op2-btn,
+  html body #optionsModal:not(#matchModal):not(#playerCardModal) .op2 .op2-status button.op2-btn { flex: 1 1 100%; width: 100% !important; }
+  html body .op2-status .op2-row-copy { flex: 1 1 0; }
+}

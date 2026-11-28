@@ -1325,8 +1325,11 @@ export async function bootEngine({
   };
   if(savedNewGame){
     renderEnvironmentCard();
-    const specialistRows=Object.keys(divisionRules).map(division=>{const divisionClubs=divisionTeams[division],freeClubs=divisionClubs.filter(name=>clubs[name].roster.some(player=>player.setPieceSpecialist==='freeKick'||player.setPieceSpecialist==='both')).length,penaltyClubs=divisionClubs.filter(name=>clubs[name].roster.some(player=>player.setPieceSpecialist==='penalty'||player.setPieceSpecialist==='both')).length;return `<span class="division-stat"><b>Série ${division}</b>${divisionClubs.length} clubes · ${freeClubs} com especialista em faltas · ${penaltyClubs} em pênaltis</span>`;}).join('');
-    $('.new-game-action').insertAdjacentHTML('afterend',`<div class="generated-world-summary"><small>CARREIRA ATUAL</small><span class="career-current"><b class="career-club-name">${userClub}</b><span class="career-division">Série ${userDivision}</span></span><small class="career-manager-line">${careerProfile.managerName}</small><small>UNIVERSO NACIONAL</small>${specialistRows}</div>`);
+    const specialistRows=Object.keys(divisionRules).map(division=>{const divisionClubs=divisionTeams[division],freeClubs=divisionClubs.filter(name=>clubs[name].roster.some(player=>player.setPieceSpecialist==='freeKick'||player.setPieceSpecialist==='both')).length,penaltyClubs=divisionClubs.filter(name=>clubs[name].roster.some(player=>player.setPieceSpecialist==='penalty'||player.setPieceSpecialist==='both')).length;return `<div class="op2-tile"><span>SÉRIE ${division}</span><strong>${divisionClubs.length} clubes</strong><small>${freeClubs} com cobrador de falta · ${penaltyClubs} de pênalti</small></div>`;}).join('');
+    const careerBox=$('#optionsCareerSummary');
+    if(careerBox)careerBox.innerHTML=`<div class="op2-career-crest">${teamCrestHtml(userClub)}</div><div class="op2-row-copy"><span class="op2-career-kicker">CARREIRA ATUAL</span><strong class="career-club-name">${userClub}</strong><small class="career-manager-line">Técnico ${careerProfile.managerName||'—'} · Série ${userDivision} · temporada ${careerSeason}</small></div><span class="op2-chip">SÉRIE ${userDivision}</span>`;
+    const universeBox=$('#optionsUniverse');
+    if(universeBox)universeBox.innerHTML=`<header class="op2-sec"><h3>Universo nacional</h3></header><div class="op2-universe-grid">${specialistRows}</div>`;
   }
   const resolveOpponentClubName=()=>{
     const game=liveMatchGame||nextUserGame;
