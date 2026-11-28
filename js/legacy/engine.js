@@ -6237,6 +6237,7 @@ export async function bootEngine({
       syncUserSquad:()=>{if(clubs[userClub])squad.splice(0,squad.length,...clubs[userClub].roster);syncCareerRosters();},
       structureLevelLabel,
       getStructureLevel,
+      wageMonthly:value=>wageMonthlyFromRound(value,userDivision),
       firstNames,
       lastNames,
       onBudgetChanged:()=>{renderClubBudget();economyUi?.renderOffice?.();},
@@ -9662,6 +9663,17 @@ export async function bootEngine({
       },
       qaBudget:()=>getBalance(clubs[userClub]),
       qaPendingMedical:()=>!!pendingTreatmentDecision,
+      // QA: libera a base com jogadores e relatórios de exemplo.
+      qaUnlockYouth:async(n=9)=>{
+        const ya=await import('../engine/youth-academy.js');
+        const club=clubs[userClub];
+        club.stadiumStructure=Math.max(3,Number(club.stadiumStructure)||0);
+        ya.ensureYouthState(club);club.youthAcademyLevel=2;club.scoutingDeptLevel=1;
+        for(let i=club.youthRoster.length;i<n;i++)club.youthRoster.push(ya.generateYouthPlayer({club,clubName:userClub,division:userDivision,firstNames,lastNames}));
+        ya.syncScoutSlots(club);
+        try{const slot=club.scouts.find(s=>!ya.isScoutLocked(s,careerCalendarDate));if(slot)ya.runScoutSearch(club,{region:'sudeste',scoutSlot:slot.slot,clubName:userClub,careerDate:careerCalendarDate,division:userDivision,firstNames,lastNames});}catch(error){console.warn(error);}
+        return {youth:club.youthRoster.length,reports:club.scoutReports.length,scouts:club.scouts.length};
+      },
       qaFinanceAlert:(stage='charge',cash=-320000,od=2,delinq=0)=>{
         const club=clubs[userClub];club.budget=Number(cash);club.overdraftStreak=od;
         const loan=getBankLoan(club);if(loan)loan.delinquencyStreak=delinq;

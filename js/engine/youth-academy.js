@@ -975,6 +975,15 @@ export function signScoutReport(club, reportId, context = {}) {
   return { ok: true, player, cost: formationCompensation, balance: payment.balance };
 }
 
+/** Custo de formação/assinatura de um relatório (mesma regra de signScoutReport). */
+export function estimateYouthSigningCost(player, division = 'A') {
+  if (!player) return 0;
+  return Math.max(
+    YOUTH_SIGNING_MIN_BY_DIVISION[division] ?? YOUTH_SIGNING_MIN_BY_DIVISION.D,
+    Math.round(estimatePlayerValue(player, division) * YOUTH_SIGNING_SHARE),
+  );
+}
+
 export function dismissScoutReport(club, reportId) {
   ensureYouthState(club);
   const before = club.scoutReports.length;
