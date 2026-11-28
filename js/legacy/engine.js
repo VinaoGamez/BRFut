@@ -10,6 +10,7 @@ import { storage as brfutStorage } from '../core/storage-backend.js';
 import { $, $$, on, onClick, redirectGame, clamp, cleanCareerText } from '../ui/dom.js';
 import { clubLabelHtml, clubCrestTitleHtml } from '../ui/club-label.js';
 import { statCompareRow } from '../feature/shared/stat-compare.js';
+import { installMatchLiveLayout } from '../feature/match-live-layout/index.js';
 import { applyTeamCrestToElement, teamCrestHtml, clubCrestInitials as teamCrestInitials } from '../ui/team-crest.js';
 import { bindBoardRosterHover } from '../ui/board-roster-hover.js';
 import { createHeaderGuideRenderer } from '../ui/header-guide.js';
@@ -6455,25 +6456,43 @@ export async function bootEngine({
   let scheduleLiveMatchPersist=()=>{};
   let flushLiveMatchPersist=()=>null;
   let clearLiveMatchPersist=()=>{};
+  let liveStatsTab='resumo';
   const renderStats = () => {
     recordLiveVolumeSample();
     const {home:h,away:a}=calendarLiveSideStats(),{home:hp,away:ap}=calendarPossessionPair();
     const rows = [['Posse de bola',`${hp}%`,`${ap}%`,'possession'],['Passes','','','group'],['Total de Passes',h.passes,a.passes],['% passes certos',percent(h.accurate,h.passes),percent(a.accurate,a.passes)],['Passes errados',h.passes-h.accurate,a.passes-a.accurate],['Ataque','','','group'],['Finalizações',h.shots,a.shots],['Para Fora',h.off,a.off],['No Gol',h.on,a.on],['Defendidas',h.saved,a.saved],['Pênaltis marcados',h.penalties,a.penalties],['Escanteios',h.corners,a.corners],['Impedimentos',h.offsides,a.offsides],['Defesa','','','group'],['Defesas do Goleiro',h.keeperSaves,a.keeperSaves],['Desarmes',h.tackles,a.tackles],['Faltas Cometidas',h.fouls,a.fouls],['Cartões Amarelos',h.yellow,a.yellow,'yellow'],['Cartões Vermelhos',h.red,a.red,'red']];
-    // Mesmo visual do pós-jogo: barras de comparação, agrupadas lado a lado (sem rolagem).
+    // Mesmo visual do pós-jogo: barras de comparação em abas (Resumo · Passes · Ataque · Defesa), sem rolagem.
     const groups=[];
     let possession='';
+    const byLabel={};
     rows.forEach(r=>{
       if(r[3]==='possession'){possession=statCompareRow([r[0],r[1],r[2],'possession']);return;}
-      if(r[3]==='group'){groups.push({title:r[0],rows:[]});return;}
+      if(r[3]==='group'){groups.push({id:r[0].toLowerCase(),title:r[0],rows:[]});return;}
+      byLabel[r[0]]=r;
       groups.at(-1)?.rows.push(statCompareRow(r));
     });
+    const resumo=['Finalizações','No Gol','Escanteios','Faltas Cometidas','Cartões Amarelos'].map(label=>byLabel[label]).filter(Boolean).map(statCompareRow);
+    groups.unshift({id:'resumo',title:'Resumo',rows:resumo});
+    if(!groups.some(group=>group.id===liveStatsTab))liveStatsTab='resumo';
     const sides=liveMatchGame||nextUserGame;
     const homeName=sides?.home||userClub,awayName=sides?.away||'';
-    $('#stats').innerHTML=`<section class="final-basic pm2-stats is-live"><div class="pm2-cmp-teams"><span>${homeName}</span><span>${awayName}</span></div>${possession}<div class="pm2-live-groups">${groups.map(group=>`<div class="pm2-live-group"><h4>${group.title}</h4>${group.rows.join('')}</div>`).join('')}</div></section>`;
+    const statsEl=$('#stats');
+    statsEl.innerHTML=`<section class="final-basic pm2-stats is-live"><div class="pm2-cmp-teams"><span>${homeName}</span><span>${awayName}</span></div>${possession}<nav class="pm2-live-tabs" role="tablist">${groups.map(group=>`<button type="button" data-live-stats-tab="${group.id}" class="${group.id===liveStatsTab?'is-active':''}">${group.title}</button>`).join('')}</nav><div class="pm2-live-groups">${groups.map(group=>`<div class="pm2-live-group" data-group="${group.id}"${group.id===liveStatsTab?'':' hidden'}><h4>${group.title}</h4>${group.rows.join('')}</div>`).join('')}</div></section>`;
+    if(!statsEl.dataset.tabsBound){
+      statsEl.dataset.tabsBound='1';
+      statsEl.addEventListener('click',event=>{
+        const tab=event.target.closest('[data-live-stats-tab]');
+        if(!tab)return;
+        liveStatsTab=tab.dataset.liveStatsTab;
+        statsEl.querySelectorAll('[data-live-stats-tab]').forEach(btn=>btn.classList.toggle('is-active',btn===tab));
+        statsEl.querySelectorAll('.pm2-live-group').forEach(group=>{group.hidden=group.dataset.group!==liveStatsTab;});
+      });
+    }
     renderLiveOpponent?.();
     matchLiveUi.refreshMatchFeed?.();
     scheduleLiveMatchPersist();
   };
+  installMatchLiveLayout({renderStats:()=>renderStats()});
   tactics=createTacticsFeature({
     $,$$,playerNameCell,
     renderPlayerNameCell:(player,options)=>playerRename.renderNameCell(player,options),

@@ -6730,3 +6730,162 @@ html body #transfersBuyBody .transfers-wage-month { display: block; color: var(-
 html body #table i.champ-v2-crest { flex: 0 0 26px !important; width: 26px !important; height: 28px !important; }
 html body .view#dashboard .hub-standings :is(.mini-table-head, .standing-row) { grid-template-columns: 28px minmax(0, 1fr) 40px 36px !important; }
 html body .view#dashboard .hub-standings :is(.mini-table-head, .standing-row) > span:nth-child(3) { display: none !important; }
+
+/* =====================================================================
+   Partida ao vivo v2 (Revisão 3) — sem caixa rolável.
+   PC: duas colunas (volume + lances | estatísticas) e rodapé fixo.
+   Vestiário (intervalo, pausa técnica, pré-jogo) ocupa o corpo do pop-up.
+   ===================================================================== */
+html:not(.is-mobile) body #matchModal > .modal-card[data-mlv="live"] {
+  width: min(1180px, calc(100vw - 32px)) !important;
+  max-width: none !important;
+  max-height: calc(100vh - 20px) !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.35fr) minmax(340px, 1fr);
+  grid-template-areas:
+    "label label"
+    "head head"
+    "score score"
+    "shoot shoot"
+    "vol side"
+    "tl side"
+    "bar side"
+    "status status"
+    "act act";
+  grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto auto auto;
+  column-gap: 14px;
+  row-gap: 8px;
+  align-content: start;
+}
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > #liveMatchLabel { grid-area: label; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > .live-match-competition-wrap { grid-area: head; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > .score { grid-area: score; margin: 0 !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > #shootoutPanel { grid-area: shoot; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > #liveVolume { grid-area: vol; margin: 0 !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > #timeline { grid-area: tl; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > #mlvTimelineBar { grid-area: bar; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > #matchStatus { grid-area: status; margin: 0 !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > #matchActions { grid-area: act; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > #stats {
+  grid-area: side; display: flex !important; flex-direction: column; margin: 0 !important; min-height: 0; overflow: hidden !important; align-self: stretch;
+}
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > #stats.hidden { display: flex !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] #liveStats,
+html:not(.is-mobile) body #matchModal #mlvTabs { display: none !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"].mlv-full > #liveVolume { display: none !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"].mlv-full { grid-template-areas: "label label" "head head" "score score" "shoot shoot" "tl side" "tl side" "bar side" "status status" "act act"; }
+
+/* Lances: sem barra de rolagem. Normal = 5 mais novos, o mais novo em cima. */
+html body #matchModal [data-mlv="live"] > #timeline {
+  display: flex !important; flex-direction: column-reverse; justify-content: flex-end; gap: 6px;
+  max-height: none !important; height: auto !important; min-height: 0; overflow: hidden !important; margin: 0 !important;
+  padding: 8px !important; background: var(--av-rail) !important;
+}
+html body #matchModal [data-mlv="live"]:not(.mlv-full) > #timeline > *:nth-last-child(n+6) { display: none !important; }
+html body #matchModal [data-mlv="live"].mlv-full > #timeline > .mlv-off { display: none !important; }
+html body #matchModal [data-mlv="live"] > #timeline > * { flex: none; margin: 0 !important; }
+html body #matchModal .mlv-tl-bar { display: flex; align-items: center; gap: 8px; }
+html body #matchModal .mlv-tl-bar span { color: var(--av-muted); font-size: 12px; }
+html body #matchModal .mlv-tl-bar button {
+  min-width: 0 !important; margin: 0 !important; padding: 6px 12px !important; border: 0 !important; border-radius: 0 !important;
+  background: var(--av-panel-hi) !important; color: var(--av-ink) !important; box-shadow: none !important;
+  font: italic 900 12px/1 var(--av-display) !important; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); cursor: pointer;
+}
+html body #matchModal .mlv-tl-bar button:disabled { opacity: .35; cursor: default; }
+html body #matchModal .mlv-tl-bar .mlv-tl-toggle { margin-left: auto !important; color: var(--av-cyan) !important; background: transparent !important; box-shadow: inset 0 0 0 1px var(--av-line) !important; }
+html body #matchModal :not([data-mlv="live"]) > #mlvTimelineBar { display: none !important; }
+html body #matchModal [data-mlv="live"]:not(.mlv-full) .mlv-tl-bar [data-mlv-prev],
+html body #matchModal [data-mlv="live"]:not(.mlv-full) .mlv-tl-bar [data-mlv-next] { display: none !important; }
+
+/* Estatísticas ao vivo em abas (Resumo · Passes · Ataque · Defesa). */
+html body #matchModal .pm2-live-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+html body #matchModal .pm2-live-tabs button {
+  min-width: 0 !important; margin: 0 !important; padding: 7px 14px !important; border: 0 !important; border-radius: 0 !important;
+  background: var(--av-panel-hi) !important; color: var(--av-muted) !important; box-shadow: none !important;
+  font: italic 900 12px/1 var(--av-display) !important; letter-spacing: .04em; text-transform: uppercase;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); cursor: pointer;
+}
+html body #matchModal .pm2-live-tabs button.is-active { background: var(--av-cyan) !important; color: var(--av-night) !important; }
+html body #matchModal .pm2-stats.is-live .pm2-live-groups { display: block !important; }
+html body #matchModal .pm2-stats.is-live .pm2-live-group[hidden] { display: none !important; }
+html body #matchModal .pm2-stats.is-live .pm2-live-group h4 { display: none; }
+html body #matchModal .pm2-stats.is-live .pm2-live-group .stat.pm2-cmp { grid-template-columns: 46px minmax(0, 1fr) 46px !important; }
+html body #matchModal .pm2-stats.is-live .pm2-live-group .pm2-cmp strong { font-size: 16px; }
+html:not(.is-mobile) body #matchModal [data-mlv="live"] > #stats .pm2-stats { flex: 1 1 auto; }
+
+/* Vestiário: o ajuste do time ocupa o corpo; o jogo sai de cena. */
+html:not(.is-mobile) body #matchModal > .modal-card[data-mlv="vest"] {
+  width: min(1180px, calc(100vw - 32px)) !important; max-width: none !important;
+  max-height: calc(100vh - 20px) !important; overflow: hidden !important;
+}
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] > :is(#liveVolume, #timeline, #mlvTimelineBar, #stats, #matchStatus, #matchActions) { display: none !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel { display: flex !important; flex-direction: column; gap: 10px; margin: 6px 0 0 !important; padding-top: 10px !important; min-height: 0; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel > .pause-resume-row { order: 9; display: flex; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--av-line); }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .pause-layout { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) !important; align-items: stretch !important; gap: 14px !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .pause-layout > .pause-controls { grid-column: 1 !important; grid-row: 1 !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .pause-layout > .pause-pitch { grid-column: 2 !important; grid-row: 1 !important; max-height: calc(100vh - 360px); aspect-ratio: auto !important; height: 100%; min-height: 360px; }
+
+html body #matchModal .mlv-vest-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+html body #matchModal .mlv-vest-tabs button {
+  min-width: 0 !important; margin: 0 !important; padding: 9px 16px !important; border: 0 !important; border-radius: 0 !important;
+  background: var(--av-panel-hi) !important; color: var(--av-muted) !important; box-shadow: none !important;
+  font: italic 900 12px/1 var(--av-display) !important; letter-spacing: .05em; text-transform: uppercase;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%); cursor: pointer;
+}
+html body #matchModal .mlv-vest-tabs button.is-active { background: var(--av-gold) !important; color: var(--av-night) !important; }
+html body #matchModal [data-vest-tab] #togglePauseTactics { display: none !important; }
+html body #matchModal [data-vest-tab="subs"] #pauseTacticAdjust { display: none !important; }
+html body #matchModal :is([data-vest-tab="tactic"], [data-vest-tab="formation"]) .substitution-panel { display: none !important; }
+html body #matchModal :is([data-vest-tab="tactic"], [data-vest-tab="formation"]) #pauseTacticAdjust { display: block !important; }
+html body #matchModal [data-vest-tab="tactic"] #pauseFormations { display: none !important; }
+html body #matchModal [data-vest-tab="formation"] #pauseTacticAdjust .tactic-slider { display: none !important; }
+
+/* Celular: abas Lances · Estatísticas (sem empilhar). */
+html.is-mobile body #matchModal .mlv-tabs { display: flex; gap: 6px; margin: 6px 0; }
+html.is-mobile body #matchModal :not([data-mlv="live"]) > #mlvTabs { display: none !important; }
+html.is-mobile body #matchModal .mlv-tabs button {
+  flex: 1 1 0; min-width: 0 !important; margin: 0 !important; padding: 9px 8px !important; border: 0 !important; border-radius: 0 !important;
+  background: var(--av-panel-hi) !important; color: var(--av-muted) !important; box-shadow: none !important;
+  font: italic 900 12px/1 var(--av-display) !important; text-transform: uppercase; clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+}
+html.is-mobile body #matchModal .mlv-tabs button.is-active { background: var(--av-cyan) !important; color: var(--av-night) !important; }
+html.is-mobile body #matchModal [data-mlv="live"][data-mlv-tab="lances"] > #stats { display: none !important; }
+html.is-mobile body #matchModal [data-mlv="live"][data-mlv-tab="stats"] > :is(#timeline, #mlvTimelineBar) { display: none !important; }
+html.is-mobile body #matchModal [data-mlv="live"][data-mlv-tab="stats"] > #stats { display: block !important; }
+html.is-mobile body #matchModal [data-mlv="live"] #liveStats { display: none !important; }
+html.is-mobile body #matchModal [data-mlv="live"] > #mlvTimelineBar { flex-wrap: wrap; }
+html:not(.is-mobile) body #matchModal > .modal-card:is([data-mlv="live"], [data-mlv="vest"]) { overflow-y: auto !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] > #matchActions:not(:has(#finalNext)) { display: none !important; }
+html body #matchModal [data-mlv="live"] > #timeline > p { height: auto !important; max-height: none !important; min-height: 0 !important; overflow: visible !important; }
+html body #matchModal [data-mlv="live"] > #timeline > p:not(.tl-event) { padding: 6px 10px !important; color: var(--av-muted) !important; font-size: 13px !important; }
+/* Vestiário compacto: placar numa linha, sem linhas de contexto. */
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] > #liveMatchLabel,
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .live-match-competition-wrap :is(.live-match-meta, .live-match-venue, #liveMatchVenue, .match-competition-phase),
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .score :is(.live-match-position, .live-scorers) { display: none !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .score { margin: 4px 0 0 !important; padding: 0 !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .score .live-team { flex-direction: row !important; align-items: center; justify-content: center; gap: 10px; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .score .live-team-away { flex-direction: row-reverse !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .score .live-team > i { width: 38px !important; height: 42px !important; margin: 0 !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .score .live-team b { font-size: 20px !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #score { font-size: 34px !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel .pause-heading { display: flex; align-items: baseline; gap: 12px; margin: 0 !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel .pause-heading h2 { font-size: 24px !important; margin: 0 !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel .pause-heading small { display: none !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] .substitution-panel :is(.substitution-row, [class*="sub-row"], tr, li, button) { padding-top: 5px !important; padding-bottom: 5px !important; }
+/* Substituições sem caixa rolável: lista inteira em linhas compactas. */
+html body #matchModal .substitution-player-list { max-height: none !important; overflow: visible !important; }
+html body #matchModal .substitution-panel .substitution-picker button.substitution-player-row { padding: 5px 8px !important; }
+/* Rodapé do vestiário sempre visível (Partidas em andamento · Retomar). */
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel > .pause-resume-row {
+  position: sticky; bottom: -12px; z-index: 5; margin: 0 -18px -12px !important; padding: 10px 18px 12px !important;
+  background: var(--av-panel) !important; box-shadow: 0 -10px 20px #0f1c30;
+}
+html.is-mobile body #matchModal [data-mlv="vest"] #pausePanel > .pause-resume-row {
+  position: sticky; bottom: 0; z-index: 5; background: var(--av-panel) !important; padding: 10px 0 !important;
+}
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel > .pause-resume-row { justify-content: flex-end !important; width: auto !important; }
+html.is-mobile body #matchModal > .modal-card[data-mlv="live"] > #timeline { height: auto !important; max-height: none !important; flex: none !important; overflow: hidden !important; }
+html.is-mobile body #matchModal > .modal-card[data-mlv="vest"] > :is(#liveVolume, #timeline, #mlvTimelineBar, #stats, #matchStatus, #mlvTabs) { display: none !important; }
+html.is-mobile body #matchModal > .modal-card[data-mlv="vest"] > #matchActions:not(:has(#finalNext)) { display: none !important; }
+html.is-mobile body #matchModal [data-mlv="vest"] #pausePanel { display: flex !important; flex-direction: column; } html.is-mobile body #matchModal [data-mlv="vest"] #pausePanel > .pause-resume-row { order: 9; }
