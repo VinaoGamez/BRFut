@@ -5071,8 +5071,35 @@ export async function bootEngine({
       average,
     );
   };
-  const analysisTable=(title,players,{numbered=false,slotOffset=0,clubName=''}={})=>`<section class="analysis-roster"><h3>${title}</h3><div class="analysis-head"><span>JOGADOR</span><span>POS.</span><span>OVR</span><span>MÉDIA</span><span>CANSAÇO</span></div>${players.map((player,index)=>`<div class="analysis-player" data-slot="${slotOffset+index}" tabindex="0">${playerNameCell(player.name,player,{prefix:numbered?(index+1)+'. ': '',openCard:true,clubName})}<span>${player.pos}</span><span>${player.overall}</span><span class="analysis-avg">${playerSeasonAvgLabel(player,clubName)}</span>${fatigueCell(player)}</div>`).join('')}</section>`;
+  const analysisTable=(title,players,{numbered=false,slotOffset=0,clubName=''}={})=>`<section class="analysis-roster"><h3>${title}</h3><div class="analysis-head"><span>JOGADOR</span><span>POS.</span><span>OVR</span><span>MÉDIA</span><span>CANSAÇO</span></div>${players.map((player,index)=>`<div class="analysis-player" data-slot="${slotOffset+index}" tabindex="0">${playerNameCell(player.name,player,{prefix:numbered?(index+1)+'. ': '',openCard:true,clubName})}<span class="analysis-pos"><em class="pos-chip" data-line="${positionLine(player.pos)}">${player.pos}</em></span><span class="analysis-ovr">${player.overall}</span><span class="analysis-avg">${playerSeasonAvgLabel(player,clubName)}</span>${fatigueCell(player)}</div>`).join('')}</section>`;
   const clubManagerName=clubName=>managerRanking.byClub(clubName)?.name||clubs[clubName]?.managerName||(clubName===userClub?careerProfile.managerName:null)||'—';
+  /** Elenco de clube v2: overall, ambiente e técnico na mesma faixa dos chips; abas do elenco. */
+  const appendScoutStrip=({overall,environment,environmentLabel,managerName,managerId=null})=>{
+    const meta=$('#scoutClubMeta .scout-club-meta');
+    if(!meta)return;
+    const envTone=environment>=70?'good':environment>=45?'mid':'low';
+    meta.insertAdjacentHTML('afterbegin',`<span class="scout-meta-chip scout-strip-ovr"><small>OVERALL</small><b>${overall}</b></span><span class="scout-meta-chip scout-strip-env" data-tone="${envTone}"><small>AMBIENTE</small><b>${environmentLabel??`${environment}%`}</b></span>`);
+    meta.insertAdjacentHTML('beforeend',managerId
+      ?`<button type="button" class="scout-meta-chip scout-strip-manager" data-manager="${managerId}" title="Abrir ficha do técnico"><small>TÉCNICO</small><b>${managerName}</b><em>ficha ›</em></button>`
+      :`<span class="scout-meta-chip scout-strip-manager"><small>TÉCNICO</small><b>${managerName}</b></span>`);
+    const roster=$('#teamScoutModal .scout-roster');
+    if(roster&&!roster.querySelector('.scout-tabs')){
+      roster.insertAdjacentHTML('afterbegin','<div class="scout-tabs" role="tablist"><button type="button" data-scout-tab="starters" class="is-active">TITULARES</button><button type="button" data-scout-tab="bench">RESERVAS</button><button type="button" data-scout-tab="all">TODOS</button></div>');
+      roster.addEventListener('click',event=>{
+        const tab=event.target.closest('[data-scout-tab]');
+        if(!tab)return;
+        roster.dataset.scoutView=tab.dataset.scoutTab;
+        roster.querySelectorAll('[data-scout-tab]').forEach(btn=>btn.classList.toggle('is-active',btn===tab));
+      });
+    }
+    if(roster){
+      roster.dataset.scoutView='starters';
+      roster.querySelectorAll('[data-scout-tab]').forEach(btn=>btn.classList.toggle('is-active',btn.dataset.scoutTab==='starters'));
+      const allBtn=roster.querySelector('[data-scout-tab="all"]');
+      const total=roster.querySelectorAll('.analysis-player').length;
+      if(allBtn)allBtn.textContent=total?`TODOS (${total})`:'TODOS';
+    }
+  };
   let unbindScoutBoardHover=null;
   const scoutBoardPlayerLabel=name=>{
     const labelOf=tactics?.boardPlayerLabel||(n=>{
@@ -5123,6 +5150,7 @@ export async function bootEngine({
     $('#scoutStarters').innerHTML=analysisTable('TITULARES',roster.slice(0,11),{numbered:true,slotOffset:0,clubName:name});
     $('#scoutBench').innerHTML=analysisTable('RESERVAS',roster.slice(11),{slotOffset:11,clubName:name});
     renderScoutPitchBoard(roster.slice(0,11),club.formation||'4-3-3');
+    appendScoutStrip({overall,environment:Number(club.environment)||0,managerName:clubManagerName(name),managerId:managerRanking.byClub(name)?.id||null});
     $('#teamScoutModal').classList.remove('hidden');
   };
   openNationalTeamScout=async code=>{
@@ -5168,6 +5196,7 @@ export async function bootEngine({
       $('#scoutStarters').innerHTML=analysisTable('TITULARES',displayRoster.slice(0,11),{numbered:true,slotOffset:0,clubName:meta.name});
       $('#scoutBench').innerHTML=analysisTable('RESERVAS',displayRoster.slice(11),{slotOffset:11,clubName:meta.name});
       renderScoutPitchBoard(displayRoster.slice(0,11),ntFormation);
+      appendScoutStrip({overall,environment:Number(teamPower)||0,environmentLabel:String(teamPower),managerName:'Convite técnico · Copa do Mundo'});
       const scoutRoster=$('#teamScoutModal .scout-roster');
       scoutRoster?.classList.remove('scout-roster-disabled');
       $('#teamScoutModal').classList.remove('hidden');
@@ -6749,6 +6778,56 @@ export async function bootEngine({
     KNOCKOUT_SCHEDULE,
     getSerieDGroups:()=>serieDGroups,
     resolveNationalTeam,
+    // Tabela de jogos v2: competições do clube, contexto da partida e classificação ao lado.
+    userStateGroupIndex:compId=>{
+      try{const division=stateLeagueEngine.getDivisionForBrowse(compId,userClub);return Math.max(0,stateLeagueClubGroupIndex(division,userClub)??0);}catch{return 0;}
+    },
+    getUserCompetitionTabs:()=>{
+      const tabs=[];
+      if(worldCupCompetition&&userNationalTeamName)tabs.push({id:'CMU',label:'COPA DO MUNDO',kind:'gold'});
+      try{
+        if(FEATURES.stateLeague&&stateLeagueEngine){
+          const own=stateLeagueEngine.getBrowseOptions(userClub).find(option=>option.isUser);
+          if(own)tabs.push({id:own.id,label:'ESTADUAL',kind:'est'});
+        }
+      }catch{/* estadual indisponível */}
+      if(userDivision)tabs.push({id:userDivision,label:`SÉRIE ${userDivision}`,kind:'serie'});
+      return tabs;
+    },
+    roundContextForGame:game=>{
+      if(!game)return null;
+      try{
+        if(isStateLeagueGame(game)){
+          const compId=stateCompetitionKey(game.stateUf,game.stateTier||1);
+          const division=stateLeagueEngine.getDivisionForBrowse(compId,userClub);
+          let group=game.groupIndex;
+          if(group==null)group=stateLeagueClubGroupIndex(division,userClub);
+          return{division:compId,round:Number(game.round)||stateLeagueEngine.getCurrentRound(compId,userClub),group:Math.max(0,group??0)};
+        }
+      }catch{/* cai no padrão */}
+      return null;
+    },
+    getLiveMatchResult:()=>{
+      if(!matchFinished||!liveMatchGame)return null;
+      return{home:liveMatchGame.home,away:liveMatchGame.away,homeGoals:home,awayGoals:away,penalties:liveMatchGame.shootoutPenalties||null};
+    },
+    getRoundStandings:(division,{group=0,round=1}={})=>{
+      try{
+        if(isStateChampionshipDivision(division)){
+          const div=stateLeagueEngine.getDivisionForBrowse(division,userClub);
+          const groups=Array.isArray(div?.standings)?div.standings.length:1;
+          const rows=stateGroupRows(division,Math.min(group,Math.max(0,groups-1)));
+          return{title:groups>1?`CLASSIFICAÇÃO · GRUPO ${String.fromCharCode(65+Math.min(group,groups-1))}`:'CLASSIFICAÇÃO',rows};
+        }
+        if(division==='D'&&round<=10)return{title:`CLASSIFICAÇÃO · GRUPO A${group+1}`,rows:seriesDGroupRows(group)};
+        if(['A','B','C','D'].includes(division)){
+          const source=division===userDivision?leagueData:(nationalCompetitions[division]?.standings||[]);
+          const rows=[...source].sort((a,b)=>(b.points||0)-(a.points||0)||(b.wins||0)-(a.wins||0)||(b.goalDiff||0)-(a.goalDiff||0));
+          return{title:`CLASSIFICAÇÃO · SÉRIE ${division}`,rows};
+        }
+      }catch(error){console.warn('[brfut] classificação da rodada',error);}
+      return null;
+    },
   });
   openRoundResults=roundResultsBrowser.openRoundResults;
   const renderRoundResultsBrowser=roundResultsBrowser.renderRoundResultsBrowser;

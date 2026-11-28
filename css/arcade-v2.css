@@ -6114,3 +6114,416 @@ html body #optionsModal .pace-choice:is(.active, .selected, [aria-pressed="true"
 html body #optionsModal .pace-choice:is(.active, .selected, [aria-pressed="true"]) b { color: var(--av-lime) !important; }
 html body #optionsModal .option-section > :last-child { margin-top: auto; }
 html body #matchModal .live-team b { color: var(--av-ink) !important; }
+
+/* =====================================================================
+   Tabela de jogos v2 — abas das competições do clube, resultados com
+   escudos e classificação ao lado (mesma altura).
+   ===================================================================== */
+html body #roundResultsModal > .modal-card.round-results-modal { width: min(1040px, calc(100vw - 32px)) !important; }
+html body #roundResultsModal #roundResultsMeta { display: none !important; }
+html body #roundResultsModal .round-results-toolbar {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 12px !important;
+}
+html body #roundResultsModal .round-division-tabs { display: flex !important; flex-wrap: wrap; gap: 6px; flex: 1 1 auto; }
+html body #roundResultsModal .round-division-tabs button {
+  --k: var(--av-cyan);
+  min-height: 32px;
+  padding: 7px 16px !important;
+  border: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-muted) !important;
+  font: italic 900 12px var(--av-display) !important;
+  letter-spacing: .05em;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  box-shadow: none !important;
+}
+html body #roundResultsModal .round-division-tabs button[data-comp-kind="est"] { --k: var(--av-green); }
+html body #roundResultsModal .round-division-tabs button[data-comp-kind="gold"] { --k: var(--av-gold); }
+html body #roundResultsModal .round-division-tabs button.active { background: var(--k) !important; color: var(--av-night) !important; }
+html body #roundResultsModal .round-division-tabs-locked { color: var(--av-ink); font: italic 900 14px var(--av-display); }
+html body #roundResultsModal .round-context-nav {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+}
+html body #roundResultsModal .round-format { color: var(--av-muted) !important; font: italic 800 11px var(--av-display) !important; letter-spacing: .08em; }
+html body #roundResultsModal :is(.round-selector, .round-group-nav) { display: flex; align-items: center; gap: 6px; }
+html body #roundResultsModal :is(.round-selector, .round-group-nav) strong { font: italic 900 13px var(--av-display); padding: 0 4px; }
+html body #roundResultsModal :is(.round-selector, .round-group-nav) button {
+  width: 30px; height: 30px; min-width: 0; padding: 0 !important;
+  border: 0 !important; background: var(--av-panel-hi) !important; color: var(--av-ink) !important;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+html body #roundResultsModal .round-results-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+html body #roundResultsModal .round-results-body:has(> .round-standings[hidden]) { grid-template-columns: minmax(0, 1fr); }
+html body #roundResultsModal .round-games {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 0 !important; border: 0 !important; background: none !important;
+}
+html body #roundResultsModal .round-games-head { display: none !important; }
+html body #roundResultsModal .round-game-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr) !important;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 12px !important;
+  border: 0 !important;
+  background: var(--av-rail) !important;
+  font-size: 13px;
+}
+html body #roundResultsModal .round-game-row.user-game { background: #16301d !important; box-shadow: inset 3px 0 var(--av-lime); }
+html body #roundResultsModal .round-game-row > span { display: flex; align-items: center; gap: 8px; min-width: 0; }
+html body #roundResultsModal .round-game-row > .rg-home { justify-content: flex-end; text-align: right; }
+html body #roundResultsModal .round-game-row b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--av-ink) !important; font-weight: 700; }
+html body #roundResultsModal .round-game-row[data-win="home"] .rg-away b,
+html body #roundResultsModal .round-game-row[data-win="away"] .rg-home b { color: var(--av-muted) !important; font-weight: 600; }
+html body #roundResultsModal .round-game-row > strong { text-align: center; color: var(--av-ink) !important; font: italic 900 17px var(--av-display) !important; white-space: nowrap; }
+html body #roundResultsModal .round-game-row.scheduled > strong { color: var(--av-muted) !important; font-size: 13px !important; }
+html body #roundResultsModal .user-game-tag {
+  flex: none; padding: 2px 6px !important; border: 0 !important; border-radius: 0 !important;
+  background: var(--av-lime) !important; color: var(--av-night) !important;
+  font: italic 900 9px var(--av-display) !important;
+}
+html body :is(#roundResultsModal, .round-standings) :is(i.round-crest, .round-crest) {
+  flex: none; width: 22px !important; height: 24px !important; min-width: 0 !important;
+  margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important;
+}
+html body #roundResultsModal .round-crest :is(img, svg) { width: 100% !important; height: 100% !important; }
+html body #roundResultsModal .round-standings {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 12px !important; background: var(--av-rail) !important;
+}
+html body #roundResultsModal .round-standings[hidden] { display: none !important; }
+html body #roundResultsModal .round-standings-title {
+  margin: 0 0 4px !important; color: var(--av-cyan) !important;
+  font: italic 800 11px var(--av-display) !important; letter-spacing: .12em !important;
+}
+html body #roundResultsModal :is(.round-standings-head, .round-standings-row) {
+  display: grid; grid-template-columns: 20px 22px minmax(0, 1fr) 34px 30px; gap: 8px; align-items: center; padding: 0 8px;
+}
+html body #roundResultsModal .round-standings-head { color: var(--av-muted); font: italic 800 10px var(--av-display); letter-spacing: .08em; }
+html body #roundResultsModal .round-standings-head > span:nth-last-child(-n+2) { text-align: right; }
+html body #roundResultsModal .round-standings-row { min-height: 30px; background: var(--av-panel); font-size: 12px; }
+html body #roundResultsModal .round-standings-row.is-user { background: #16301d; box-shadow: inset 3px 0 var(--av-lime); }
+html body #roundResultsModal .round-standings-row > span { color: var(--av-muted); }
+html body #roundResultsModal .round-standings-row > span:nth-last-child(2), html body #roundResultsModal .round-standings-row > strong { text-align: right; }
+html body #roundResultsModal .round-standings-row b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; color: var(--av-ink) !important; }
+html body #roundResultsModal .round-standings-row > strong { font: italic 900 14px var(--av-display); }
+html.is-mobile body #roundResultsModal .round-results-body { grid-template-columns: minmax(0, 1fr); }
+html.is-mobile body #roundResultsModal .round-game-row { grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr) !important; padding: 0 8px !important; gap: 6px; font-size: 12px; }
+html.is-mobile body #roundResultsModal .round-game-row .round-crest { display: none !important; }
+html.is-mobile body #roundResultsModal .user-game-tag { display: none; }
+html body #roundResultsModal .round-format[hidden] { display: none !important; }
+html body #roundResultsModal .round-games-note { margin: 4px 0 0 !important; color: var(--av-muted) !important; font-size: 12px !important; }
+
+/* =====================================================================
+   Notas v2 (relatório da partida) — cabeçalho curto, notas coloridas.
+   ===================================================================== */
+html body #calendarMatchReportModal > .modal-card.match-report-modal {
+  width: min(1000px, calc(100vw - 32px)) !important;
+  --mv2-accent: var(--av-gold);
+}
+html body #calendarMatchReportModal .mr2-head {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 14px !important;
+  padding: 0 44px 14px 0 !important;
+  border-bottom: 1px solid var(--av-line);
+  text-align: left !important;
+}
+html body #calendarMatchReportModal .mr2-head .live-match-competition-wrap { margin: 0 !important; }
+html body #calendarMatchReportModal .mr2-score { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; }
+html body #calendarMatchReportModal .mr2-team { display: flex; align-items: center; gap: 10px; min-width: 0; }
+html body #calendarMatchReportModal .mr2-home { justify-content: flex-end; }
+html body #calendarMatchReportModal .mr2-team b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: italic 900 16px var(--av-display); color: var(--av-ink); }
+html body #calendarMatchReportModal .mr2-team :is(i, .crest) { width: 30px !important; height: 33px !important; min-width: 0 !important; flex: none; }
+html body #calendarMatchReportModal .mr2-score > strong { font: italic 900 28px var(--av-display); color: var(--av-ink); white-space: nowrap; }
+html body #calendarMatchReportModal .mr2-meta { margin: 0 !important; color: var(--av-muted) !important; font-size: 11px !important; white-space: nowrap; }
+html body #calendarMatchReportModal .mr2-meta b { color: var(--av-ink); font: italic 800 11px var(--av-display); letter-spacing: .1em; }
+html body #calendarMatchReportModal :is(.match-report-ratings, .match-report-statistics) {
+  border: 0 !important; border-radius: 0 !important; background: none !important; padding: 0 !important;
+}
+html body #calendarMatchReportModal :is(.match-report-ratings, .match-report-statistics) > h3 {
+  display: inline-block; margin: 0 12px 10px 0 !important; padding: 0 !important; border: 0 !important; background: none !important;
+  color: var(--av-cyan) !important; font: italic 800 11px var(--av-display) !important; letter-spacing: .12em !important; text-align: left !important;
+}
+html body #calendarMatchReportModal .mr2-legend { display: inline-flex; flex-wrap: wrap; gap: 12px; vertical-align: middle; margin-bottom: 10px; }
+html body #calendarMatchReportModal .mr2-legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--av-muted); font-size: 11px; }
+html body #calendarMatchReportModal .match-report-ratings-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 16px !important; }
+html body #calendarMatchReportModal .match-report-ratings-side { border: 0 !important; background: none !important; padding: 0 !important; }
+html body #calendarMatchReportModal .match-report-ratings-side > b { display: none !important; }
+html body #calendarMatchReportModal .mr2-side-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+html body #calendarMatchReportModal .mr2-side-head b { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: italic 900 16px var(--av-display); color: var(--av-ink); }
+html body #calendarMatchReportModal .mr2-side-head small { color: var(--av-muted); font-size: 12px; }
+html body #calendarMatchReportModal :is(i.mr2-crest, .mr2-crest) { width: 26px !important; height: 29px !important; min-width: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; flex: none; }
+html body #calendarMatchReportModal .match-report-ratings-side ul { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+html body #calendarMatchReportModal .match-report-ratings-side li {
+  display: grid !important;
+  grid-template-columns: 40px minmax(0, 1fr) auto !important;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 10px !important;
+  border: 0 !important;
+  background: var(--av-rail) !important;
+  font-size: 13px;
+}
+html body #calendarMatchReportModal .match-report-ratings-side li.match-report-best { background: #1a2e1a !important; box-shadow: inset 3px 0 var(--av-gold); }
+html body #calendarMatchReportModal .match-report-pos.pos-chip { justify-self: start; min-width: 32px; text-align: center; }
+html body #calendarMatchReportModal .match-report-player { display: flex; align-items: center; gap: 6px; min-width: 0; }
+html body #calendarMatchReportModal .match-report-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; color: var(--av-ink) !important; }
+html body #calendarMatchReportModal .match-report-rating {
+  display: inline-block;
+  min-width: 38px;
+  padding: 3px 6px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  text-align: center;
+  font: italic 900 13px var(--av-display) !important;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  box-shadow: none !important;
+}
+html body #calendarMatchReportModal .match-report-rating[data-tier="top"] { background: var(--av-lime) !important; color: var(--av-night) !important; }
+html body #calendarMatchReportModal .match-report-rating[data-tier="good"] { background: var(--av-cyan) !important; color: var(--av-night) !important; }
+html body #calendarMatchReportModal .match-report-rating[data-tier="avg"] { background: var(--av-panel-hi) !important; color: var(--av-ink) !important; }
+html body #calendarMatchReportModal .match-report-rating[data-tier="low"] { background: var(--av-panel-hi) !important; color: var(--av-orange) !important; }
+html body #calendarMatchReportModal .match-report-stat-row {
+  border: 0 !important; border-bottom: 1px solid var(--av-line) !important; background: none !important;
+}
+html body #calendarMatchReportModal .match-report-stat-row strong { font: italic 900 14px var(--av-display); }
+html.is-mobile body #calendarMatchReportModal .mr2-head { grid-template-columns: minmax(0, 1fr); padding-right: 40px !important; gap: 8px; }
+html.is-mobile body #calendarMatchReportModal .match-report-ratings-grid { grid-template-columns: minmax(0, 1fr) !important; }
+html.is-mobile body #calendarMatchReportModal .mr2-meta { white-space: normal; }
+html body #calendarMatchReportModal > .modal-card.match-report-modal { max-width: min(1000px, calc(100vw - 32px)) !important; text-align: left !important; }
+html.is-mobile body #calendarMatchReportModal > .modal-card.match-report-modal { max-width: 100% !important; width: 100% !important; }
+
+/* =====================================================================
+   Elenco de um clube v2 (janela do olheiro).
+   ===================================================================== */
+html body #teamScoutModal > .modal-card.scout-modal { width: min(1080px, calc(100vw - 32px)) !important; }
+html body #teamScoutModal .scout-title-row { display: flex; align-items: center; gap: 12px; padding-right: 44px; }
+html body #teamScoutModal #scoutClubName { flex: 1; margin: 0 !important; font: italic 900 28px/1.15 var(--av-display) !important; }
+html body #teamScoutModal .scout-history-btn {
+  border: 0 !important; background: var(--av-panel-hi) !important; color: var(--av-cyan) !important; box-shadow: none !important;
+  font: italic 900 12px var(--av-display) !important; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); padding: 9px 16px !important;
+}
+html body #teamScoutModal .scout-club-meta {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) 1.4fr;
+  gap: 8px !important;
+  margin: 12px 0 14px !important;
+}
+html body #teamScoutModal .scout-meta-chip {
+  display: flex !important; flex-direction: column; justify-content: center; gap: 2px; min-width: 0;
+  padding: 9px 12px !important; border: 0 !important; border-radius: 0 !important;
+  background: var(--av-rail) !important; box-shadow: none !important; clip-path: none !important; text-align: left;
+}
+html body #teamScoutModal .scout-meta-chip small { color: var(--av-muted) !important; font: italic 800 10px var(--av-display) !important; letter-spacing: .1em; }
+html body #teamScoutModal .scout-meta-chip b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--av-ink) !important; font: italic 900 17px/1.15 var(--av-display) !important; }
+html body #teamScoutModal .scout-strip-ovr b { color: var(--av-lime) !important; font-size: 20px !important; }
+html body #teamScoutModal .scout-strip-env[data-tone="good"] b { color: var(--av-green) !important; font-size: 20px !important; }
+html body #teamScoutModal .scout-strip-env[data-tone="mid"] b { color: var(--av-orange) !important; font-size: 20px !important; }
+html body #teamScoutModal .scout-strip-env[data-tone="low"] b { color: var(--av-red) !important; font-size: 20px !important; }
+html body #teamScoutModal .scout-strip-manager { box-shadow: inset 3px 0 var(--av-gold) !important; cursor: default; }
+html body #teamScoutModal button.scout-strip-manager { cursor: pointer; }
+html body #teamScoutModal button.scout-strip-manager:hover { background: var(--av-panel-hi) !important; }
+html body #teamScoutModal .scout-strip-manager em { font-style: normal; font-size: 11px; color: var(--av-cyan); }
+/* Técnico, overall e ambiente agora ficam na faixa do topo. */
+html body #teamScoutModal #scoutManager,
+html body #teamScoutModal #scoutSummary .summary-top { display: none !important; }
+html body #teamScoutModal .scout-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+}
+html body #teamScoutModal .scout-roster {
+  display: flex; flex-direction: column; gap: 6px;
+  border: 0 !important; border-radius: 0 !important; background: none !important; padding: 0 !important;
+}
+html body #teamScoutModal .scout-roster > h3,
+html body #teamScoutModal .scout-roster .analysis-roster > h3 { display: none !important; }
+html body #teamScoutModal .scout-tabs { display: flex; gap: 6px; }
+html body #teamScoutModal .scout-tabs button {
+  border: 0 !important; background: var(--av-panel-hi) !important; color: var(--av-muted) !important; box-shadow: none !important;
+  font: italic 900 11px var(--av-display) !important; letter-spacing: .05em; padding: 7px 14px !important;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+}
+html body #teamScoutModal .scout-tabs button.is-active { background: var(--av-cyan) !important; color: var(--av-night) !important; }
+html body #teamScoutModal .scout-roster[data-scout-view="starters"] #scoutBench,
+html body #teamScoutModal .scout-roster[data-scout-view="bench"] #scoutStarters { display: none !important; }
+html body #teamScoutModal .analysis-roster { border: 0 !important; background: none !important; padding: 0 !important; }
+html body #teamScoutModal .analysis-head,
+html body #teamScoutModal .analysis-player {
+  grid-template-columns: minmax(0, 1fr) 46px 40px 46px 96px !important;
+  gap: 8px !important;
+  align-items: center;
+}
+html body #teamScoutModal .analysis-head {
+  padding: 4px 10px !important; border: 0 !important; background: none !important;
+  color: var(--av-muted) !important; font: italic 800 10px var(--av-display) !important; letter-spacing: .1em;
+}
+html body #teamScoutModal .analysis-player {
+  min-height: 34px; margin-bottom: 4px; padding: 0 10px !important;
+  border: 0 !important; background: var(--av-rail) !important; font-size: 13px;
+}
+html body #teamScoutModal .analysis-player:hover { background: var(--av-panel-hi) !important; }
+html body #teamScoutModal .analysis-ovr { font: italic 900 14px var(--av-display); }
+html body #teamScoutModal .analysis-pos .pos-chip { font-size: 10px; }
+html body #teamScoutModal .scout-side { display: flex; flex-direction: column; gap: 10px; }
+html body #teamScoutModal .leader-table {
+  border: 0 !important; border-radius: 0 !important; background: var(--av-rail) !important; padding: 12px !important;
+}
+html body #teamScoutModal .leader-table > small {
+  color: var(--av-cyan) !important; font: italic 800 11px var(--av-display) !important; letter-spacing: .12em;
+}
+html body #teamScoutModal .leader-table b { font: italic 800 14px var(--av-display); }
+html.is-mobile body #teamScoutModal .scout-club-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html.is-mobile body #teamScoutModal .scout-strip-manager { grid-column: 1 / -1; }
+html.is-mobile body #teamScoutModal .scout-layout { grid-template-columns: minmax(0, 1fr) !important; }
+html.is-mobile body #teamScoutModal .analysis-head,
+html.is-mobile body #teamScoutModal .analysis-player { grid-template-columns: minmax(0, 1fr) 40px 32px 36px 60px !important; gap: 6px !important; }
+html body #teamScoutModal #scoutClubName * { font-family: var(--av-display) !important; font-style: italic !important; font-weight: 900 !important; }
+html body #teamScoutModal .scout-side .scout-pitch {
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  aspect-ratio: 68 / 72 !important;
+  margin: 0 !important;
+}
+html body #teamScoutModal .scout-side { width: auto !important; min-width: 0; }
+html body #teamScoutModal .scout-side .scout-pitch { aspect-ratio: 68 / 92 !important; max-height: 470px; }
+html.is-mobile body #teamScoutModal .scout-title-row { flex-wrap: wrap; }
+html.is-mobile body #teamScoutModal #scoutClubName { flex: 1 1 100%; font-size: 22px !important; }
+html.is-mobile body #teamScoutModal .scout-side .scout-pitch { max-height: none; }
+
+/* =====================================================================
+   Mensagens v2 — lista com prévia + painel de leitura (PC); filtros com
+   contagem; leitura com ação ligada à mensagem.
+   ===================================================================== */
+html body #messages .message-filter-count {
+  display: inline-block; min-width: 18px; margin-left: 4px; padding: 0 5px;
+  background: #0000002e; font-style: normal; text-align: center;
+}
+html body #messages .messages-v2-body { display: block; }
+html:not(.is-mobile) body #messages .messages-v2-body {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  height: max(460px, calc(100vh - 330px));
+}
+html:not(.is-mobile) body #messages .messages-v2-body > .messages-list { min-height: 0; overflow-y: auto; padding-right: 4px; }
+html body #messages .message-item {
+  display: grid !important;
+  grid-template-columns: 8px minmax(0, 1fr) auto !important;
+  gap: 10px !important;
+  align-items: start;
+}
+html body #messages .message-item-dot { width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: transparent; }
+html body #messages .message-item.unread .message-item-dot { background: var(--av-lime); }
+html body #messages .message-item.message-action-required .message-item-dot { background: var(--av-orange); }
+html body #messages .message-item-preview {
+  display: block; margin-top: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  color: var(--av-muted); font-size: 12px; font-weight: 500;
+}
+html body #messages .message-item.is-selected { background: var(--av-panel-hi) !important; box-shadow: inset 3px 0 var(--av-cyan) !important; }
+html body #messages .messages-reader-pane { display: none; }
+html:not(.is-mobile) body #messages .messages-reader-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: linear-gradient(225deg, transparent 14px, var(--av-panel) 14px);
+  box-shadow: inset 0 3px var(--av-cyan);
+}
+html body #messages .messages-reader-empty {
+  margin: auto; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--av-muted); text-align: center;
+}
+html body #messages .messages-reader-empty strong { font: italic 900 20px var(--av-display); color: var(--av-ink); }
+html body #messages .messages-reader-pane.has-message .messages-reader-empty { display: none; }
+html body #messages .messages-reader-pane:not(.has-message) > .message-reader-card { display: none !important; }
+/* Cartão de leitura dentro do painel: sem moldura de pop-up. */
+html body #messages .messages-reader-pane > .message-reader-card {
+  position: static !important;
+  display: flex !important;
+  flex-direction: column;
+  gap: 12px;
+  width: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  height: 100%;
+  margin: 0 !important;
+  padding: 18px 20px !important;
+  overflow: auto !important;
+  background: none !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+html body #messages .messages-reader-pane > .message-reader-card::after,
+html body #messages .messages-reader-pane > .message-reader-card::before,
+html body #messages .messages-reader-pane > .message-reader-card > .close { display: none !important; }
+html body #messages .messages-reader-pane #messageReaderClose { display: none !important; }
+html body .message-reader-card .message-reader-head {
+  display: flex !important; flex-direction: column; align-items: flex-start !important; gap: 4px !important;
+  padding: 0 40px 10px 0 !important; border: 0 !important; border-bottom: 1px solid var(--av-line) !important; background: none !important;
+  text-align: left !important;
+}
+html body .message-reader-card #messageReaderMeta { display: flex; flex-wrap: wrap; gap: 8px; color: var(--av-cyan) !important; font: italic 800 11px var(--av-display) !important; letter-spacing: .1em; }
+html body .message-reader-card #messageReaderTitle { font-size: 26px !important; white-space: normal !important; text-align: left !important; }
+html body .message-reader-card #messageReaderTime { color: var(--av-muted) !important; font-size: 12px !important; }
+html body .message-reader-card .message-reader-body { flex: 0 0 auto; padding: 14px !important; font-size: 14px; line-height: 1.55; color: #c9d6e8 !important; }
+html body .message-reader-links { display: flex; flex-wrap: wrap; gap: 8px; }
+html body .message-reader-links[hidden] { display: none; }
+html body #messages .messages-reader-pane .message-reader-actions { margin-top: auto !important; border-top: 1px solid var(--av-line) !important; padding-top: 12px !important; }
+html body .message-reader-card > .modal-card { margin: 0; }
+html:not(.is-mobile) body #messageReaderModal > .message-reader-card { width: min(640px, calc(100vw - 32px)) !important; }
+html body .message-reader-card #messageReaderTitle {
+  height: auto !important; max-height: none !important; min-height: 0 !important;
+  overflow: visible !important; line-height: 1.1 !important; margin: 2px 0 0 !important;
+  grid-column: auto !important; grid-row: auto !important; transform: none !important;
+}
+html body .message-reader-card .message-reader-head > * { position: static !important; transform: none !important; }
+html body .message-reader-card .message-reader-body { border: 0 !important; border-radius: 0 !important; background: var(--av-rail) !important; }
+html body .message-reader-links .mv2-btn {
+  min-height: 38px; padding: 10px 18px !important; border: 0 !important; border-radius: 0 !important;
+  font: italic 900 12px/1 var(--av-display) !important; letter-spacing: .05em !important;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%) !important;
+}
+html body .message-reader-links .mv2-btn.is-primary {
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important;
+  color: var(--av-night) !important; box-shadow: none !important;
+}
+html body .message-reader-links .mv2-btn.is-ghost { background: var(--av-panel-hi) !important; color: var(--av-cyan) !important; box-shadow: none !important; }
+/* Ações escondidas continuam escondidas (a regra do celular forçava display:flex). */
+html body .modal .modal-card :is(footer, [class*="actions"]).hidden,
+html.is-mobile body .modal:not(#matchModal):not(#playerCardModal) .modal-card :is(footer, [class*="actions"]).hidden { display: none !important; }
+html body .message-reader-card .message-reader-head.message-reader-head { display: flex !important; flex-direction: column !important; }
+html body .message-reader-card #messageReaderTitle {
+  font-family: var(--av-display) !important; font-style: italic !important; font-weight: 900 !important; letter-spacing: 0 !important; color: var(--av-ink) !important;
+}
+html body .message-reader-card #messageReaderTime { order: 3; }
+html body #messages .messages-reader-pane .message-reader-actions { display: flex !important; justify-content: space-between; gap: 8px; }
+html body #messages .messages-reader-pane .message-reader-actions button {
+  min-height: 36px; padding: 8px 16px !important; border: 0 !important; border-radius: 0 !important;
+  background: var(--av-panel-hi) !important; color: var(--av-cyan) !important; box-shadow: none !important;
+  font: italic 900 12px var(--av-display) !important; clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+}
+html body #messages .messages-reader-pane .message-reader-actions button:disabled { opacity: .35; }
+html body .message-reader-card .message-reader-head > * { flex: none !important; }
+html body .message-reader-card #messageReaderTitle { font-size: 26px !important; line-height: 1.15 !important; padding: 0 !important; }

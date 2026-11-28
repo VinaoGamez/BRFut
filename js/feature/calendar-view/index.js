@@ -2,7 +2,8 @@ import { MODULE_VERSIONS, SAVE_KEYS } from '../../core/constants.js';
 import { clamp } from '../../ui/dom.js';
 import { competitionBadgeMarkup, resolveCompetitionBadge } from '../../ui/competition-badge.js';
 import { crestWithHumanHtml } from '../../ui/human-badge.js';
-import { teamCrestWithHumanHtml } from '../../ui/team-crest.js';
+import { teamCrestWithHumanHtml, teamCrestHtml } from '../../ui/team-crest.js';
+import { positionLine } from '../shared/player-cells.js';
 import { formatMatchRating as defaultFormatMatchRating } from '../../engine/player-match-stats.js';
 import { formatMatchMinuteLabel } from '../../engine/match-clock.js';
 import { isDateInTransferWindow, getTransferWindowPhase } from '../../engine/transfers.js';
@@ -463,9 +464,19 @@ export function createCalendarViewFeature(deps) {
         );
       });
 
+  /** Notas v2: faixa da nota (destaque, bom, regular, abaixo). */
+  const ratingTier = value => {
+    const n = Number(value) || 0;
+    if (n >= 7.5) return 'top';
+    if (n >= 6.5) return 'good';
+    if (n >= 6) return 'avg';
+    return 'low';
+  };
   const ratingsBlock = (clubName, players, motmKey, tipIndex) => {
     const list = sortRatingsList(players);
     if (!list.length) return '';
+    const played = list.filter(sheet => Number(sheet.rating) > 0);
+    const avg = played.length ? played.reduce((sum, sheet) => sum + Number(sheet.rating || 0), 0) / played.length : 0;
     const rows = list
       .map(sheet => {
         const pos = String(sheet.pos || sheet.role || '—').toUpperCase().slice(0, 3);
@@ -476,10 +487,10 @@ export function createCalendarViewFeature(deps) {
         ]
           .filter(Boolean)
           .join(' ');
-        return `<li class="${isBest ? 'match-report-best' : ''}"><span class="match-report-pos">${pos}</span><span class="match-report-player${isBest ? ' is-best' : ''}"><span class="match-report-name">${sheet.name}</span>${playerEventIcons(sheet, tipIndex)}</span><strong class="match-report-rating ${ratingClass}">${formatMatchRating(sheet.rating)}</strong></li>`;
+        return `<li class="${isBest ? 'match-report-best' : ''}"><span class="match-report-pos pos-chip" data-line="${positionLine(pos)}">${pos}</span><span class="match-report-player${isBest ? ' is-best' : ''}"><span class="match-report-name">${sheet.name}</span>${playerEventIcons(sheet, tipIndex)}</span><strong class="match-report-rating ${ratingClass}" data-tier="${ratingTier(sheet.rating)}">${formatMatchRating(sheet.rating)}</strong></li>`;
       })
       .join('');
-    return `<article class="match-report-ratings-side"><b>${clubName.toUpperCase()}</b><ul>${rows}</ul></article>`;
+    return `<article class="match-report-ratings-side"><header class="mr2-side-head">${teamCrestHtml(clubName, { className: 'mr2-crest' })}<b>${clubName}</b><small>média</small><strong class="match-report-rating" data-tier="${ratingTier(avg)}">${avg ? formatMatchRating(avg) : '—'}</strong></header><ul>${rows}</ul></article>`;
   };
 
   const ensureMatchReportModal = () => {
@@ -527,32 +538,19 @@ export function createCalendarViewFeature(deps) {
         .map(entry => `<span>${entry.name} <em>${entry.minutes}</em></span>`)
         .join('');
     const header = `
-      <div class="match-report-live-head">
-        <label class="match-report-live-label">AO VIVO</label>
-        <p class="match-report-live-datetime">${details.display || '—'}${details.time ? ` · ${details.time}` : ''}</p>
-        <p class="match-report-live-venue">${venueLine}</p>
+      <div class="match-report-live-head mr2-head">
         <div class="live-match-competition-wrap">${competitionBadgeMarkup({
           id: 'matchReportCompetition',
           nameId: 'matchReportCompetitionName',
           name: competition.name,
           kind: competition.kind,
         })}</div>
-        <div class="score live-score match-report-live-score">
-          <div class="live-team live-team-home">
-            ${teamCrestWithHumanHtml(game.home, { isHuman: homeUser })}
-            <b class="${homeUser ? 'user-club-live' : ''}">${game.home.toUpperCase()}</b>
-            <div class="live-scorers">${scorerLines('home')}</div>
-          </div>
-          <div class="live-score-center">
-            <strong>${scoreLine}</strong>
-            <p class="live-match-clock"><strong class="live-match-clock-time">90:00</strong><small class="live-match-clock-phase">FIM DE JOGO</small></p>
-          </div>
-          <div class="live-team live-team-away">
-            ${teamCrestWithHumanHtml(game.away, { isHuman: awayUser, away: true })}
-            <b class="${awayUser ? 'user-club-live' : ''}">${game.away.toUpperCase()}</b>
-            <div class="live-scorers">${scorerLines('away')}</div>
-          </div>
+        <div class="mr2-score">
+          <span class="mr2-team mr2-home"><b class="${homeUser ? 'user-club-live' : ''}">${game.home}</b>${teamCrestWithHumanHtml(game.home, { isHuman: homeUser })}</span>
+          <strong>${scoreLine}</strong>
+          <span class="mr2-team mr2-away">${teamCrestWithHumanHtml(game.away, { isHuman: awayUser, away: true })}<b class="${awayUser ? 'user-club-live' : ''}">${game.away}</b></span>
         </div>
+        <p class="mr2-meta"><b>FIM DE JOGO</b> · ${details.display || '—'}${details.time ? ` · ${details.time}` : ''}</p>
       </div>`;
     const sheetSource = liveSheets || historyLog?.players || [];
     let homeSheets = sheetSource.filter(p => p.club === game.home || p.side === 'home');
@@ -606,14 +604,14 @@ export function createCalendarViewFeature(deps) {
           .map(([label, home, away]) => `<div class="match-report-stat-row"><strong>${home}</strong><span>${label}</span><strong>${away}</strong></div>`)
           .join('')}</div>`
       : '<div class="match-report-empty">Estatísticas detalhadas não foram registradas nesta partida.</div>';
+    const legend = `<div class="mr2-legend">${[['top', '7,5+', 'destaque'], ['good', '6,5', 'bom'], ['avg', '6,0', 'regular'], ['low', '5,5−', 'abaixo']].map(([tier, value, label]) => `<span><strong class="match-report-rating" data-tier="${tier}">${value}</strong>${label}</span>`).join('')}</div>`;
     const ratingsHtml =
       homeSheets.length || awaySheets.length
-        ? `<div class="match-report-ratings"><h3>NOTAS</h3><div class="match-report-ratings-grid">${ratingsBlock(game.home, homeSheets, motmKey, tipIndex)}${ratingsBlock(game.away, awaySheets, motmKey, tipIndex)}</div></div>`
+        ? `<div class="match-report-ratings"><h3>NOTAS</h3>${legend}<div class="match-report-ratings-grid">${ratingsBlock(game.home, homeSheets, motmKey, tipIndex)}${ratingsBlock(game.away, awaySheets, motmKey, tipIndex)}</div></div>`
         : `<div class="match-report-empty">Notas ainda não disponíveis para esta partida.</div>`;
     const reportModal = ensureMatchReportModal();
     const content = $('#matchReportContent');
     if (!reportModal || !content) return;
-    reportModal.style.zIndex = '80';
     content.innerHTML = header + (showStatistics ? statisticsHtml : '') + ratingsHtml;
     reportModal.classList.remove('hidden');
   };

@@ -304,7 +304,7 @@ export function createMatchLiveSessionFeature(deps) {
     actions.querySelector('#finalTable')?.addEventListener('click', () => {
       simulateRoundResults();
       dismissPostMatchChrome();
-      openRoundResults();
+      openRoundResults(getLiveMatchGame?.());
     });
     actions.querySelector('#finalNext')?.addEventListener('click', () => exitLiveMatch());
     if (openRatings && typeof openLiveMatchRatings === 'function') {
