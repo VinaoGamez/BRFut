@@ -8473,3 +8473,18 @@ html body .timeline p.tl-event img.bf-ev-icon.tl-icon { width: 20px !important; 
 html body #matchModal :is(.substitution-player-head, button.substitution-player-row) { grid-template-columns: 30px 24px minmax(80px, 1fr) 24px 62px !important; column-gap: 5px !important; }
 html body #matchModal button.substitution-player-row .sub-fatigue-col .roster-fatigue--compact i { width: 26px !important; }
 html body #matchModal button.substitution-player-row .sub-fatigue-col { justify-content: flex-start; overflow: visible; }
+
+/* ===== Campo tático único (assets/ui/pitch.webp) em todas as pranchetas ===== */
+html body .tactical-board,
+html body #tactics .tac-center > .pitch.tactical-board,
+html body .pause-pitch.tactical-board {
+  background: #06200F url('../assets/ui/pitch.webp') center / 100% 100% no-repeat !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  box-shadow: 0 0 0 1px #1F5A3D, 0 10px 30px #0008 !important;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+html body .tactical-board .field-markings,
+html body .tactical-board::before,
+html body .tactical-board::after { display: none !important; }
