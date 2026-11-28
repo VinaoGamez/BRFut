@@ -157,9 +157,13 @@ check('Liga + Copa (20 clubes): zero conflitos Qua/Dom', () => {
   const fixtures = buildCompetitionRoundRobinFixtures(teams, 'brasileirao');
   const national = { A: { fixtures } };
   const occupancy = scheduleAllLeagueCompetitions(year, national);
+  // Domingo é a regra; em ano de Copa com as janelas FIFA reais algumas
+  // rodadas vão para a quarta-feira (como no calendário da CBF).
   fixtures.flat().forEach(game => {
-    assert(game.date.getDay() === WEEKDAY.SUN, `liga ${game.date} not Sun`);
+    assert([WEEKDAY.SUN, WEEKDAY.WED].includes(game.date.getDay()), `liga ${game.date} fora de dom/qua`);
   });
+  const midweek = new Set(fixtures.flat().filter(game => game.date.getDay() === WEEKDAY.WED).map(game => game.date.getTime()));
+  assert(midweek.size <= 6, `${midweek.size} rodadas no meio de semana`);
 
   const nominals = buildCupPhaseNominalDates(year);
   const cupTeams = teams.slice(0, 8);

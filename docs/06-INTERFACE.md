@@ -70,6 +70,29 @@ Controles: pausa técnica, stats, adversário, pênaltis, shootout panel.
 
 ---
 
+## Regra de alinhamento de cartões e tabelas (obrigatória)
+
+Definida pelo dono do projeto em 27/11/2026. **Nenhuma tela pode quebrar esta regra.**
+
+- Cartões, tabelas e painéis que ficam **lado a lado na mesma linha** têm a **mesma altura** e as bordas de cima e de baixo alinhadas.
+- O cartão menor **estica** para ocupar o espaço da linha (não sobra "degrau" embaixo). Conteúdo extra vai para o rodapé do cartão (`margin-top: auto`) ou o cartão ganha respiro interno; nunca fica um buraco.
+- Implementação: grade (`display: grid`) com `align-items: stretch` (padrão) e cartões com `height: 100%` / `box-sizing: border-box`; em flex, `align-items: stretch` e filhos sem altura fixa.
+- Quando a grade quebra para uma coluna (celular), a regra não se aplica entre linhas diferentes.
+- Vale para o jogo e para as pranchetas de proposta no canvas de design.
+- Checagem: toda revisão de tela roda uma auditoria automática no navegador que mede os cartões e colunas da mesma linha e acusa diferença de borda inferior acima de 4 px (PC em 1366×768, 1600×900 e 1920×1080).
+- Colunas com conteúdo longo (ex.: Táticas) ficam na altura da coluna principal e rolam por dentro, em vez de crescer e deixar as vizinhas para trás.
+
+## Regra de conteúdo visível no celular (obrigatória)
+
+Definida pelo dono do projeto em 27/11/2026. **Nenhuma tela ou pop-up pode cortar informação.**
+
+- O fim de qualquer tela ou pop-up tem de poder ser rolado até ficar inteiro **acima** da navegação inferior e do botão Continuar, e **abaixo** do cabeçalho.
+- Nada passa da largura da tela: colunas de tabela usam `minmax(0, 1fr)` para o nome e larguras fixas pequenas para números; textos quebram linha.
+- Com qualquer pop-up aberto no celular, a navegação inferior e o botão Continuar somem; o pop-up usa a tela inteira (inclusive a partida ao vivo e o pós-jogo).
+- Checagem: auditoria automática em 360×640, 390×844 e 412×915 que, em cada tela e cada pop-up, coloca um marcador no fim do conteúdo, rola até o fim e acusa se ele fica atrás de alguma barra fixa ou se algo passa da borda direita.
+
+---
+
 ## CSS
 
 Arquivos estáticos em `css/` — ex.: `layout.css`, `calendar.css`, `tactics-ui.css`, `economy-office.css`. Ordem de cascade preservada no `index.html`.

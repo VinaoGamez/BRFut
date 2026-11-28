@@ -6,6 +6,7 @@
  * Confrontos com o usuário NUNCA resolvem shootout no automático silencioso:
  * a disputa precisa ser jogada ao vivo (AO VIVO).
  */
+import { conmebolNeedsExtraTime } from './conmebol-format.js';
 import { simulateProbabilisticShootout } from './shootout-sim.js';
 import { STATE_LEAGUE_COMPETITION } from './state-league-format.js';
 import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
@@ -32,8 +33,12 @@ export const isWorldCupKnockout = game =>
   game.competition === WORLD_CUP_COMPETITION &&
   (!!game.knockout || WORLD_CUP_KNOCKOUT_STAGES.has(game.stage));
 
-/** Copa do Mundo: empate → prorrogação (90–120) e só então pênaltis. */
-export const knockoutNeedsExtraTime = game => isWorldCupKnockout(game);
+/** Final de Libertadores / Sul-Americana: jogo único com prorrogação. */
+export const isConmebolFinal = game =>
+  conmebolNeedsExtraTime(game);
+
+/** Copa do Mundo e finais CONMEBOL: empate → prorrogação (90–120) e só então pênaltis. */
+export const knockoutNeedsExtraTime = game => isWorldCupKnockout(game) || isConmebolFinal(game);
 
 /** Campeonatos que podem ir aos pênaltis quando o agregado/jogo único empata. */
 export const KNOCKOUT_SHOOTOUT_COMPETITIONS = new Set([
@@ -97,6 +102,11 @@ export const knockoutCompetitionLabel = game => {
     return `Copa do Mundo${game.phase ? ` · ${game.phase}` : game.stage ? ` · ${game.stage}` : ''}`;
   }
   if (isStateKnockoutPhase(game)) return 'Campeonato Estadual · Mata-mata';
+  if (game.competition === 'LIBERTADORES') return `Libertadores${game.phase ? ` · ${game.phase}` : ''}`;
+  if (game.competition === 'SUL-AMERICANA') return `Sul-Americana${game.phase ? ` · ${game.phase}` : ''}`;
+  if (game.competition === 'RECOPA SUL-AMERICANA') return 'Recopa Sul-Americana';
+  if (game.competition === 'INTERCONTINENTAL') return `Intercontinental${game.phase ? ` · ${game.phase}` : ''}`;
+  if (game.competition === 'MUNDIAL DE CLUBES') return `Mundial de Clubes${game.phase ? ` · ${game.phase}` : ''}`;
   return game.competition || 'Eliminatórias';
 };
 

@@ -2,7 +2,8 @@ import { MODULE_VERSIONS, SAVE_KEYS } from '../../core/constants.js';
 import { clamp } from '../../ui/dom.js';
 import { competitionBadgeMarkup, resolveCompetitionBadge } from '../../ui/competition-badge.js';
 import { crestWithHumanHtml } from '../../ui/human-badge.js';
-import { teamCrestWithHumanHtml } from '../../ui/team-crest.js';
+import { teamCrestWithHumanHtml, teamCrestHtml } from '../../ui/team-crest.js';
+import { positionLine } from '../shared/player-cells.js';
 import { formatMatchRating as defaultFormatMatchRating } from '../../engine/player-match-stats.js';
 import { formatMatchMinuteLabel } from '../../engine/match-clock.js';
 import { isDateInTransferWindow, getTransferWindowPhase } from '../../engine/transfers.js';
@@ -12,6 +13,7 @@ import { isWorldCupFixture } from '../../engine/world-cup-calendar.js';
 import { isStateLeagueGame, stateLeagueBadgeName, stateLeaguePhaseLabel } from '../../engine/state-league-format.js';
 import { tipKey, buildPlayerTipIndex, ownGoalTipCount } from './match-report-tips.js';
 import { DEVELOPMENT_FOCUSES, formatTrainingWeeklyReportHtml } from '../../engine/training-development.js';
+import { createCalendarV2 } from './calendar-v2.js';
 import goalBallUrl from '../../../assets/ui/goal-ball.png?url';
 import ownGoalBallUrl from '../../../assets/ui/goal-ball-own.png?url';
 import assistBootUrl from '../../../assets/ui/assist-boot.webp?url';
@@ -73,6 +75,8 @@ export function createCalendarViewFeature(deps) {
     formatMatchRating = defaultFormatMatchRating,
     formatVenueCrowdLine,
     getMarketDayBrief,
+    getMatchOdds,
+    getTiredStarters,
   } = deps;
 
   const formatMarketFee = value => {
@@ -145,7 +149,8 @@ export function createCalendarViewFeature(deps) {
         worldCupBit = ` · CMU ${phaseLabel}: ${worldCupCount} jogos`;
       }
     }
-    $('#calendar .title span').textContent = `Agenda nacional de janeiro a dezembro · ${championshipFixtures.flat().length} jogos do Brasileiro · ${copaDoBrasilFixtures.length} jogos confirmados da Copa do Brasil${worldCupBit} · ${calendarIntervalLabel(restConflictCount)}.`;
+    const calendarSubtitle = $('#calendar .title span');
+    if (calendarSubtitle) calendarSubtitle.textContent = `Agenda nacional de janeiro a dezembro · ${championshipFixtures.flat().length} jogos do Brasileiro · ${copaDoBrasilFixtures.length} jogos confirmados da Copa do Brasil${worldCupBit} · ${calendarIntervalLabel(restConflictCount)}.`;
   };
 
   const calendarGameResult = game => {
@@ -459,9 +464,19 @@ export function createCalendarViewFeature(deps) {
         );
       });
 
+  /** Notas v2: faixa da nota (destaque, bom, regular, abaixo). */
+  const ratingTier = value => {
+    const n = Number(value) || 0;
+    if (n >= 7.5) return 'top';
+    if (n >= 6.5) return 'good';
+    if (n >= 6) return 'avg';
+    return 'low';
+  };
   const ratingsBlock = (clubName, players, motmKey, tipIndex) => {
     const list = sortRatingsList(players);
     if (!list.length) return '';
+    const played = list.filter(sheet => Number(sheet.rating) > 0);
+    const avg = played.length ? played.reduce((sum, sheet) => sum + Number(sheet.rating || 0), 0) / played.length : 0;
     const rows = list
       .map(sheet => {
         const pos = String(sheet.pos || sheet.role || '—').toUpperCase().slice(0, 3);
@@ -472,10 +487,10 @@ export function createCalendarViewFeature(deps) {
         ]
           .filter(Boolean)
           .join(' ');
-        return `<li class="${isBest ? 'match-report-best' : ''}"><span class="match-report-pos">${pos}</span><span class="match-report-player${isBest ? ' is-best' : ''}"><span class="match-report-name">${sheet.name}</span>${playerEventIcons(sheet, tipIndex)}</span><strong class="match-report-rating ${ratingClass}">${formatMatchRating(sheet.rating)}</strong></li>`;
+        return `<li class="${isBest ? 'match-report-best' : ''}"><span class="match-report-pos pos-chip" data-line="${positionLine(pos)}">${pos}</span><span class="match-report-player${isBest ? ' is-best' : ''}"><span class="match-report-name">${sheet.name}</span>${playerEventIcons(sheet, tipIndex)}</span><strong class="match-report-rating ${ratingClass}" data-tier="${ratingTier(sheet.rating)}">${formatMatchRating(sheet.rating)}</strong></li>`;
       })
       .join('');
-    return `<article class="match-report-ratings-side"><b>${clubName.toUpperCase()}</b><ul>${rows}</ul></article>`;
+    return `<article class="match-report-ratings-side"><header class="mr2-side-head">${teamCrestHtml(clubName, { className: 'mr2-crest' })}<b>${clubName}</b><small>média</small><strong class="match-report-rating" data-tier="${ratingTier(avg)}">${avg ? formatMatchRating(avg) : '—'}</strong></header><ul>${rows}</ul></article>`;
   };
 
   const ensureMatchReportModal = () => {
@@ -523,32 +538,19 @@ export function createCalendarViewFeature(deps) {
         .map(entry => `<span>${entry.name} <em>${entry.minutes}</em></span>`)
         .join('');
     const header = `
-      <div class="match-report-live-head">
-        <label class="match-report-live-label">AO VIVO</label>
-        <p class="match-report-live-datetime">${details.display || '—'}${details.time ? ` · ${details.time}` : ''}</p>
-        <p class="match-report-live-venue">${venueLine}</p>
+      <div class="match-report-live-head mr2-head">
         <div class="live-match-competition-wrap">${competitionBadgeMarkup({
           id: 'matchReportCompetition',
           nameId: 'matchReportCompetitionName',
           name: competition.name,
           kind: competition.kind,
         })}</div>
-        <div class="score live-score match-report-live-score">
-          <div class="live-team live-team-home">
-            ${teamCrestWithHumanHtml(game.home, { isHuman: homeUser })}
-            <b class="${homeUser ? 'user-club-live' : ''}">${game.home.toUpperCase()}</b>
-            <div class="live-scorers">${scorerLines('home')}</div>
-          </div>
-          <div class="live-score-center">
-            <strong>${scoreLine}</strong>
-            <p class="live-match-clock"><strong class="live-match-clock-time">90:00</strong><small class="live-match-clock-phase">FIM DE JOGO</small></p>
-          </div>
-          <div class="live-team live-team-away">
-            ${teamCrestWithHumanHtml(game.away, { isHuman: awayUser, away: true })}
-            <b class="${awayUser ? 'user-club-live' : ''}">${game.away.toUpperCase()}</b>
-            <div class="live-scorers">${scorerLines('away')}</div>
-          </div>
+        <div class="mr2-score">
+          <span class="mr2-team mr2-home"><b class="${homeUser ? 'user-club-live' : ''}">${game.home}</b>${teamCrestWithHumanHtml(game.home, { isHuman: homeUser })}</span>
+          <strong>${scoreLine}</strong>
+          <span class="mr2-team mr2-away">${teamCrestWithHumanHtml(game.away, { isHuman: awayUser, away: true })}<b class="${awayUser ? 'user-club-live' : ''}">${game.away}</b></span>
         </div>
+        <p class="mr2-meta"><b>FIM DE JOGO</b> · ${details.display || '—'}${details.time ? ` · ${details.time}` : ''}</p>
       </div>`;
     const sheetSource = liveSheets || historyLog?.players || [];
     let homeSheets = sheetSource.filter(p => p.club === game.home || p.side === 'home');
@@ -602,15 +604,76 @@ export function createCalendarViewFeature(deps) {
           .map(([label, home, away]) => `<div class="match-report-stat-row"><strong>${home}</strong><span>${label}</span><strong>${away}</strong></div>`)
           .join('')}</div>`
       : '<div class="match-report-empty">Estatísticas detalhadas não foram registradas nesta partida.</div>';
+    const legend = `<div class="mr2-legend">${[['top', '7,5+', 'destaque'], ['good', '6,5', 'bom'], ['avg', '6,0', 'regular'], ['low', '5,5−', 'abaixo']].map(([tier, value, label]) => `<span><strong class="match-report-rating" data-tier="${tier}">${value}</strong>${label}</span>`).join('')}</div>`;
     const ratingsHtml =
       homeSheets.length || awaySheets.length
-        ? `<div class="match-report-ratings"><h3>NOTAS</h3><div class="match-report-ratings-grid">${ratingsBlock(game.home, homeSheets, motmKey, tipIndex)}${ratingsBlock(game.away, awaySheets, motmKey, tipIndex)}</div></div>`
+        ? `<div class="match-report-ratings"><h3>NOTAS</h3>${legend}<div class="match-report-ratings-grid">${ratingsBlock(game.home, homeSheets, motmKey, tipIndex)}${ratingsBlock(game.away, awaySheets, motmKey, tipIndex)}</div></div>`
         : `<div class="match-report-empty">Notas ainda não disponíveis para esta partida.</div>`;
+    // Lances: gols, cartões e substituições em ordem de minuto, cada um do lado do seu time.
+    const minuteLabel = item => `${Number(item.minute) || 0}'${item.stoppage ? `+${item.stoppage}` : ''}`;
+    const sortKey = item => (Number(item.minute) || 0) * 100 + (Number(item.stoppage) || 0);
+    const esc = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    const events = [];
+    ['home', 'away'].forEach(side => {
+      (goals?.[side] || []).forEach(goal => events.push({
+        side,
+        minute: goal.minute,
+        stoppage: goal.stoppage,
+        kind: 'goal',
+        icon: '⚽',
+        title: `${esc(goal.name)}${goal.type === 'own' ? ' <em>(contra)</em>' : goal.type === 'penalty' ? ' <em>(pênalti)</em>' : ''}`,
+        sub: goal.assist ? `Assistência: ${esc(goal.assist)}` : '',
+      }));
+    });
+    (incidents || []).forEach(item => {
+      const side = item.side === 'away' ? 'away' : item.side === 'home' ? 'home' : null;
+      if (!side || !item.name) return;
+      if (item.type === 'yellow' || item.type === 'red') {
+        events.push({ side, minute: item.minute, stoppage: item.stoppage, kind: item.type, icon: '', title: esc(item.name), sub: item.type === 'red' ? 'Cartão vermelho' : 'Cartão amarelo' });
+      } else if (item.type === 'substitution') {
+        const [outName, inName] = String(item.name).split(/\s*(?:→|->)\s*/).map(part => part.trim());
+        if (!outName || !inName) return;
+        events.push({ side, minute: item.minute, stoppage: item.stoppage, kind: 'sub', icon: '⇄', title: esc(inName), sub: `Sai ${esc(outName)}` });
+      }
+    });
+    events.sort((a, b) => sortKey(a) - sortKey(b));
+    const lancesHtml = events.length
+      ? `<div class="mr2-events"><div class="mr2-events-head"><b>${esc(game.home)}</b><span></span><b>${esc(game.away)}</b></div>${events
+          .map(ev => {
+            const cell = `<div class="mr2-ev-body"><i class="mr2-ev-icon" data-kind="${ev.kind}">${ev.icon}</i><span><b>${ev.title}</b>${ev.sub ? `<small>${ev.sub}</small>` : ''}</span></div>`;
+            return `<div class="mr2-ev" data-side="${ev.side}">${ev.side === 'home' ? cell : '<div></div>'}<strong class="mr2-ev-min">${minuteLabel(ev)}</strong>${ev.side === 'away' ? cell : '<div></div>'}</div>`;
+          })
+          .join('')}</div>`
+      : '<div class="match-report-empty">Nenhum lance registrado nesta partida.</div>';
+    const tabs = [
+      ['notas', 'Notas', ratingsHtml],
+      ['lances', 'Lances', lancesHtml],
+      ...(showStatistics ? [['stats', 'Estatísticas', statisticsHtml]] : []),
+    ];
     const reportModal = ensureMatchReportModal();
     const content = $('#matchReportContent');
     if (!reportModal || !content) return;
-    reportModal.style.zIndex = '80';
-    content.innerHTML = header + (showStatistics ? statisticsHtml : '') + ratingsHtml;
+    content.innerHTML = `${header}<nav class="mr2-tabs" role="tablist">${tabs
+      .map(([id, label], index) => `<button type="button" role="tab" data-mr2-tab="${id}" class="${index === 0 ? 'is-active' : ''}" aria-selected="${index === 0}">${label}</button>`)
+      .join('')}</nav>${tabs
+      .map(([id, , html], index) => `<section class="mr2-pane" data-mr2-pane="${id}"${index === 0 ? '' : ' hidden'}>${html}</section>`)
+      .join('')}`;
+    if (!content.dataset.mr2Tabs) {
+      content.dataset.mr2Tabs = '1';
+      content.addEventListener('click', event => {
+        const tab = event.target.closest('[data-mr2-tab]');
+        if (!tab) return;
+        const id = tab.dataset.mr2Tab;
+        content.querySelectorAll('[data-mr2-tab]').forEach(btn => {
+          const on = btn.dataset.mr2Tab === id;
+          btn.classList.toggle('is-active', on);
+          btn.setAttribute('aria-selected', String(on));
+        });
+        content.querySelectorAll('[data-mr2-pane]').forEach(pane => { pane.hidden = pane.dataset.mr2Pane !== id; });
+        const card = content.closest('.modal-card');
+        if (card) card.scrollTop = 0;
+      });
+    }
     reportModal.classList.remove('hidden');
   };
 
@@ -884,7 +947,9 @@ export function createCalendarViewFeature(deps) {
         const isState = isStateLeagueGame(game);
         const completed = isFixtureCompleted(game);
         const scoreLabel = fixtureResultLabel(game);
-        const eventLabel = isWorldCup
+        const eventLabel = game.competition === 'ELIMINATÓRIAS'
+          ? `ELIMINATÓRIAS · ${game.matchday}ª RODADA`
+          : isWorldCup
           ? `COPA DO MUNDO · ${game.phase}${game.knockout ? '' : ` · R${game.round}`}`
           : isCup
             ? `COPA DO BRASIL · ${game.phase} · ${game.leg}`
@@ -903,13 +968,15 @@ export function createCalendarViewFeature(deps) {
           `<div class="agenda-item training"><i>MF</i><div><small>${activity.type === 'before' ? 'PRÉ-JOGO' : activity.type === 'after' ? 'PÓS-JOGO' : 'DIA LIVRE'}</small><strong>${activity.label}</strong></div></div>`
       )
       .join('');
-    const marketRows = renderMarketDayAgenda();
+    // Calendário v2: mercado sai da agenda do dia (prazos ficam no painel).
+    const marketRows = '';
     const freeDayLabel = freeDaySummary(trainingRules);
     const freeRow =
       !games.length && !activities.length && !marketRows
         ? `<div class="agenda-item free"><i>—</i><div><small>DIA SEM PARTIDA</small><strong>${freeDayLabel}</strong></div></div>`
         : '';
     $('#calendarDayAgenda').innerHTML = gameRows + trainingRows + marketRows + freeRow;
+    $('#calendar .day-agenda-card')?.classList.toggle('cal2-empty-day', !games.length);
   };
 
   const calendarCompetitionTagMarkup = key => {
@@ -923,7 +990,39 @@ export function createCalendarViewFeature(deps) {
       .join('')}</span>`;
   };
 
+  const calendarV2 = createCalendarV2({
+    $,
+    calendarKey,
+    getUserClub,
+    getUserDivision,
+    getCareerSeason,
+    getCareerCalendarDate,
+    getCalendarGames,
+    isUserFixture,
+    isFixtureCompleted,
+    fixtureDetails,
+    fixtureResultLabel,
+    getTrainingRules,
+    freeDaySummary,
+    getSelected: () => selectedCalendarDate,
+    selectDate: date => {
+      setSelectedCalendarDate(date);
+      renderCalendar();
+    },
+    moveMonth: direction => moveCalendarMonth(direction),
+    getReport: game => calendarGameResult(game),
+    openReport: entry => openCalendarMatchReport(entry),
+    openView,
+    getMatchOdds,
+    getTiredStarters,
+    rerender: () => renderCalendar(),
+  });
+
   const renderCalendar = () => {
+    if (calendarV2.syncToday()) {
+      // Dia da carreira mudou (avançou semana): foca o dia de hoje.
+      setSelectedCalendarDate(getCareerCalendarDate());
+    }
     const userClub = getUserClub();
     const currentRound = getCurrentRound();
     const careerSeason = getCareerSeason();
@@ -997,6 +1096,7 @@ export function createCalendarViewFeature(deps) {
     renderTrainingRules();
     renderCalendarRoutine();
     renderCalendarAgenda(trainingMap);
+    calendarV2.render(trainingMap);
   };
 
   const openDashboardCalendarView = () => {
@@ -1004,6 +1104,7 @@ export function createCalendarViewFeature(deps) {
     const careerSeason = getCareerSeason();
     selectedCalendarDate = new Date(careerCalendarDate);
     calendarCursor = new Date(careerSeason, careerCalendarDate.getMonth(), 1);
+    calendarV2.resetWeek();
     openView('calendar');
     renderCalendar();
   };
@@ -1036,7 +1137,9 @@ export function createCalendarViewFeature(deps) {
       ? `<article class="card world-cup-calendar-card"><label>COPA DO MUNDO ${careerSeason}</label><strong>11 JUN — 19 JUL</strong><p>Fase de grupos (3 rodadas) com resultados simulados semana a semana. Mata-mata gerado após a 3ª rodada — avance o calendário para ver placares.</p><div class="world-cup-calendar-jumps"><button type="button" data-calendar-month="5">JUN</button><button type="button" data-calendar-month="6">JUL</button></div></article>`
       : '';
 
-    $('#calendar .title p').textContent = `TEMPORADA ${careerSeason} · BRASILEIRÃO SÉRIE ${userDivision} + COPA DO BRASIL${isWorldCupSeasonActive(careerSeason) ? ' + CMU' : ''}`;
+    const continental = deps.getUserContinentalLabel?.() || '';
+    const calendarTitle = $('#calendar .title p');
+    if (calendarTitle) calendarTitle.textContent = `TEMPORADA ${careerSeason} · BRASILEIRÃO SÉRIE ${userDivision} + COPA DO BRASIL${continental ? ` + ${continental.toUpperCase()}` : ''}${isWorldCupSeasonActive(careerSeason) ? ' + CMU' : ''}`;
     syncCalendarSubtitle();
     $('.calendar-toolbar').insertAdjacentHTML(
       'afterend',
@@ -1051,6 +1154,7 @@ export function createCalendarViewFeature(deps) {
       `${worldCupSidebar}<article class="card calendar-routine-card"><label>ROTINA DA SEMANA</label><div id="calendarRoutineSummary" class="calendar-routine-summary"></div></article><article class="card cup-calendar-card"><label>COPA DO BRASIL ${careerSeason}</label><strong>126 CLUBES · 9 FASES</strong><p>1ª à 4ª fase em jogo único. Da 5ª fase à semifinal em ida e volta. Os 20 clubes da Série A entram na 5ª fase.</p><div><span>INÍCIO<b>18 FEV</b></span><span>FINAL ÚNICA<b>06 DEZ</b></span></div></article>`
     );
 
+    calendarV2.inject();
     document.body.insertAdjacentHTML(
       'beforeend',
       `<div id="calendarMatchReportModal" class="modal hidden"><div class="modal-card match-report-modal"><button id="closeCalendarMatchReport" class="close">×</button><div id="matchReportContent"></div></div></div>`
@@ -1058,6 +1162,7 @@ export function createCalendarViewFeature(deps) {
   };
 
   const bindHandlers = () => {
+    calendarV2.bind();
     onClick('#calendarDays', event => {
       const day = event.target.closest('[data-calendar-date]');
       if (!day) return;

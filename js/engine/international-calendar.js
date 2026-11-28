@@ -50,7 +50,12 @@ export const INTERNATIONAL_RELEASE_DAYS = { single: 4, standard: 8, heavy: 12 };
  * blocos de 9 dias encostados, não uma janela longa qualquer.
  */
 export const INTERNATIONAL_WINDOWS = Object.freeze({
+  // 2026: março e setembro/outubro também param o Brasileirão (calendário CBF
+  // 2026). A janela de junho (1–9/jun) cai dentro da liberação para a Copa e
+  // fica coberta por ela.
   2026: Object.freeze([
+    Object.freeze({ id: '2026-03', start: Object.freeze([2, 23]), end: Object.freeze([2, 31]), label: 'Março' }),
+    Object.freeze({ id: '2026-09', start: Object.freeze([8, 21]), end: Object.freeze([9, 6]), label: 'Setembro/Outubro' }),
     Object.freeze({ id: '2026-11', start: Object.freeze([10, 9]), end: Object.freeze([10, 17]), label: 'Novembro' }),
   ]),
   2027: Object.freeze([
@@ -85,6 +90,8 @@ export const INTERNATIONAL_WINDOWS = Object.freeze({
  * CONFEDERAÇÃO costuma nelas e quase todo elenco é liberado.
  */
 export const INTERNATIONAL_WINDOW_COST = Object.freeze({
+  '2026-03': INTERNATIONAL_RELEASE_DAYS.standard,
+  '2026-09': INTERNATIONAL_RELEASE_DAYS.heavy,
   '2026-11': INTERNATIONAL_RELEASE_DAYS.heavy,
   '2027-03': INTERNATIONAL_RELEASE_DAYS.heavy,
   '2027-06': INTERNATIONAL_RELEASE_DAYS.single,

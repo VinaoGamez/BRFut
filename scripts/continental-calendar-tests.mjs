@@ -60,8 +60,8 @@ check('Série C e D nunca têm vaga continental', () => {
   });
 });
 
-check('competição continental está desligada in-game', () => {
-  assert(CONMEBOL_ENABLED === false, 'precisa estar desligada');
+check('competição continental está ligada in-game', () => {
+  assert(CONMEBOL_ENABLED === true, 'precisa estar ligada');
   assert(CONMEBOL_EDITIONS[2026] != null, 'mas as datas existem');
 });
 
@@ -195,7 +195,7 @@ check('entrada vazia não lança', () => {
 
 check('reserva de datas é por clube e não bloqueia a temporada', () => {
   const r = reserveContinentalDates({ club: 'Palmeiras', competitionId: 'libertadores', seasonYear: 2026 });
-  assert(r.enabled === false, 'competição desligada');
+  assert(r.enabled === true, 'competição ligada');
   assert(r.reservations.length > 0, 'tem reservas');
   assert(r.reservations.every(x => x.club === 'Palmeiras'), 'todas do mesmo clube');
   // A reserva não tem nada que bloqueie: é lista, não blackout.

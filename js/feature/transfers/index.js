@@ -8,7 +8,8 @@ import {
 import { wageMonthlyFromRound } from '../../engine/player-contracts.js';
 import { BRAZIL_NATION, FOREIGN_NATIONS } from '../../engine/player-nationality.js';
 import { getTransferWindowBounds } from '../../engine/transfers.js';
-import mercadoDaBolaUrl from '../../../brand/transfer-history/mercado-da-bola.webp?url';
+import { positionLine } from '../shared/player-cells.js';
+import { teamCrestHtml } from '../../ui/team-crest.js';
 import {
   formatSellerRejectLetter,
   formatLoanLevelPlayerReply,
@@ -1038,8 +1039,8 @@ export function createTransfersFeature(deps) {
           const wageCell = formatWageCell(wage, row.division || filters.division || 'A');
           return `<tr>
           <td class="col-name">${renderMarketPlayerName(playerNameCell, p.name, p, { clubName: row.clubName, suffixHtml: loanTag })}</td>
-          <td class="col-club" title="${escapeHtml(row.clubName)}">${row.freeAgent ? '<strong class="transfers-free-agent-label">LIVRE</strong>' : `<span class="club-link" data-club="${escapeHtml(row.clubName)}" role="button" tabindex="0">${escapeHtml(row.clubName)}</span>`}</td>
-          <td>${escapeHtml(p.pos)}</td>
+          <td class="col-club" title="${escapeHtml(row.clubName)}">${row.freeAgent ? '<strong class="transfers-free-agent-label">LIVRE</strong>' : `<span class="club-link tf2-club" data-club="${escapeHtml(row.clubName)}" role="button" tabindex="0">${teamCrestHtml(row.clubName, { className: 'tf2-crest' })}<span>${escapeHtml(row.clubName)}</span></span>`}</td>
+          <td class="col-pos"><span class="pos-chip" data-line="${positionLine(p.pos)}">${escapeHtml(p.pos)}</span></td>
           <td>${escapeHtml(sideLetter(p))}</td>
           <td class="col-force">${escapeHtml(p.overall)}</td>
           <td>${escapeHtml(p.age)}</td>
@@ -1162,7 +1163,7 @@ export function createTransfersFeature(deps) {
           const wageCell = formatWageCell(wage, getUserDivision?.() || 'A');
           return `<tr>
           <td class="col-name">${nameCell}</td>
-          <td>${escapeHtml(p.pos)}</td>
+          <td class="col-pos"><span class="pos-chip" data-line="${positionLine(p.pos)}">${escapeHtml(p.pos)}</span></td>
           <td>${escapeHtml(sideLetter(p))}</td>
           <td class="col-force">${escapeHtml(p.overall)}</td>
           <td>${escapeHtml(p.age)}</td>
@@ -1276,6 +1277,80 @@ export function createTransfersFeature(deps) {
       }
     }
     renderRestrictionBanner();
+    renderSummary();
+  };
+
+  /** Mercado v2: faixa com caixa, janela, folha, empréstimos e propostas. */
+  const renderSummary = () => {
+    const root = $('#transfers');
+    if (!root) return;
+    let box = $('#transfersSummary');
+    if (!box) {
+      $('.transfers-toolbar')?.insertAdjacentHTML('afterend', '<div id="transfersSummary" class="tf2-summary" aria-live="polite"></div>');
+      box = $('#transfersSummary');
+    }
+    if (!box) return;
+    const api = engine();
+    const tile = (label, value, { sub = '', tone = '', attr = '' } = {}) =>
+      `<div class="tf2-tile${tone ? ` is-${tone}` : ''}"${attr}><small>${label}</small><strong>${value}</strong>${sub ? `<em>${sub}</em>` : ''}</div>`;
+    let balance = '—';
+    try { balance = formatBudget(getBalance()); } catch { /* sem saldo */ }
+    const status = api?.marketStatus?.() || null;
+    const phase = api?.getWindowPhase?.() || status?.phase || null;
+    const restricted = !!api?.isBuyRestricted?.();
+    let windowValue = status?.open ? 'Aberto' : 'Fechado';
+    let windowSub = '';
+    let windowTone = status?.open ? 'lime' : 'red';
+    if (restricted) { windowValue = 'Bloqueado'; windowSub = 'compras suspensas'; windowTone = 'red'; }
+    else if (status?.open && phase?.windowKey) {
+      try {
+        const bounds = getTransferWindowBounds()[phase.windowKey];
+        const date = status.careerDate instanceof Date ? status.careerDate : new Date(status.careerDate);
+        const end = new Date(date.getFullYear(), bounds.end.month - 1, bounds.end.day, 12);
+        const days = Math.round((end - date) / 86400000);
+        if (phase.isDeadlineDay || days <= 1) { windowValue = 'Último dia'; windowTone = 'orange'; }
+        else if (days >= 0) { const weeks = Math.ceil(days / 7); windowSub = `fecha em ${weeks} ${weeks === 1 ? 'semana' : 'semanas'}`; }
+      } catch { /* datas indisponíveis */ }
+    } else if (!status?.open && status?.nextOpenLabel) windowSub = `reabre em ${status.nextOpenLabel}`;
+    let payrollValue = '—';
+    let payrollTone = '';
+    try {
+      const pr = api?.evaluateUserPayroll?.({ extraWage: 0, rosterDelta: 0 });
+      const pct = pr?.pctAfter ?? pr?.pctBefore;
+      if (pct != null) { payrollValue = `${Math.round(pct)}%`; payrollTone = pct > 100 ? 'red' : pct > 85 ? 'orange' : ''; }
+    } catch { /* sem folha */ }
+    const slots = api?.loanSlots?.(getUserClub?.()) || { incoming: 0, outgoing: 0, max: 3 };
+    const pending = api?.listPendingOffers?.({ status: 'pending' })?.length || 0;
+    box.innerHTML = [
+      tile('SEU CAIXA', escapeHtml(balance), { tone: 'gold' }),
+      tile('JANELA', windowValue, { sub: windowSub, tone: windowTone }),
+      tile('FOLHA / LIMITE', payrollValue, { sub: 'salários sobre o seguro', tone: payrollTone }),
+      tile('EMPRÉSTIMOS', `${slots.incoming}/${slots.max}`, { sub: `cedidos ${slots.outgoing}/${slots.max}` }),
+      tile('PROPOSTAS', String(pending), { sub: pending ? 'esperando resposta' : 'nenhuma pendente', tone: pending ? 'cyan' : '', attr: pending ? ' data-tf2-offers role="button" tabindex="0"' : '' }),
+    ].join('');
+  };
+
+  /** Mercado v2: filtros principais visíveis, o resto em "Mais filtros"; opções viram chips. */
+  const enhanceSearch = () => {
+    const search = $('#transfersBuyPanel .transfers-search');
+    if (!search || search.dataset.tf2) return;
+    search.dataset.tf2 = '1';
+    ['#transfersFilterFoot', '#transfersFilterNationality', '#transfersFilterMaxOvr', '#transfersFilterMinAge', '#transfersFilterMaxWage']
+      .forEach(sel => $(sel)?.closest('.transfers-field')?.classList.add('tf2-adv'));
+    const title = search.querySelector('.transfers-search-title');
+    title?.insertAdjacentHTML('afterend', '<button type="button" class="tf2-more" aria-expanded="false">+ MAIS FILTROS</button>');
+    const more = search.querySelector('.tf2-more');
+    more?.addEventListener('click', () => {
+      const open = !search.classList.contains('tf2-adv-open');
+      search.classList.toggle('tf2-adv-open', open);
+      more.setAttribute('aria-expanded', open ? 'true' : 'false');
+      more.textContent = open ? '− MENOS FILTROS' : '+ MAIS FILTROS';
+    });
+    search.querySelectorAll('.transfers-filter-check').forEach(label => label.classList.add('tf2-chip'));
+    document.addEventListener('click', event => {
+      if (!event.target.closest?.('[data-tf2-offers]')) return;
+      $('#transfersIncomingOffers')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
   };
 
   const $$tabs = () => {
@@ -1333,6 +1408,7 @@ export function createTransfersFeature(deps) {
     const root = $('#transfers');
     if (!root) return;
     root.classList.remove('coming-soon-view');
+    enhanceSearch();
     renderHeader();
     renderIncomingOffers();
     renderFilters();
@@ -1361,15 +1437,26 @@ export function createTransfersFeature(deps) {
     if (!modal) {
       document.body.insertAdjacentHTML('beforeend', `
         <div id="transferWindowOpenAlert" class="transfer-window-open-alert" role="dialog" aria-modal="true" aria-labelledby="transferWindowOpenAlertTitle" hidden>
-          <article class="transfer-window-open-card">
-            <img src="${mercadoDaBolaUrl}" alt="Mercado da Bola">
-            <div class="transfer-window-open-copy">
-              <h2 id="transferWindowOpenAlertTitle">MERCADO ABERTO</h2>
-              <p><span>ABERTURA</span><strong id="transferWindowOpenStart">&mdash;</strong></p>
-              <i aria-hidden="true"></i>
-              <p><span>FECHAMENTO</span><strong id="transferWindowOpenEnd">&mdash;</strong></p>
+          <article class="transfer-window-open-card mv2-shell" data-tone="lime">
+            <header class="mv2-head">
+              <div>
+                <span class="mv2-kicker" id="transferWindowOpenKicker">JANELA DE TRANSFERÊNCIAS</span>
+                <h2 id="transferWindowOpenAlertTitle" class="mv2-title">Mercado aberto</h2>
+              </div>
+              <button type="button" class="mv2-close transfer-window-open-ok" aria-label="Fechar">×</button>
+            </header>
+            <div class="mv2-body">
+              <div class="mv2-tiles">
+                <div class="mv2-tile"><small>ABERTURA</small><strong id="transferWindowOpenStart">&mdash;</strong></div>
+                <div class="mv2-tile"><small>FECHAMENTO</small><strong id="transferWindowOpenEnd">&mdash;</strong></div>
+                <div class="mv2-tile"><small>SEU CAIXA</small><strong id="transferWindowOpenBalance" class="is-money">&mdash;</strong></div>
+              </div>
+              <p class="mv2-note" id="transferWindowOpenNote"></p>
             </div>
-            <button type="button" class="transfer-window-open-ok">CONTINUAR</button>
+            <footer class="mv2-foot">
+              <button type="button" class="mv2-btn is-ghost transfer-window-open-ok">CONTINUAR</button>
+              <button type="button" class="mv2-btn is-primary transfer-window-open-ok" data-window-go-market>IR AO MERCADO</button>
+            </footer>
           </article>
         </div>`);
       modal = $('#transferWindowOpenAlert');
@@ -1377,13 +1464,20 @@ export function createTransfersFeature(deps) {
     if (!windowAlertBound && modal) {
       windowAlertBound = true;
       modal.addEventListener('click', event => {
-        if (event.target.closest('.transfer-window-open-ok')) closeWindowOpenAlert();
+        if (modal.hidden) return;
+        if (event.target === modal) { closeWindowOpenAlert(); return; }
+        const ok = event.target.closest('.transfer-window-open-ok');
+        if (!ok) return;
+        closeWindowOpenAlert();
+        if (ok.hasAttribute('data-window-go-market')) deps.openView?.('transfers');
       });
     }
     return modal;
   };
 
   function showWindowOpenAlert({ force = false } = {}) {
+    // Comandando a seleção na Copa: avisos de mercado do clube ficam para depois.
+    if (typeof document !== 'undefined' && document.body?.classList.contains('national-team-command')) return false;
     const api = engine();
     const phase = api?.getWindowPhase?.() || null;
     const status = api?.marketStatus?.() || null;
@@ -1417,6 +1511,33 @@ export function createTransfersFeature(deps) {
     const end = $('#transferWindowOpenEnd');
     if (start) start.textContent = formatDate(bounds.start);
     if (end) end.textContent = formatDate(bounds.end);
+    const isOpen = !!phase?.active;
+    const title = $('#transferWindowOpenAlertTitle');
+    const kicker = $('#transferWindowOpenKicker');
+    if (title) title.textContent = isOpen ? (phase?.isDeadlineDay ? 'Último dia do mercado' : 'Mercado aberto') : 'Mercado fechado';
+    if (kicker) kicker.textContent = isOpen ? 'JANELA DE TRANSFERÊNCIAS' : 'PRÓXIMA JANELA';
+    const balanceEl = $('#transferWindowOpenBalance');
+    if (balanceEl) {
+      try { balanceEl.textContent = formatBudget(getBalance()); } catch { balanceEl.textContent = '—'; }
+    }
+    const note = $('#transferWindowOpenNote');
+    if (note) {
+      const endDate = new Date(season, bounds.end.month - 1, bounds.end.day, 12);
+      const days = Math.round((endDate - careerDate) / 86400000);
+      const pending = api?.listPendingOffers?.({ status: 'pending' })?.length || 0;
+      const parts = [];
+      if (isOpen && days >= 0) {
+        const weeks = Math.ceil(days / 7);
+        parts.push(days <= 1 ? '<strong>Último dia</strong> para negociar.' : `Fecha em <strong>${weeks} ${weeks === 1 ? 'semana' : 'semanas'}</strong>.`);
+      } else if (!isOpen) {
+        parts.push('Compras e vendas só durante a janela; propostas recebidas continuam chegando.');
+      }
+      if (pending) parts.push(`<strong>${pending} ${pending === 1 ? 'proposta' : 'propostas'}</strong> esperando resposta.`);
+      note.innerHTML = parts.join(' ');
+      note.hidden = !parts.length;
+    }
+    const goBtn = modal.querySelector('[data-window-go-market]');
+    if (goBtn) goBtn.hidden = deps.currentView?.() === 'transfers';
     modal.hidden = false;
     document.body.classList.add('transfer-window-alert-open');
     // Consultar a próxima janela ao entrar no Mercado não pode consumir

@@ -2281,7 +2281,17 @@ body.national-team-command .nav[data-view='youth'],
 body.national-team-command .nav[data-view='training'],
 body.national-team-command .header-budget-wrap,
 body.national-team-command .side-mini-cards,
-body.national-team-command .training-shortcut-card {
+body.national-team-command .training-shortcut-card,
+body.national-team-command .section-btn[data-section='clube'],
+body.national-team-command .nav[data-view='transfers'],
+body.national-team-command .nav[data-view='clubhub'],
+body.national-team-command .nav[data-view='clubhistory'],
+body.national-team-command .nav[data-view='ranking'],
+body.national-team-command #champV2Chips button:not([data-champ-v2='CMU']):not([data-champ-v2='ELIMINATORIAS']),
+body.national-team-command #championshipPagePickerMenu [data-page-competition]:not([data-page-competition='CMU']):not([data-page-competition='ELIMINATORIAS']),
+body.national-team-command .champ-v2-rank,
+body.national-team-command #rosterContractBtn,
+body.national-team-command #rosterContractPanel {
   display: none !important;
 }
 
@@ -3282,4 +3292,45 @@ main > .view.active.training-view {
 .training-options button b,
 .training-options button small {
   overflow-wrap: break-word;
+}
+
+/* Libertadores / Sul-Americana na página de Campeonatos */
+.league-row .conmebol-country { margin-left: 6px; font-size: 11px; color: var(--muted, #9eb6b8); font-weight: 500; }
+.league-row.playoff { box-shadow: inset 3px 0 0 #ffb020; }
+.championship-page-zone-legend i.playoff { background: #ffb020; }
+.conmebol-ties { display: grid; gap: 6px; margin: 0 0 12px; }
+.conmebol-tie { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); font-size: 13px; }
+.conmebol-tie small { color: var(--muted, #9eb6b8); font-size: 12px; }
+.conmebol-tie.highlight { border-color: #bbeb27; background: rgba(187,235,39,.06); }
+.conmebol-final-note { margin: 0 0 10px; font-size: 13px; color: var(--muted, #9eb6b8); }
+.conmebol-ko { width: min(640px, 100%); display: grid; gap: 12px; }
+.conmebol-ko .conmebol-ties { margin: 0; }
+.conmebol-ko .conmebol-tie { align-items: center; }
+.match-competition[data-kind='libertadores'] {
+  color: #ffd76a;
+  border-color: #8a6a28;
+  background:
+    radial-gradient(circle at 18% 30%, #ffd76a40, transparent 55%),
+    linear-gradient(135deg, #2b2210 0%, #10161f 100%);
+}
+.match-competition[data-kind='recopa-sul'] {
+  color: #f4c56b;
+  border-color: #7b5a2a;
+  background:
+    radial-gradient(circle at 18% 30%, #f4c56b33, transparent 55%),
+    linear-gradient(135deg, #2a1d10 0%, #10161f 100%);
+}
+.match-competition[data-kind='intercontinental'] {
+  color: #e8ecf5;
+  border-color: #6b7690;
+  background:
+    radial-gradient(circle at 18% 30%, #e8ecf540, transparent 55%),
+    linear-gradient(135deg, #1b2030 0%, #10161f 100%);
+}
+.match-competition[data-kind='sudamericana'] {
+  color: #7fd6f2;
+  border-color: #2f6a7e;
+  background:
+    radial-gradient(circle at 18% 30%, #7fd6f233, transparent 55%),
+    linear-gradient(135deg, #10232b 0%, #10161f 100%);
 }

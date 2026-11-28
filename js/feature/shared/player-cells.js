@@ -8,16 +8,26 @@ export const outfield = value => value || '—';
 
 /** Barra de cansaço padrão para tabelas e listagens. */
 export const fatigueCell = player => {
-  const fatigue = Number.isFinite(Number(player?.fatigue)) ? Number(player.fatigue) : 100;
-  return `<span class="table-fatigue"><i><b style="width:${clamp(fatigue, 0, 100)}%"></b></i>${Math.round(fatigue)}%</span>`;
+  const fatigue = Math.round(clamp(Number.isFinite(Number(player?.fatigue)) ? Number(player.fatigue) : 100, 0, 100));
+  const level = fatigue >= 70 ? 'ok' : fatigue >= 40 ? 'warn' : 'low';
+  return `<span class="table-fatigue roster-fatigue" data-level="${level}"><i><b style="width:${fatigue}%"></b></i><em>${fatigue}%</em></span>`;
 };
 
 /** Barra de cansaço do Elenco — percentual dentro da barra (sem texto externo). */
 export const rosterFatigueCell = (player, { compact = false } = {}) => {
   const fatigue = Math.round(clamp(Number(player?.fatigue) ?? 100, 0, 100));
   const mod = compact ? ' roster-fatigue--compact' : '';
-  return `<span class="roster-fatigue${mod}"><i><b style="width:${fatigue}%"></b><em>${fatigue}%</em></i></span>`;
+  const level = fatigue >= 70 ? 'ok' : fatigue >= 40 ? 'warn' : 'low';
+  return `<span class="roster-fatigue${mod}" data-level="${level}"><i><b style="width:${fatigue}%"></b></i><em>${fatigue}%</em></span>`;
 };
+
+/** Linha do campo para a cor do chip de posição: gol, def, mei, ata. */
+const POSITION_LINES = Object.freeze({
+  GOL: 'gol', ZAG: 'def', LAT: 'def', LD: 'def', LE: 'def',
+  VOL: 'mei', MC: 'mei', MEI: 'mei', ME: 'mei', MD: 'mei',
+  PD: 'ata', PE: 'ata', ATA: 'ata', SA: 'ata', CA: 'ata',
+});
+export const positionLine = pos => POSITION_LINES[String(pos || '').toUpperCase()] || 'mei';
 
 const hasMatchOverlay = liveState =>
   !!liveState &&
@@ -174,6 +184,15 @@ export function createPlayerCells({
     return `<span class="player-loan-line"><small class="player-loan-tag" title="Emprestado${from} até o fim da temporada">EMPR.</small>${club}</span>`;
   };
 
+  /** Convocado: linha "SELEÇÃO · <time>" enquanto estiver fora com a seleção. */
+  const playerNationalLine = player => {
+    const duty = player?.internationalDuty;
+    if (!duty?.team) return '';
+    const caps = Number(player?.internationalCareer?.caps) || 0;
+    const title = `Convocado pela seleção ${duty.team}${caps ? ` · ${caps} jogos pela seleção` : ''}`;
+    return `<span class="player-loan-line"><small class="player-loan-tag player-national-tag" title="${escapeAttr(title)}">${duty.worldCup ? 'COPA' : 'SELEÇÃO'}</small><small class="player-loan-tag player-loan-tag-club">${escapeAttr(duty.team)}</small></span>`;
+  };
+
   const playerStarBadge = player => {
     if (isCraque(player)) {
       const title = 'Craque · estrela dourada';
@@ -202,15 +221,30 @@ export function createPlayerCells({
     const displayName = playerDisplayName(name, getPlayerRoster?.(player, clubName) || []);
     const loanLine = showLoan ? playerLoanLine(player) : '';
     const injuryLine = playerInjuryLine(player);
+    const nationalLine = playerNationalLine(player);
     const badges = playerStatusBadges(player, liveState, { allCompetitions, showLoan: false });
     const playerId = resolvePlayerId(player) || '';
-    const cellMods = [loanLine && 'has-loan', injuryLine && 'has-injury'].filter(Boolean).join(' ');
+    const cellMods = [(loanLine || nationalLine) && 'has-loan', injuryLine && 'has-injury'].filter(Boolean).join(' ');
     const cardAttrs =
       openCard && playerId
         ? ` role="button" tabindex="0" class="player-name-text is-card-trigger" data-open-player-card data-player-id="${escapeAttr(playerId)}"${clubName ? ` data-player-club="${escapeAttr(clubName)}"` : ''}`
         : ' class="player-name-text"';
-    return `<b class="player-name-cell${cellMods ? ` ${cellMods}` : ''}"><span class="player-name-line">${prefix ? `<span class="player-name-prefix">${prefix}</span>` : ''}<span${cardAttrs} title="${escapeAttr(name)}">${escapeAttr(displayName)}</span>${playerStarBadge(player)}${badges}</span>${injuryLine}${loanLine}</b>`;
+    return `<b class="player-name-cell${cellMods ? ` ${cellMods}` : ''}"><span class="player-name-line">${prefix ? `<span class="player-name-prefix">${prefix}</span>` : ''}<span${cardAttrs} title="${escapeAttr(name)}">${escapeAttr(displayName)}</span>${playerStarBadge(player)}${badges}</span>${injuryLine}${nationalLine}${loanLine}</b>`;
   };
 
   return { playerNameCell, playerStatusBadges, playerInjuryLine };
 }
+
+/**
+ * Mini-carta de jogador no campinho (padrão v2): OVR, chip de posição e
+ * barra de condição. Usada em Táticas, pausa ao vivo, análise de adversário.
+ * Com `vacant`, mostra um × no lugar (expulso/vaga).
+ */
+export const boardCardMarkup = (player, { vacant = false } = {}) => {
+  if (vacant || !player) {
+    return '<span class="pp-card pp-card--vacant"><span class="pp-top"><b class="pp-ovr">×</b></span></span>';
+  }
+  const energy = Math.round(clamp(Number.isFinite(Number(player.fatigue)) ? Number(player.fatigue) : 100, 0, 100));
+  const level = energy >= 80 ? 'ok' : energy >= 60 ? 'warn' : 'low';
+  return `<span class="pp-card"><span class="pp-top"><b class="pp-ovr">${player.overall ?? '—'}</b><em class="pos-chip" data-line="${positionLine(player.pos)}">${player.pos || ''}</em></span><i class="pp-cond" data-level="${level}"><b style="width:${energy}%"></b></i></span>`;
+};

@@ -39,7 +39,7 @@ import {
   formatScoutReportBody,
   purgeExpiredScoutReports,
 } from '../../engine/youth-academy.js';
-import { estimateStaffBill, getStructureLevel } from '../../engine/economy.js';
+import { estimateStaffBill, getStructureLevel, listStadiumUpgrades } from '../../engine/economy.js';
 
 /**
  * UI — Categoria de Base (infra, olheiros, elenco U-20).
@@ -65,6 +65,7 @@ export function createYouthAcademyFeature(deps) {
     onBudgetChanged,
     getRetiredPool,
     isOffSeason,
+    openView,
   } = deps;
 
   let activeTab = 'squad';
@@ -129,11 +130,42 @@ export function createYouthAcademyFeature(deps) {
       main.prepend(locked);
     }
     const need = YOUTH_STRUCTURE_UNLOCK;
+    const club = userClubState();
+    const current = getStructureLevel(club);
+    const missing = Math.max(0, need - current);
+    let nextCost = '—';
+    try {
+      const row = listStadiumUpgrades(club, getUserDivision?.() || club?.division).find(item => item.id === 'structure');
+      if (row && row.cost > 0 && typeof formatBudget === 'function') nextCost = formatBudget(row.cost);
+    } catch { /* economia indisponível */ }
+    const pips = Array.from({ length: need }, (_, index) => `<i class="${index < current ? 'is-on' : ''}"></i>`).join('');
+    locked.classList.add('youth-v2-locked');
     locked.innerHTML = `
-      <label>BLOQUEADO</label>
-      <strong>Infraestrutura insuficiente</strong>
-      <p>Invista na <b>Estrutura do estádio</b> até o nível ${need} (${structureLabel(need)}) para liberar a Categoria de Base, olheiros e elenco U-20.</p>
-      <p class="youth-locked-meta">Estádio → Estrutura · atual: ${structureLabel(getStructureLevel(userClubState()))}</p>`;
+      <div class="youth-v2-locked-main">
+        <span class="youth-v2-kicker">BLOQUEADA · ESTRUTURA ${current} DE ${need}</span>
+        <strong class="youth-v2-title">Categoria de Base</strong>
+        <p class="youth-v2-lead">Libere a base investindo na <b>Estrutura do estádio</b> até o nível ${need} (${esc(structureLabel(need))}).</p>
+        <ul class="youth-v2-perks">
+          <li data-tone="lime"><b>Elenco U-20</b><span>jovens que treinam e sobem para o profissional</span></li>
+          <li data-tone="cyan"><b>Olheiros</b><span>missões pelo país em busca de talentos</span></li>
+          <li data-tone="gold"><b>Joias da base</b><span>reforço barato ou venda com lucro</span></li>
+        </ul>
+        <div class="youth-v2-preview" aria-hidden="true">${['GOL', 'MEI', 'ATA'].map(pos => `<span><b>??</b><small>${pos} · sub-20</small></span>`).join('')}</div>
+      </div>
+      <aside class="youth-v2-locked-side">
+        <span class="youth-v2-kicker">PARA LIBERAR</span>
+        <div class="youth-v2-pips" aria-label="Estrutura ${current} de ${need}">${pips}</div>
+        <div class="mv2-tiles">
+          <div class="mv2-tile"><small>FALTAM</small><strong>${missing} ${missing === 1 ? 'nível' : 'níveis'}</strong></div>
+          <div class="mv2-tile"><small>PRÓXIMO NÍVEL</small><strong class="is-money">${nextCost}</strong></div>
+        </div>
+        <p class="youth-v2-meta">Atual: ${esc(structureLabel(current))}</p>
+        <button type="button" class="mv2-btn is-primary youth-v2-go" data-youth-go-structure>IR PARA ESTRUTURA</button>
+      </aside>`;
+    locked.querySelector('[data-youth-go-structure]')?.addEventListener('click', () => {
+      if (typeof openView === 'function') openView('stadium');
+      else document.querySelector('#sectionTabs .nav[data-view="stadium"]')?.click() || document.querySelector('.section-btn[data-section="clube"]')?.click();
+    });
   };
 
   const renderInfra = club => {

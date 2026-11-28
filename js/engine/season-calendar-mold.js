@@ -7,6 +7,7 @@
  * Novas competições: registrar em FUTURE_COMPETITION_MOLD + COMPETITION_WEEK_SLOT_MAP.
  */
 
+import { clubWorldCupWindow, isClubWorldCupYear } from './conmebol-format.js';
 import { FEATURES } from '../core/constants.js';
 import {
   WORLD_CUP_CLUB_RELEASE_LEAD_DAYS,
@@ -165,6 +166,25 @@ export function getSeasonBlackouts(seasonYear) {
       soft: false,
     });
   }
+  if (isClubWorldCupYear(year)) {
+    // Mundial de Clubes (formato 2025, 32 clubes): o Brasileirão para durante
+    // o torneio, como parou em 2025.
+    const cwc = clubWorldCupWindow(year);
+    list.push({
+      id: 'club_world_cup',
+      code: 'CWC',
+      label: 'Copa do Mundo de Clubes da FIFA (clubes parados)',
+      start: [...cwc.start],
+      end: [...cwc.end],
+      blocksClubs: true,
+      locked: true,
+      hard: true,
+      cadence: 'quadrennial',
+      anchorYear: year,
+      exact: false,
+      soft: false,
+    });
+  }
   return list;
 }
 
@@ -310,7 +330,7 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     voltaSlot: 'continental_conmebol',
     twoLegged: true,
     priority: 3,
-    enabled: false,
+    enabled: true,
     skipsWhen: ['world_cup'], // clubes liberados em anos de copa — ajustável
   }),
   /** CONMEBOL Sudamericana (3/mar a 21/nov de 2026) — mesmo slot que Libertadores. */
@@ -328,7 +348,7 @@ export const FUTURE_COMPETITION_MOLD = Object.freeze({
     voltaSlot: 'continental_conmebol',
     twoLegged: true,
     priority: 3,
-    enabled: false,
+    enabled: true,
   }),
   /** Recopa Sul-Americana — campeão Libertadores × campeão Sul-Americana. */
   recopa_sudamericana: Object.freeze({
@@ -572,6 +592,12 @@ export function resolveFixtureCompetitionCode(game, { division = null } = {}) {
   if (comp === 'RECOPA NACIONAL') return 'SCB';
   if (comp === 'COPA DO BRASIL' || comp === 'COPA') return COMPETITION_CALENDAR_MOLD.cup.code;
   if (comp === 'COPA DO MUNDO') return 'CMU';
+  if (comp === 'LIBERTADORES') return 'LIB';
+  if (comp === 'SUL-AMERICANA') return 'CSU';
+  if (comp === 'RECOPA SUL-AMERICANA') return 'RSA';
+  if (comp === 'ELIMINATÓRIAS') return 'ELI';
+  if (comp === 'INTERCONTINENTAL') return 'CIF';
+  if (comp === 'MUNDIAL DE CLUBES') return 'CWC';
   if (comp === 'SÉRIE D ELIMINATÓRIAS' || (game.tieId && game.knockoutRound != null)) {
     return LEAGUE_CODE_BY_DIVISION.D || 'BSD';
   }

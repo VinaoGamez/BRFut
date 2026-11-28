@@ -7,7 +7,9 @@ import {
   clampToSeason,
   refreshCupNominalDates,
   cupPhaseMaxDate,
+  buildCupPhaseNominalDates,
 } from './season-calendar-plan.js';
+import { conmebolStageWindows } from './conmebol-format.js';
 import {
   leagueWindowsFromMold,
   leagueCompetitionId,
@@ -322,6 +324,78 @@ export function scheduleGameOnOccupancy(game, occupancy, {
   return game;
 }
 
+/** Dia de rodada de meio de semana por divisão, quando o fim de semana não basta. */
+const MIDWEEK_FALLBACK = Object.freeze({ A: 3, B: 2, C: 3, D: 3 });
+
+/**
+ * Datas das rodadas: primeiro os fins de semana livres de Data FIFA / Copa do
+ * Mundo dentro da janela da divisão. Se não couberem todas as rodadas — ano de
+ * Copa com as janelas FIFA reais —, entram rodadas de meio de semana (como a
+ * CBF faz), espalhadas e longe das semanas da Copa do Brasil e da CONMEBOL.
+ */
+function leagueRoundDates({ season, year, division, rounds, start, end, maxDate, leagueWeekdays }) {
+  const base = buildWeeklyCadenceDates(start, end, leagueWeekdays, rounds);
+  if (!year) return base;
+  const free = date => !isClubCalendarBlackout(date, year);
+  const weekends = [];
+  let cursor = snapToNextWeekday(start, leagueWeekdays);
+  while (cursor.getTime() <= normalizeNoon(end).getTime()) {
+    if (free(cursor)) weekends.push(new Date(cursor));
+    cursor = normalizeNoon(new Date(cursor.getTime() + 7 * MS_DAY));
+  }
+  if (weekends.length >= rounds) {
+    // Sem blackout no meio: mantém a cadência original (mesma agenda de antes).
+    if (base.every(free)) return base;
+    return weekends.slice(0, rounds);
+  }
+  const midweekDay = MIDWEEK_FALLBACK[division] ?? 3;
+  const busyWeeks = new Set();
+  const weekKey = date => {
+    const d = normalizeNoon(date);
+    const monday = new Date(d.getTime() - ((d.getDay() + 6) % 7) * MS_DAY);
+    return monday.toISOString().slice(0, 10);
+  };
+  // Datas nominais da Copa podem cair no domingo e ir para a quarta seguinte.
+  Object.values(buildCupPhaseNominalDates(year) || {}).flat().forEach(date => {
+    const ts = new Date(date).getTime();
+    busyWeeks.add(weekKey(new Date(ts)));
+    busyWeeks.add(weekKey(new Date(ts + 3 * MS_DAY)));
+  });
+  ['libertadores', 'sudamericana'].forEach(id => {
+    Object.values(conmebolStageWindows(id, year) || {}).forEach(spec => {
+      const list = Array.isArray(spec) ? spec : Object.values(spec || {});
+      list.filter(Boolean).forEach(window => busyWeeks.add(weekKey(window.start)));
+    });
+  });
+  const candidates = [];
+  let probe = snapToNextWeekday(start, [midweekDay]);
+  const limit = normalizeNoon(end).getTime();
+  while (probe.getTime() <= limit) {
+    if (free(probe) && !busyWeeks.has(weekKey(probe))) candidates.push(new Date(probe));
+    probe = normalizeNoon(new Date(probe.getTime() + 7 * MS_DAY));
+  }
+  const missing = rounds - weekends.length;
+  const picked = [];
+  if (candidates.length) {
+    const step = candidates.length / Math.max(1, missing);
+    for (let i = 0; i < missing && picked.length < candidates.length; i += 1) {
+      picked.push(candidates[Math.min(candidates.length - 1, Math.floor(i * step + step / 2))]);
+    }
+  }
+  const dates = [...weekends, ...picked].sort((a, b) => a - b);
+  // Ainda faltando (janela curta demais): estende pelos fins de semana após o fim.
+  let extra = normalizeNoon(new Date((dates[dates.length - 1] || end).getTime()));
+  while (dates.length < rounds) {
+    extra = snapToNextWeekday(new Date(extra.getTime() + MS_DAY), leagueWeekdays);
+    if (maxDate && extra.getTime() > normalizeNoon(maxDate).getTime()) {
+      dates.push(new Date(extra));
+      continue;
+    }
+    if (free(extra)) dates.push(new Date(extra));
+  }
+  return dates.slice(0, rounds);
+}
+
 /** Distribui datas do pontos corridos (rodada sincronizada no slot da divisão). */
 export function scheduleLeagueDivision(season, division, fixtures, {
   window = LEAGUE_CALENDAR_WINDOWS[division],
@@ -338,16 +412,18 @@ export function scheduleLeagueDivision(season, division, fixtures, {
   const { start, end } = windowToDates(season, window);
   const leagueCompId = competitionId || window.competitionId || leagueCompetitionId(division);
   const leagueWeekdays = getCompetitionWeekdays(leagueCompId);
-  const roundDates = buildWeeklyCadenceDates(start, end, leagueWeekdays, rounds);
+  const roundDates = leagueRoundDates({ season, year, division, rounds, start, end, maxDate, leagueWeekdays });
   fixtures.forEach((roundGames, roundIndex) => {
     if (!Array.isArray(roundGames)) return;
     const roundDate = clampToSeason(roundDates[roundIndex] || roundDates[roundDates.length - 1], season);
+    // Rodada de meio de semana fica no dia dela; as demais seguem o slot da divisão.
+    const roundWeekdays = leagueWeekdays.includes(roundDate.getDay()) ? leagueWeekdays : [roundDate.getDay()];
     roundGames.forEach((game, gameIndex) => {
       scheduleGameOnOccupancy(game, occupancy, {
         nominalDate: roundDate,
         maxDate,
         minRestDays,
-        slotWeekdays: leagueWeekdays,
+        slotWeekdays: roundWeekdays,
         competitionId: leagueCompId,
         time: fixtureTimes[gameIndex % fixtureTimes.length],
         seasonYear: year,

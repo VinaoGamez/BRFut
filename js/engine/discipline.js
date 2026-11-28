@@ -1,3 +1,4 @@
+import { CONMEBOL_DISCIPLINE_KEYS } from './conmebol-format.js';
 import { MODULE_VERSIONS } from '../core/constants.js';
 
 /** Amarelos acumulados na mesma competição → 1 jogo suspenso. */
@@ -60,6 +61,9 @@ export function normalizePlayerDiscipline(source, { defaultLeagueKey = 'LEAGUE:A
 export function competitionKeyFromFixture(fixture, { isKnockoutShootout = () => false, clubs = {} } = {}) {
   if (!fixture || typeof fixture !== 'object') return 'LEAGUE:A';
   if (fixture.competition === 'COPA DO BRASIL') return 'COPA';
+  // Cartões da CONMEBOL só contam na própria competição.
+  if (CONMEBOL_DISCIPLINE_KEYS[fixture.competition]) return CONMEBOL_DISCIPLINE_KEYS[fixture.competition];
+  if (fixture.competition === 'ELIMINATÓRIAS') return 'ELIMINATORIAS';
   if (isKnockoutShootout(fixture)) return 'SERIE_D_KO';
   const homeDiv = clubs[fixture.home]?.division;
   const awayDiv = clubs[fixture.away]?.division;
@@ -70,6 +74,12 @@ export function competitionKeyFromFixture(fixture, { isKnockoutShootout = () => 
 export function competitionLabel(competitionKey) {
   if (competitionKey === 'COPA') return 'Copa do Brasil';
   if (competitionKey === 'SERIE_D_KO') return 'Série D · mata-mata';
+  if (competitionKey === 'LIBERTADORES') return 'Libertadores';
+  if (competitionKey === 'SUDAMERICANA') return 'Sul-Americana';
+  if (competitionKey === 'RECOPA_SUL') return 'Recopa Sul-Americana';
+  if (competitionKey === 'ELIMINATORIAS') return 'Eliminatórias';
+  if (competitionKey === 'INTERCONTINENTAL') return 'Intercontinental';
+  if (competitionKey === 'MUNDIAL_CLUBES') return 'Mundial de Clubes';
   if (String(competitionKey).startsWith('LEAGUE:')) {
     return `Brasileirão Série ${String(competitionKey).slice(7)}`;
   }

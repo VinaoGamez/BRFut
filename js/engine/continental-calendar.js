@@ -6,10 +6,10 @@
  * Série C e Série D não têm vaga nenhuma — nunca tiveram. Em 2026 as 13 vagas
  * brasileiras foram todas de clubes da Série A.
  *
- * A competição está **desligada in-game** (`enabled: false`). O que existe aqui
- * são as datas reais, reservadas por clube, sem travar a temporada. É o mesmo
- * desenho da Copa do Brasil, que já mexe em 126 clubes sem bloquear ninguém:
- * data reservada é data do clube que joga continental, não um feriado geral.
+ * As competições jogáveis vivem em conmebol-format / conmebol-competition /
+ * conmebol-runtime, com as vagas atualizadas (G4 + campeão da Copa do Brasil
+ * nos grupos, 5º + vice na 2ª fase). Este módulo ficou como referência de datas
+ * para o molde do calendário.
  *
  * Datas de 2026 (CONMEBOL):
  *   Libertadores  3/fev a 28/nov · grupos 7/abr a 28/mai · oitavas 11 e 18/ago
@@ -21,7 +21,7 @@
  * Mês em base 0, como no resto do calendário do jogo.
  */
 
-export const CONMEBOL_ENABLED = false;
+export const CONMEBOL_ENABLED = true;
 
 /** Vagas do Brasil, e de qual divisão cada uma pode sair. */
 export const CONMEBOL_BERTHS = Object.freeze({

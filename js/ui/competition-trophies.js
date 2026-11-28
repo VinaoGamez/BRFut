@@ -28,7 +28,7 @@ export function resolveChampionshipTrophyKey(pageCompetition) {
   if (id === 'ESTADUAIS' || id.startsWith('EST:')) return 'estaduais';
   if (id === 'LIBERTADORES' || id === 'LIB') return 'libertadores';
   if (id === 'SUDAMERICANA' || id === 'SUD') return 'sul-americana';
-  if (id === 'CMU' || id === 'WORLD_CUP') return 'world-cup';
+  if (id === 'CMU' || id === 'WORLD_CUP' || id === 'ELIMINATORIAS' || id === 'MUNDIAL') return 'world-cup';
   return 'nacional';
 }
 

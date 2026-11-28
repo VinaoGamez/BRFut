@@ -28,6 +28,7 @@ export function createHeaderGuideRenderer({
   getTransfersEngine,
   formatBudget,
   headerMatchContext,
+  getNationalCommand,
 }) {
   return () => {
     const track = $('#headerNewsTrack');
@@ -52,6 +53,24 @@ export function createHeaderGuideRenderer({
         ? `SEU JOGO · ${ctx.tag}`
         : 'SEU JOGO';
       pushItem('jogo', headerMatchLine(next.game, details, headerMatchContext, { userTag, withTime: true }), true);
+    }
+
+    // Comando da seleção: o informativo fala só da Copa (jogos e grupo), sem clube nem mercado.
+    const nt = typeof getNationalCommand === 'function' ? getNationalCommand() : null;
+    if (nt) {
+      (nt.upcoming || []).slice(0, 3).forEach(game => {
+        const when = game.date ? new Date(game.date) : null;
+        const label = when && !Number.isNaN(when.getTime())
+          ? when.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace(/\./g, '').toUpperCase()
+          : '';
+        pushItem('jogo', `<i>${escapeHeaderText(game.group ? `COPA · GRUPO ${game.group}` : 'COPA')}</i><b>${escapeHeaderText(shortHeaderClub(game.home))} × ${escapeHeaderText(shortHeaderClub(game.away))}</b><em>${escapeHeaderText(label)}</em>`);
+      });
+      if (nt.groupLine) pushItem('mercado', `<i>${escapeHeaderText(nt.groupTag || 'GRUPO')}</i><b>${escapeHeaderText(nt.groupLine)}</b><em>${escapeHeaderText(nt.groupNote || '')}</em>`);
+      const seqHtmlNt = items
+        .map(item => `<article class="header-news-item kind-${item.kind}${item.user ? ' is-user' : ''}">${item.html}</article>`)
+        .join('');
+      track.innerHTML = `<div class="header-news-seq">${seqHtmlNt}</div><div class="header-news-seq" aria-hidden="true">${seqHtmlNt}</div>`;
+      return;
     }
 
     (getFutureMatches?.() || [])

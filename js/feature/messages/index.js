@@ -336,6 +336,50 @@ export function createMessagesFeature(deps) {
 
   const unreadCount = () => careerMessages.filter(message => !message.read).length;
 
+  let openViewFn = null;
+  /** Mensagens v2: no PC a leitura fica num painel ao lado da lista (sem pop-up). */
+  const hasDom = () => typeof document !== 'undefined' && !!document.documentElement?.classList && typeof document.querySelector === 'function';
+  const isReaderDocked = () =>
+    hasDom() && !document.documentElement.classList.contains('is-mobile') && !!document.querySelector('#messages.view.active');
+  const readerCard = () => (hasDom() ? document.querySelector('.message-reader-card') : null);
+  const ensureReaderPlacement = docked => {
+    const card = readerCard();
+    const pane = $('#messagesReaderPane');
+    const modal = $('#messageReaderModal');
+    if (!card || !modal) return;
+    if (docked && pane && card.parentElement !== pane) pane.appendChild(card);
+    if (!docked && card.parentElement !== modal) modal.appendChild(card);
+    pane?.classList.toggle('has-message', docked && readerIndex >= 0);
+  };
+  const messagePreview = message => {
+    const text = String(message?.body || '').replace(/\s+/g, ' ').trim();
+    return text.length > 110 ? `${text.slice(0, 108)}…` : text;
+  };
+  const renderReaderLinks = message => {
+    let box = $('#messageReaderLinks');
+    const card = readerCard();
+    if (!hasDom()) return;
+    if (!box && card) {
+      card.querySelector('.message-reader-actions')?.insertAdjacentHTML('beforebegin', '<div id="messageReaderLinks" class="message-reader-links"></div>');
+      box = $('#messageReaderLinks');
+    }
+    if (!box) return;
+    const links = [];
+    if (isMatchdayMessage(message)) {
+      links.push(['opponent', 'VER ADVERSÁRIO', false], ['tactics', 'ESCALAR TIME', true]);
+    } else if (isTrainingWeeklyMessage(message)) {
+      links.push(['training', 'VER TREINAMENTO', true]);
+    } else if (message?.category === 'transfer' && !isActionRequiredMessage(message)) {
+      links.push(['transfers', 'IR AO MERCADO', true]);
+    } else if (message?.category === 'club' && /meta|diretoria/i.test(String(message?.title || ''))) {
+      links.push(['clubhub', 'VER DIRETORIA', true]);
+    } else if (message?.category === 'competition' && !isMatchdayMessage(message)) {
+      links.push(['calendar', 'VER CALENDÁRIO', true]);
+    }
+    box.innerHTML = links.map(([go, label, primary]) => `<button type="button" class="mv2-btn ${primary ? 'is-primary' : 'is-ghost'}" data-reader-go="${go}">${label}</button>`).join('');
+    box.hidden = !links.length;
+  };
+
   const filteredMessages = () => {
     const base =
       messageFilter === 'all'
@@ -441,6 +485,8 @@ export function createMessagesFeature(deps) {
     $('#messageReaderModal')?.classList.add('hidden');
     $('.message-reader-head')?.classList.remove('is-transfer-offer', 'is-reader-grid');
     readerIndex = -1;
+    $('#messagesReaderPane')?.classList.remove('has-message');
+    $$('#messagesList .is-selected').forEach(item => item.classList.remove('is-selected'));
     syncTransferOfferActions(null);
     if (!transferActionQueueActive) return;
     transferActionQueue = transferActionQueue.filter(id => {
@@ -595,10 +641,20 @@ export function createMessagesFeature(deps) {
       }
     }
     syncTransferOfferActions(message);
+    renderReaderLinks(message);
 
     updateReaderNav();
     updateMessageBadge();
-    $('#messageReaderModal')?.classList.remove('hidden');
+    const docked = isReaderDocked();
+    ensureReaderPlacement(docked);
+    if (docked) {
+      $('#messageReaderModal')?.classList.add('hidden');
+      $$('#messagesList [data-message-id]').forEach(item => item.classList.toggle('is-selected', item.dataset.messageId === String(message.id)));
+      const counter = $('#messageReaderCounter');
+      if (counter) counter.textContent = `${index + 1} de ${items.length}`;
+    } else {
+      $('#messageReaderModal')?.classList.remove('hidden');
+    }
     return true;
   };
 
@@ -627,11 +683,32 @@ export function createMessagesFeature(deps) {
                     : isTrainingWeeklyMessage(message)
                       ? 'RELATÓRIOS DE TREINAMENTOS'
                       : message.title;
-            return `<article class="message-item ${message.read ? 'read' : 'unread'} message-${message.category}${urgent ? ' message-action-required' : ''}" data-message-id="${message.id}"><div class="message-item-main"><small>${CATEGORY_LABELS[message.category] || message.category.toUpperCase()} · RODADA ${message.round}${urgent ? ' · AÇÃO' : ''}</small><strong>${escapeHtml(listTitle)}</strong></div><time>${formatMessageTime(message.at)}</time></article>`;
+            const selected = readerIndex >= 0 && filteredMessages()[readerIndex]?.id === message.id && isReaderDocked();
+            return `<article class="message-item ${message.read ? 'read' : 'unread'} message-${message.category}${urgent ? ' message-action-required' : ''}${selected ? ' is-selected' : ''}" data-message-id="${message.id}"><i class="message-item-dot" aria-hidden="true"></i><div class="message-item-main"><small>${CATEGORY_LABELS[message.category] || message.category.toUpperCase()} · RODADA ${message.round}${urgent ? ' · AÇÃO' : ''}</small><strong>${escapeHtml(listTitle)}</strong><span class="message-item-preview">${escapeHtml(messagePreview(message))}</span></div><time>${formatMessageTime(message.at)}</time></article>`;
           })
           .join('')
       : `<div class="messages-empty">Nenhuma ocorrência registrada${messageFilter === 'all' ? ' ainda' : ` na categoria ${CATEGORY_LABELS[messageFilter] || messageFilter}`}.</div>`;
     updateMessageBadge();
+    // Contagem por categoria nos filtros.
+    const inbox = careerMessages.filter(message => isInboxMessage(message) && !shouldHideClubContractMessage(message));
+    $$('#messageFilters [data-message-filter]').forEach(button => {
+      const key = button.dataset.messageFilter;
+      const count = key === 'all' ? inbox.length : inbox.filter(message => message.category === key).length;
+      let badge = button.querySelector('.message-filter-count');
+      if (!badge) { button.insertAdjacentHTML('beforeend', ' <span class="message-filter-count"></span>'); badge = button.querySelector('.message-filter-count'); }
+      badge.textContent = String(count);
+    });
+    // Painel de leitura (PC).
+    const panel = typeof list.closest === 'function' ? list.closest('.messages-panel') : null;
+    if (panel && !$('#messagesReaderPane')) {
+      list.insertAdjacentHTML('afterend', '<section id="messagesReaderPane" class="messages-reader-pane" aria-live="polite"><div class="messages-reader-empty"><strong>Selecione uma mensagem</strong><span>A mensagem abre aqui, ao lado da lista.</span></div></section>');
+      const wrap = document.createElement('div');
+      wrap.className = 'messages-v2-body';
+      list.before(wrap);
+      wrap.append(list, $('#messagesReaderPane'));
+    }
+    if (isReaderDocked()) ensureReaderPlacement(true);
+    else ensureReaderPlacement(false);
   };
 
   const renderDashboardMessagesFeed = () => {
@@ -850,6 +927,18 @@ export function createMessagesFeature(deps) {
   };
 
   const bindHandlers = ({ openView } = {}) => {
+    openViewFn = openView || null;
+    document.addEventListener('click', event => {
+      const go = event.target.closest?.('[data-reader-go]')?.dataset.readerGo;
+      if (!go) return;
+      if (go === 'opponent') {
+        if (!isReaderDocked()) closeMessageReader();
+        document.querySelector('#inspectOpponent')?.click();
+        return;
+      }
+      if (!isReaderDocked()) closeMessageReader();
+      openViewFn?.(go);
+    });
     onClick('#messageFilters', event => {
       const button = event.target.closest('[data-message-filter]');
       if (!button) return;

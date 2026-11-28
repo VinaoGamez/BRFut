@@ -1,3 +1,5 @@
+import { QUALIFIERS_COMPETITION } from '../../engine/conmebol-qualifiers.js';
+import { conmebolShortName, isConmebolGame } from '../../engine/conmebol-format.js';
 import { resolveNationalTeam } from '../../engine/national-teams.js';
 import { WORLD_CUP_COMPETITION } from '../../engine/world-cup-calendar.js';
 import { isKnockoutShootoutCompetition, serieDKnockoutPhaseLabel } from '../../engine/knockout-shootout.js';
@@ -18,6 +20,16 @@ export const serieDGroupLabel = groupIndex => (groupIndex >= 0 ? `Grupo A${group
 
 export const joinMatchMeta = (...parts) => parts.filter(Boolean).join(' · ');
 
+const isConmebolMatch = game => isConmebolGame(game);
+const conmebolCompetitionName = game => conmebolShortName(game);
+/** Fase da CONMEBOL como aparece no card: "Grupo C · 3ª rodada", "Oitavas de final · Volta". */
+const conmebolPhaseLabel = game => {
+  if (!game) return '';
+  if (game.stage === 'G') return joinMatchMeta(`Grupo ${game.group}`, `${game.matchday}ª rodada`);
+  const leg = game.leg === 'IDA' ? 'Ida' : game.leg === 'VOLTA' ? 'Volta' : '';
+  return joinMatchMeta(game.phase, leg) || conmebolCompetitionName(game);
+};
+
 export const matchCompetitionRoundLabel = (game, userDivision, currentRound = 1, serieDGroupRounds = 10) => {
   if (!game) {
     return userDivision === 'D' ? `Rodada ${currentRound}` : `Rodada ${currentRound} de 38`;
@@ -26,6 +38,8 @@ export const matchCompetitionRoundLabel = (game, userDivision, currentRound = 1,
     const parts = [game.phase, game.leg].filter(Boolean);
     return parts.join(' · ') || 'Copa do Brasil';
   }
+  if (isConmebolMatch(game)) return conmebolPhaseLabel(game);
+  if (isQualifierFixture(game)) return `${game.matchday}ª rodada de 18`;
   if (isStateLeagueGame(game)) {
     if (game.phase === 'semis') return 'Semifinal';
     if (game.phase === 'final') return 'Final';
@@ -41,7 +55,9 @@ export const matchCompetitionRoundLabel = (game, userDivision, currentRound = 1,
   return `Rodada ${round} de 38`;
 };
 
-export const isWorldCupFixture = game => game?.competition === WORLD_CUP_COMPETITION;
+/** Jogo de seleção (Copa do Mundo ou Eliminatórias). */
+export const isWorldCupFixture = game => game?.competition === WORLD_CUP_COMPETITION || game?.competition === QUALIFIERS_COMPETITION;
+const isQualifierFixture = game => game?.competition === QUALIFIERS_COMPETITION;
 
 export const isSerieDEnrolledClub = (clubName, clubs, serieDGroups) => {
   const club = clubs?.[clubName];
@@ -67,7 +83,7 @@ export const resolveClubDivision = (clubName, clubs, serieDGroups) => {
 };
 
 export const resolveFixtureDivision = (game, fallbackDivision = null) => {
-  if (!game || game.competition === 'COPA DO BRASIL' || isStateLeagueGame(game)) return null;
+  if (!game || game.competition === 'COPA DO BRASIL' || isConmebolMatch(game) || isStateLeagueGame(game)) return null;
   const explicit = String(game._liveDivision || game.division || game.leagueDivision || '').toUpperCase();
   if (['A', 'B', 'C', 'D'].includes(explicit)) return explicit;
   const competition = String(game.competition || '').toUpperCase();
@@ -86,6 +102,11 @@ export const formatClubPositionLabel = (
   { game = null, teamName = null, clubs = null, serieDGroups = [], userDivision = 'A', serieDGroupRounds = 10 } = {},
 ) => {
   if (game?.competition === 'COPA DO BRASIL' && teamName) {
+    return clubDivisionLabel(teamName, clubs, serieDGroups);
+  }
+  if (isConmebolMatch(game) && teamName) {
+    const club = clubs?.[teamName];
+    if (club?.division === 'INT') return club.countryName || club.city || 'Exterior';
     return clubDivisionLabel(teamName, clubs, serieDGroups);
   }
   if (pos === '—' || pos == null) return '—';
@@ -114,9 +135,11 @@ export const clubStandingContext = (
   const club = clubs?.[clubName];
   if (!club) {
     const nt = resolveNationalTeam(clubName);
-    if (nt) return `Copa do Mundo · FIFA ${nt.fifaRank}º`;
+    if (nt) return `${game?.competition === 'ELIMINATÓRIAS' ? 'Eliminatórias' : 'Copa do Mundo'} · FIFA ${nt.fifaRank}º`;
     return '';
   }
+  if (club.division === 'INT') return joinMatchMeta(club.countryName || '', club.city || '');
+  if (isConmebolMatch(game)) return divisionDisplayName(club.division || 'A');
   const division = resolveFixtureDivision(game, userDivision)
     || resolveClubDivision(clubName, clubs, serieDGroups)
     || 'A';
@@ -143,11 +166,15 @@ export const matchCompetitionPhaseLabel = (
   serieDGroups,
   { currentRound = 1, userSerieDGroupIndex = 0, serieDGroupRounds = 10 } = {},
 ) => {
+  if (isQualifierFixture(game)) return joinMatchMeta('Eliminatórias', `${game.matchday}ª rodada`);
   if (isWorldCupFixture(game)) {
     return joinMatchMeta('Copa do Mundo', game.phase || game.leg) || 'Copa do Mundo';
   }
   if (game?.competition === 'COPA DO BRASIL') {
     return joinMatchMeta(game.phase, game.leg) || 'Copa do Brasil';
+  }
+  if (isConmebolMatch(game)) {
+    return joinMatchMeta(conmebolCompetitionName(game), conmebolPhaseLabel(game));
   }
   if (isStateLeagueGame(game)) {
     return joinMatchMeta(stateLeaguePhaseLabel(game), matchCompetitionRoundLabel(game, userDivision, currentRound, serieDGroupRounds));
@@ -181,12 +208,14 @@ export const matchCompetitionPhaseLabel = (
 /** Texto do `<em>` ao lado do título (rodada/fase) — espelha o card Próxima Partida. */
 export const matchCompetitionRoundEmLabel = (game, userDivision, userSerieDGroupIndex = 0) => {
   if (!game) return '';
+  if (isQualifierFixture(game)) return `ELIMINATÓRIAS · ${game.matchday}ª RODADA`;
   if (isWorldCupFixture(game)) {
     return game.phase || game.leg || 'COPA DO MUNDO';
   }
   if (game.competition === 'COPA DO BRASIL') {
     return `${game.phase || 'COPA'} · ${game.leg || ''}`.replace(/\s·\s$/, '');
   }
+  if (isConmebolMatch(game)) return conmebolPhaseLabel(game).toUpperCase();
   if (isStateLeagueGame(game)) {
     return stateLeagueRoundEmLabel(game);
   }

@@ -59,6 +59,9 @@ export function createCupCalendarEngine({
   getClubs,
   shuffleCup,
   onCupScheduleChanged,
+  // Jogos de datas fixas de fora (CONMEBOL) que reservam a agenda dos clubes
+  // brasileiros antes da Copa do Brasil se encaixar.
+  reserveExtraFixtures = null,
 }) {
   const MIN_REST_DAYS = DEFAULT_MIN_REST_DAYS;
   const clubMatchDates = new Map();
@@ -130,6 +133,7 @@ export function createCupCalendarEngine({
   const rescheduleAllCupFixtures = () => {
     refreshCupPhaseNominalDates();
     rebuildLeagueClubDates();
+    reserveExtraFixtures?.(clubMatchDates);
     rescheduleCupFixtures(allCupFixtures(), clubMatchDates, {
       minRestDays: MIN_REST_DAYS,
       twoLegGapDays: DEFAULT_TWO_LEG_GAP_DAYS,

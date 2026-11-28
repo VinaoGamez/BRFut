@@ -1,3 +1,4 @@
+import { INTERCONTINENTAL, RECOPA_SUL } from '../engine/conmebol-format.js';
 import { isKnockoutShootoutCompetition, knockoutCompetitionLabel, KNOCKOUT_COMPETITIONS } from '../engine/knockout-shootout.js';
 import { isStateLeagueGame, stateLeagueBadgeName } from '../engine/state-league-format.js';
 
@@ -18,9 +19,15 @@ export function resolveCompetitionBadge(game, { userDivision = 'A' } = {}) {
   if (game.competition === KNOCKOUT_COMPETITIONS.COPA || game.competition === 'COPA DO BRASIL') {
     return { name: 'Copa do Brasil', kind: 'cup' };
   }
+  if (game.competition === 'ELIMINATÓRIAS') return { name: 'Eliminatórias', kind: 'world-cup' };
   if (game.competition === 'COPA DO MUNDO') {
     return { name: 'Copa do Mundo', kind: 'world-cup' };
   }
+  if (game.competition === 'LIBERTADORES') return { name: 'Libertadores', kind: 'libertadores' };
+  if (game.competition === 'SUL-AMERICANA') return { name: 'Sul-Americana', kind: 'sudamericana' };
+  if (game.competition === RECOPA_SUL) return { name: 'Recopa Sul-Americana', kind: 'recopa-sul' };
+  if (game.competition === INTERCONTINENTAL) return { name: 'Intercontinental', kind: 'intercontinental' };
+  if (game.competition === 'MUNDIAL DE CLUBES') return { name: 'Mundial de Clubes', kind: 'intercontinental' };
   if (isKnockoutShootoutCompetition(game)) {
     if (
       game.competition === KNOCKOUT_COMPETITIONS.SERIE_D ||

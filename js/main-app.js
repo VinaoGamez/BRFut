@@ -1,5 +1,6 @@
 import './security/https-upgrade.js';
 import './ui/desktop-updates.js';
+import { installModalStack } from './ui/modal-stack.js';
 import './security/tester-hardening.js';
 import '../css/release-notes-viewer.css';
 import '../css/live-volume.css';
@@ -212,4 +213,9 @@ if (SITE_MAINTENANCE.enabled) {
     endBrowserSession();
     clearSessionCareerData();
   });
+}
+
+if (typeof document !== 'undefined') {
+  if (document.body) installModalStack(document);
+  else document.addEventListener('DOMContentLoaded', () => installModalStack(document), { once: true });
 }

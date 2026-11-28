@@ -30,6 +30,10 @@ export function createChampionshipPageFocus({
     if (game.competition === WORLD_CUP_COMPETITION) return 'CMU';
     if (game.competition === 'COPA DO BRASIL') return 'CUP';
     if (game.competition === 'RECOPA NACIONAL') return 'RECOPA';
+    if (game.competition === 'LIBERTADORES') return 'LIBERTADORES';
+    if (game.competition === 'SUL-AMERICANA') return 'SUDAMERICANA';
+    if (game.competition === 'RECOPA SUL-AMERICANA' || game.competition === 'INTERCONTINENTAL') return 'LIBERTADORES';
+    if (game.competition === 'MUNDIAL DE CLUBES') return 'MUNDIAL';
     if (isStateLeagueGame(game)) {
       const userState = stateLeagueEngine.getUserDivision(userClub);
       const uf = String(game.stateUf || userState?.uf || getRealClub(userClub)?.uf || 'SP').toUpperCase();
@@ -58,6 +62,11 @@ export function createChampionshipPageFocus({
         if (idx >= 0) patch.pageWorldCupGroup = idx;
       }
       if (Object.keys(patch).length) patchPageState(patch);
+      renderChampionshipPage();
+      return;
+    }
+    if (competitionId === 'LIBERTADORES' || competitionId === 'SUDAMERICANA' || competitionId === 'MUNDIAL') {
+      // selectChampionshipPageCompetition já posiciona no passo do usuário.
       renderChampionshipPage();
       return;
     }

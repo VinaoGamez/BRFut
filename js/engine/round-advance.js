@@ -1,3 +1,4 @@
+import { isConmebolGame } from './conmebol-format.js';
 import { FEATURES, SERIE_D_GROUP_ROUNDS } from '../core/constants.js';
 import { queuePlayerStatsHistory } from '../core/player-stats-sync.js';
 import { clamp } from '../ui/dom.js';
@@ -11,6 +12,7 @@ import {
 import { recordKnockoutResult, winnerFromGame, loserFromGame } from './world-cup-bracket.js';
 import { isKnockoutShootoutCompetition, KNOCKOUT_COMPETITIONS } from './knockout-shootout.js';
 import { WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
+import { QUALIFIERS_COMPETITION } from './conmebol-qualifiers.js';
 import { roundFeedsDivisionStandings } from './national-round-sim.js';
 import { worldCupWindowEndDate } from './world-cup-competition.js';
 import { worldCupGroupMatchdayEndDate } from './world-cup-competition.js';
@@ -288,6 +290,38 @@ export function createRoundAdvanceEngine(deps) {
     }
     if (deps.getRoundCommitted()) return;
 
+    // Eliminatórias ao vivo (técnico de seleção): grava o placar nas
+    // Eliminatórias e segue a temporada, sem bilheteria nem mata-mata.
+    if (liveMatchGame?.competition === QUALIFIERS_COMPETITION) {
+      deps.setRoundCommitted(true);
+      try {
+        Object.assign(liveMatchGame, deps.buildLiveKnockoutStats(), { completed: true });
+        deps.commitLiveQualifierResult?.(liveMatchGame);
+        deps.pushUserMatchResultMessage(liveMatchGame, null);
+        if (!deps.getAvailabilityCommitted()) deps.commitLiveAvailability();
+        deps.recordGameLeaders(liveMatchGame);
+        deps.persistPlayerHistory();
+        deps.rebuildCalendarGames();
+        deps.invalidateUserScheduleCache?.();
+        advancePostMatchDay();
+        deps.persistAfterRoundAdvance();
+        try {
+          deps.refreshSeasonPresentation();
+        } catch (error) {
+          console.warn('[brfut] falha ao atualizar UI pós-jogo das Eliminatórias', error);
+        }
+        deps.renderTeamStatsCard?.();
+        resetLiveMatchSession(deps);
+        if (navigateDashboard) deps.navigateToDashboard();
+      } catch (error) {
+        console.warn('[brfut] falha ao avançar pós-jogo das Eliminatórias', error);
+        resetLiveMatchSession(deps);
+      } finally {
+        deps.setRoundCommitted(false);
+      }
+      return;
+    }
+
     if (liveMatchGame?.competition === WORLD_CUP_COMPETITION) {
       deps.setRoundCommitted(true);
       try {
@@ -341,6 +375,28 @@ export function createRoundAdvanceEngine(deps) {
     if (liveMatchGame?.competition === KNOCKOUT_COMPETITIONS.COPA) {
       deps.commitLiveKnockoutResult();
       advanceCupRound();
+      return;
+    }
+
+    if (isConmebolGame(liveMatchGame)) {
+      deps.setRoundCommitted(true);
+      try {
+        // Placar primeiro: se algo da apresentação falhar, o resultado já está gravado.
+        deps.commitLiveConmebolResult?.();
+        const gateResult = deps.creditUserHomeGate(liveMatchGame);
+        deps.pushUserMatchResultMessage(liveMatchGame, gateResult);
+        advancePostMatchDay();
+        deps.persistSeason(true);
+        deps.refreshSeasonPresentation();
+        resetLiveMatchSession(deps);
+        if (deps.evaluateManagerJobRisk()) return;
+        if (navigateDashboard) deps.navigateToDashboard();
+      } catch (error) {
+        console.warn('[brfut] falha ao avançar pós-jogo continental', error);
+        resetLiveMatchSession(deps);
+      } finally {
+        deps.setRoundCommitted(false);
+      }
       return;
     }
 

@@ -2,6 +2,7 @@
  * Copa do Mundo — competição progressiva (grupos → mata-mata conforme resultados).
  */
 
+import { QUALIFIERS_COMPETITION } from './conmebol-qualifiers.js';
 import { prepareWorldCupEdition } from './world-cup-history.js';
 import { buildWorldCupGroupFixtures, WORLD_CUP_COMPETITION } from './world-cup-calendar.js';
 import { worldCupWindow } from './international-calendar.js';
@@ -149,13 +150,15 @@ export function createWorldCupCompetition({
   worldCupHistory = [],
   random = Math.random,
   saved = null,
+  conmebolQualified = null,
 }) {
   if (saved?.groupFixtures?.length) {
     return hydrateWorldCupCompetition(saved);
   }
 
-  const edition = prepareWorldCupEdition(worldCupHistory, year, random);
-  const groupFixtures = buildWorldCupGroupFixtures(year, worldCupHistory, random);
+  const options = { conmebolQualified };
+  const edition = prepareWorldCupEdition(worldCupHistory, year, random, options);
+  const groupFixtures = buildWorldCupGroupFixtures(year, worldCupHistory, random, options);
 
   return {
     year: Number(year),
@@ -476,7 +479,7 @@ export function earliestPendingWorldCupUserFixture(competition, isUserTeam = () 
 }
 
 export function isWorldCupUserFixture(game, userNationalTeamName) {
-  if (!game || game.competition !== WORLD_CUP_COMPETITION || !userNationalTeamName) return false;
+  if (!game || (game.competition !== WORLD_CUP_COMPETITION && game.competition !== QUALIFIERS_COMPETITION) || !userNationalTeamName) return false;
   return game.home === userNationalTeamName || game.away === userNationalTeamName;
 }
 

@@ -109,11 +109,11 @@ function dayForSlot(window, slotIndex) {
  * @param {Array} worldCupHistory
  * @param {Function} [random]
  */
-export function buildWorldCupGroupFixtures(seasonYear, worldCupHistory = [], random = Math.random) {
+export function buildWorldCupGroupFixtures(seasonYear, worldCupHistory = [], random = Math.random, options = {}) {
   const year = Number(seasonYear);
   if (!isWorldCupYear(year)) return [];
 
-  const edition = prepareWorldCupEdition(worldCupHistory, year, random);
+  const edition = prepareWorldCupEdition(worldCupHistory, year, random, options);
   const fixtures = [];
   let gameNumber = 1;
 

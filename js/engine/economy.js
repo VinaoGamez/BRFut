@@ -1,3 +1,4 @@
+import { isConmebolGame } from './conmebol-format.js';
 import { storage as brfutStorage } from '../core/storage-backend.js';
 import { MODULE_VERSIONS } from '../core/constants.js';
 import { serieCTotalRounds } from './serie-c-format.js';
@@ -1444,7 +1445,7 @@ const seasonCashflowCategory = (type, reason) => {
     if (reason === 'sponsorship') return ['inflows', 'sponsorship'];
     if (reason === 'naming_rights') return ['inflows', 'naming'];
     if (reason === 'tv_rights' || reason === 'tv_advance') return ['inflows', 'tv'];
-    if (reason === 'season_prize') return ['inflows', 'prize'];
+    if (reason === 'season_prize' || reason === 'continental_prize') return ['inflows', 'prize'];
     if (reason === 'bank_loan') return ['inflows', 'bank_loan'];
     return ['inflows', 'other_in'];
   }
@@ -1954,9 +1955,18 @@ const isSerieDKnockoutGame = game => {
   return Boolean(game.twoLegged && game.leg && Number(game.round) > 10);
 };
 
+const isConmebolCompetition = game => isConmebolGame(game);
+
+/** Lotação extra nos jogos da CONMEBOL, por fase. */
+const CONMEBOL_ATTRACTION = Object.freeze({
+  libertadores: { F1: 0.06, F2: 0.08, F3: 0.1, G: 0.12, R16: 0.17, QF: 0.21, SF: 0.26, F: 0.3 },
+  sudamericana: { FS: 0.04, G: 0.07, PO: 0.1, R16: 0.12, QF: 0.15, SF: 0.2, F: 0.28 },
+});
+
 export function ticketChannelFromGame(game) {
   if (!game) return 'national';
   if (game.competition === 'COPA DO BRASIL' || game.competition === 'COPA') return 'cups';
+  if (isConmebolCompetition(game)) return 'cups';
   if (isSerieDKnockoutGame(game)) return 'cups';
   return 'national';
 }
@@ -2008,6 +2018,14 @@ export function competitionAttraction(game) {
     return { boost, label: game.phase || 'Copa do Brasil' };
   }
 
+  if (isConmebolCompetition(game)) {
+    if (game.competition === 'RECOPA SUL-AMERICANA') return { boost: 0.2, label: 'Recopa Sul-Americana' };
+    if (game.competition === 'INTERCONTINENTAL') return { boost: 0, label: 'Intercontinental' };
+    if (game.competition === 'MUNDIAL DE CLUBES') return { boost: 0, label: 'Mundial de Clubes' };
+    const table = game.competition === 'LIBERTADORES' ? CONMEBOL_ATTRACTION.libertadores : CONMEBOL_ATTRACTION.sudamericana;
+    return { boost: table[game.stage] ?? 0.1, label: game.phase || game.competition };
+  }
+
   if (isSerieDKnockoutGame(game)) {
     const round = Number(game.round || game.knockoutRound) || 0;
     if (round <= 12) return { boost: 0.06, label: 'Série D · 2ª fase' };
@@ -2034,6 +2052,7 @@ export function isHighStakesHomeMatch(game, context = {}) {
     if (phaseIndex >= 8 || /SEMI|FINAL/.test(phaseName)) return true;
     return false;
   }
+  if (isConmebolCompetition(game)) return ['QF', 'SF', 'F'].includes(game.stage);
   if (isSerieDKnockoutGame(game)) {
     const round = Number(game.round || game.knockoutRound) || 0;
     return round >= 20;
@@ -2067,7 +2086,7 @@ export function titleRaceAttendanceBoost(game, context = {}) {
   const homeClub = game.home;
   if (!homeClub) return 0;
   const comp = String(game.competition || '').toUpperCase();
-  if (comp.includes('COPA') || isSerieDKnockoutGame(game)) return 0;
+  if (comp.includes('COPA') || isSerieDKnockoutGame(game) || isConmebolCompetition(game)) return 0;
   const seasonRounds = Number(context.seasonRounds) || 38;
   const round = Number(game.round) || Number(context.currentRound) || 0;
   const remaining = Math.max(0, seasonRounds - round);
@@ -3151,7 +3170,7 @@ export function creditTvInstallment(
 export function creditHomeTv(club, game, { division = null, season = null } = {}) {
   if (!club || !game) return { ok: false, amount: 0, skipped: true, reason: 'no_club' };
   if (game.home !== club.name) return { ok: false, amount: 0, skipped: true, reason: 'not_home' };
-  if (game.competition === 'COPA DO BRASIL') {
+  if (game.competition === 'COPA DO BRASIL' || isConmebolCompetition(game)) {
     return { ok: false, amount: 0, skipped: true, reason: 'cup' };
   }
   if (game.tvCredited) return { ok: true, amount: 0, skipped: true, reason: 'already_credited' };

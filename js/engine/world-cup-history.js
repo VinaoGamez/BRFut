@@ -7,6 +7,7 @@ import { WORLD_CUP_ANCHOR_YEAR, isWorldCupYear } from './season-calendar-mold.js
 import {
   NATIONAL_TEAMS,
   NATIONAL_TEAM_CODES,
+  isConmebolNation,
   nationalTeamByCode,
   nationalTeamPower,
 } from './national-teams.js';
@@ -80,10 +81,10 @@ export function normalizeWorldCupHistory(raw) {
 function normalizeRankingRow(row) {
   if (!row) return null;
   const code = String(row.code || '').trim().toUpperCase();
-  if (!code || !NATIONAL_TEAMS[code]) return null;
+  if (!code || !nationalTeamByCode(code)) return null;
   const rank = Number(row.rank);
   if (!Number.isFinite(rank) || rank < 1) return null;
-  const meta = NATIONAL_TEAMS[code];
+  const meta = nationalTeamByCode(code);
   const block = blockFromSeedRank(rank);
   return {
     code,
@@ -100,8 +101,54 @@ export function getWorldCupResult(history, year) {
   return normalizeWorldCupHistory(history).find(entry => entry.year === y) || null;
 }
 
+/**
+ * Troca as seleções sul-americanas do ranking pelas classificadas nas
+ * Eliminatórias. Quem entra herda a posição de quem caiu; se a América do Sul
+ * ganhar uma vaga a mais (repescagem), sai a pior seleção de fora; se perder,
+ * volta a melhor que ficou de fora. O total continua 48.
+ *
+ * @param {Array<{code:string, rank:number}>} ranking
+ * @param {string[]|null} qualified códigos classificados pela CONMEBOL
+ */
+export function applyConmebolQualifiersToRanking(ranking, qualified) {
+  if (!Array.isArray(ranking) || !Array.isArray(qualified) || !qualified.length) return ranking;
+  const wanted = new Set(qualified.map(code => String(code).toUpperCase()));
+  const rows = ranking.map(row => ({ ...row }));
+  const present = new Set(rows.map(row => row.code));
+  const entering = [...wanted]
+    .filter(code => !present.has(code) && nationalTeamByCode(code))
+    .sort((a, b) => nationalTeamByCode(a).fifaRank - nationalTeamByCode(b).fifaRank);
+  const freed = rows.map((row, index) => (isConmebolNation(row.code) && !wanted.has(row.code) ? index : -1)).filter(index => index >= 0);
+  // Vaga a mais para a CONMEBOL: sai a pior seleção de fora da América do Sul.
+  const byWorst = rows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row, index }) => !isConmebolNation(row.code) && !freed.includes(index))
+    .sort((a, b) => b.row.rank - a.row.rank);
+  while (freed.length < entering.length && byWorst.length) freed.push(byWorst.shift().index);
+  // Vaga a menos: volta a melhor seleção de fora que não está no ranking.
+  const bench = NATIONAL_TEAM_CODES
+    .filter(code => !isConmebolNation(code) && !present.has(code))
+    .sort((a, b) => nationalTeamByCode(a).fifaRank - nationalTeamByCode(b).fifaRank);
+  const incoming = [...entering];
+  while (incoming.length < freed.length && bench.length) incoming.push(bench.shift());
+  freed
+    .sort((a, b) => rows[a].rank - rows[b].rank)
+    .forEach((index, i) => {
+      const code = incoming[i];
+      if (!code) return;
+      const meta = nationalTeamByCode(code);
+      rows[index] = { ...rows[index], code, name: meta.name, eliminatedPhase: null };
+    });
+  return rows.map(row => ({ ...row, block: blockFromSeedRank(row.rank), teamPower: teamPowerFromSeedRank(row.rank) }));
+}
+
 /** Ranking usado para pots/força na edição `year`. */
-export function getSeedRankingForEdition(history, year) {
+export function getSeedRankingForEdition(history, year, { conmebolQualified = null } = {}) {
+  const base = getSeedRankingForEditionBase(history, year);
+  return conmebolQualified ? applyConmebolQualifiersToRanking(base, conmebolQualified) : base;
+}
+
+function getSeedRankingForEditionBase(history, year) {
   const y = Number(year);
   if (!isWorldCupYear(y)) return buildBaselineWorldCupRanking();
 
@@ -163,8 +210,8 @@ export function recordWorldCupResult(history, payload) {
 }
 
 /** Mapa code → meta de força para uma edição. */
-export function buildEditionTeamStrengthMap(history, year) {
-  const ranking = getSeedRankingForEdition(history, year);
+export function buildEditionTeamStrengthMap(history, year, options = {}) {
+  const ranking = getSeedRankingForEdition(history, year, options);
   return Object.fromEntries(
     ranking.map(row => [
       row.code,
@@ -253,13 +300,13 @@ export function usesWorldCupGroupDraw(year) {
 }
 
 /** Pacote completo para iniciar uma edição (2030+ reutiliza elenco 2026). */
-export function prepareWorldCupEdition(history, year, random = Math.random) {
+export function prepareWorldCupEdition(history, year, random = Math.random, options = {}) {
   const y = Number(year);
-  const seedRanking = getSeedRankingForEdition(history, y);
+  const seedRanking = getSeedRankingForEdition(history, y, options);
   const draw = usesWorldCupGroupDraw(y)
     ? drawWorldCupGroups(seedRanking, random)
     : buildWorldCup2026FixedDraw(seedRanking);
-  const teamStrength = buildEditionTeamStrengthMap(history, y);
+  const teamStrength = buildEditionTeamStrengthMap(history, y, options);
 
   return {
     year: y,

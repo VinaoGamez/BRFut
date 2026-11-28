@@ -18,6 +18,8 @@
     const sidebar = document.querySelector('.sidebar');
     const header = document.querySelector('.app-header');
     if (!shell || !sidebar || !header) return;
+    // Navegação v2: as cinco seções viram barra inferior; sem menu lateral.
+    if (sidebar.querySelector('.section-nav')) return;
 
     const toggle = document.createElement('button');
     toggle.type = 'button';

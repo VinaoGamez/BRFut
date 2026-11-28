@@ -5,6 +5,7 @@
  */
 
 import { WORLD_CUP_SQUADS_ASSET, WORLD_CUP_SQUADS_SOURCE_EDITION } from './world-cup-history.js';
+import { withExtraNationalSquads } from './world-cup-extra-squads.js';
 
 export { WORLD_CUP_SQUADS_ASSET, WORLD_CUP_SQUADS_SOURCE_EDITION };
 
@@ -14,7 +15,7 @@ export async function loadWorldCupSquads() {
   if (cache) return cache;
   const res = await fetch(WORLD_CUP_SQUADS_ASSET);
   if (!res.ok) throw new Error(`world-cup squads HTTP ${res.status}`);
-  cache = await res.json();
+  cache = withExtraNationalSquads(await res.json());
   return cache;
 }
 

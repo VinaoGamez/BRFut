@@ -22,6 +22,8 @@ import {
   renderEstaduaisHub,
 } from './hub.js';
 import { createChampionshipPageFocus } from './focus.js';
+import { QUALIFIERS_PAGE_ID, qualifiersBody, qualifiersCurrentMatchday, qualifiersHeader } from './qualifiers-view.js';
+import { CONMEBOL_PAGE_IDS, conmebolBody, conmebolHeader, conmebolSteps, conmebolUserStep, isConmebolPage } from './conmebol-view.js';
 
 /**
  * Campeonatos (view table) — classificação, mata-mata inline e modal de chaveamento.
@@ -90,6 +92,8 @@ export function serieDViewModelFromArchive(archive) {
   return { ...source, groups, phases };
 }
 
+import { createChampionshipV2 } from './v2.js';
+
 export function createChampionshipPageFeature(deps) {
   const {
     $,
@@ -131,6 +135,7 @@ export function createChampionshipPageFeature(deps) {
     simulateRoundMatch,
     gameRandom,
     overlayPendingLiveKnockoutGames,
+    overlayPendingLiveGames = games => games,
     cupTieGames,
     cupTieAggregate,
     cupGameForDisplay,
@@ -152,6 +157,12 @@ export function createChampionshipPageFeature(deps) {
     getClubs,
     getSavedNewGame,
   } = deps;
+  const getConmebolEdition = deps.getConmebolEdition || (() => null);
+  const pageConmebolStep = { libertadores: 0, sudamericana: 0 };
+  const getConmebolQualifiers = deps.getConmebolQualifiers || (() => null);
+  const getQualifiersHighlight = deps.getQualifiersHighlight || (() => 'BRA');
+  let pageQualifiersMatchday = 1;
+  const escapeConmebol = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
   let pageCompetition = getUserDivision();
   let pageStateRound = 1;
@@ -181,12 +192,16 @@ export function createChampionshipPageFeature(deps) {
 
   const PAGE_COMPETITION_OPTIONS = buildPageCompetitionOptions({ FEATURES, savedNewGame: getSavedNewGame() });
   const getPageCompetitionOptions = () => {
+    // Mundial de Clubes só no ano do torneio (2029, 2033…).
+    const base = getConmebolEdition()?.mundial
+      ? [...PAGE_COMPETITION_OPTIONS, { id: 'MUNDIAL', label: 'Mundial de Clubes', trophyKey: 'world-cup' }]
+      : PAGE_COMPETITION_OPTIONS;
     const worldCupCompetition = worldCupForView();
     const archiveHasWorldCup = !!getViewArchive()?.worldCupCompetition;
-    if (!worldCupCompetition && !archiveHasWorldCup) return PAGE_COMPETITION_OPTIONS;
+    if (!worldCupCompetition && !archiveHasWorldCup) return base;
     const cmu = { id: 'CMU', label: 'Copa do Mundo', trophyKey: 'world-cup' };
-    if (PAGE_COMPETITION_OPTIONS.some(option => option.id === 'CMU')) return PAGE_COMPETITION_OPTIONS;
-    return [cmu, ...PAGE_COMPETITION_OPTIONS];
+    if (base.some(option => option.id === 'CMU')) return base;
+    return [cmu, ...base];
   };
   const worldCupForView = () =>
     isArchiveView() ? worldCupViewModelFromArchive(getViewArchive()) : getWorldCupCompetition();
@@ -780,12 +795,16 @@ export function createChampionshipPageFeature(deps) {
       const tier = Number(liveMatchGame.stateTier) || 1;
       const gameComp = stateCompetitionKey(uf, tier);
       if (gameComp === competitionId) {
-        rows = applyTablePreviewToRows(rows, {
-          home: liveMatchGame.home,
-          away: liveMatchGame.away,
-          homeGoals: Number(liveMatchGame.homeGoals ?? 0),
-          awayGoals: Number(liveMatchGame.awayGoals ?? 0),
-        });
+        // Placar final ao vivo (o jogo só grava homeGoals no AVANÇAR).
+        const shown = overlayPendingLiveGames([liveMatchGame])[0] || liveMatchGame;
+        if (shown.homeGoals != null && shown.awayGoals != null) {
+          rows = applyTablePreviewToRows(rows, {
+            home: liveMatchGame.home,
+            away: liveMatchGame.away,
+            homeGoals: Number(shown.homeGoals),
+            awayGoals: Number(shown.awayGoals),
+          });
+        }
       }
     }
     return rows;
@@ -1097,6 +1116,21 @@ export function createChampionshipPageFeature(deps) {
         canPrev = pageStateRound > 1;
         canNext = pageStateRound < roundLimit;
       }
+    } else if (pageCompetition === QUALIFIERS_PAGE_ID) {
+      const header = qualifiersHeader(getConmebolQualifiers(), pageQualifiersMatchday);
+      pageQualifiersMatchday = header.matchday;
+      subText = header.subText;
+      titleText = header.titleText;
+      canPrev = header.canPrev;
+      canNext = header.canNext;
+    } else if (isConmebolPage(pageCompetition)) {
+      const competitionId = CONMEBOL_PAGE_IDS[pageCompetition];
+      const header = conmebolHeader(getConmebolEdition(), competitionId, pageConmebolStep[competitionId]);
+      pageConmebolStep[competitionId] = header.step;
+      subText = header.subText;
+      titleText = header.titleText;
+      canPrev = header.canPrev;
+      canNext = header.canNext;
     } else if (pageCompetition === 'CMU') {
       const groups = WORLD_CUP_GROUP_LETTERS;
       pageWorldCupGroup = clamp(pageWorldCupGroup || 0, 0, groups.length - 1);
@@ -1165,7 +1199,7 @@ export function createChampionshipPageFeature(deps) {
     if (prevBtn) prevBtn.disabled = !canPrev;
     if (nextBtn) nextBtn.disabled = !canNext;
     const lastGamesBtn = $('#championshipPageLastGamesBtn');
-    if (lastGamesBtn) lastGamesBtn.classList.toggle('hidden', pageCompetition === 'CUP' || pageCompetition === 'RECOPA' || pageCompetition === 'CMU' || isStateHub || isArchiveView());
+    if (lastGamesBtn) lastGamesBtn.classList.toggle('hidden', pageCompetition === 'CUP' || pageCompetition === 'RECOPA' || pageCompetition === 'CMU' || pageCompetition === QUALIFIERS_PAGE_ID || isConmebolPage(pageCompetition) || isStateHub || isArchiveView());
 
     if (isStateHub && !isArchiveView()) {
       tableCard?.classList.remove('is-knockout');
@@ -1230,6 +1264,24 @@ export function createChampionshipPageFeature(deps) {
       }
       if (head) head.innerHTML = '';
       body.innerHTML = gamesHtml;
+    } else if (pageCompetition === QUALIFIERS_PAGE_ID && !isArchiveView()) {
+      const view = qualifiersBody({ qualifiers: getConmebolQualifiers(), matchday: pageQualifiersMatchday, highlightCode: getQualifiersHighlight(), escapeHtml: escapeConmebol });
+      tableCard?.classList.toggle('is-knockout', !view.head);
+      if (head) head.innerHTML = view.head;
+      body.innerHTML = view.html;
+    } else if (isConmebolPage(pageCompetition) && !isArchiveView()) {
+      const competitionId = CONMEBOL_PAGE_IDS[pageCompetition];
+      const view = conmebolBody({
+        edition: getConmebolEdition(),
+        competitionId,
+        stepIndex: pageConmebolStep[competitionId],
+        userClub,
+        renderFixtures: renderChampionshipPageRoundFixtures,
+        escapeHtml: escapeConmebol,
+      });
+      tableCard?.classList.toggle('is-knockout', !view.head);
+      if (head) head.innerHTML = view.head;
+      body.innerHTML = view.html;
     } else if (pageCompetition === 'CMU') {
       tableCard?.classList.remove('is-knockout');
       const inKnockout = (pageWorldCupRound || 1) >= 4;
@@ -1242,8 +1294,10 @@ export function createChampionshipPageFeature(deps) {
         body.innerHTML = renderChampionshipPageRoundFixtures(games, { completed, roundLabel: phaseLabel });
       } else {
         const activeGroup = WORLD_CUP_GROUP_LETTERS[pageWorldCupGroup] || 'A';
-        const rows = worldCupCompetition ? computeGroupStandings(activeGroup, worldCupCompetition.groupFixtures, gameRandom) : [];
-        const groupGames = (worldCupCompetition?.groupFixtures || []).filter(game => game.group === activeGroup);
+        const rows = worldCupCompetition
+          ? (typeof deps.getWorldCupGroupRows === 'function' && !isArchiveView() ? deps.getWorldCupGroupRows(activeGroup) : computeGroupStandings(activeGroup, overlayPendingLiveGames(worldCupCompetition.groupFixtures), gameRandom))
+          : [];
+        const groupGames = overlayPendingLiveGames((worldCupCompetition?.groupFixtures || []).filter(game => game.group === activeGroup));
         if (head) head.innerHTML = '<span>#</span><span>SELEÇÃO</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
         const rowsHtml = rows.map((row, index) => {
           const pos = index + 1;
@@ -1433,6 +1487,11 @@ export function createChampionshipPageFeature(deps) {
     const valid = getPageCompetitionOptions().some(option => option.id === competitionId) || isStateChampionshipPage(competitionId);
     if (!valid) return;
     pageCompetition = competitionId;
+    if (competitionId === QUALIFIERS_PAGE_ID) pageQualifiersMatchday = qualifiersCurrentMatchday(getConmebolQualifiers());
+    if (isConmebolPage(competitionId)) {
+      const id = CONMEBOL_PAGE_IDS[competitionId];
+      pageConmebolStep[id] = conmebolUserStep(getConmebolEdition(), id, userClub);
+    }
     if (competitionId === 'CMU') {
       const letter = findUserWorldCupGroup(worldCupCompetition, getUserNationalTeamName());
       pageWorldCupGroup = Math.max(0, WORLD_CUP_GROUP_LETTERS.indexOf(letter || 'A'));
@@ -1442,7 +1501,13 @@ export function createChampionshipPageFeature(deps) {
     }
     if (isStateChampionshipPage(competitionId)) {
       pageStateRound = stateLeagueEngine.getCurrentRound(competitionId, userClub);
+      // Abre no grupo do seu time (formato com dois grupos).
       pageStateGroup = 0;
+      try {
+        if ((stateGroupRows(competitionId, 1) || []).some(row => row.club === userClub)) pageStateGroup = 1;
+      } catch {
+        pageStateGroup = 0;
+      }
       pageStateFixturesMode = 'round';
       pageStateFixturesOpen = false;
     }
@@ -1557,6 +1622,12 @@ export function createChampionshipPageFeature(deps) {
         return;
       }
       pageStateRound = clamp((pageStateRound || 1) + step, 1, limit);
+    } else if (pageCompetition === QUALIFIERS_PAGE_ID) {
+      pageQualifiersMatchday = clamp((pageQualifiersMatchday || 1) + step, 1, 18);
+    } else if (isConmebolPage(pageCompetition)) {
+      const id = CONMEBOL_PAGE_IDS[pageCompetition];
+      const total = conmebolSteps(getConmebolEdition(), id).length;
+      pageConmebolStep[id] = clamp((pageConmebolStep[id] || 0) + step, 0, Math.max(0, total - 1));
     } else if (pageCompetition === 'CMU') {
       const worldCupCompetition = worldCupForView();
       const inKnockout = (pageWorldCupRound || 1) >= 4;
@@ -1761,7 +1832,48 @@ export function createChampionshipPageFeature(deps) {
     openChampionshipLastGames = typeof fn === 'function' ? fn : () => {};
   };
 
+  /**
+   * Rodada para a coluna lateral (Competições v2): só ligas por pontos
+   * (Séries e estaduais na fase de classificação). Retorna null nos demais.
+   */
+  const getSideRound = requested => {
+    try {
+      if (isArchiveView() || championshipPageIsKnockoutView()) return null;
+      const userClub = getUserClub();
+      if (isStateChampionshipPage(pageCompetition)) {
+        const limit = stateLeagueEngine.getRoundLimit(pageCompetition);
+        const current = stateLeagueEngine.getCurrentRound(pageCompetition, userClub);
+        const round = clamp(requested || current, 1, Math.max(1, limit));
+        const games = stateLeagueEngine.getRoundGamesForBrowse(pageCompetition, round) || [];
+        return { key: pageCompetition, round, current, limit, games: overlayPendingLiveGames(games) };
+      }
+      if (['A', 'B', 'C', 'D'].includes(pageCompetition)) {
+        const fixtures = getNationalCompetitions()?.[pageCompetition]?.fixtures || [];
+        if (!fixtures.length) return null;
+        const current = clamp(getCurrentRound(), 1, fixtures.length);
+        const round = clamp(requested || current, 1, fixtures.length);
+        return { key: pageCompetition, round, current, limit: fixtures.length, games: overlayPendingLiveGames(fixtures[round - 1] || []) };
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  const champV2 = createChampionshipV2({
+    $,
+    getUserClub: () => getUserClub(),
+    getUserNationalTeam: () => (typeof getUserNationalTeamName === 'function' ? getUserNationalTeamName() : ''),
+    getNationalForm: deps.getNationalForm,
+    getClubForm: deps.getClubForm,
+    getSideRound,
+    getScorers: deps.getScorers,
+    getUserNationalRank: deps.getUserNationalRank,
+    openRanking: () => deps.openView?.('ranking'),
+  });
+
   const init = () => {
+    champV2.init();
     bindHandlers();
     renderChampionshipPage();
   };

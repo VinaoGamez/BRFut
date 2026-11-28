@@ -45,12 +45,12 @@
   <meta property="og:url" content="https://brfut.com.br/">
   <meta property="og:title" content="BR Fut · Simulador de Carreira">
   <meta property="og:description" content="Assuma um clube, monte seu elenco e encare uma carreira completa no futebol brasileiro.">
-  <meta property="og:image" content="https://brfut.com.br/brand/lockup-lg.webp">
+  <meta property="og:image" content="https://brfut.com.br/brand/og-brfut-manager.png">
   <meta property="og:locale" content="pt_BR">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="BR Fut · Simulador de Carreira">
   <meta name="twitter:description" content="Assuma um clube, monte seu elenco e encare uma carreira completa no futebol brasileiro.">
-  <meta name="twitter:image" content="https://brfut.com.br/brand/lockup-lg.webp">
+  <meta name="twitter:image" content="https://brfut.com.br/brand/og-brfut-manager.png">
   <link rel="icon" type="image/png" href="./brand/mark-favicon.png">
   <link rel="stylesheet" href="css/site.css?v=20260715-revision">
   <link rel="stylesheet" href="css/championship.css?v=20260803-manager-modal-v2">
@@ -102,39 +102,33 @@
   <link rel="stylesheet" href="css/player-status.css?v=20260721-loan-stack">
   <link rel="stylesheet" href="css/roster-contracts.css?v=20260726-contract-modal">
   <link rel="stylesheet" href="css/mobile.css?v=20260810-mobile-v1">
+  <link rel="stylesheet" href="css/navigation-v2.css?v=20261127-nav-v2">
+  <link rel="stylesheet" href="css/arcade-v2.css?v=20261127-arcade-v2">
 </head>
 <body>
 
 <div id="bootSplash" aria-live="polite" aria-busy="true">
-  <img src="./brand/mark-lg.webp" alt="BR FUT" width="112" height="112" decoding="async">
+  <img src="./brand/brfut-icon.svg" alt="BR FUT" width="112" height="112" decoding="async">
   <span>Carregando…</span>
 </div>
 
 <div class="game-shell">
   <aside class="sidebar">
-    <div class="brand"><img class="brand-lockup" src="./brand/lockup.webp" alt="BR Fut" width="157" height="30"></div>
+    <div class="brand"><img class="brand-lockup" src="./brand/brfut-logo.svg" alt="BR Fut" width="168" height="48"></div>
     <small class="season">TEMPORADA 2026</small>
-    <nav>
-      <button id="openSupportProject" class="support-project-nav" type="button"><span class="support-project-nav-icon" aria-hidden="true">♥</span><span>APOIE O PROJETO</span></button>
-      <button class="nav active" data-view="dashboard">▦ Central</button>
-      <button class="nav" data-view="squad">♟ Elenco <em id="squadNavBadge" class="nav-badge hidden">0</em></button>
-      <button class="nav" data-view="tactics">⌁ Táticas</button>
-      <button class="nav" data-view="table">▤ Campeonatos</button>
-      <button class="nav" data-view="office">▥ Escritório</button>
-      <button class="nav" data-view="stadium">⬡ Estádio</button>
-      <button class="nav" data-view="training">◎ Treinamento</button>
-      <button class="nav" data-view="transfers"><span class="nav-label"><img class="nav-transfer-icon" src="./brand/transfer-coins.png" alt="" width="16" height="16" aria-hidden="true">Mercado</span></button>
-      <button class="nav" data-view="youth">◆ Categoria de Base</button>
-      <button class="nav" data-view="ranking">≣ Ranking Nacional</button>
-      <button class="nav" data-view="managers">♛ Ranking de Técnicos</button>
-      <button class="nav" data-view="messages">✉ Mensagens <em id="messagesBadge" class="nav-badge hidden">0</em></button>
-      <button class="nav" data-view="calendar">◷ Calendário</button>
+    <nav class="section-nav" aria-label="Seções do jogo">
+      <button class="section-btn active" type="button" data-section="central" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Central</span></button>
+      <button class="section-btn" type="button" data-section="elenco"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a5.5 5.5 0 0 1 3.5 6"/></svg><span>Elenco</span><em id="squadNavBadge" class="nav-badge hidden">0</em></button>
+      <button class="section-btn" type="button" data-section="taticas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3zM3 12h18M12 3v18"/></svg><span>Táticas</span></button>
+      <button class="section-btn" type="button" data-section="jogos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0zM6 5H3v1a3 3 0 0 0 3 3M18 5h3v1a3 3 0 0 1-3 3M12 12v5M8 20h8"/></svg><span>Jogos</span></button>
+      <button class="section-btn" type="button" data-section="clube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg><span>Clube</span></button>
     </nav>
-    <button id="openOptions" class="sidebar-options" type="button"><span>⚙</span> ABRIR OPÇÕES</button>
+    <button id="openSupportProject" class="support-project-nav" type="button"><span class="support-project-nav-icon" aria-hidden="true">♥</span><span>APOIE O PROJETO</span></button>
     <div class="club"><b>—</b><span><strong>—</strong><small>—</small></span></div>
   </aside>
   <main>
     <header class="app-header">
+      <img class="app-header-logo" src="./brand/brfut-logo.svg" alt="BR Fut" width="96" height="28">
       <div class="header-news" aria-label="Informativo">
         <span class="header-news-kicker">INFORMATIVO</span>
         <div class="header-news-viewport">
@@ -149,12 +143,33 @@
           </i>
           <span id="headerBudget" class="header-budget">R$ —</span>
         </span>
+        <button class="nav header-icon-btn" type="button" data-view="messages" aria-label="Mensagens" title="Mensagens (Y)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zM3 7l9 6 9-6"/></svg><em id="messagesBadge" class="nav-badge hidden">0</em></button>
+        <button class="header-icon-btn" type="button" data-manager-self aria-label="Minha ficha de técnico" title="Minha ficha de técnico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg></button>
+        <button id="openOptions" class="header-icon-btn" type="button" aria-label="Opções" title="Opções, conta e carreiras"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+        <button id="headerContinue" class="header-continue" type="button" title="Continuar (Start / ☰)"><span>CONTINUAR</span><small id="headerContinueHint"></small></button>
       </div>
     </header>
+    <nav id="sectionTabs" class="section-tabs" aria-label="Sub-abas da seção">
+      <button class="nav active" type="button" data-view="dashboard" data-section="central">Central</button>
+      <button class="nav" type="button" data-view="squad" data-section="elenco">Jogadores</button>
+      <button class="nav" type="button" data-view="transfers" data-section="elenco">Mercado</button>
+      <button class="nav" type="button" data-view="youth" data-section="elenco">Base</button>
+      <button class="nav" type="button" data-view="tactics" data-section="taticas">Escalação e instruções</button>
+      <button class="nav" type="button" data-view="training" data-section="taticas">Treinamento</button>
+      <button class="nav" type="button" data-view="calendar" data-section="jogos">Calendário</button>
+      <button class="nav" type="button" data-view="table" data-section="jogos">Competições</button>
+      <button class="nav" type="button" data-view="ranking" data-section="jogos">Ranking nacional</button><button class="nav hidden" type="button" data-view="managers" data-section="jogos" tabindex="-1" aria-hidden="true">Técnicos</button>
+      <button class="nav" type="button" data-view="clubhub" data-section="clube">Visão geral</button>
+      <button class="nav" type="button" data-view="office" data-section="clube">Finanças</button>
+      <button class="nav" type="button" data-view="stadium" data-section="clube">Estrutura</button>
+      <button class="nav" type="button" data-view="clubhistory" data-section="clube">História</button>
+    </nav>
     <section id="dashboard" class="view active">
       <div class="hero"><div><p>CARREGANDO…</p><h1>—</h1><span>—</span></div><div class="crest">—</div></div>
       <div class="grid">
         <article class="card match"><label><span id="nextMatchCardTitle">PRÓXIMA PARTIDA</span> <em id="nextMatchRound">RODADA —</em></label><div class="teams"><div><i>—</i><b id="nextMatchHome">—</b><small id="nextMatchHomePosition">—</small><small id="nextMatchHomeContext" class="match-team-context"></small></div><strong class="match-vs-block"><span id="nextMatchCompetition" class="match-competition" data-kind="serie-a" aria-label="Campeonato"><svg class="match-competition-trophy" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path class="trophy-cup" d="M8 4h16v3c0 4.5-2.2 7.8-5.5 9.5L18 20v2h4v3H10v-3h4v-2l-.5-3.5C10.2 14.8 8 11.5 8 7V4z"/><path class="trophy-shine" d="M11 6h10v1.5c0 3.2-1.5 5.6-3.8 7L16 17.5 14.8 14.5C12.5 12.6 11 10.2 11 7V6z"/><rect class="trophy-base" x="12" y="25" width="8" height="2" rx="1"/><path class="trophy-handles" fill="none" stroke-width="1.2" d="M8 6H5.5a2.5 2.5 0 0 0 0 5H8M24 6h2.5a2.5 2.5 0 0 1 0 5H24"/></svg><b id="nextMatchCompetitionName" data-competition-name>—</b></span><small id="nextMatchCompetitionPhase" class="match-competition-phase"></small><span class="match-vs-label">VS</span><div id="nextMatchMeta" class="match-meta"></div></strong><div><i id="nextMatchAwayCrest" class="away">EC</i><b id="nextMatchAway">—</b><small id="nextMatchAwayPosition">—</small><small id="nextMatchAwayContext" class="match-team-context"></small></div></div><div id="seasonReviewBoard" class="season-review-board hidden" aria-label="Resumo da temporada"></div><footer class="match-actions-footer"><section class="match-recent-form" aria-label="Últimos resultados"><label>ÚLTIMOS RESULTADOS</label><div class="form" id="matchRecentForm"></div><small id="matchRecentSummary">A temporada ainda não possui resultados.</small></section><div class="match-actions-buttons"><button id="playMatch">JOGAR PARTIDA →</button><button id="reopenPostMatch" class="scout-button hidden" type="button" title="Reabrir o resumo da última partida">PÓS-JOGO</button><button id="simulateRemainder" class="hidden">SIMULAR RESTANTE DA TEMPORADA →</button><button id="advanceTransferCalendar" class="scout-button hidden">AVANÇAR SEMANA</button><button id="openDashboardCalendar" class="scout-button hidden">DIA DE JOGO</button><button id="inspectOpponent" class="scout-button">VER ADVERSÁRIO</button></div></footer><section class="club-upcoming"><label>PRÓXIMOS JOGOS</label><div class="club-upcoming-head"><span>CONFRONTO</span><span>DATA E HORA</span><span>MANDO</span></div><div id="clubUpcomingMatches"></div><div class="club-upcoming-actions"><button id="openTeamGames" type="button">JOGOS DO TIME</button></div></section></article>
+        <section class="hub-attention card" id="hubAttention" aria-labelledby="hubAttentionTitle"><label id="hubAttentionTitle">PRECISA DA SUA ATENÇÃO <em id="hubAttentionCount"></em></label><div id="hubAttentionList" class="hub-attention-list"></div></section>
+        <section class="hub-tiles" id="hubTiles" aria-label="Situação do clube"></section>
         <aside class="dashboard-side"><div class="dashboard-side-split"><article class="card season-goal-card" id="dashboardSeasonGoalCard"><label>META DA TEMPORADA</label><div class="season-goal-card-visual"><div id="dashboardSeasonGoalGauge" class="season-goal-card-gauge" aria-hidden="true"></div></div></article><article class="card dashboard-side-slot dashboard-team-stats" id="dashboardTeamStatsCard"><label>ESTATISTICAS DO TIME</label><div class="dashboard-team-stats-list"><article class="dashboard-team-stat"><img class="dashboard-team-stat-icon" src="./brand/stats-scorer.webp" alt="" width="46" height="46" decoding="async"><div class="dashboard-team-stat-copy"><small>ARTILHEIRO</small><strong id="dashboardTeamScorer">—</strong><span id="dashboardTeamScorerMeta">0 gols</span></div></article><article class="dashboard-team-stat"><img class="dashboard-team-stat-icon" src="./brand/stats-assist.webp" alt="" width="46" height="46" decoding="async"><div class="dashboard-team-stat-copy"><small>ASSISTÊNCIAS</small><strong id="dashboardTeamAssistant">—</strong><span id="dashboardTeamAssistantMeta">0 assist.</span></div></article><article class="dashboard-team-stat"><img class="dashboard-team-stat-icon" src="./brand/stats-overall.webp" alt="" width="46" height="46" decoding="async"><div class="dashboard-team-stat-copy"><small>MÉDIA DO TIME</small><strong id="dashboardTeamOverall">—</strong><span id="dashboardTeamOverallMeta">nota média</span></div></article></div></article></div><article class="card environment-card"><label>AMBIENTE DO ELENCO</label><div class="summary-top dashboard-summary"><div class="overall-box dashboard-overall"><small>OVERALL</small><strong>—</strong></div><div class="environment-gauge dashboard-environment" style="--environment:0"><div><strong>—</strong><small>AMBIENTE</small></div></div></div><div class="dashboard-environment-note"><strong>—</strong><small>—</small></div><div class="dashboard-factors"><div><small>ORÇAMENTO DO CLUBE</small><b id="dashboardBudget">—</b></div><div><small>APOIO DA TORCIDA</small><b data-dashboard-factor data-min="58" data-max="97"></b></div><div><small>DIRETORIA</small><b data-dashboard-factor data-min="48" data-max="94"></b></div><div><small>SAÚDE FINANCEIRA</small><b data-dashboard-factor data-min="42" data-max="91"></b></div></div></article><div class="side-mini-cards"><article class="card stadium-card office-entry-card" id="openStadiumFromDashboard" role="button" tabindex="0" aria-label="Abrir Estádio"><label>ESTÁDIO</label><div class="dashboard-stadium-preview" aria-hidden="true"><img class="dashboard-stadium-preview-img" id="dashboardStadiumPreviewImg" alt="" width="92" height="64" loading="lazy" decoding="async" fetchpriority="low"/></div><div><strong>Estádio</strong><small>Gramado, capacidade e bilheteria →</small></div></article><article class="card stadium-card office-entry-card" id="openOfficeFromDashboard" role="button" tabindex="0" aria-label="Abrir Escritório"><label>ESCRITÓRIO</label><svg class="office-icon" viewBox="0 0 160 110" role="img" aria-hidden="true"><rect class="office-icon-board" x="78" y="16" width="68" height="60" rx="5"/><rect class="office-icon-bar" x="90" y="50" width="9" height="16" rx="1.5"/><rect class="office-icon-bar" x="104" y="40" width="9" height="26" rx="1.5"/><rect class="office-icon-bar" x="118" y="30" width="9" height="36" rx="1.5"/><rect class="office-icon-bar" x="132" y="22" width="9" height="44" rx="1.5"/><circle class="office-icon-figure" cx="46" cy="28" r="15"/><path class="office-icon-figure" fill-rule="evenodd" d="M12 90V76c2-20 14-34 34-34s32 14 34 34v14H12zm26-46l8 14 8-14z"/></svg><div><strong>Escritório</strong><small>Orçamento e investimentos →</small></div></article></div></aside>
         <div class="dashboard-tables">
           <article class="card standings"><label id="openChampionship">CAMPEONATO <em>VER CAMPEONATO →</em></label><div class="mini-table-head"><span>#</span><span>CLUBE</span><span>J</span><span>SG</span><span>PTS</span></div><div id="miniTable"></div></article>
@@ -208,9 +223,19 @@
       <article id="squadPerformance" class="card squad-performance" aria-label="Desempenho do elenco"></article>
     </section>
     <section id="tactics" class="view"><div class="title"><p>PREPARAÇÃO DA PARTIDA</p><h1>Táticas</h1></div><div class="tactics"><div class="pitch tactical-board"><div class="field-markings" aria-hidden="true"><i class="mid-line"></i><i class="centre-circle"></i><i class="centre-spot"></i><i class="area area-top"></i><i class="area area-bottom"></i><i class="six-yard six-top"></i><i class="six-yard six-bottom"></i><i class="spot spot-top"></i><i class="spot spot-bottom"></i><i class="goal goal-top"></i><i class="goal goal-bottom"></i></div><div id="pitchPlayers"></div></div><div class="card controls"><div class="tactic-suggestion-wrap"><button id="applyTacticSuggestion" type="button" class="tactic-suggestion-btn">✦ SUGESTÃO TÁTICA</button><span class="tactic-suggestion-tooltip">Monta automaticamente a melhor formação, escalação e ajustes de mentalidade, estilo de construção, intensidade de pressão e linha de impedimento com base apenas no seu elenco disponível.</span></div><label>FORMAÇÃO</label><div id="formations" class="formation-buttons"></div><p id="formationDescription"></p><div class="tactic-slider"><label>MENTALIDADE <output id="mentalityReadout"></output></label><div><small>DEFENSIVA</small><input id="mentalitySlider" type="range" min="0" max="100" value="50"><small>OFENSIVA</small></div></div><div class="tactic-slider"><label>ESTILO DE CONSTRUÇÃO <output id="possessionReadout"></output></label><div><small>CONTRA-ATAQUE</small><input id="possessionSlider" type="range" min="0" max="100" value="50"><small>POSSE</small></div></div><div class="tactic-slider"><label>INTENSIDADE DE PRESSÃO <output id="pressReadout"></output></label><div><small>BAIXA</small><input id="pressSlider" type="range" min="0" max="100" value="50"><small>ALTA</small></div></div><div class="tactic-slider"><label>LINHA DE IMPEDIMENTO <output id="offsideLineReadout"></output></label><div><small>BAIXA</small><input id="offsideLineSlider" type="range" min="0" max="100" value="50"><small>ALTA</small></div></div></div><aside class="card tactic-roster"><label>ELENCO PARA A PARTIDA</label><small class="tactic-roster-hint">Arraste entre titulares e reservas, ou solte na prancheta para ajustar a equipe.</small><section><h3>TITULARES</h3><div class="tactic-roster-head"><span>JOGADOR</span><span>POS</span><span>OVR</span><span>CANSAÇO</span></div><div id="tacticStarters"></div></section><section><h3>RESERVAS</h3><div class="tactic-roster-head"><span>JOGADOR</span><span>POS</span><span>OVR</span><span>CANSAÇO</span></div><div id="tacticBench"></div></section></aside></div></section>
+    <section id="clubhub" class="view clubhub-view">
+      <div class="title"><p>CLUBE · VISÃO GERAL</p><h1>Clube</h1></div>
+      <div id="clubHubBody" class="clubv2-hub"></div>
+    </section>
+    <section id="clubhistory" class="view clubhistory-view">
+      <div class="title"><p>SALA DE TROFÉUS E TEMPORADAS</p><h1>História</h1></div>
+      <div id="clubHistoryBody" class="clubv2-history"></div>
+    </section>
     <section id="office" class="view office-view">
-      <div class="title office-title"><p>GESTÃO FINANCEIRA DO CLUBE</p><h1>Escritório</h1><span>Administre o orçamento, invista na estrutura e acompanhe os movimentos de caixa.</span><button id="openClubHistoryCard" class="office-history-btn" type="button">HISTÓRICO</button></div>
+      <div class="title office-title"><p>DINHEIRO QUE ENTRA E SAI</p><h1>Finanças</h1><span>Receitas, custos, patrocínio, crédito e fluxo de caixa do clube.</span><button id="openClubHistoryCard" class="office-history-btn" type="button">HISTÓRICO</button></div>
       <div class="office-layout">
+        <article class="card clubv2-fin-chart" aria-label="Receitas e custos por rodada"><label>RECEITAS × CUSTOS POR RODADA</label><div id="clubFinanceChart"></div></article>
+        <article class="card clubv2-fin-saldo" aria-label="Saldo e projeção"><label>SALDO</label><div id="clubFinanceSaldo"></div></article>
         <article class="card office-budget-card">
           <div class="office-budget-header">
             <div class="office-budget-col">
@@ -241,24 +266,10 @@
           </div>
         </article>
         <article class="card office-bank-loan" id="officeBankLoan" aria-label="Empréstimo bancário">
-          <label>EMPRÉSTIMO BANCÁRIO</label>
+          <label>CRÉDITO BANCÁRIO</label>
+          <button type="button" class="clubv2-loan-toggle" data-clubv2-loan aria-expanded="false" aria-controls="officeBankLoanBody">SIMULAR EMPRÉSTIMO</button>
           <p class="office-bank-loan-meta" id="officeBankLoanMeta">Financiamento por parcelas · taxa travada no contrato · juros automáticos</p>
           <div id="officeBankLoanBody" class="office-bank-loan-body"></div>
-        </article>
-        <article class="card economy-investments" id="economyInvestments" aria-label="Investimentos do clube">
-          <label>INVESTIMENTOS DO CLUBE</label>
-          <div class="economy-invest-head"><span>INVESTIMENTO</span><span>NÍVEL</span><span>INVESTIR</span></div>
-          <div id="economyInvestmentsList" class="economy-investments-list"></div>
-          <div class="office-status-strip office-investment-levels" aria-label="Níveis dos investimentos">
-            <div class="office-meter" data-meter="medical">
-              <div class="office-meter-top"><small>DEP. MÉDICO</small><b id="officeMedicalLevel">0/5</b></div>
-              <div class="office-meter-track" aria-hidden="true"><i id="officeMedicalBar"></i></div>
-            </div>
-            <div class="office-meter" data-meter="prevention">
-              <div class="office-meter-top"><small>PREVENÇÃO</small><b id="officePreventionLevel">0/3</b></div>
-              <div class="office-meter-track" aria-hidden="true"><i id="officePreventionBar"></i></div>
-            </div>
-          </div>
         </article>
         <article class="card office-sponsors" id="officeSponsors" aria-label="Patrocínio">
           <label>PATROCÍNIO</label>
@@ -277,7 +288,7 @@
       </div>
     </section>
     <section id="stadium" class="view stadium-view">
-      <div class="title"><p>INFRAESTRUTURA E BILHETERIA</p><h1>Estádio</h1><span>Estrutura destrava setores; capacidade e ticket médio vêm da composição da arena.</span></div>
+      <div class="title"><p>ESTÁDIO, CENTRO DE TREINO E INGRESSOS</p><h1>Estrutura</h1><span>Obras destravam setores e melhoram o elenco; o preço do ingresso mexe na lotação e na renda.</span></div>
       <div class="office-stadium-layout">
         <article class="card stadium-summary-card">
           <label>ESTÁDIO</label>
@@ -301,9 +312,24 @@
           </div>
         </article>
         <article class="card stadium-upgrades" id="stadiumUpgrades" aria-label="Melhorias do estádio">
-          <label>INVESTIMENTOS DO ESTÁDIO</label>
+          <label>OBRAS DO ESTÁDIO</label>
           <div class="economy-invest-head"><span>MELHORIA</span><span>NÍVEL</span><span>INVESTIR</span></div>
           <div id="stadiumUpgradesList" class="economy-investments-list"></div>
+        </article>
+        <article class="card economy-investments" id="economyInvestments" aria-label="Investimentos do clube">
+          <label>CENTRO DE TREINO</label>
+          <div class="economy-invest-head"><span>INVESTIMENTO</span><span>NÍVEL</span><span>INVESTIR</span></div>
+          <div id="economyInvestmentsList" class="economy-investments-list"></div>
+          <div class="office-status-strip office-investment-levels" aria-label="Níveis dos investimentos">
+            <div class="office-meter" data-meter="medical">
+              <div class="office-meter-top"><small>DEP. MÉDICO</small><b id="officeMedicalLevel">0/5</b></div>
+              <div class="office-meter-track" aria-hidden="true"><i id="officeMedicalBar"></i></div>
+            </div>
+            <div class="office-meter" data-meter="prevention">
+              <div class="office-meter-top"><small>PREVENÇÃO</small><b id="officePreventionLevel">0/3</b></div>
+              <div class="office-meter-track" aria-hidden="true"><i id="officePreventionBar"></i></div>
+            </div>
+          </div>
         </article>
         <article class="card stadium-tickets" id="stadiumTickets" aria-label="Valores de ingresso">
           <label>VALORES DE INGRESSO</label>
@@ -605,7 +631,7 @@
       </div>
     </section>
     <section id="ranking" class="view national-ranking-view">
-      <div class="title ranking-page-heading"><p>CLASSIFICAÇÃO NACIONAL DE CLUBES</p><h1>Ranking Nacional</h1></div>
+      <div class="title ranking-page-heading"><p>CLASSIFICAÇÃO NACIONAL DE CLUBES</p><h1>Ranking Nacional</h1><nav class="ranking-switch" aria-label="Tipo de ranking"><button type="button" data-ranking-switch="ranking">CLUBES</button><button type="button" data-ranking-switch="managers">TÉCNICOS</button></nav></div>
       <div class="ranking-top-bar">
       <div class="ranking-trophy-section">
         <header><div><small>CONQUISTAS NACIONAIS</small><strong>Pontos para o clube campeão</strong></div></header>
@@ -645,12 +671,16 @@
         <div id="nationalRankingTable" class="national-ranking-body"></div>
       </div>
     </section>
-    <section id="managers" class="view national-ranking-view manager-ranking-view">
-      <div class="title ranking-page-heading"><p>CLASSIFICAÇÃO NACIONAL DE TREINADORES</p><h1>Ranking de Técnicos</h1></div>
-      <div class="card national-ranking-table manager-ranking-table">
-        <div class="national-ranking-head manager-ranking-head"><span>#</span><span>TÉCNICO</span><span>CLUBE</span><span>DIV.</span><span class="national-ranking-col-hidden">BASE</span><span>TEMP.</span><span>SALÁRIO</span><span>TOTAL</span><span>AÇÕES</span></div>
-        <div id="managerRankingUserRow" class="national-ranking-user-slot"></div>
-        <div id="managerRankingTable" class="national-ranking-body"></div>
+    <section id="managers" class="view manager-ranking-view mrv2">
+      <div class="title ranking-page-heading"><p>CLASSIFICAÇÃO NACIONAL DE TREINADORES</p><h1>Ranking de Técnicos</h1><nav class="ranking-switch" aria-label="Tipo de ranking"><button type="button" data-ranking-switch="ranking">CLUBES</button><button type="button" data-ranking-switch="managers">TÉCNICOS</button></nav></div>
+      <div class="mrv2-layout">
+        <article class="card mrv2-main">
+          <div id="managerRankingPodium" class="mrv2-podium"></div>
+          <div class="mrv2-head" aria-hidden="true"><span>#</span><span></span><span>TÉCNICO</span><span class="mrv2-col-club">CLUBE</span><span>DIV.</span><span class="mrv2-col-season">TEMP.</span><span class="mrv2-col-salary">SALÁRIO</span><span class="mrv2-col-titles">TÍTULOS</span><span>PTS</span></div>
+          <div id="managerRankingTable" class="mrv2-body"></div>
+          <p class="mrv2-hint">Clique em um técnico para abrir a ficha; no escudo, para ver o clube.</p>
+        </article>
+        <aside id="managerRankingUserRow" class="card mrv2-you" hidden></aside>
       </div>
     </section>
     <section id="messages" class="view messages-view">
@@ -676,7 +706,7 @@
           <footer class="calendar-legend"><span><i class="home"></i>JOGO EM CASA</span><span><i class="away"></i>JOGO FORA</span><span><i class="round"></i>RODADA</span><span><i class="training"></i>ATIVIDADE</span></footer>
         </article>
         <aside class="calendar-sidebar">
-          <article class="card day-agenda-card"><label>AGENDA DO DIA</label><div class="agenda-date"><strong id="calendarSelectedDay"></strong><small id="calendarSelectedMeta"></small></div><div id="calendarDayAgenda" class="day-agenda"></div></article>
+          <article class="card day-agenda-card"><label>JOGOS DO DIA</label><div class="agenda-date"><strong id="calendarSelectedDay"></strong><small id="calendarSelectedMeta"></small></div><div id="calendarDayAgenda" class="day-agenda"></div></article>
           <article class="card training-shortcut-card">
             <label>TREINAMENTO</label>
             <div id="trainingShortcutSummary" class="training-shortcut-summary">

@@ -1,5 +1,5 @@
 import { teamCrestHtml } from '../../ui/team-crest.js';
-import { managerCardLayoutStyle } from '../../ui/manager-card-layout.js';
+import { clubCrestUrl } from '../../engine/club-crests.js';
 import {
   resolveNationalRankingEntry,
   sortNationalRankingEntries,
@@ -70,9 +70,8 @@ export function createRankingViewsFeature(deps) {
 
   const nationalRankingRowHtml = (entry, position, { pinned = false } = {}) => {
     const userClub = getUserClub();
-    const clubMarkup = pinned
-      ? `<span class="national-ranking-club-cell">${teamCrestHtml(entry.club, { className: 'national-ranking-row-crest' })}<span class="club-link">${entry.club}</span></span>`
-      : `<span class="club-link">${entry.club}</span>`;
+    // Ranking v2: escudo em todas as linhas.
+    const clubMarkup = `<span class="national-ranking-club-cell">${teamCrestHtml(entry.club, { className: 'national-ranking-row-crest' })}<span class="club-link">${entry.club}</span></span>`;
     const userRow = entry.club === userClub;
     const scoreHint = `Base ${entry.base.toFixed(1)} + Campeonatos ${entry.championshipPoints.toFixed(1)} + Títulos ${entry.titlePoints.toFixed(1)}`;
     return `<div class="national-ranking-row${pinned ? ' national-ranking-user-row user-ranking' : userRow ? ' user-ranking' : ''}" data-club="${entry.club}" role="button" tabindex="0" aria-label="${entry.club} · ${scoreHint} · Total ${entry.total.toFixed(1)}"><span>${position}</span>${clubMarkup}<span>${entry.division}</span><span class="national-ranking-base national-ranking-col-hidden" aria-hidden="true">${entry.base.toFixed(1)}</span><span class="national-ranking-championships national-ranking-col-hidden" aria-hidden="true">${entry.championshipPoints.toFixed(1)}</span><span class="national-ranking-titles">${entry.titlePoints.toFixed(1)}</span><span class="national-ranking-total" title="${scoreHint}">${entry.total.toFixed(1)}</span></div>`;
@@ -86,7 +85,15 @@ export function createRankingViewsFeature(deps) {
     const userSlot = $('#nationalRankingUserRow');
     const userMatches = !query || (userIndex >= 0 && normalizeClubSearch(ranking[userIndex].club).includes(query));
     if (userIndex >= 0 && userMatches) {
-      userSlot.innerHTML = nationalRankingRowHtml(ranking[userIndex], userIndex + 1, { pinned: true });
+      // Ranking v2: cartão "Você" com a distância para o líder e para quem está à frente.
+      const mine = ranking[userIndex];
+      const leader = ranking[0];
+      const ahead = userIndex > 0 ? ranking[userIndex - 1] : null;
+      const behind = ranking[userIndex + 1] || null;
+      const fmt = value => value.toFixed(1).replace('.', ',');
+      const gapLeader = leader && leader !== mine ? `<div><small>PARA O LÍDER</small><strong>${fmt(leader.total - mine.total)} pts</strong></div>` : behind ? `<div><small>VANTAGEM</small><strong>+${fmt(mine.total - behind.total)} pts</strong></div>` : '';
+      const gapAhead = ahead && ahead !== leader ? `<div><small>PARA O ${userIndex}º</small><strong>${fmt(ahead.total - mine.total)} pts</strong></div>` : '';
+      userSlot.innerHTML = `<div class="ranking-v2-you" data-club="${mine.club}" role="button" tabindex="0"><span class="ranking-v2-you-pos"><small>VOCÊ</small><strong>${userIndex + 1}º</strong></span>${teamCrestHtml(mine.club, { className: 'ranking-v2-you-crest' })}<span class="ranking-v2-you-name"><b>${mine.club}</b><small>Série ${mine.division} · ${fmt(mine.total)} pts</small></span><div class="ranking-v2-you-stats">${gapLeader}${gapAhead}<div><small>TÍTULOS</small><strong>${fmt(mine.titlePoints)}</strong></div></div></div>`;
       userSlot.hidden = false;
     } else {
       userSlot.innerHTML = '';
@@ -96,6 +103,16 @@ export function createRankingViewsFeature(deps) {
       ? ranking.map((entry, index) => ({ entry, position: index + 1 })).filter(({ entry }) => normalizeClubSearch(entry.club).includes(query))
       : ranking.map((entry, index) => ({ entry, position: index + 1 }));
     const table = $('#nationalRankingTable');
+    // Ranking v2: pódio dos 3 primeiros (fora da busca).
+    let podium = $('#nationalRankingPodium');
+    if (!podium) {
+      $('#ranking .national-ranking-table')?.insertAdjacentHTML('beforebegin', '<div id="nationalRankingPodium" class="ranking-v2-podium"></div>');
+      podium = $('#nationalRankingPodium');
+    }
+    if (podium) {
+      podium.hidden = !!query || ranking.length < 3;
+      podium.innerHTML = query ? '' : ranking.slice(0, 3).map((entry, index) => `<div class="ranking-v2-podium-card${entry.club === userClub ? ' is-user' : ''}" data-place="${index + 1}" data-club="${entry.club}" role="button" tabindex="0"><span class="ranking-v2-place">${index + 1}º</span>${teamCrestHtml(entry.club, { className: 'ranking-v2-podium-crest' })}<b>${entry.club}</b><small>Série ${entry.division}</small><strong>${entry.total.toFixed(1).replace('.', ',')} <em>PTS</em></strong></div>`).join('');
+    }
     table.innerHTML = filtered.length
       ? filtered.map(({ entry, position }) => nationalRankingRowHtml(entry, position, { pinned: false })).join('')
       : '<div class="national-ranking-empty">Nenhum time encontrado.</div>';
@@ -130,85 +147,166 @@ export function createRankingViewsFeature(deps) {
     return Math.max(0, Math.round(perRound * STAFF_ROUNDS_PER_MONTH));
   };
 
-  const managerRankingRowHtml = (entry, position, { pinned = false } = {}) => {
-    const userClub = getUserClub();
-    const careerProfile = getCareerProfile();
-    const isUser = entry.club === userClub || entry.name === careerProfile.managerName;
-    const nameCell = pinned
-      ? `<span class="national-ranking-club-cell"><i class="crest national-ranking-row-crest" aria-hidden="true">${getUserClubInitials()}</i><span>${entry.name}</span></span>`
-      : `<span>${entry.name}</span>`;
-    const salary = managerMonthlySalary(entry);
-    const salaryLabel = formatBudget(salary);
-    const scoreHint = `Base ${entry.base.toFixed(1)} + Temporada ${entry.seasonPoints.toFixed(1)} + Títulos ${entry.titlePoints.toFixed(1)} · Salário ${salaryLabel}/mês`;
-    return `<div class="national-ranking-row manager-ranking-row${pinned ? ' national-ranking-user-row user-ranking' : isUser ? ' user-ranking' : ''}${entry.status === 'free' ? ' manager-free' : ''}" data-manager="${entry.id}" ${entry.club ? `data-club="${entry.club}"` : ''} role="button" tabindex="0" aria-label="${entry.name} · ${scoreHint} · Total ${entry.total.toFixed(1)}"><span>${position}</span>${nameCell}<span class="manager-ranking-club">${entry.clubLabel}</span><span>${entry.division}</span><span class="national-ranking-col-hidden" aria-hidden="true">${entry.base.toFixed(1)}</span><span class="manager-ranking-season">${entry.seasonPoints.toFixed(1)}</span><span class="manager-ranking-salary" title="Salário mensal estimado">${salaryLabel}</span><span class="national-ranking-total" title="${scoreHint}">${entry.total.toFixed(1)}</span><span class="manager-ranking-actions"><button type="button" class="manager-trophy-room-btn" data-manager-trophies="${entry.id}" aria-label="Abrir Sala de Troféus de ${escapeHtml(entry.name)}">🏆 <span>SALA DE TROFÉUS</span></button></span></div>`;
+  const fmtPts = value => (Number(value) || 0).toFixed(1).replace('.', ',');
+
+  /** Resumo da carreira do técnico (temporadas guardadas no histórico). */
+  const managerCareer = manager => {
+    const seasons = manager?.careerHistory?.seasons || [];
+    const sum = key => seasons.reduce((total, item) => total + (Number(item[key]) || 0), 0);
+    const clubsSet = new Set();
+    seasons.forEach(item => (item.clubs || []).forEach(club => club && clubsSet.add(String(club))));
+    if (manager?.club) clubsSet.add(manager.club);
+    const trophies = seasons.flatMap(season => (season.titles || []).map(title => ({ ...title, season: season.season })))
+      .sort((x, y) => Number(y.season) - Number(x.season));
+    const games = sum('games');
+    const wins = sum('wins');
+    return {
+      seasons: seasons.length,
+      games,
+      wins,
+      draws: sum('draws'),
+      losses: sum('losses'),
+      clubs: clubsSet.size,
+      trophies,
+      pct: games ? Math.round((wins / games) * 100) : null,
+    };
   };
 
-  const ensureTrophyRoom = () => {
-    let modal = $('#managerTrophyRoomModal');
+  const isUserManager = entry => {
+    const careerProfile = getCareerProfile();
+    return entry.club === getUserClub() || entry.name === careerProfile.managerName;
+  };
+
+  const managerCrest = (club, cls) => (club
+    ? `<span class="mrv2-crest ${cls || ''}" data-club="${escapeHtml(club)}" role="button" tabindex="0" title="Ver ${escapeHtml(club)}">${teamCrestHtml(club, { className: 'mrv2-crest-img' })}</span>`
+    : `<span class="mrv2-crest is-free ${cls || ''}" aria-hidden="true">—</span>`);
+
+  const managerRankingRowHtml = (entry, position) => {
+    const manager = getManagerRanking().byId(entry.id) || entry;
+    const career = managerCareer(manager);
+    const salaryLabel = formatBudget(managerMonthlySalary(entry));
+    const scoreHint = `Base ${entry.base.toFixed(1)} + Temporada ${entry.seasonPoints.toFixed(1)} + Títulos ${entry.titlePoints.toFixed(1)}`;
+    const titles = career.trophies.length;
+    return `<div class="mrv2-row${isUserManager(entry) ? ' is-user' : ''}${entry.status === 'free' ? ' is-free' : ''}" data-manager="${escapeHtml(entry.id)}" role="button" tabindex="0" aria-label="Ficha de ${escapeHtml(entry.name)} · ${position}º · ${fmtPts(entry.total)} pontos">`
+      + `<span class="mrv2-pos">${position}</span>${managerCrest(entry.club)}`
+      + `<span class="mrv2-name"><b>${escapeHtml(entry.name)}</b><small>${escapeHtml(entry.clubLabel || 'Livre')}</small></span>`
+      + `<span class="mrv2-col-club">${escapeHtml(entry.clubLabel || 'Livre')}</span>`
+      + `<span>${escapeHtml(entry.division || '—')}</span>`
+      + `<span class="mrv2-col-season">${fmtPts(entry.seasonPoints)}</span>`
+      + `<span class="mrv2-col-salary">${salaryLabel}</span>`
+      + `<span class="mrv2-col-titles${titles ? ' has-titles' : ''}">${titles ? `<i aria-hidden="true"></i>${titles}` : '—'}</span>`
+      + `<strong class="mrv2-total" title="${scoreHint}">${fmtPts(entry.total)}</strong></div>`;
+  };
+
+  const MANAGER_MODAL_ID = 'managerCardModal';
+  const ensureManagerModal = () => {
+    let modal = document.getElementById(MANAGER_MODAL_ID);
     if (modal) return modal;
     document.body.insertAdjacentHTML('beforeend', `
-      <div id="managerTrophyRoomModal" class="manager-trophy-modal" role="dialog" aria-modal="true" aria-labelledby="managerTrophyRoomTitle" hidden>
-        <section class="manager-trophy-panel">
-          <h2 id="managerTrophyRoomTitle" class="manager-trophy-sr-title">Sala de Troféus</h2>
-          <div id="managerTrophyRoomBody" class="manager-trophy-body"></div>
-        </section>
+      <div id="${MANAGER_MODAL_ID}" class="modal hidden manager-card-modal-v2" role="dialog" aria-modal="true" aria-labelledby="managerCardV2Name">
+        <div class="mv2-shell pcv2 mcv2" data-tone="gold">
+          <header class="mv2-head pcv2-head">
+            <img class="pcv2-crest" id="managerCardV2Crest" alt="" hidden>
+            <div class="pcv2-head-text">
+              <span class="mv2-kicker" id="managerCardV2Kicker">TÉCNICO</span>
+              <h2 class="mv2-title pcv2-name" id="managerCardV2Name">Técnico</h2>
+            </div>
+            <button type="button" class="mv2-close" data-mcv2-close aria-label="Fechar">×</button>
+          </header>
+          <div class="pcv2-grid">
+            <div class="pcv2-photo is-manager" id="managerCardV2Photo" aria-hidden="true"></div>
+            <div class="pcv2-info" id="managerCardV2Info"></div>
+          </div>
+          <footer class="mv2-foot pcv2-foot">
+            <button type="button" class="mv2-btn is-ghost" id="managerCardV2Club">VER CLUBE</button>
+            <button type="button" class="mv2-btn is-primary" data-mcv2-close>FECHAR</button>
+          </footer>
+        </div>
       </div>`);
-    return $('#managerTrophyRoomModal');
+    return document.getElementById(MANAGER_MODAL_ID);
+  };
+
+  const managerInfoMarkup = (manager, { position, entry }) => {
+    const career = managerCareer(manager);
+    const tile = (label, value, cls = '') => `<div class="mv2-tile"><small>${label}</small><strong class="${cls}">${value}</strong></div>`;
+    const chips = [
+      manager.style ? `<span class="pcv2-chip is-pos" data-line="def">${escapeHtml(manager.style)}</span>` : '',
+      career.seasons ? `<span class="pcv2-chip">${career.seasons} ${career.seasons === 1 ? 'temporada' : 'temporadas'}</span>` : '<span class="pcv2-chip">Primeira temporada</span>',
+      entry?.status === 'free' || !manager.club ? '<span class="pcv2-chip is-bad">Sem clube</span>' : '',
+      entry && isUserManager(entry) ? '<span class="pcv2-chip is-you">Você</span>' : '',
+    ].join('');
+    const t = career.wins + career.draws + career.losses;
+    const record = t
+      ? `<div class="mcv2-record"><div class="mcv2-record-bar"><b class="is-w" style="width:${(career.wins / t) * 100}%"></b><b class="is-d" style="width:${(career.draws / t) * 100}%"></b><b class="is-l" style="width:${(career.losses / t) * 100}%"></b></div>
+         <div class="mcv2-record-legend"><span><strong class="is-w">${career.wins}</strong> vitórias</span><span><strong>${career.draws}</strong> empates</span><span><strong class="is-l">${career.losses}</strong> derrotas</span></div></div>`
+      : '';
+    const trophies = career.trophies.length
+      ? `<div class="mcv2-trophies">${career.trophies.map(title => `<div class="mcv2-trophy"><i aria-hidden="true"></i><span><b>${escapeHtml(title.competition || 'Título')}</b><small>${escapeHtml(title.club || '')}</small></span><strong>${escapeHtml(title.season || '')}</strong></div>`).join('')}</div>`
+      : '<p class="pcv2-empty">Nenhum título ainda. O histórico é atualizado ao fim de cada temporada.</p>';
+    const salary = entry ? formatBudget(managerMonthlySalary(entry)) : '—';
+    return `
+      <div class="pcv2-top">
+        <div class="mcv2-rank"><small>RANKING</small><strong>${position ? `${position}º` : '—'}</strong></div>
+        <div class="pcv2-id">
+          <div class="pcv2-chips">${chips}</div>
+          <p class="mcv2-score">Pontuação <b>${entry ? fmtPts(entry.total) : '—'}</b>${entry ? ` · temporada <b>${entry.seasonPoints >= 0 ? '+' : ''}${fmtPts(entry.seasonPoints)}</b>` : ''}</p>
+        </div>
+        <div class="pcv2-pot mcv2-titles"><small>TÍTULOS</small><strong>${career.trophies.length}</strong></div>
+      </div>
+      <section class="pcv2-sec">
+        <h3 class="pcv2-h">CARREIRA</h3>
+        <div class="mv2-tiles">
+          ${tile('JOGOS', career.games)}
+          ${tile('TEMPORADAS', career.seasons)}
+          ${tile('CLUBES', career.clubs)}
+          ${tile('APROVEIT.', career.pct == null ? '—' : `${career.pct}%`, 'is-lime')}
+        </div>
+        ${record}
+      </section>
+      <section class="pcv2-sec">
+        <h3 class="pcv2-h">CONQUISTAS</h3>
+        ${trophies}
+      </section>
+      <section class="pcv2-sec">
+        <h3 class="pcv2-h">CONTRATO</h3>
+        <div class="mv2-tiles">
+          ${tile('CLUBE ATUAL', escapeHtml(entry?.clubLabel || manager.club || 'Livre'))}
+          ${tile('DIVISÃO', escapeHtml(entry?.division || '—'))}
+          ${tile('SALÁRIO / MÊS', salary, 'is-money')}
+        </div>
+      </section>`;
   };
 
   const renderManagerTrophyRoom = (managerId, { skipRemote = false } = {}) => {
     const manager = getManagerRanking().byId(managerId);
     if (!manager) return;
     openTrophyManagerId = manager.id;
-    const modal = ensureTrophyRoom();
-    $('#managerTrophyRoomTitle').textContent = `Sala de Troféus de ${manager.name}`;
-    const seasons = manager.careerHistory?.seasons || [];
-    const totalTitles = seasons.reduce((sum, season) => sum + (season.titles?.length || 0), 0);
-    const games = seasons.reduce((sum, item) => sum + item.games, 0);
-    const wins = seasons.reduce((sum, item) => sum + item.wins, 0);
-    const draws = seasons.reduce((sum, item) => sum + item.draws, 0);
-    const losses = seasons.reduce((sum, item) => sum + item.losses, 0);
+    const modal = ensureManagerModal();
     const ranking = getManagerRanking().currentRanking(deps.getManagerRankingHelpers());
-    const rankingPosition = ranking.findIndex(entry => entry.id === manager.id) + 1;
-    const rankingEntry = ranking.find(entry => entry.id === manager.id);
-    const clubLabel = rankingEntry?.clubLabel || manager.club || 'LIVRE';
-    const clubIdentity = manager.club
-      ? `<div class="manager-card-club-crest">${teamCrestHtml(manager.club, { className: 'manager-card-team-crest' })}</div><small>${escapeHtml(clubLabel)}</small>`
-      : '<strong class="manager-card-free-label">LIVRE</strong><small>SEM CLUBE</small>';
-    const trophyRows = seasons.flatMap(season => (season.titles || []).map(title => ({ ...title, season: season.season })));
-    $('#managerTrophyRoomBody').innerHTML = `
-      <div class="manager-card-scene" style="${managerCardLayoutStyle()}">
-        <div class="manager-card-flipper" data-manager-card tabindex="0">
-          <article class="manager-card-face manager-card-front" aria-label="Card de ${escapeHtml(manager.name)}">
-            <img class="manager-card-art" src="${managerCardArtUrl(manager)}" alt="Ilustração de ${escapeHtml(manager.name)}">
-            <div class="manager-card-front-glow" aria-hidden="true"></div>
-            <div class="manager-card-front-info">
-              <div class="manager-card-name-block"><small>TÉCNICO</small><strong>${escapeHtml(manager.name)}</strong><span>${escapeHtml(manager.style || 'Treinador profissional')}</span></div>
-              <div class="manager-card-club-block">${clubIdentity}</div>
-            </div>
-          </article>
-          <article class="manager-card-face manager-card-back" aria-label="Estatísticas de ${escapeHtml(manager.name)}">
-            <header class="manager-card-back-header">
-              <div><small>SALA DE TROFÉUS</small><h3>${escapeHtml(manager.name)}</h3><p>${escapeHtml(clubLabel)}</p></div>
-              <div class="manager-card-back-rank"><small>RANKING</small><strong>#${rankingPosition || '—'}</strong></div>
-            </header>
-            <div class="manager-career-summary">
-              <span><strong>${totalTitles}</strong>TÍTULOS</span><span><strong>${games}</strong>JOGOS</span><span><strong>${seasons.length}</strong>TEMPORADAS</span>
-            </div>
-            <div class="manager-career-record">
-              <span><strong>${wins}</strong>VITÓRIAS</span><span><strong>${draws}</strong>EMPATES</span><span><strong>${losses}</strong>DERROTAS</span><span><strong>${games ? Math.round((wins / games) * 100) : 0}%</strong>APROVEIT.</span>
-            </div>
-            <section class="manager-card-trophy-list" aria-label="Histórico de títulos">
-              <h4><span>CONQUISTAS</span><small>${trophyRows.length ? `${trophyRows.length} registrada(s)` : 'histórico anual'}</small></h4>
-              ${trophyRows.length ? trophyRows.map(title => `<article><span class="manager-card-trophy-icon" aria-hidden="true">🏆</span><div><strong>${escapeHtml(title.competition)}</strong><small>${escapeHtml(title.club || '')} · ${escapeHtml(title.season)}</small></div></article>`).join('') : '<div class="manager-card-empty"><b aria-hidden="true">🏆</b><span>Nenhum título consolidado</span><small>O histórico é atualizado ao fim de cada temporada.</small></div>'}
-            </section>
-            <footer class="manager-card-back-footer"><span>BR FUT</span><small>${rankingEntry ? `${rankingEntry.total.toFixed(1)} PONTOS` : 'CARREIRA'}</small></footer>
-          </article>
-        </div>
-      </div>`;
-    modal.hidden = false;
-    document.body.classList.add('modal-open');
-    modal.querySelector('[data-manager-card]')?.focus();
+    const position = ranking.findIndex(item => item.id === manager.id) + 1;
+    const entry = ranking.find(item => item.id === manager.id) || null;
+    const club = manager.club || entry?.club || null;
+    const division = entry?.division ? ` · SÉRIE ${String(entry.division).toUpperCase()}` : '';
+    const kicker = document.getElementById('managerCardV2Kicker');
+    if (kicker) kicker.textContent = club ? `TÉCNICO · ${String(entry?.clubLabel || club).toUpperCase()}${division}` : 'TÉCNICO · SEM CLUBE';
+    const nameEl = document.getElementById('managerCardV2Name');
+    if (nameEl) { nameEl.textContent = manager.name; nameEl.title = manager.name; }
+    const crestEl = document.getElementById('managerCardV2Crest');
+    if (crestEl) {
+      const url = club ? clubCrestUrl(club) : null;
+      crestEl.hidden = !url;
+      if (url) crestEl.src = url; else crestEl.removeAttribute('src');
+    }
+    const photo = document.getElementById('managerCardV2Photo');
+    if (photo) photo.innerHTML = `<span class="pcv2-photo-frame"><img src="${managerCardArtUrl(manager)}" alt="" decoding="async"></span>`;
+    const info = document.getElementById('managerCardV2Info');
+    if (info) info.innerHTML = managerInfoMarkup(manager, { position, entry });
+    const clubBtn = document.getElementById('managerCardV2Club');
+    if (clubBtn) {
+      clubBtn.hidden = !club;
+      if (club) clubBtn.dataset.club = club; else delete clubBtn.dataset.club;
+    }
+    modal.classList.remove('hidden');
     if (!skipRemote) {
       void Promise.all([
         fetchStructuredManagerHistory(manager.id),
@@ -248,39 +346,83 @@ export function createRankingViewsFeature(deps) {
           seasons: bases.sort((a, b) => Number(b.season) - Number(a.season)),
         };
         renderManagerTrophyRoom(manager.id, { skipRemote: true });
-      });
+      }).catch(() => {});
     }
   };
 
   const closeManagerTrophyRoom = () => {
-    const modal = $('#managerTrophyRoomModal');
-    if (modal) modal.hidden = true;
+    document.getElementById(MANAGER_MODAL_ID)?.classList.add('hidden');
     openTrophyManagerId = null;
-    document.body.classList.remove('modal-open');
+  };
+
+  const userManagerEntry = () => {
+    const managerRanking = getManagerRanking();
+    const careerProfile = getCareerProfile();
+    return managerRanking.byClub(getUserClub()) || managerRanking.byName(careerProfile.managerName) || null;
+  };
+
+  const openOwnManagerCard = () => {
+    const mine = userManagerEntry();
+    if (mine) renderManagerTrophyRoom(mine.id);
+    else deps.openView?.('managers');
   };
 
   const renderManagerRanking = () => {
-    const userClub = getUserClub();
-    const careerProfile = getCareerProfile();
     const managerRanking = getManagerRanking();
-    const helpers = deps.getManagerRankingHelpers();
-    const ranking = managerRanking.currentRanking(helpers);
-    const userManager = managerRanking.byClub(userClub) || managerRanking.byName(careerProfile.managerName);
-    const userIndex = userManager ? ranking.findIndex(entry => entry.id === userManager.id) : -1;
+    const ranking = managerRanking.currentRanking(deps.getManagerRankingHelpers());
+    const mine = userManagerEntry();
+    const userIndex = mine ? ranking.findIndex(entry => entry.id === mine.id) : -1;
+    const podium = $('#managerRankingPodium');
+    if (podium) {
+      podium.innerHTML = ranking.slice(0, 3).map((entry, index) => {
+        const career = managerCareer(managerRanking.byId(entry.id) || entry);
+        return `<div class="mrv2-podium-card${isUserManager(entry) ? ' is-user' : ''}" data-place="${index + 1}" data-manager="${escapeHtml(entry.id)}" role="button" tabindex="0">`
+          + `<span class="mrv2-place">${index + 1}º</span>${managerCrest(entry.club, 'is-lg')}`
+          + `<span class="mrv2-name"><b>${escapeHtml(entry.name)}</b><small>${escapeHtml(entry.clubLabel || 'Livre')} · ${career.trophies.length} ${career.trophies.length === 1 ? 'título' : 'títulos'}</small></span>`
+          + `<strong>${fmtPts(entry.total)}</strong></div>`;
+      }).join('');
+      podium.hidden = ranking.length < 3;
+    }
+    const table = $('#managerRankingTable');
+    if (table) {
+      table.innerHTML = ranking.slice(3).map((entry, index) => managerRankingRowHtml(entry, index + 4)).join('')
+        || '<p class="pcv2-empty">Sem outros técnicos no ranking.</p>';
+    }
     const userSlot = $('#managerRankingUserRow');
     if (userSlot) {
       if (userIndex >= 0) {
-        userSlot.innerHTML = managerRankingRowHtml(ranking[userIndex], userIndex + 1, { pinned: true });
+        const entry = ranking[userIndex];
+        const career = managerCareer(managerRanking.byId(entry.id) || entry);
+        const top10 = ranking[9];
+        const ahead = userIndex > 0 ? ranking[userIndex - 1] : null;
+        let goal = '';
+        if (userIndex >= 10 && top10) goal = `Faltam <b>${fmtPts(top10.total - entry.total)} pts</b> para o top 10.`;
+        else if (ahead) goal = `Faltam <b>${fmtPts(ahead.total - entry.total)} pts</b> para passar ${escapeHtml(ahead.name)} (${userIndex}º).`;
+        else goal = 'Você lidera o ranking de técnicos.';
+        userSlot.innerHTML = `
+          <h3 class="mrv2-you-kicker">VOCÊ</h3>
+          <div class="mrv2-you-id">${managerCrest(entry.club, 'is-lg')}<span class="mrv2-name"><b>${escapeHtml(entry.name)}</b><small>${escapeHtml(entry.clubLabel || 'Livre')}${entry.division ? ` · Série ${escapeHtml(entry.division)}` : ''}</small></span></div>
+          <div class="mv2-tiles"><div class="mv2-tile"><small>RANKING</small><strong class="is-money">${userIndex + 1}º</strong></div><div class="mv2-tile"><small>PONTOS</small><strong class="is-cyan">${fmtPts(entry.total)}</strong></div></div>
+          <div class="mv2-tiles"><div class="mv2-tile"><small>JOGOS</small><strong>${career.games}</strong></div><div class="mv2-tile"><small>TÍTULOS</small><strong>${career.trophies.length}</strong></div></div>
+          <p class="mrv2-you-goal">${goal} Títulos e campanha acima da meta somam mais pontos.</p>
+          <button type="button" class="mv2-btn is-primary mrv2-you-btn" data-manager="${escapeHtml(entry.id)}">VER MINHA FICHA</button>`;
         userSlot.hidden = false;
       } else {
         userSlot.innerHTML = '';
         userSlot.hidden = true;
       }
     }
-    const table = $('#managerRankingTable');
-    if (table) {
-      table.innerHTML = ranking.map((entry, index) => managerRankingRowHtml(entry, index + 1, { pinned: false })).join('');
-    }
+    syncRankingSwitch('managers');
+  };
+
+  const syncRankingSwitch = view => {
+    document.querySelectorAll('[data-ranking-switch]').forEach(button => {
+      const active = button.dataset.rankingSwitch === view;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    // Técnicos é uma sub-tela de Ranking: mantém a aba Ranking acesa.
+    document.querySelector('#sectionTabs .nav[data-view="ranking"]')?.classList.toggle('is-subview-active', view === 'managers');
   };
 
   const bindHandlers = () => {
@@ -292,33 +434,50 @@ export function createRankingViewsFeature(deps) {
       }
     });
     on(document, 'click', event => {
-      const button = event.target.closest?.('[data-manager-trophies]');
-      if (button) {
+      const target = event.target;
+      if (target.closest?.('[data-manager-self]')) {
         event.preventDefault();
-        event.stopImmediatePropagation();
-        renderManagerTrophyRoom(button.dataset.managerTrophies);
+        openOwnManagerCard();
         return;
       }
-      const managerCard = event.target.closest?.('[data-manager-card]');
-      if (managerCard) {
+      const sw = target.closest?.('[data-ranking-switch]');
+      if (sw) {
         event.preventDefault();
-        managerCard.classList.toggle('is-flipped');
+        deps.openView?.(sw.dataset.rankingSwitch);
         return;
       }
-      if (event.target.id === 'managerTrophyRoomModal') closeManagerTrophyRoom();
+      const modal = document.getElementById(MANAGER_MODAL_ID);
+      if (modal && !modal.classList.contains('hidden')) {
+        if (target === modal || target.closest('[data-mcv2-close]')) { closeManagerTrophyRoom(); return; }
+        if (target.closest('#managerCardV2Club')) { closeManagerTrophyRoom(); return; } // o handler global de [data-club] abre o clube
+      }
+      // Escudo abre o clube (handler global); o resto da linha abre a ficha.
+      if (target.closest?.('[data-club]')) return;
+      const row = target.closest?.('[data-manager]');
+      if (row) {
+        event.preventDefault();
+        renderManagerTrophyRoom(row.dataset.manager);
+      }
     });
     on(document, 'keydown', event => {
-      if (event.key === 'Escape' && openTrophyManagerId) closeManagerTrophyRoom();
-      if ((event.key === 'Enter' || event.key === ' ') && event.target.matches?.('[data-manager-card]')) {
+      if (event.key === 'Escape' && openTrophyManagerId) { closeManagerTrophyRoom(); return; }
+      if ((event.key === 'Enter' || event.key === ' ') && event.target.matches?.('[data-manager]:not(button)')) {
         event.preventDefault();
-        event.target.classList.toggle('is-flipped');
+        renderManagerTrophyRoom(event.target.dataset.manager);
       }
     });
   };
 
+  const renderNationalRankingWithSwitch = () => {
+    renderNationalRanking();
+    syncRankingSwitch('ranking');
+  };
+
   return {
-    renderNationalRanking,
+    renderNationalRanking: renderNationalRankingWithSwitch,
     renderManagerRanking,
+    openManagerCard: renderManagerTrophyRoom,
+    openOwnManagerCard,
     bindHandlers,
   };
 }

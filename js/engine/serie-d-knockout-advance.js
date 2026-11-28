@@ -1,6 +1,7 @@
 /**
  * Série D knockout bracket: tie rounds, resolution, phase advance.
  */
+import { isConmebolGame } from './conmebol-format.js';
 export function repairSerieDKnockoutReturnLegs(fixtures = []) {
   const byTie = new Map();
   fixtures
@@ -114,6 +115,9 @@ export function createSerieDKnockoutAdvance(deps) {
       const cupCompetition = deps.getCupCompetition();
       const stage = cupCompetition.stages.find(item => item.fixtures.includes(game));
       return stage ? deps.cupTieGames(stage, game.tieId) : [];
+    }
+    if (isConmebolGame(game)) {
+      return deps.getConmebolTieGames?.(game) || [game];
     }
     if (deps.isWorldCupKnockout?.(game) || deps.isStateKnockoutPhase(game)) return [game];
     if (deps.isKnockoutShootoutCompetition(game)) return getSerieDTieGames(game);
