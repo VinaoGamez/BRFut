@@ -184,7 +184,16 @@ export function createMatchLiveSessionFeature(deps) {
     const injuryReports = medicalReports.map(item => item.text);
     const injurySection = injuryReports.length ? `<section class="final-injuries"><h3>DIAGNÓSTICOS MÉDICOS</h3>${medicalReports.map(item => `<p class="${item.outcome === 'cleared' ? 'cleared' : item.outcome === 'monitoring' ? 'monitoring' : ''}">${item.text}</p>`).join('')}</section>` : '';
     const homeClub = (liveMatchGame || nextUserGame)?.home || userClub, awayClub = (liveMatchGame || nextUserGame)?.away || club.name;
-    $('#stats').innerHTML = `<section class="final-goals"><h3>GOLS</h3><div><article><b>${homeClub.toUpperCase()}</b>${scorers('home')}</article><article><b>${awayClub.toUpperCase()}</b>${scorers('away')}</article></div></section><section class="final-basic"><h3>ESTATÍSTICAS DA PARTIDA</h3>${rows.map(row => `<div class="stat"><span>${row[1]}</span><span>${row[0]}</span><span>${row[2]}</span></div>`).join('')}</section>${shootoutSection}${injurySection}`;
+    // Pós-jogo v2: gols já aparecem embaixo de cada time no placar; aqui ficam
+    // as estatísticas em barras de comparação (mandante × visitante).
+    const num = value => Number(String(value ?? '').replace(/[^\d.,-]/g, '').replace(',', '.')) || 0;
+    const cmpRow = ([label, homeValue, awayValue]) => {
+      const hv = num(homeValue), av = num(awayValue), total = hv + av;
+      const hShare = total ? (hv / total) * 100 : 50;
+      const lead = hv === av ? 'even' : hv > av ? 'home' : 'away';
+      return `<div class="stat pm2-cmp" data-lead="${lead}"><strong class="pm2-cmp-home">${homeValue}</strong><span class="pm2-cmp-mid"><small>${label}</small><i class="pm2-cmp-bar"><b class="is-home" style="width:${hShare}%"></b><b class="is-away" style="width:${100 - hShare}%"></b></i></span><strong class="pm2-cmp-away">${awayValue}</strong></div>`;
+    };
+    $('#stats').innerHTML = `<section class="final-basic pm2-stats"><h3 class="pm2-h">ESTATÍSTICAS</h3><div class="pm2-cmp-teams"><span>${escHtml(homeClub)}</span><span>${escHtml(awayClub)}</span></div>${rows.map(cmpRow).join('')}</section>${shootoutSection}${injurySection}`;
     $('#stats').classList.remove('hidden');
     if (!processMedical) return;
     const postMatchMedicalQueue = getPostMatchMedicalQueue();
@@ -204,6 +213,27 @@ export function createMatchLiveSessionFeature(deps) {
   };
 
   const escHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+  /** Pós-jogo v2: narração mostra só os lances principais, com botão para a completa. */
+  const ensureTimelineToggle = () => {
+    const timeline = $('#timeline');
+    if (!timeline) return;
+    let toggle = $('#pm2TimelineToggle');
+    if (!toggle) {
+      timeline.insertAdjacentHTML('afterend', '<button type="button" id="pm2TimelineToggle" class="pm2-timeline-toggle" aria-expanded="false">Ver narração completa ›</button>');
+      toggle = $('#pm2TimelineToggle');
+      toggle.addEventListener('click', () => {
+        const open = !timeline.classList.contains('pm2-full');
+        timeline.classList.toggle('pm2-full', open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggle.textContent = open ? 'Só lances principais ‹' : 'Ver narração completa ›';
+      });
+    }
+    timeline.classList.remove('pm2-full');
+    requestAnimationFrame(() => { timeline.scrollTop = 0; });
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.textContent = 'Ver narração completa ›';
+  };
 
   /** Pós-jogo v2 (canvas Arcade Noturno): resultado, craque e números do jogo. */
   const renderPostMatchHero = () => {
@@ -231,12 +261,23 @@ export function createMatchLiveSessionFeature(deps) {
     const star = summary.star;
     const starLine = star ? [star.goals ? `${star.goals} gol${star.goals > 1 ? 's' : ''}` : '', star.assists ? `${star.assists} assist.` : ''].filter(Boolean).join(' · ') : '';
     const tiles = [
-      { label: 'Nota média do time', value: summary.teamAverage ? summary.teamAverage.toFixed(1).replace('.', ',') : '—' },
+      { label: 'Nota do time', value: summary.teamAverage ? summary.teamAverage.toFixed(1).replace('.', ',') : '—', tone: 'lime' },
+      summary.crowd ? { label: 'Público', value: summary.crowd, sub: summary.occupancy ? `${summary.occupancy}% do estádio` : '' } : null,
       summary.userIsHome && summary.renda ? { label: 'Bilheteria', value: summary.renda.replace(/^R\$\s*/, 'R$ '), money: true } : null,
-      summary.userIsHome && summary.crowd ? { label: 'Público', value: summary.crowd } : null,
       summary.shootout ? { label: 'Pênaltis', value: summary.shootout } : null,
     ].filter(Boolean);
-    hero.innerHTML = `<span class="post-match-result is-${tone}">${label}</span>${star ? `<div class="post-match-star"><i aria-hidden="true">${escHtml(star.pos || '')}</i><span><small>CRAQUE DO JOGO</small><strong>${escHtml(star.name)}</strong>${starLine ? `<em>${escHtml(starLine)}</em>` : ''}</span><b>${Number(star.rating || 0).toFixed(1).replace('.', ',')}</b></div>` : ''}<div class="post-match-tiles">${tiles.map(tile => `<div class="post-match-tile${tile.money ? ' is-money' : ''}"><small>${escHtml(tile.label)}</small><strong>${escHtml(tile.value)}</strong></div>`).join('')}</div>`;
+    hero.style.setProperty('--pm2-tiles', String(tiles.length || 1));
+    // Linha do estádio sem público/renda (já estão nos números do jogo).
+    const venue = $('#liveMatchVenue');
+    if (venue) {
+      if (!venue.dataset.full) venue.dataset.full = venue.textContent || '';
+      venue.textContent = venue.dataset.full
+        .split(' · ')
+        .filter(part => !/^[\d.]+$/.test(part.trim()) && !/%$/.test(part.trim()) && !/^Renda/i.test(part.trim()))
+        .join(' · ');
+    }
+    ensureTimelineToggle();
+    hero.innerHTML = `<span class="post-match-result is-${tone}">${label}</span>${star ? `<div class="post-match-star"><i aria-hidden="true">${escHtml(star.pos || '')}</i><span><small>CRAQUE DO JOGO</small><strong>${escHtml(star.name)}</strong>${starLine ? `<em>${escHtml(starLine)}</em>` : ''}</span><b>${Number(star.rating || 0).toFixed(1).replace('.', ',')}</b></div>` : ''}<div class="post-match-tiles">${tiles.map(tile => `<div class="post-match-tile${tile.money ? ' is-money' : ''}${tile.tone ? ` is-${tile.tone}` : ''}"><small>${escHtml(tile.label)}</small><strong>${escHtml(tile.value)}</strong>${tile.sub ? `<em>${escHtml(tile.sub)}</em>` : ''}</div>`).join('')}</div>`;
   };
 
   const showFinalActions = ({ reopen = false, openRatings = !reopen } = {}) => {
@@ -274,6 +315,10 @@ export function createMatchLiveSessionFeature(deps) {
   const exitLiveMatch = () => {
     if (!getMatchFinished() || getRoundCommitted()) return;
     $('#postMatchHero')?.remove();
+    $('#pm2TimelineToggle')?.remove();
+    $('#timeline')?.classList.remove('pm2-full');
+    const venueEl = $('#liveMatchVenue');
+    if (venueEl?.dataset.full) { venueEl.textContent = venueEl.dataset.full; delete venueEl.dataset.full; }
     const modalCard = $('#matchModal .modal-card');
     modalCard?.classList.remove('has-post-match');
     if (modalCard) delete modalCard.dataset.postResult;

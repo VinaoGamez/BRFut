@@ -6392,10 +6392,12 @@ export async function bootEngine({
       const result=forGoals>againstGoals?'V':forGoals<againstGoals?'D':(shoot?(shoot===liveMatchGame[side]?'V':'D'):'E');
       const star=[...mine].sort((a,b)=>(b.rating||0)-(a.rating||0)||(b.goals||0)-(a.goals||0))[0]||null;
       const avg=mine.length?mine.reduce((total,sheet)=>total+(Number(sheet.rating)||0),0)/mine.length:0;
-      const venueText=($('#liveMatchVenue')?.textContent||'');
+      const venueEl=$('#liveMatchVenue');
+      const venueText=(venueEl?.dataset.full||venueEl?.textContent||'');
       const renda=(venueText.match(/Renda\s+(R\$\s*[\d.,]+\s*(?:mil|mi)?)/i)||[])[1]||'';
       const crowd=(venueText.match(/([\d.]+)\s*·\s*\d+%/)||[])[1]||'';
-      return{result,forGoals,againstGoals,userIsHome,star:star?{name:star.name,pos:star.pos,rating:star.rating,goals:star.goals||0,assists:star.assists||0}:null,teamAverage:avg,renda,crowd,shootout:shoot?liveMatchGame.shootoutPenalties||'':''};
+      const occupancy=(venueText.match(/[\d.]+\s*·\s*(\d+)%/)||[])[1]||'';
+      return{result,forGoals,againstGoals,userIsHome,star:star?{name:star.name,pos:star.pos,rating:star.rating,goals:star.goals||0,assists:star.assists||0}:null,teamAverage:avg,renda,crowd,occupancy,shootout:shoot?liveMatchGame.shootoutPenalties||'':''};
     }catch(error){
       console.warn('[brfut] pós-jogo v2',error);
       return null;

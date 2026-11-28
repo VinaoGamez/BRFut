@@ -5343,3 +5343,288 @@ html:not(.is-mobile) body #managers .mrv2-body {
   padding-right: 4px;
 }
 html:not(.is-mobile) body #managers .mrv2-you { overflow: auto; }
+
+/* =====================================================================
+   Pós-jogo v2.1 — sem repetição, números numa faixa, estatísticas ao lado
+   do volume de jogo e ações no rodapé fixo.
+   ===================================================================== */
+html body #matchModal > .modal-card.has-post-match {
+  width: min(1100px, calc(100vw - 32px)) !important;
+  max-width: none !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "head head"
+    "score score"
+    "hero hero"
+    "shoot shoot"
+    "stats vol"
+    "stats tl"
+    ". tg"
+    "act act";
+  grid-template-rows: auto auto auto auto auto 1fr auto auto;
+  column-gap: 14px;
+  row-gap: 10px;
+  align-content: start;
+  padding-bottom: 0 !important;
+}
+html body #matchModal .has-post-match > #liveMatchLabel,
+html body #matchModal .has-post-match > #matchStatus,
+html body #matchModal .has-post-match .match-team-context { display: none !important; }
+html body #matchModal .has-post-match > .live-match-competition-wrap { grid-area: head; }
+html body #matchModal .has-post-match > .score { grid-area: score; margin: 0 !important; }
+html body #matchModal .has-post-match > #postMatchHero { grid-area: hero; }
+html body #matchModal .has-post-match > #shootoutPanel { grid-area: shoot; }
+html body #matchModal .has-post-match > #stats { grid-area: stats; margin: 0 !important; align-self: stretch; }
+html body #matchModal .has-post-match > #liveVolume { grid-area: vol; margin: 0 !important; }
+html body #matchModal .has-post-match > #timeline { grid-area: tl; margin: 0 !important; min-height: 0; }
+html body #matchModal .has-post-match > #pm2TimelineToggle { grid-area: tg; }
+html body #matchModal .has-post-match > #matchActions { grid-area: act; }
+
+/* Placar: nomes em Kanit, relógio discreto. */
+html body #matchModal .has-post-match .live-team b {
+  font-family: var(--av-display) !important;
+  font-style: italic !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+}
+html body #matchModal .has-post-match .live-match-clock-time { font-size: 18px !important; color: var(--av-muted) !important; }
+html body #matchModal .has-post-match .live-match-clock-phase {
+  color: var(--av-ink) !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .12em !important;
+}
+
+/* Faixa do resultado: resultado · craque · números, mesma altura. */
+html body #matchModal .has-post-match .post-match-hero {
+  display: grid !important;
+  grid-template-columns: 150px minmax(0, 1.3fr) minmax(0, calc(var(--pm2-tiles, 3) * 1fr));
+  grid-template-columns: 150px minmax(0, 1.3fr) minmax(0, 3fr);
+  align-items: stretch;
+  gap: 10px;
+  max-width: none !important;
+  margin: 0 !important;
+}
+html body #matchModal .has-post-match .post-match-result {
+  display: grid;
+  place-items: center;
+  transform: none !important;
+  filter: none !important;
+  font-size: 24px !important;
+  color: var(--av-night) !important;
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+html body #matchModal .has-post-match .post-match-result.is-loss { color: #fff !important; }
+html body #matchModal .has-post-match .post-match-result.is-draw { color: var(--av-ink) !important; }
+html body #matchModal .has-post-match .post-match-star { width: auto !important; min-width: 0; }
+html body #matchModal .has-post-match .post-match-star > i { width: 40px !important; height: 40px !important; }
+html body #matchModal .has-post-match .post-match-star strong { font-size: 18px !important; }
+html body #matchModal .has-post-match .post-match-star > b { font-size: 28px !important; }
+html body #matchModal .has-post-match .post-match-tiles {
+  display: grid !important;
+  grid-template-columns: repeat(var(--pm2-tiles, 3), minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  width: 100%;
+}
+html body #matchModal .has-post-match .post-match-tile {
+  justify-content: center;
+  padding: 10px 12px !important;
+  background: var(--av-rail) !important;
+}
+html body #matchModal .has-post-match .post-match-tile small {
+  color: var(--av-muted) !important;
+  font: italic 800 10px var(--av-display) !important;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+html body #matchModal .has-post-match .post-match-tile strong {
+  font-size: 22px !important;
+  font-weight: 900 !important;
+  white-space: nowrap;
+}
+html body #matchModal .has-post-match .post-match-tile.is-lime strong { color: var(--av-lime) !important; }
+html body #matchModal .has-post-match .post-match-tile em { font-style: normal; font-size: 11px; color: var(--av-muted); }
+
+/* Estatísticas: barras de comparação. */
+html body #matchModal .has-post-match > #stats {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+html body #matchModal #stats .pm2-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  padding: 14px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel) !important;
+  box-shadow: none !important;
+}
+html body #matchModal #stats :is(.pm2-h, .final-shootout h3, .final-injuries h3) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  color: var(--av-cyan) !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .12em !important;
+  text-align: left !important;
+}
+html body #matchModal #stats :is(.pm2-h, .final-shootout h3, .final-injuries h3)::after { content: ''; flex: 1; height: 1px; background: var(--av-line); }
+html body #matchModal .pm2-cmp-teams {
+  display: flex;
+  justify-content: space-between;
+  color: var(--av-muted);
+  font: italic 800 11px var(--av-display);
+  text-transform: uppercase;
+}
+html body #matchModal .stat.pm2-cmp {
+  display: grid !important;
+  grid-template-columns: 52px minmax(0, 1fr) 52px !important;
+  align-items: center;
+  gap: 10px;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+}
+html body #matchModal .pm2-cmp strong { font: italic 900 16px var(--av-display); color: var(--av-ink); }
+html body #matchModal .pm2-cmp .pm2-cmp-away { text-align: right; }
+html body #matchModal .pm2-cmp[data-lead="home"] .pm2-cmp-home,
+html body #matchModal .pm2-cmp[data-lead="away"] .pm2-cmp-away { color: var(--av-cyan); }
+html body #matchModal .pm2-cmp-mid { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+html body #matchModal .pm2-cmp-mid small { text-align: center; color: var(--av-muted); font-size: 12px; }
+html body #matchModal .pm2-cmp-bar { display: flex; gap: 3px; height: 6px; }
+html body #matchModal .pm2-cmp-bar b { display: block; height: 100%; background: #3b5576; transform: skewX(-18deg); }
+html body #matchModal .pm2-cmp[data-lead="home"] .pm2-cmp-bar b.is-home,
+html body #matchModal .pm2-cmp[data-lead="away"] .pm2-cmp-bar b.is-away { background: var(--av-cyan); }
+html body #matchModal #stats :is(.final-shootout, .final-injuries) {
+  padding: 14px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel) !important;
+}
+
+/* Volume de jogo e lances principais. */
+html body #matchModal .has-post-match > #liveVolume {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel) !important;
+}
+html body #matchModal .live-volume-header > span {
+  color: var(--av-cyan) !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .12em !important;
+}
+html body #matchModal .has-post-match > #timeline {
+  max-height: none !important;
+  overflow: auto;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel) !important;
+  padding: 10px !important;
+}
+html body #matchModal .has-post-match > #timeline::before {
+  content: 'LANCES PRINCIPAIS';
+  display: block;
+  margin-bottom: 8px;
+  color: var(--av-cyan);
+  font: italic 800 11px var(--av-display);
+  letter-spacing: .12em;
+}
+html body #matchModal .has-post-match > #timeline.pm2-full::before { content: 'NARRAÇÃO COMPLETA'; }
+html body #matchModal .has-post-match > #timeline:not(.pm2-full) > p:not(.goal):not(.red):not(.yellow):not(.penalty):not(.injury):not(.injury-substitution):not(.shootout-miss) { display: none !important; }
+html body #matchModal .has-post-match > #timeline.pm2-full { max-height: 420px !important; }
+html body #matchModal .has-post-match > #timeline > p { border-radius: 0 !important; }
+html body #matchModal .pm2-timeline-toggle { display: none; }
+html body #matchModal .has-post-match > .pm2-timeline-toggle {
+  display: block;
+  justify-self: start;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: var(--av-cyan) !important;
+  font: 700 12px var(--av-body) !important;
+  cursor: pointer;
+}
+
+/* Ações: rodapé fixo do pop-up. */
+html body #matchModal .has-post-match > #matchActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex !important;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 4px -24px 0 !important;
+  padding: 12px 24px 16px !important;
+  border-top: 1px solid var(--av-line);
+  background: var(--av-panel) !important;
+}
+html body #matchModal #closeMatch {
+  width: 32px !important;
+  height: 32px !important;
+  display: grid !important;
+  place-items: center;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-muted) !important;
+  font: 700 18px/1 var(--av-body) !important;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  z-index: 6;
+}
+
+/* Celular: empilhado; 3 números numa linha; ações fixas (Continuar largo). */
+html.is-mobile body #matchModal > .modal-card.has-post-match {
+  width: 100% !important;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "head" "score" "hero" "shoot" "stats" "vol" "tl" "tg" "act";
+  grid-template-rows: none;
+  padding-bottom: 0 !important;
+}
+html.is-mobile body #matchModal .has-post-match .post-match-hero {
+  grid-template-columns: 104px minmax(0, 1fr);
+}
+html.is-mobile body #matchModal .has-post-match .post-match-hero > .post-match-tiles { grid-column: 1 / -1; }
+html.is-mobile body #matchModal .has-post-match .post-match-result { font-size: 18px !important; }
+html.is-mobile body #matchModal .has-post-match .post-match-star > i { display: none !important; }
+html.is-mobile body #matchModal .has-post-match .post-match-tiles { grid-template-columns: repeat(var(--pm2-tiles, 3), minmax(0, 1fr)) !important; gap: 6px !important; }
+html.is-mobile body #matchModal .has-post-match .post-match-tile { padding: 8px !important; }
+html.is-mobile body #matchModal .has-post-match .post-match-tile strong { font-size: 16px !important; }
+html.is-mobile body #matchModal .has-post-match .post-match-tile em { display: none; }
+html.is-mobile body #matchModal .has-post-match > #timeline { max-height: 260px !important; }
+html.is-mobile body #matchModal .has-post-match > #matchActions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 4px -14px 0 !important;
+  padding: 10px 12px calc(14px + env(safe-area-inset-bottom)) !important;
+}
+html.is-mobile body #matchModal .has-post-match > #matchActions > button { min-width: 0; padding-left: 6px !important; padding-right: 6px !important; font-size: 11px !important; }
+html.is-mobile body #matchModal .has-post-match > #matchActions > #finalNext { grid-column: 1 / -1; min-height: 46px; font-size: 14px !important; }
+html body #matchModal .has-post-match > #timeline > p {
+  flex: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 0 6px !important;
+  font-size: 13px !important;
+}
+html.is-mobile body #matchModal .has-post-match .live-team b { font-size: 16px !important; line-height: 1.1 !important; overflow-wrap: break-word; }
+html.is-mobile body #matchModal .has-post-match .live-score { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important; gap: 6px !important; }
+html.is-mobile body #matchModal .has-post-match .live-team { min-width: 0; }
+html.is-mobile body #matchModal .has-post-match .post-match-result { font-size: 16px !important; }
+
+/* Blocos do pós-jogo um tom abaixo do painel, para se destacarem. */
+html body #matchModal #stats .pm2-stats,
+html body #matchModal #stats :is(.final-shootout, .final-injuries),
+html body #matchModal .has-post-match > #liveVolume,
+html body #matchModal .has-post-match > #timeline { background: var(--av-rail) !important; }
