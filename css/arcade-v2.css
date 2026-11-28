@@ -5628,3 +5628,271 @@ html body #matchModal #stats .pm2-stats,
 html body #matchModal #stats :is(.final-shootout, .final-injuries),
 html body #matchModal .has-post-match > #liveVolume,
 html body #matchModal .has-post-match > #timeline { background: var(--av-rail) !important; }
+
+/* =====================================================================
+   Treinamento v2 — sem cartão redundante, cabeçalhos de pré/pós-jogo,
+   opções retas no padrão Arcade, colunas com a mesma altura.
+   ===================================================================== */
+/* "Gestão vs desenvolvimento" repetia o que a escolha de dias livres já explica. */
+html body #training .training-tradeoff-card { display: none !important; }
+html body #training .training-planner-title {
+  font: italic 900 26px/1.1 var(--av-display) !important;
+  letter-spacing: 0 !important;
+  color: var(--av-ink) !important;
+}
+html body #training :is(.training-session, .training-free-panel, .training-free-header, .training-status-row, .training-guide-card .training-open-btn) {
+  border-radius: 0 !important;
+}
+html body #training .training-matchdays { gap: 12px !important; }
+html body #training .training-session-compact {
+  position: relative;
+  padding: 34px 14px 14px !important;
+  border: 0 !important;
+  background: var(--av-rail) !important;
+  box-shadow: none !important;
+}
+html body #training .training-session-compact::before {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  color: var(--av-cyan);
+  font: italic 800 11px var(--av-display);
+  letter-spacing: .12em;
+}
+html body #training .training-matchdays > .training-session-compact:nth-child(1)::before { content: 'PRÉ-JOGO'; }
+html body #training .training-matchdays > .training-session-compact:nth-child(2)::before { content: 'PÓS-JOGO'; }
+html body #training .training-session-note { color: var(--av-muted) !important; font-size: 12px !important; }
+html body #training .training-free-panel {
+  border: 0 !important;
+  background: var(--av-rail) !important;
+  box-shadow: inset 0 3px var(--av-lime) !important;
+}
+html body #training .training-free-header {
+  border: 0 !important;
+  background: var(--av-panel) !important;
+}
+html body #training .training-free-header small,
+html body #training .training-panel-label {
+  color: var(--av-cyan) !important;
+  font: italic 800 11px var(--av-display) !important;
+  letter-spacing: .12em !important;
+}
+html body #training .training-free-header strong { font: italic 900 20px var(--av-display) !important; color: var(--av-lime) !important; }
+html body #training .training-mode-badge {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 4px 12px !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-ink) !important;
+  font: italic 800 11px var(--av-display) !important;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+html body #training :is(.training-options button, .training-mode-btn) {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel) !important;
+  box-shadow: none !important;
+}
+html body #training :is(.training-options button, .training-mode-btn):hover { background: var(--av-panel-hi) !important; }
+html body #training :is(.training-options button.active, .training-mode-btn.active, .training-mode-btn.is-active, .training-mode-btn[aria-pressed="true"]) {
+  background: var(--av-panel-hi) !important;
+  box-shadow: inset 3px 0 var(--av-lime) !important;
+}
+html body #training .training-options button b,
+html body #training .training-mode-btn b {
+  font-family: var(--av-display) !important;
+  font-style: italic !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+}
+html body #training .training-options button.active b { color: var(--av-lime) !important; }
+html body #training .training-icon,
+html body #training .training-mode-icon {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-rail) !important;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+html body #training .training-options button.active .training-icon { background: #152816 !important; color: var(--av-lime) !important; }
+html body #training .training-status-row {
+  border: 0 !important;
+  background: var(--av-rail) !important;
+}
+html body #training .training-status-row.is-free { box-shadow: inset 3px 0 var(--av-lime); }
+html body #training .training-status-row strong { font-family: var(--av-display) !important; font-style: italic; font-weight: 800 !important; }
+html body #training .training-flow-list b {
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+}
+html body #training .training-guide-card .training-open-btn {
+  border: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+  font: italic 900 12px var(--av-display) !important;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+}
+html body #training .training-guide-head label {
+  color: var(--av-cyan) !important;
+  font-family: var(--av-display) !important;
+  font-style: italic;
+  font-weight: 800 !important;
+}
+html body #training .training-free-footnote { border-color: var(--av-line) !important; color: var(--av-muted) !important; }
+
+/* =====================================================================
+   Base bloqueada v2 — vitrine com benefícios, progresso e custo.
+   ===================================================================== */
+html body #youth:has(.youth-v2-locked) #youthMeta { display: none !important; }
+html body #youth .youth-locked-card.youth-v2-locked {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: stretch;
+  max-width: 1100px;
+  padding: 20px !important;
+  box-shadow: inset 0 3px var(--av-orange) !important;
+}
+html body #youth .youth-v2-locked > label { display: none !important; }
+html body .youth-v2-locked-main,
+html body .youth-v2-locked-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+html body .youth-v2-locked-side { padding: 16px; background: var(--av-rail); }
+html body .youth-v2-kicker { color: var(--av-orange); font: italic 800 11px var(--av-display); letter-spacing: .12em; }
+html body .youth-v2-locked-side .youth-v2-kicker { color: var(--av-cyan); }
+html body .youth-v2-title { font: italic 900 28px/1.1 var(--av-display); color: var(--av-ink); }
+html body .youth-v2-lead { margin: 0; color: #c9d6e8; font-size: 14px; line-height: 1.5; }
+html body .youth-v2-perks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+html body .youth-v2-perks li {
+  --t: var(--av-lime);
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 9px 12px;
+  background: var(--av-rail);
+  box-shadow: inset 3px 0 var(--t);
+  font-size: 13px;
+  color: var(--av-muted);
+}
+html body .youth-v2-perks li[data-tone="cyan"] { --t: var(--av-cyan); }
+html body .youth-v2-perks li[data-tone="gold"] { --t: var(--av-gold); }
+html body .youth-v2-perks b { color: var(--av-ink); font: italic 800 14px var(--av-display); }
+html body .youth-v2-preview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; opacity: .45; margin-top: auto; }
+html body .youth-v2-preview span { display: flex; flex-direction: column; align-items: center; padding: 12px 6px; background: var(--av-rail); }
+html body .youth-v2-preview b { font: italic 900 24px var(--av-display); color: var(--av-ink); }
+html body .youth-v2-preview small { font-size: 11px; color: var(--av-muted); }
+html body .youth-v2-pips { display: flex; gap: 6px; }
+html body .youth-v2-pips i { flex: 1; height: 10px; background: var(--av-panel-hi); transform: skewX(-18deg); }
+html body .youth-v2-pips i.is-on { background: var(--av-cyan); }
+html body .youth-v2-locked-side .mv2-tile strong.is-money { color: var(--av-gold); }
+html body .youth-v2-meta { margin: 0; color: var(--av-muted); font-size: 12px; }
+html body #youth .youth-v2-go {
+  margin-top: auto;
+  background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important;
+  color: var(--av-night) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%) !important;
+  font: italic 900 13px/1 var(--av-display) !important;
+  padding: 13px 22px !important;
+}
+html.is-mobile body #youth .youth-locked-card.youth-v2-locked { grid-template-columns: minmax(0, 1fr); padding: 14px !important; }
+
+/* =====================================================================
+   Mercado v2 — faixa de resumo, filtros enxutos, chips e escudos.
+   ===================================================================== */
+html body #transfers .transfers-toolbar-left { display: none !important; }
+html body #transfers .transfers-toolbar { justify-content: flex-end !important; }
+html body #transfers .tf2-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+html body #transfers .tf2-tile {
+  --t: var(--av-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 14px;
+  background: linear-gradient(225deg, transparent 10px, var(--av-panel) 10px);
+}
+html body #transfers .tf2-tile small { color: var(--av-muted); font: italic 800 10px var(--av-display); letter-spacing: .1em; }
+html body #transfers .tf2-tile strong { color: var(--t); font: italic 900 20px/1.15 var(--av-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body #transfers .tf2-tile em { font-style: normal; font-size: 11px; color: var(--av-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body #transfers .tf2-tile.is-gold { --t: var(--av-gold); }
+html body #transfers .tf2-tile.is-lime { --t: var(--av-lime); }
+html body #transfers .tf2-tile.is-red { --t: var(--av-red); }
+html body #transfers .tf2-tile.is-orange { --t: var(--av-orange); }
+html body #transfers .tf2-tile.is-cyan { --t: var(--av-cyan); box-shadow: inset 3px 0 var(--av-cyan); cursor: pointer; }
+html body #transfers .transfers-loan-slots { display: none !important; }
+
+html body #transfers .transfers-search {
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-rail) !important;
+  box-shadow: none !important;
+}
+html body #transfers .transfers-search-title {
+  font: italic 800 12px var(--av-display) !important;
+  letter-spacing: .12em !important;
+  color: var(--av-cyan) !important;
+}
+html body #transfers .transfers-search:not(.tf2-adv-open) .tf2-adv { display: none !important; }
+html body #transfers .transfers-search-grid { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+html body #transfers .tf2-more {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  min-width: 0;
+  padding: 5px 12px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--av-panel-hi) !important;
+  color: var(--av-cyan) !important;
+  font: italic 900 11px var(--av-display) !important;
+  letter-spacing: .05em;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  box-shadow: none !important;
+  cursor: pointer;
+}
+html body #transfers .transfers-field span { font: italic 800 10px var(--av-display) !important; letter-spacing: .1em !important; color: var(--av-muted) !important; text-transform: uppercase; }
+html body #transfers .transfers-search-options { gap: 8px !important; align-items: center; flex-wrap: wrap; }
+html body #transfers .tf2-chip {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  padding: 6px 14px !important;
+  background: var(--av-panel) !important;
+  color: var(--av-muted) !important;
+  font: 600 12px var(--av-body) !important;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  cursor: pointer;
+}
+html body #transfers .tf2-chip input { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+html body #transfers .tf2-chip:has(input:checked) { background: var(--av-cyan) !important; color: var(--av-night) !important; font-weight: 700 !important; }
+html body #transfers .tf2-chip:has(input:focus-visible) { outline: 2px solid var(--av-cyan); outline-offset: 2px; }
+html body #transfers .tf2-club { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+html body #transfers .tf2-club > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+html body #transfers .tf2-club :is(i.tf2-crest, .tf2-crest) {
+  flex: none;
+  width: 20px !important;
+  height: 22px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+html body #transfers .tf2-club .tf2-crest :is(img, svg) { width: 100% !important; height: 100% !important; }
+
+html.is-mobile body #transfers .tf2-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+html.is-mobile body #transfers .tf2-summary > :first-child { grid-column: 1 / -1; }
+html.is-mobile body #transfers .transfers-search-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+html.is-mobile body #transfers .tf2-more { position: static; margin: 0 0 8px; }
+/* Celular: o planejamento (o que se decide) vem antes dos cartões de apoio. */
+html.is-mobile body #training .training-layout { display: flex !important; flex-direction: column; }
+html.is-mobile body #training .training-main { order: -1; }
+html body .youth-v2-perks b { white-space: nowrap; }

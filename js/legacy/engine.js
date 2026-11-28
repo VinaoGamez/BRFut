@@ -5853,6 +5853,7 @@ export async function bootEngine({
       evaluateRosterPayroll,
       pushMessage,
       openPlayerCard:payload=>playerCardModal.open(payload),
+      openView:viewId=>openNavView?.(viewId),
       onYouthReleased:player=>{
         releasePlayerToFreeAgents(savedNewGame.freeAgentsPool,player,{
           formerClub:userClub,
