@@ -3108,6 +3108,7 @@ export async function bootEngine({
     estimateStaffBill,
     formatBudget,
     getUserClubInitials:()=>clubInitials,
+    openView:viewId=>openNavView?.(viewId),
   });
   rankingViews.bindHandlers();
   rankingViews.renderNationalRanking();

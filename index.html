@@ -144,7 +144,7 @@
           <span id="headerBudget" class="header-budget">R$ —</span>
         </span>
         <button class="nav header-icon-btn" type="button" data-view="messages" aria-label="Mensagens" title="Mensagens (Y)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zM3 7l9 6 9-6"/></svg><em id="messagesBadge" class="nav-badge hidden">0</em></button>
-        <button class="nav header-icon-btn" type="button" data-view="managers" aria-label="Perfil do técnico" title="Perfil do técnico e Ranking de Técnicos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg></button>
+        <button class="header-icon-btn" type="button" data-manager-self aria-label="Minha ficha de técnico" title="Minha ficha de técnico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg></button>
         <button id="openOptions" class="header-icon-btn" type="button" aria-label="Opções" title="Opções, conta e carreiras"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
         <button id="headerContinue" class="header-continue" type="button" title="Continuar (Start / ☰)"><span>CONTINUAR</span><small id="headerContinueHint"></small></button>
       </div>
@@ -158,7 +158,7 @@
       <button class="nav" type="button" data-view="training" data-section="taticas">Treinamento</button>
       <button class="nav" type="button" data-view="calendar" data-section="jogos">Calendário</button>
       <button class="nav" type="button" data-view="table" data-section="jogos">Competições</button>
-      <button class="nav" type="button" data-view="ranking" data-section="jogos">Ranking nacional</button>
+      <button class="nav" type="button" data-view="ranking" data-section="jogos">Ranking nacional</button><button class="nav hidden" type="button" data-view="managers" data-section="jogos" tabindex="-1" aria-hidden="true">Técnicos</button>
       <button class="nav" type="button" data-view="clubhub" data-section="clube">Visão geral</button>
       <button class="nav" type="button" data-view="office" data-section="clube">Finanças</button>
       <button class="nav" type="button" data-view="stadium" data-section="clube">Estrutura</button>
@@ -631,7 +631,7 @@
       </div>
     </section>
     <section id="ranking" class="view national-ranking-view">
-      <div class="title ranking-page-heading"><p>CLASSIFICAÇÃO NACIONAL DE CLUBES</p><h1>Ranking Nacional</h1></div>
+      <div class="title ranking-page-heading"><p>CLASSIFICAÇÃO NACIONAL DE CLUBES</p><h1>Ranking Nacional</h1><nav class="ranking-switch" aria-label="Tipo de ranking"><button type="button" data-ranking-switch="ranking">CLUBES</button><button type="button" data-ranking-switch="managers">TÉCNICOS</button></nav></div>
       <div class="ranking-top-bar">
       <div class="ranking-trophy-section">
         <header><div><small>CONQUISTAS NACIONAIS</small><strong>Pontos para o clube campeão</strong></div></header>
@@ -671,12 +671,16 @@
         <div id="nationalRankingTable" class="national-ranking-body"></div>
       </div>
     </section>
-    <section id="managers" class="view national-ranking-view manager-ranking-view">
-      <div class="title ranking-page-heading"><p>CLASSIFICAÇÃO NACIONAL DE TREINADORES</p><h1>Ranking de Técnicos</h1></div>
-      <div class="card national-ranking-table manager-ranking-table">
-        <div class="national-ranking-head manager-ranking-head"><span>#</span><span>TÉCNICO</span><span>CLUBE</span><span>DIV.</span><span class="national-ranking-col-hidden">BASE</span><span>TEMP.</span><span>SALÁRIO</span><span>TOTAL</span><span>AÇÕES</span></div>
-        <div id="managerRankingUserRow" class="national-ranking-user-slot"></div>
-        <div id="managerRankingTable" class="national-ranking-body"></div>
+    <section id="managers" class="view manager-ranking-view mrv2">
+      <div class="title ranking-page-heading"><p>CLASSIFICAÇÃO NACIONAL DE TREINADORES</p><h1>Ranking de Técnicos</h1><nav class="ranking-switch" aria-label="Tipo de ranking"><button type="button" data-ranking-switch="ranking">CLUBES</button><button type="button" data-ranking-switch="managers">TÉCNICOS</button></nav></div>
+      <div class="mrv2-layout">
+        <article class="card mrv2-main">
+          <div id="managerRankingPodium" class="mrv2-podium"></div>
+          <div class="mrv2-head" aria-hidden="true"><span>#</span><span></span><span>TÉCNICO</span><span class="mrv2-col-club">CLUBE</span><span>DIV.</span><span class="mrv2-col-season">TEMP.</span><span class="mrv2-col-salary">SALÁRIO</span><span class="mrv2-col-titles">TÍTULOS</span><span>PTS</span></div>
+          <div id="managerRankingTable" class="mrv2-body"></div>
+          <p class="mrv2-hint">Clique em um técnico para abrir a ficha; no escudo, para ver o clube.</p>
+        </article>
+        <aside id="managerRankingUserRow" class="card mrv2-you" hidden></aside>
       </div>
     </section>
     <section id="messages" class="view messages-view">
