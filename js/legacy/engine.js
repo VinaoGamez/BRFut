@@ -90,7 +90,11 @@ import {
   resolveClubBankruptcyRisk,
   resolveFinancialRestriction,
   applyFinancialRestriction,
+  BANKRUPTCY_RED_STREAK,
+  RESTRICTION_ENTER_OVERDRAFT,
+  RESTRICTION_ENTER_DELINQUENCY,
 } from '../engine/club-solvency.js';
+import { createFinanceAlertFeature } from '../feature/finance-alert/index.js';
 import { createClubBankruptcyFeature } from '../feature/club-bankruptcy/index.js';
 import { createClubInsolvencyWarnFeature } from '../feature/club-insolvency-warn/index.js';
 import { createClubFinancialRestrictionFeature } from '../feature/club-financial-restriction/index.js';
@@ -378,6 +382,7 @@ import {
   generateJobOffers,
   buildManagerHireStatus,
   MANAGER_JOB_HONEYMOON_ROUNDS,
+  MANAGER_JOB_CRISIS_THRESHOLD,
 } from '../engine/manager-job.js';
 import { composeBoardBrief } from '../engine/board-brief.js';
 import { createManagerSackFeature } from '../feature/manager-sack/index.js';
@@ -7587,6 +7592,7 @@ export async function bootEngine({
   };
   const closeDeferredCareerPopups=()=>{
     managerJobWarnUi?.close?.();
+    financeAlertUi?.close?.();
     clubFinancialRestrictionUi?.close?.();
     clubInsolvencyWarnUi?.close?.();
   };
@@ -7656,13 +7662,8 @@ export async function bootEngine({
       };
       if(!isCareerPopupDeferred()){
         // One-shot em tela — não vai para a inbox (evita sobrecarregar a caixa).
-        clubInsolvencyWarnUi.open({
-          clubName:userClub,
-          message:solvency.message,
-          cash:getBalance(club),
-          debt:bankLoanBalance(club),
-          delinquencyStreak:solvency.delinquencyStreak,
-        });
+        const alert=openFinanceAlert('insolvency',{message:solvency.message});
+        pushMessage({category:'club',type:'club-insolvency',title:'AVISO DE INSOLVÊNCIA',body:financeAlertInboxBody(alert),round:currentRound,read:false});
       }
       persistSeason(true);
     }
@@ -7679,12 +7680,8 @@ export async function bootEngine({
       applyFinancialRestriction(club,restriction);
       if(restriction.justEntered){
         if(!isCareerPopupDeferred()){
-          clubFinancialRestrictionUi.open({
-            clubName:userClub,
-            message:restriction.message,
-            cash:getBalance(club),
-            debt:bankLoanBalance(club),
-          });
+          const alert=openFinanceAlert('restriction',{message:restriction.message});
+          pushMessage({category:'club',type:'club-restriction',title:'RESTRIÇÃO FINANCEIRA',body:financeAlertInboxBody(alert),round:currentRound,read:false});
         }
         persistSeason(true);
       }else if(restriction.justCleared){
@@ -7710,6 +7707,7 @@ export async function bootEngine({
       applyFinancialRestriction(club,{active:false,sinceRound:null,reason:null});
       clubInsolvencyWarnUi.close();
       clubFinancialRestrictionUi.close();
+      financeAlertUi.close();
       pushMessage({
         category:'club',
         type:'club-bankrupt',
@@ -7724,6 +7722,115 @@ export async function bootEngine({
       return true;
     }
     return false;
+  };
+
+  // ---------- Cobranças financeiras v2 (escada da crise) ----------
+  const FINANCE_STAGE_INDEX={alert:0,charge:1,insolvency:2,restriction:3,bankrupt:4};
+  const buildFinanceAlert=(stageKey='charge',extra={})=>{
+    const club=clubs[userClub];
+    const cash=getBalance(club);
+    const roundCost=Math.max(0,Number(estimateRoundCostBill(club,userDivision,{managerReputation:club.managerReputation}))||0);
+    const loan=getBankLoan(club);
+    const debt=bankLoanBalance(club);
+    const delinq=Math.max(0,Number(loan?.delinquencyStreak)||0);
+    const odStreak=Math.max(0,Number(club.overdraftStreak)||0);
+    const due=Math.round((Number(loan?.minAmortDue)||0)+(Number(loan?.penaltyDue)||0))||Math.round(Number(loan?.installmentPrincipal)||0);
+    const finances=Math.round(Number(club.finances)||0);
+    const board=Math.round(Number(club.board)||0);
+    const runway=cash>=0&&roundCost>0?Math.floor(cash/roundCost):0;
+    const need=cash<0?Math.round(-cash+roundCost):Math.max(0,Math.round(roundCost-cash));
+    const money=v=>formatBudget(v);
+    const signed=v=>`${v<0?'−':''}${formatBudget(Math.abs(v))}`;
+    // Saídas concretas
+    const actions=[];
+    try{
+      const roster=(club.roster||squad).filter(Boolean);
+      const starters=new Set((activeUserSquad||roster).slice(0,11));
+      const pool=roster.filter(p=>p.listed).length?roster.filter(p=>p.listed):roster.filter(p=>!starters.has(p));
+      const ranked=pool.map(p=>{
+        const preview=transfersEngine?.previewSellBuyers?.(resolvePlayerId(p));
+        return preview?.ok?{player:p,value:Number(preview.value)||0,buyers:preview.buyers?.length||0,wage:Number(preview.wage)||0}:null;
+      }).filter(item=>item&&item.buyers>0&&item.value>0).sort((a,b)=>a.value-b.value);
+      // O mais barato que cobre o rombo; se nenhum cobre, o mais valioso.
+      const pick=ranked.find(item=>item.value>=need)||ranked[ranked.length-1];
+      if(pick){
+        const monthly=wageMonthlyFromRound(pick.wage,userDivision);
+        actions.push({kicker:'VENDER',amount:pick.value,value:`+${money(pick.value)}`,color:'lime',go:'transfers',cta:'Ver no mercado',
+          detail:`${pick.player.name} (${pick.player.pos}${pick.player.listed?', à venda':', reserva'}) tem ${pick.buyers} interessado${pick.buyers===1?'':'s'}.${monthly>0?` Libera ${money(monthly)}/mês de folha.`:''}`});
+      }
+    }catch(error){}
+    try{
+      const tv=tvAdvanceStatus(club,{division:userDivision});
+      if(tv?.eligible&&tv.payout>0){
+        actions.push({kicker:'ADIANTAR TV',amount:tv.payout,value:`+${money(tv.payout)}`,color:'cyan',go:'office',cta:'Abrir Finanças',
+          detail:`Recebe hoje as cotas de TV restantes (deságio de ${String(tv.haircutPct).replace('.',',')}%). Sem cotas até o fim do ano.`});
+      }
+    }catch(error){}
+    if(loan&&due>0){
+      actions.push({kicker:delinq?'PAGAR PARCELA':'AMORTIZAR',amount:-due,value:`−${money(due)}`,color:'gold',go:'office',cta:'Pagar parcela',
+        detail:delinq?`Parcela em atraso há ${delinq} rodada${delinq===1?'':'s'}: pagar evita juros compostos e a falência.`:'Pagar a parcela em dia evita juros compostos e mantém o crédito.'});
+    }
+    const tiles=[
+      {label:'CAIXA AGORA',value:signed(cash),detail:cash<0?`${odStreak} rodada${odStreak===1?'':'s'} no vermelho`:'saldo disponível',tone:cash<0?'bad':'good'},
+      {label:'CUSTO POR RODADA',value:money(roundCost),detail:'folha, estádio e juros'},
+      {label:'FÔLEGO',value:`${runway} rodada${runway===1?'':'s'}`,detail:need>0?`precisa de ${money(need)}`:'caixa cobre a próxima rodada',tone:runway<=1?'bad':runway<=3?'mid':'good'},
+      {label:'EMPRÉSTIMO',value:debt>0?money(debt):'—',detail:debt>0?(delinq?`${delinq} parcela${delinq===1?'':'s'} atrasada${delinq===1?'':'s'}`:'em dia'):'sem dívida no banco',tone:delinq?'bad':debt>0?'mid':''},
+    ];
+    const meterTone=finances<MANAGER_JOB_CRISIS_THRESHOLD?'bad':finances<MANAGER_JOB_CRISIS_THRESHOLD+15?'mid':'good';
+    const stage=FINANCE_STAGE_INDEX[stageKey]??1;
+    let deadline=null,kicker='',title='',quote='',note='',primaryLabel='IR ÀS FINANÇAS →',primaryGo='office';
+    if(stageKey==='charge'){
+      kicker='COBRANÇA DA DIRETORIA';
+      title=cash<0?`Caixa no vermelho há ${Math.max(1,odStreak)} rodada${odStreak>1?'s':''}`:`Saúde financeira em ${finances}%`;
+      quote=cash<0?'Precisamos voltar ao azul antes que o banco feche as portas.':'O caixa preocupa. Quero ver as contas equilibradas nas próximas rodadas.';
+      if(cash<0){
+        const total=RESTRICTION_ENTER_OVERDRAFT;
+        const left=Math.max(0,total-odStreak);
+        deadline={total,used:Math.min(total,odStreak),text:left?`${left} rodada${left===1?'':'s'} no vermelho até o bloqueio de compras`:'próxima rodada no vermelho bloqueia compras'};
+      }
+    }else if(stageKey==='insolvency'){
+      kicker='AVISO DE INSOLVÊNCIA';
+      title=delinq>=2?`${delinq}ª parcela atrasada: juros compostos`:'Rombo de caixa profundo';
+      quote='Se isso continuar, os credores pedem a falência do clube.';
+      note=String(extra.message||'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[ch]);
+      const total=Math.max(RESTRICTION_ENTER_OVERDRAFT,RESTRICTION_ENTER_DELINQUENCY);
+      const used=Math.min(total,Math.max(odStreak,delinq));
+      deadline={total,used,text:'se não resolver: compras e empréstimos bloqueados'};
+    }else if(stageKey==='restriction'){
+      kicker='RESTRIÇÃO FINANCEIRA';
+      title='Compras e empréstimos bloqueados';
+      quote='Até regularizar o caixa e o banco, ninguém chega.';
+      note=`<b>Ainda pode:</b> vender, listar, adiantar TV e pagar o banco. <b>Libera quando:</b> caixa ≥ R$ 0 e empréstimo em dia${cash<0?` — faltam ${money(-cash)}`:''}.`;
+      const total=BANKRUPTCY_RED_STREAK;
+      const left=Math.max(0,total-odStreak);
+      deadline={total,used:Math.min(total,odStreak),text:left?`${left} rodada${left===1?'':'s'} no vermelho até a falência`:'risco imediato de falência'};
+      primaryLabel='VER MERCADO →';primaryGo='transfers';
+    }
+    const boardDrop=extra.boardDelta;
+    return {
+      stage,clubName:userClub,kicker,title,quote,tiles,note,deadline,primaryLabel,primaryGo,
+      meter:{value:Math.max(0,Math.min(100,finances)),limit:MANAGER_JOB_CRISIS_THRESHOLD,tone:meterTone,note:`A diretoria cobra abaixo de ${MANAGER_JOB_CRISIS_THRESHOLD}% · piso ${clubStatus.STATUS_MIN}%`},
+      board:{value:board,tone:board<40?'bad':board<55?'mid':'good',note:extra.shieldLabel?`${extra.shieldLabel}: a campanha ajuda a segurar o cargo, mas a crise financeira desgasta a diretoria a cada rodada.`:'Cada rodada de crise financeira reduz a confiança da diretoria.'},
+      actionsTitle:need>0?`Como sair · precisa de ${money(need)}`:'Como reforçar o caixa',
+      actions:actions.slice(0,3),
+      need,cash,roundCost,runway,debt,delinq,due,
+      boardDrop,
+    };
+  };
+  const financeAlertInboxBody=data=>{
+    const lines=[
+      `Caixa: ${data.tiles[0].value}`,
+      `Fôlego: ${data.tiles[2].value}`,
+      ...(data.debt>0?[`Empréstimo: ${data.tiles[3].value}`]:[]),
+      ...(data.deadline?[`Prazo: ${data.deadline.text}`]:[]),
+    ];
+    const bullets=data.actions.map(item=>`• ${item.kicker.charAt(0)}${item.kicker.slice(1).toLowerCase()}: ${item.value} — ${item.detail}`);
+    return `${data.title}.\n\n${lines.join('\n')}${bullets.length?`\n\n${bullets.join('\n')}`:''}\n\nResolva em Clube › Finanças.`;
+  };
+  const openFinanceAlert=(stageKey,extra={})=>{
+    const data=buildFinanceAlert(stageKey,extra);
+    financeAlertUi.open(data);
+    return data;
   };
   const MANAGER_JOB_WARN_TITLES={
     warn_finances:'Cobrança financeira',
@@ -7748,7 +7855,9 @@ export async function bootEngine({
       shield_fortress:['PROJETO PROTEGIDO','manager-warn-shield'],
     };
     const [title,type]=map[risk.popupKind]||['ALERTA DE EMPREGO','manager-warn'];
-    pushMessage({category:'club',type,title,body:risk.message,round:currentRound,read:false});
+    let body=risk.message;
+    if(risk.popupKind==='warn_finances'){try{body=financeAlertInboxBody(buildFinanceAlert('charge'));}catch(error){}}
+    pushMessage({category:'club',type,title,body,round:currentRound,read:false});
   };
   const openManagerJobWarnPopup=(risk,shield)=>{
     if(!risk?.popupKind||risk.status==='sacked'||risk.status==='ok')return;
@@ -7759,6 +7868,15 @@ export async function bootEngine({
     if(!repeatOk&&warnedPopups[kind])return;
     const dedupeKey=`${kind}-${currentRound}-${risk.reason||''}`;
     if(managerJobCrisis?.lastWarnPopupKey===dedupeKey&&!repeatOk)return;
+    if(kind==='warn_finances'){
+      openFinanceAlert('charge',{shieldLabel:shield?.label||''});
+      managerJobCrisis={
+        ...(managerJobCrisis||{}),
+        lastWarnPopupKey:dedupeKey,
+        warnedPopups:{...warnedPopups,[kind]:true},
+      };
+      return;
+    }
     managerJobWarnUi.open({
       kind,
       title:MANAGER_JOB_WARN_TITLES[kind]||'Alerta de emprego',
@@ -8024,6 +8142,11 @@ export async function bootEngine({
     location.replace('home.html');
   };
   const managerJobWarnUi=createManagerJobWarnFeature({$});
+  const financeAlertUi=createFinanceAlertFeature({
+    $,
+    teamCrestHtml,
+    onNavigate:view=>document.querySelector(`.nav[data-view="${view}"]`)?.click(),
+  });
   const managerSackUi=createManagerSackFeature({
     $,
     onAcceptOffer:acceptManagerJobOffer,
@@ -8044,6 +8167,7 @@ export async function bootEngine({
     formatBudget,
   });
   managerJobWarnUi.init();
+  financeAlertUi.init();
   managerSackUi.init();
   clubBankruptcyUi.init();
   clubInsolvencyWarnUi.init();
@@ -9538,6 +9662,11 @@ export async function bootEngine({
       },
       qaBudget:()=>getBalance(clubs[userClub]),
       qaPendingMedical:()=>!!pendingTreatmentDecision,
+      qaFinanceAlert:(stage='charge',cash=-320000,od=2,delinq=0)=>{
+        const club=clubs[userClub];club.budget=Number(cash);club.overdraftStreak=od;
+        const loan=getBankLoan(club);if(loan)loan.delinquencyStreak=delinq;
+        return openFinanceAlert(stage,{message:'2º atraso no mínimo: a taxa de juros está sendo reaplicada sobre a dívida.'});
+      },
       nextUserEntry:()=>{const entry=nextPendingUserEntry();return entry?{competition:entry.game.competition,home:entry.game.home,away:entry.game.away,date:String(entry.details?.date)}:null;}};
   }
   if(new URLSearchParams(location.search).has('conmebolAudit')&&savedNewGame){

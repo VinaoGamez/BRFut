@@ -7406,3 +7406,104 @@ html body #treatmentModal:not(#matchModal):not(#playerCardModal) .mb2-foot butto
 html body #treatmentModal:not(#matchModal):not(#playerCardModal) .mb2-foot button#treatmentConservative.is-sec,
 html body #treatmentModal:not(#matchModal):not(#playerCardModal) .mb2-foot button#treatmentSurgery.is-sec { background: #16294A !important; color: var(--av-cyan) !important; box-shadow: none !important; border: 0 !important; }
 html body #treatmentModal:not(#matchModal):not(#playerCardModal) .mb2-foot button#treatmentFinance { background: transparent !important; color: var(--av-ink) !important; box-shadow: inset 0 0 0 2px var(--av-line) !important; border: 0 !important; }
+
+/* ===================== Cobranças financeiras v2 ===================== */
+html body #financeAlertModal { overflow-y: auto !important; align-items: flex-start !important; padding: 24px 16px !important; }
+html body #financeAlertModal > .modal-card.fa2 {
+  --fa: var(--av-orange);
+  width: min(1020px, calc(100vw - 32px)) !important; max-width: none !important; max-height: none !important; overflow: visible !important;
+  padding: 0 !important; margin: auto !important; text-align: left; display: flex !important; flex-direction: column;
+  box-shadow: inset 0 3px var(--fa), 0 24px 60px #000b !important;
+}
+html body #financeAlertModal > .fa2[data-tone="red"] { --fa: var(--av-red); }
+html body #financeAlertModal > .fa2[data-tone="cyan"] { --fa: var(--av-cyan); }
+html body .fa2 > * { flex: none !important; }
+html body .modal .modal-card.fa2 > header.fa2-head { display: flex !important; align-items: center; gap: 14px; height: auto !important; min-height: 0 !important; padding: 16px 22px 12px !important; border-bottom: 1px solid var(--av-line); background: none !important; }
+html body .fa2-crest, html body .fa2-crest :is(img, svg, .crest--club, i) { flex: none; width: 46px !important; height: 46px !important; }
+html body .fa2-head-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html body .modal .modal-card.fa2 .fa2-kicker { font: italic 800 12px var(--av-display) !important; letter-spacing: .12em; color: var(--fa) !important; }
+html body .modal .modal-card.fa2 .fa2-head h2 { margin: 0 !important; font: italic 900 26px/1.1 var(--av-display) !important; color: var(--av-ink) !important; text-transform: none !important; }
+html body .fa2-head-copy small { font-size: 13px; color: var(--av-muted); }
+html body .fa2-body { display: flex; flex-direction: column; gap: 12px; padding: 14px 22px; }
+html body .fa2-ladder { display: flex; gap: 3px; }
+html body .fa2-step { flex: 1; padding: 7px 4px; text-align: center; background: var(--av-rail); color: var(--av-muted); font: italic 900 11px var(--av-display); letter-spacing: .04em; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+html body .fa2-step.c-cyan { --st: var(--av-cyan); } html body .fa2-step.c-orange { --st: var(--av-orange); } html body .fa2-step.c-red { --st: var(--av-red); }
+html body .fa2-step.is-past { background: color-mix(in srgb, var(--st) 35%, transparent); color: var(--av-ink); }
+html body .fa2-step.is-on { background: var(--st); color: #06131b; }
+html body .fa2-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; grid-auto-rows: 1fr; }
+html body .fa2-tile { display: flex; flex-direction: column; gap: 3px; padding: 9px 12px; background: var(--av-rail); min-width: 0; }
+html body .fa2-tile span { font: italic 800 11px var(--av-display); letter-spacing: .1em; color: var(--av-muted); }
+html body .fa2-tile strong { font: italic 900 20px/1.15 var(--av-display); color: var(--av-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body .fa2-tile small { font-size: 12px; color: var(--av-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body .fa2-tile.t-bad strong { color: var(--av-red); } html body .fa2-tile.t-mid strong { color: var(--av-orange); } html body .fa2-tile.t-good strong { color: var(--av-green); }
+html body .fa2-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
+html body .fa2-meter { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--av-rail); }
+html body .fa2-meter-top { display: flex; justify-content: space-between; font: italic 800 11px var(--av-display); letter-spacing: .1em; color: var(--av-muted); }
+html body .fa2-meter-top b.t-bad { color: var(--av-red); } html body .fa2-meter-top b.t-mid { color: var(--av-orange); } html body .fa2-meter-top b.t-good { color: var(--av-green); }
+html body .fa2-meter-bar { position: relative; height: 10px; background: #16294A; }
+html body .fa2-meter-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--av-green); }
+html body .fa2-meter-bar i.t-bad { background: var(--av-red); } html body .fa2-meter-bar i.t-mid { background: var(--av-orange); }
+html body .fa2-meter-bar em { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--av-ink); }
+html body .fa2-meter small { font-size: 12px; color: var(--av-muted); }
+html body .modal .modal-card.fa2 .fa2-meter p { margin: 0 !important; font-size: 13px !important; line-height: 1.4 !important; color: var(--av-ink) !important; }
+html body .modal .modal-card.fa2 .fa2-note { margin: 0 !important; padding: 9px 11px; background: var(--av-rail); box-shadow: inset 3px 0 var(--fa); font-size: 14px !important; line-height: 1.45 !important; color: #c9d6e8 !important; }
+html body .fa2-note b { color: var(--av-ink); }
+html body .modal .modal-card.fa2 header.fa2-sec { display: flex !important; align-items: center; gap: 10px; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; }
+html body .modal .modal-card.fa2 header.fa2-sec::after { content: ''; flex: 1; height: 1px; background: var(--av-line); }
+html body .modal .modal-card.fa2 .fa2-sec h3 { margin: 0 !important; font: italic 800 11px var(--av-display) !important; letter-spacing: .12em; text-transform: uppercase; color: var(--av-lime) !important; }
+html body .fa2-actions { display: grid; gap: 10px; grid-auto-rows: 1fr; }
+html body .fa2-actions.n-1 { grid-template-columns: 1fr; } html body .fa2-actions.n-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } html body .fa2-actions.n-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html body .modal .modal-card.fa2 button.fa2-action {
+  display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 6px; padding: 12px !important; text-align: left;
+  background: var(--av-rail) !important; border: 0 !important; border-radius: 0 !important; box-shadow: inset 0 3px var(--ac, var(--av-lime)) !important; clip-path: none !important;
+  color: var(--av-ink) !important; width: auto !important; min-height: 0 !important; cursor: pointer; text-transform: none !important; letter-spacing: 0 !important; font: 600 13px var(--av-body) !important;
+}
+html body .fa2-action.c-cyan { --ac: var(--av-cyan); } html body .fa2-action.c-gold { --ac: var(--av-gold); } html body .fa2-action.c-lime { --ac: var(--av-lime); }
+html body .fa2-action-kicker { font: italic 800 11px var(--av-display); letter-spacing: .08em; color: var(--ac); }
+html body .fa2-action strong { font: italic 900 20px var(--av-display); color: var(--av-green); }
+html body .fa2-action strong.is-neg { color: var(--av-gold); }
+html body .fa2-action small { flex: 1; font-size: 13px; line-height: 1.4; color: var(--av-muted); }
+html body .fa2-action em { font-style: normal; font-weight: 800; font-size: 13px; color: var(--av-cyan); }
+html body .fa2-deadline { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #16294A; }
+html body .fa2-deadline b { font: italic 900 13px var(--av-display); color: var(--fa); }
+html body .fa2-deadline-bar { flex: 1; display: flex; gap: 4px; }
+html body .fa2-deadline-bar i { flex: 1; height: 8px; background: var(--av-rail); }
+html body .fa2-deadline-bar i.is-used { background: var(--fa); }
+html body .fa2-deadline span { font-size: 13px; color: var(--av-ink); }
+html body .fa2-foot { display: flex; align-items: center; gap: 10px; padding: 12px 22px 16px; border-top: 1px solid var(--av-line); }
+html body .fa2-foot-note { flex: 1; font-size: 12px; color: var(--av-muted); }
+html body #financeAlertModal:not(#matchModal):not(#playerCardModal) .fa2-foot button.fa2-btn {
+  min-height: 44px; padding: 10px 20px !important; border: 0 !important; border-radius: 0 !important; cursor: pointer; width: auto !important;
+  font: italic 900 13px var(--av-display) !important; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+}
+html body #financeAlertModal:not(#matchModal):not(#playerCardModal) .fa2-foot button.fa2-btn.is-primary { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -4px var(--av-lime-edge) !important; }
+html body #financeAlertModal:not(#matchModal):not(#playerCardModal) .fa2-foot button.fa2-btn.is-ghost { background: transparent !important; color: var(--av-ink) !important; box-shadow: inset 0 0 0 2px var(--av-line) !important; }
+@media (max-width: 760px) {
+  html body #financeAlertModal { padding: 0 !important; }
+  html body #financeAlertModal > .modal-card.fa2 { width: 100vw !important; min-height: 100dvh !important; margin: 0 !important; }
+  html body .modal .modal-card.fa2 > header.fa2-head { padding: 14px 14px 10px !important; gap: 10px; }
+  html body .fa2-crest, html body .fa2-crest :is(img, svg, .crest--club, i) { width: 38px !important; height: 38px !important; }
+  html body .modal .modal-card.fa2 .fa2-head h2 { font-size: 20px !important; }
+  html body .fa2-body { padding: 10px 14px; gap: 10px; }
+  html body .fa2-step { font-size: 9px; padding: 6px 1px; letter-spacing: 0; clip-path: none; }
+  html body .fa2-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html body .fa2-split, html body .fa2-actions.n-2, html body .fa2-actions.n-3 { grid-template-columns: minmax(0, 1fr); }
+  html body .fa2-deadline { flex-wrap: wrap; }
+  html body .fa2-deadline span { width: 100%; }
+  html body .fa2-foot { position: sticky; bottom: 0; z-index: 5; margin-top: auto; background: var(--av-panel); display: grid; grid-template-columns: 1fr 1.4fr; padding: 10px 14px calc(16px + env(safe-area-inset-bottom)); }
+  html body .fa2-foot-note { grid-column: 1 / -1; order: 9; text-align: center; }
+  html body #financeAlertModal:not(#matchModal):not(#playerCardModal) .fa2-foot button.fa2-btn { width: 100% !important; white-space: normal; padding: 10px 8px !important; }
+}
+html body #financeAlertModal:not(#matchModal) .fa2 .fa2-kicker { color: var(--fa) !important; }
+html body #financeAlertModal:not(#matchModal) > .modal-card.fa2 { border-top: 3px solid var(--fa) !important; }
+html body #financeAlertModal .fa2-action small { font: 600 13px/1.4 var(--av-body) !important; color: var(--av-muted) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body #financeAlertModal .fa2-action em { font: 800 13px var(--av-body) !important; color: var(--av-cyan) !important; }
+html body #financeAlertModal:not(#matchModal):not(#playerCardModal) > .modal-card.fa2 { --mv2-accent: var(--fa) !important; border-top: 0 !important; }
+html body #treatmentModal:not(#matchModal):not(#playerCardModal) > .modal-card.mb2 { --mv2-accent: var(--av-red) !important; }
+html body #financeAlertModal:not(#matchModal):not(#playerCardModal) .fa2-action .fa2-action-kicker { color: var(--ac, var(--av-lime)) !important; }
+html body #financeAlertModal:not(#matchModal):not(#playerCardModal) .fa2 button.fa2-action { outline: 0; box-shadow: inset 0 3px var(--ac, var(--av-lime)) !important; border: 0 !important; }
+@media (max-width: 760px) {
+  html body .fa2-step { font-size: 11px; color: transparent; min-height: 26px; padding: 6px 2px; }
+  html body .fa2-step.is-on { flex: 3; color: #06131b; }
+}
