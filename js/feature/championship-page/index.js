@@ -1844,15 +1844,27 @@ export function createChampionshipPageFeature(deps) {
         const limit = stateLeagueEngine.getRoundLimit(pageCompetition);
         const current = stateLeagueEngine.getCurrentRound(pageCompetition, userClub);
         const round = clamp(requested || current, 1, Math.max(1, limit));
-        const games = stateLeagueEngine.getRoundGamesForBrowse(pageCompetition, round) || [];
-        return { key: pageCompetition, round, current, limit, games: overlayPendingLiveGames(games) };
+        let games = stateLeagueEngine.getRoundGamesForBrowse(pageCompetition, round) || [];
+        // Fase de grupos: só os jogos do grupo em destaque na tabela.
+        const groupClubs = new Set((stateGroupRows(pageCompetition, pageStateGroup) || []).map(row => row.club));
+        const inGroup = games.filter(game => groupClubs.has(game.home) && groupClubs.has(game.away));
+        if (groupClubs.size && inGroup.length) games = inGroup;
+        return { key: `${pageCompetition}:${pageStateGroup}`, round, current, limit, games: overlayPendingLiveGames(games) };
       }
       if (['A', 'B', 'C', 'D'].includes(pageCompetition)) {
         const fixtures = getNationalCompetitions()?.[pageCompetition]?.fixtures || [];
         if (!fixtures.length) return null;
         const current = clamp(getCurrentRound(), 1, fixtures.length);
         const round = clamp(requested || current, 1, fixtures.length);
-        return { key: pageCompetition, round, current, limit: fixtures.length, games: overlayPendingLiveGames(fixtures[round - 1] || []) };
+        let games = fixtures[round - 1] || [];
+        let key = pageCompetition;
+        // Série D na 1ª fase: só os jogos do grupo em destaque na tabela.
+        if (pageCompetition === 'D') {
+          const group = (getSerieDGroups?.() || [])[pageSerieDGroup] || [];
+          const inGroup = group.length ? games.filter(game => group.includes(game.home) && group.includes(game.away)) : [];
+          if (inGroup.length) { games = inGroup; key = `D:${pageSerieDGroup}`; }
+        }
+        return { key, round, current, limit: fixtures.length, games: overlayPendingLiveGames(games) };
       }
     } catch {
       return null;
