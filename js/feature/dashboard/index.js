@@ -59,6 +59,7 @@ export function createDashboardFeature(deps) {
     isUserSeasonIdle,
     nextPendingUserEntry,
     pendingUserSchedule,
+    userSchedule,
     fixtureDetails,
     displayedClubPosition,
     sameCalendarDay,
@@ -79,6 +80,7 @@ export function createDashboardFeature(deps) {
     getUserSeasonCrowds,
     getStateLeagueCompletedGames,
     openCalendarMatchReport,
+    findUserMatchLog,
     calendarGameResult,
     isCompletedDashboardGame,
     getUserSerieDGroupIndex,
@@ -994,6 +996,10 @@ export function createDashboardFeature(deps) {
     }
     if (game.competition === 'cup') return `COPA · ${game.phase || 'DO BRASIL'}${game.leg ? ` · ${game.leg}` : ''}`;
     if (game.competition === 'knockout') return `SÉRIE D · ${game.leg || 'ELIMINATÓRIAS'}`;
+    if (/LIBERTADORES|SUL-AMERICANA|RECOPA/i.test(String(game.competition || ''))) {
+      return `${String(game.competition).toUpperCase()}${game.phase ? ` · ${String(game.phase).toUpperCase()}` : game.group ? ` · GRUPO ${game.group}` : ''}`;
+    }
+    if (/COPA DO BRASIL/i.test(String(game.competition || ''))) return `COPA · ${game.phase || 'DO BRASIL'}${game.leg ? ` · ${game.leg}` : ''}`;
     return `RODADA ${game.round || '—'}`;
   };
 
@@ -1049,21 +1055,35 @@ export function createDashboardFeature(deps) {
   const allUserSeasonGames = () => {
     const entries = [];
     const seen = new Set();
-    const register = (game, sortDate) => {
-      if (!game || !isUserFixture(game)) return;
-      const key = [
-        game.home,
-        game.away,
-        game.round || '',
-        game.phase || '',
-        game.leg || '',
-        parseCalendarDate(sortDate || fixtureSortDate(game))?.getTime() || '',
-      ].join('|');
+    const kindOf = game => {
+      const comp = String(game.dashboardCompetition || game.competition || '').toUpperCase();
+      if (comp === 'STATE' || isStateLeagueGame(game)) return 'state';
+      if (comp === 'CUP' || comp.includes('COPA DO BRASIL')) return 'cup';
+      if (comp === 'WORLDCUP' || isWorldCupFixture(game)) return 'worldcup';
+      if (!comp || comp === 'LEAGUE' || comp.startsWith('LEAGUE') || comp.startsWith('SÉRIE') || comp.startsWith('SERIE') || comp === 'KNOCKOUT') return 'league';
+      return comp;
+    };
+    // Jogo já disputado cujo placar não ficou no fixture (rodada saiu do histórico):
+    // recupera do relatório guardado.
+    const withLoggedResult = game => {
+      if (isCompletedDashboardGame(game) || typeof isFixtureCompleted !== 'function' || !isFixtureCompleted(game)) return game;
+      const log = typeof findUserMatchLog === 'function' ? findUserMatchLog(game) : null;
+      if (!log) return { ...game, playedWithoutRecord: true };
+      return { ...game, homeGoals: log.homeGoals, awayGoals: log.awayGoals, completed: true, data: game.data || log.data || null, goals: game.goals || log.goals || null };
+    };
+    const register = (rawGame, sortDate) => {
+      if (!rawGame || !isUserFixture(rawGame)) return;
+      const game = withLoggedResult(rawGame);
+      // Mesmo jogo pode vir de duas fontes (histórico recente e agenda): chave sem data.
+      const key = [game.home, game.away, kindOf(game), game.round || '', game.phase || '', game.leg || ''].join('|');
       if (seen.has(key)) return;
       seen.add(key);
       entries.push({ game, sortDate: sortDate || fixtureSortDate(game) });
     };
     dashboardCompletedGames().forEach(game => register(game, game.sortDate));
+    // Agenda completa do usuário (inclui jogos já disputados que saíram do
+    // histórico recente de rodadas, Sul-Americana/Libertadores etc.).
+    (typeof userSchedule === 'function' ? userSchedule() : []).forEach(entry => register(entry.game, entry.details?.date));
     userUpcomingSchedule().forEach(entry => register(entry.game, entry.details?.date));
     return entries.sort((a, b) => compareSortDate(a, b));
   };
@@ -1093,7 +1113,7 @@ export function createDashboardFeature(deps) {
         const dateLabel = date
           ? date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toUpperCase()
           : 'SEM DATA';
-        const score = completed ? dashboardScoreLabel(game) : '×';
+        const score = completed ? dashboardScoreLabel(game) : game.playedWithoutRecord ? '—' : '×';
         const result = completed ? userMatchResultLetter(game, isWorldCupFixture(game) ? getUserNationalTeamName?.() : getUserClub()) : '';
         const tone = result === 'V' ? 'win' : result === 'E' ? 'draw' : result === 'D' ? 'loss' : 'scheduled';
         return `<div class="team-game-row ${tone}">
@@ -1102,7 +1122,7 @@ export function createDashboardFeature(deps) {
             <strong><span class="club-link" data-club="${game.home}" role="button" tabindex="0">${game.home}</span><i>×</i><span class="club-link" data-club="${game.away}" role="button" tabindex="0">${game.away}</span></strong>
           </div>
           <b class="team-game-score">${score}</b>
-          <button type="button" class="dashboard-match-report" data-team-match-report="${reportKey}" ${report ? '' : 'disabled'} title="${report ? 'Ver estatísticas finais' : 'Estatísticas disponíveis após a partida'}" aria-label="Ver estatísticas de ${game.home} contra ${game.away}">▤</button>
+          <button type="button" class="dashboard-match-report" data-team-match-report="${reportKey}" ${report ? '' : 'disabled'} title="${report ? 'Ver estatísticas finais' : game.playedWithoutRecord ? 'Jogo disputado antes desta versão: detalhes não guardados' : 'Estatísticas disponíveis após a partida'}" aria-label="Ver estatísticas de ${game.home} contra ${game.away}">▤</button>
         </div>`;
       })
       .join('');

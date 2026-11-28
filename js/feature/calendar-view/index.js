@@ -15,6 +15,7 @@ import { tipKey, buildPlayerTipIndex, ownGoalTipCount } from './match-report-tip
 import { DEVELOPMENT_FOCUSES, formatTrainingWeeklyReportHtml } from '../../engine/training-development.js';
 import { createCalendarV2 } from './calendar-v2.js';
 import { eventIconHtml, EVENT_ICON_SIZE } from '../../core/event-icons.js';
+import { normalizeStatsCompetitionId } from '../../engine/player-history.js';
 
 /**
  * Calendário de carreira — grade mensal, agenda diária e relatório de partida.
@@ -170,7 +171,21 @@ export function createCalendarViewFeature(deps) {
     }
     const roundRecord = seasonRoundHistory.find(item => item.round === game.round);
     const result = roundRecord?.games?.find(item => item.home === game.home && item.away === game.away);
-    if (!result) return null;
+    if (!result) {
+      // A rodada já saiu do histórico recente: usa o relatório guardado do jogo.
+      // Busca estrita (mesma rodada) para não confundir com um jogo futuro do mesmo confronto.
+      const log = typeof findMatchLog === 'function' && game.round != null
+        ? findMatchLog({ home: game.home, away: game.away, season: getCareerSeason(), round: game.round })
+        : null;
+      if (!log) return null;
+      return {
+        game,
+        result: { ...game, homeGoals: log.homeGoals, awayGoals: log.awayGoals, completed: true },
+        data: log.data || null,
+        goals: log.goals || null,
+        incidents: log.incidents || [],
+      };
+    }
     if (result.data) return { game, result, data: result.data, goals: result.goals || null };
     if (roundRecord.userStats && isUserFixture(game)) {
       const userHome = game.home === userClub;
@@ -222,22 +237,27 @@ export function createCalendarViewFeature(deps) {
 
   const resolveMatchHistoryLog = game => {
     if (typeof findMatchLog !== 'function' || !game?.home || !game?.away) return null;
-    return (
-      findMatchLog({
-        home: game.home,
-        away: game.away,
-        season: getCareerSeason(),
-        round: game.round ?? game.phaseIndex ?? null,
-        leg: game.leg || null,
-      }) ||
-      findMatchLog({
-        home: game.home,
-        away: game.away,
-        season: getCareerSeason(),
-        round: game.round ?? game.phaseIndex ?? null,
-      }) ||
-      null
-    );
+    const base = { home: game.home, away: game.away, season: getCareerSeason(), round: game.round ?? game.phaseIndex ?? null };
+    // Mesmo confronto pode existir no Estadual e no Brasileiro: tenta primeiro pela competição.
+    // O painel troca a competição por apelidos (state/cup/league); volta ao id gravado.
+    const alias = { state: 'ESTADUAL', cup: 'COPA DO BRASIL', league: 'LEAGUE', knockout: 'LEAGUE', worldcup: 'COPA DO MUNDO' };
+    const rawCompetition = alias[game.competition] || game.competition;
+    const competition = rawCompetition
+      ? normalizeStatsCompetitionId(rawCompetition, getUserDivision?.() || null)
+      : null;
+    const attempts = [
+      competition && { ...base, competition, leg: game.leg || null },
+      competition && { ...base, competition },
+      { ...base, leg: game.leg || null },
+      base,
+      // Rodada gravada diferente da tabela (fases/grupos): mesma competição na temporada.
+      competition && { home: game.home, away: game.away, season: base.season, competition },
+    ].filter(Boolean);
+    for (const query of attempts) {
+      const log = findMatchLog(query);
+      if (log) return log;
+    }
+    return null;
   };
 
   const clubCrestInitials = name =>
@@ -514,10 +534,14 @@ export function createCalendarViewFeature(deps) {
   const openCalendarMatchReport = (entry, { showStatistics = true } = {}) => {
     const userClub = getUserClub();
     const userDivision = getUserDivision();
-    const { game, result, goals, incidents = [] } = entry;
+    const { game, result } = entry;
     if (!game?.home || !game?.away || !result) return;
     const competition = resolveCompetitionBadge(game, { userDivision });
     const historyLog = resolveMatchHistoryLog(game);
+    const hasGoalList = value => !!value && ((value.home || []).length + (value.away || []).length) > 0;
+    // Gols e lances: o que veio da tela; senão, o relatório guardado do jogo.
+    const goals = hasGoalList(entry.goals) ? entry.goals : hasGoalList(result.goals) ? result.goals : historyLog?.goals || entry.goals || null;
+    const incidents = Array.isArray(entry.incidents) && entry.incidents.length ? entry.incidents : historyLog?.incidents || [];
     const matchData = entry.data || result.data || historyLog?.data || null;
     const liveSheets = Array.isArray(entry.ratingPlayers) ? entry.ratingPlayers : null;
     const details = typeof fixtureDetails === 'function' ? fixtureDetails(game) : { display: '—', time: '' };
@@ -584,7 +608,7 @@ export function createCalendarViewFeature(deps) {
     };
     const statRows = matchData
       ? [
-          ['Posse de bola', `${statValue('homePossession', 50)}%`, `${statValue('awayPossession', 50)}%`],
+          ['Posse de bola', `${Math.round(statValue('homePossession', 50))}%`, `${Math.round(statValue('awayPossession', 50))}%`],
           ['Finalizações', statValue('homeShots'), statValue('awayShots')],
           ['No gol', statValue('homeOnTarget'), statValue('awayOnTarget')],
           ['Passes', statValue('homePasses'), statValue('awayPasses')],

@@ -12,6 +12,8 @@ import {
   teamMatchRatingContext,
 } from '../js/engine/player-match-stats.js';
 import {
+  pruneMatchLogsForSeason,
+  keepPinnedMatchLogs,
   createPlayerHistoryEngine,
   PLAYER_HISTORY_LIMITS,
   clearPlayerHistoryStore,
@@ -515,6 +517,18 @@ check('matchLogs stay within season budget and drop other seasons', () => {
   );
   assert.ok(history.getStore().matchLogs.every(entry => Number(entry.season) === 2027));
   assert.equal(history.getStore().matchLogs.length, 1);
+});
+
+check('jogos do usuário (user:true) nunca saem do histórico da temporada', () => {
+  const logs = [];
+  for (let i = 0; i < 400; i++) logs.push({ id: `o${i}`, season: 2026, round: i });
+  logs.splice(3, 0, { id: 'u1', season: 2026, round: 1, user: true });
+  logs.splice(150, 0, { id: 'u2', season: 2026, round: 2, user: true });
+  const pruned = pruneMatchLogsForSeason(logs, 2026, 24);
+  assert.ok(pruned.some(l => l.id === 'u1') && pruned.some(l => l.id === 'u2'));
+  assert.equal(pruned.filter(l => !l.user).length, 24);
+  assert.deepEqual(keepPinnedMatchLogs(logs, 2026).map(l => l.id), ['u1', 'u2']);
+  assert.equal(keepPinnedMatchLogs(logs, 2027).length, 0);
 });
 
 console.log(`player-history tests: ${passed}/${results.length} passed`);

@@ -3862,6 +3862,7 @@ export async function bootEngine({
     isUserSeasonIdle,
     nextPendingUserEntry,
     pendingUserSchedule,
+    userSchedule,
     fixtureDetails,
     displayedClubPosition,
     sameCalendarDay,
@@ -3884,6 +3885,15 @@ export async function bootEngine({
     openCalendarMatchReport,
     calendarGameResult,
     isCompletedDashboardGame,
+    // Relatório guardado de um jogo do usuário (placar/estatísticas mesmo após o histórico de rodadas girar).
+    findUserMatchLog:game=>{
+      if(!playerHistory||!game?.home||!game?.away)return null;
+      const logs=(playerHistory.getStore?.()?.matchLogs||[]).filter(log=>log.home===game.home&&log.away===game.away&&Number(log.season)===Number(careerSeason));
+      if(!logs.length)return null;
+      const sameRound=logs.filter(log=>game.round==null||Number(log.round)===Number(game.round));
+      const pool=sameRound.length?sameRound:logs;
+      return pool.find(log=>!game.leg||!log.leg||log.leg===game.leg)||pool[0];
+    },
     fixtureDate,
     getUserSerieDGroupIndex:()=>userSerieDGroupIndex,
     getSerieDGroups:()=>serieDGroups,
@@ -6345,6 +6355,10 @@ export async function bootEngine({
           homeRed:Number(h.red)||0,awayRed:Number(a.red)||0,
           homePossession:Number(h.possession)||0,awayPossession:Number(a.possession)||0,
           homeXg:Number(h.xg)||0,awayXg:Number(a.xg)||0,
+          homeCorners:Number(h.corners)||0,awayCorners:Number(a.corners)||0,
+          homeOffsides:Number(h.offsides)||0,awayOffsides:Number(a.offsides)||0,
+          homeTackles:Number(h.tackles)||0,awayTackles:Number(a.tackles)||0,
+          homeFouls:Number(h.fouls)||0,awayFouls:Number(a.fouls)||0,
         };
       }
       return {
@@ -6358,6 +6372,10 @@ export async function bootEngine({
         homeRed:Number(a.red)||0,awayRed:Number(h.red)||0,
         homePossession:Number(a.possession)||0,awayPossession:Number(h.possession)||0,
         homeXg:Number(a.xg)||0,awayXg:Number(h.xg)||0,
+        homeCorners:Number(a.corners)||0,awayCorners:Number(h.corners)||0,
+        homeOffsides:Number(a.offsides)||0,awayOffsides:Number(h.offsides)||0,
+        homeTackles:Number(a.tackles)||0,awayTackles:Number(h.tackles)||0,
+        homeFouls:Number(a.fouls)||0,awayFouls:Number(h.fouls)||0,
       };
     };
     const liveGoalLists=swap
@@ -6387,7 +6405,12 @@ export async function bootEngine({
       enriched.awayManagerId=awayManager.id;
       enriched.awayManagerName=awayManager.name;
     }
+    // Jogo do usuário: relatório fixo (nunca descartado) com gols e lances.
+    const userMatch=[userClub,userNationalTeamName].filter(Boolean).some(name=>game.home===name||game.away===name);
+    const isLiveGame=!!liveMatchGame&&liveMatchGame.home===game.home&&liveMatchGame.away===game.away;
     const log=playerHistory.recordMatch(enriched,{
+      userMatch,
+      incidents:userMatch&&isLiveGame?calendarLiveVolumeIncidents():[],
       season:careerSeason,
       round:meta.round??game.round??currentRound,
       competition:meta.competition||game.competition||`LEAGUE:${clubs[game.home]?.division||userDivision}`,
@@ -9654,6 +9677,12 @@ export async function bootEngine({
         return {competition:game.competition,home:game.home,away:game.away,score:`${h}-${a}`,completed:!!game.completed};
       },
       qaRetro:()=>buildSeasonRetro(),
+      // QA: quantos relatórios de partida do usuário ainda existem no histórico.
+      qaMatchLogStats:()=>{
+        const logs=playerHistory?.getStore?.()?.matchLogs||[];
+        const mine=logs.filter(l=>l.home===userClub||l.away===userClub);
+        const st=playerHistory?.getStore?.()||{};return {total:logs.length,user:mine.length,season:st.season,processed:Object.keys(st.processedMatches||{}).length,hasPH:!!playerHistory,club:userClub,div:userDivision,userRounds:mine.map(l=>`${l.competition}#${l.round}#${l.leg||""} ${l.home} x ${l.away} p${(l.players||[]).length}`),userProcessed:Object.keys(st.processedMatches||{}).filter(k=>k.includes(userClub)).slice(0,40)};
+      },
       // QA: simula lesão com decisão médica pós-jogo, com o caixa no valor informado.
       qaMedicalCase:(cash=-300000)=>{
         const club=clubs[userClub];

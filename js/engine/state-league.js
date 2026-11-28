@@ -464,6 +464,9 @@ export function createStateLeagueEngine() {
                 away: [...(userLiveGame.goals.away || [])],
               };
             }
+            // O jogo do usuário fica fora da simulação da rodada (skipUserClub):
+            // grava aqui o relatório (notas, estatísticas, artilharia) dele.
+            if (typeof recordLeaders === 'function') recordLeaders(target);
           }
         }
         const results = simulateDivisionRound(competition, round, simulateMatch, {

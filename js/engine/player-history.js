@@ -615,6 +615,20 @@ export function backfillClubSeasonMatchLogs(
  * @param {number|null} season
  * @param {number} [max]
  */
+/** Relatórios dos jogos do próprio usuário nunca são descartados na temporada. */
+export const MAX_PINNED_USER_LOGS = 160;
+const isPinnedLog = entry => entry?.user === true;
+
+/** Só os relatórios fixos (jogos do usuário) da temporada. */
+export function keepPinnedMatchLogs(logs, season = null) {
+  let next = Array.isArray(logs) ? logs.filter(isPinnedLog) : [];
+  if (season != null && Number.isFinite(Number(season))) {
+    const year = Number(season);
+    next = next.filter(entry => Number(entry.season) === year);
+  }
+  return next.length > MAX_PINNED_USER_LOGS ? next.slice(next.length - MAX_PINNED_USER_LOGS) : next;
+}
+
 export function pruneMatchLogsForSeason(
   logs,
   season,
@@ -625,9 +639,12 @@ export function pruneMatchLogsForSeason(
     const year = Number(season);
     next = next.filter(entry => Number(entry.season) === year);
   }
+  const pinned = new Set(keepPinnedMatchLogs(next));
+  const others = next.filter(entry => !pinned.has(entry));
   const cap = Math.max(1, Math.floor(Number(max) || PLAYER_HISTORY_LIMITS.maxMatchLogsPerSeason));
-  if (next.length <= cap) return next;
-  return next.slice(next.length - cap);
+  const keptOthers = new Set(others.length <= cap ? others : others.slice(others.length - cap));
+  // Mantém a ordem original; o limite vale só para os jogos de outros clubes.
+  return next.filter(entry => pinned.has(entry) || keptOthers.has(entry));
 }
 
 function pruneArchives(archives, max = PLAYER_HISTORY_LIMITS.maxSeasonArchives) {
@@ -662,6 +679,33 @@ function stampSeasonAverages(players, year) {
     const avg = seasonAverageRating(bucket);
     if (avg != null) bucket.avgRating = avg;
   });
+}
+
+function slimLogGoals(goals) {
+  const one = goal => ({
+    name: goal?.name || goal?.player || '',
+    minute: Number(goal?.minute) || 0,
+    ...(Number(goal?.stoppage) ? { stoppage: Number(goal.stoppage) } : {}),
+    ...(goal?.type ? { type: goal.type } : {}),
+    ...(goal?.assist ? { assist: goal.assist } : {}),
+  });
+  return {
+    home: Array.isArray(goals?.home) ? goals.home.map(one) : [],
+    away: Array.isArray(goals?.away) ? goals.away.map(one) : [],
+  };
+}
+
+function slimLogIncidents(incidents) {
+  if (!Array.isArray(incidents)) return [];
+  return incidents
+    .filter(item => item && ['yellow', 'red', 'substitution', 'injury', 'penalty-miss'].includes(item.type) && (item.side === 'home' || item.side === 'away'))
+    .map(item => ({
+      type: item.type,
+      side: item.side,
+      minute: Number(item.minute) || 0,
+      ...(Number(item.stoppage) ? { stoppage: Number(item.stoppage) } : {}),
+      name: item.name || '',
+    }));
 }
 
 function slimLogPlayer(sheet) {
@@ -741,7 +785,7 @@ export function loadPlayerHistoryStore() {
       store.seasonArchives = pruneArchives(store.seasonArchives, 4);
     }
   } catch {
-    store.matchLogs = [];
+    store.matchLogs = keepPinnedMatchLogs(store.matchLogs, season);
   }
   return migrateCompetitionBuckets(store);
 }
@@ -791,8 +835,8 @@ export function savePlayerHistoryStore(store, options = {}) {
   );
   ok = writeJson(SAVE_KEYS.playerHistory, payload);
   if (ok) return applyOk(payload);
-  // Ainda cheio: zera logs + arquivos de temporada.
-  payload.matchLogs = [];
+  // Ainda cheio: zera logs (menos os jogos do usuário) + arquivos de temporada.
+  payload.matchLogs = keepPinnedMatchLogs(payload.matchLogs, store.season ?? null);
   payload.seasonArchives = [];
   ok = writeJson(SAVE_KEYS.playerHistory, payload);
   if (ok) return applyOk(payload);
@@ -861,7 +905,7 @@ export function createPlayerHistoryEngine(deps = {}) {
     });
 
     if (pressure.level === 'critical') {
-      store.matchLogs = [];
+      store.matchLogs = keepPinnedMatchLogs(store.matchLogs, store.season ?? null);
       store.seasonArchives = pruneArchives(store.seasonArchives, 2);
     } else if (pressure.level === 'warn') {
       store.matchLogs = pruneMatchLogsForSeason(
@@ -972,6 +1016,11 @@ export function createPlayerHistoryEngine(deps = {}) {
       data: game.data && typeof game.data === 'object' ? { ...game.data } : null,
       players: allSheets.map(slimLogPlayer),
     };
+    if (meta.userMatch) {
+      log.user = true;
+      log.goals = slimLogGoals(game.goals);
+      log.incidents = slimLogIncidents(meta.incidents);
+    }
     if (!meta.apiOnly) {
       if (duplicateIndex >= 0) store.matchLogs[duplicateIndex] = log;
       else store.matchLogs.push(log);
