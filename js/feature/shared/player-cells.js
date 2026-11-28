@@ -1,4 +1,5 @@
 import { clamp } from '../../ui/dom.js';
+import { eventIconHtml } from '../../core/event-icons.js';
 import { playerDisplayName } from '../../engine/player-display-names.js';
 import { resolvePlayerId } from '../../engine/player-identity.js';
 import { isPenaltySavingSpecialist, isSetPieceSpecialist, setPieceSpecialistTitle, isCraque, isDestaque } from '../../engine/player-generation.js';
@@ -92,6 +93,10 @@ export function createPlayerCells({
     userLeagueDisciplineKey?.() ||
     'LEAGUE:A';
 
+  // Selos de status com o conjunto único de ícones (js/core/event-icons.js).
+  const statusIcon = (kind, extraClass, title) =>
+    eventIconHtml(kind, { size: 16, className: `player-badge ${extraClass}`, label: title, attrs: `title="${escapeAttr(title)}"` });
+
   const playerStatusBadges = (player, liveState = null, options = {}) => {
     const { allCompetitions = false } = options;
     const parts = [];
@@ -108,9 +113,7 @@ export function createPlayerCells({
             `${entry.gamesRemaining} jogo${entry.gamesRemaining === 1 ? '' : 's'} · ${competitionLabel?.(entry.competitionKey) || entry.competitionKey}`,
         )
         .join('; ');
-      parts.push(
-        `<i class="player-badge player-badge-suspended" aria-hidden="true" title="Suspenso: ${summary}"></i>`,
-      );
+      parts.push(statusIcon('suspended', 'player-badge-suspended', `Suspenso: ${summary}`));
     }
 
     const injury = player?.injury;
@@ -119,29 +122,21 @@ export function createPlayerCells({
       const severity = injury.severity || injurySeverityLabel(grade);
       const tone = grade >= 3 ? 'severe' : grade === 2 ? 'moderate' : 'mild';
       const legend = buildInjuryLegend(injury);
-      parts.push(
-        `<i class="player-badge player-badge-injury ${tone}" aria-hidden="true" title="${escapeAttr(legend || `Lesão ${severity}`)}"></i>`,
-      );
+      parts.push(statusIcon(tone === 'mild' ? 'knock' : 'injury', `player-badge-injury ${tone}`, legend || `Lesão ${severity}`));
     }
 
     if (hasMatchOverlay(liveState)) {
       if (liveState.red) {
-        parts.push('<i class="player-badge player-badge-red" aria-hidden="true" title="Vermelho nesta partida"></i>');
+        parts.push(statusIcon('red', 'player-badge-red', 'Vermelho nesta partida'));
       } else if (liveState.yellow) {
         const title = 'Amarelo nesta partida';
         // Na partida: no máx. 1 pip de overlay (já advertido hoje).
-        parts.push(
-          `<i class="player-badge player-badge-yellow player-badge-yellow-match" aria-hidden="true" title="${title}"></i>`,
-        );
+        parts.push(statusIcon('yellow', 'player-badge-yellow player-badge-yellow-match', title));
       }
       if (liveState.injured) {
-        parts.push(
-          '<i class="player-badge player-badge-injury severe" aria-hidden="true" title="Lesionado nesta partida"></i>',
-        );
+        parts.push(statusIcon('injury', 'player-badge-injury severe', 'Lesionado nesta partida'));
       } else if (liveState.playThroughRisk) {
-        parts.push(
-          '<i class="player-badge player-badge-injury mild" aria-hidden="true" title="Incômodo físico nesta partida"></i>',
-        );
+        parts.push(statusIcon('knock', 'player-badge-injury mild', 'Incômodo físico nesta partida'));
       }
     }
 

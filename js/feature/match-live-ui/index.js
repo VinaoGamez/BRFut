@@ -19,7 +19,7 @@ import {
   toChartMinute,
   chartSpan,
 } from '../../engine/match-clock.js';
-import { eventIconSvg, EVENT_ICON_SIZE } from '../../core/event-icons.js';
+import { eventIconSvg, eventIconHtml, EVENT_ICON_SIZE } from '../../core/event-icons.js';
 
 /**
  * Fatia de UI da partida ao vivo — modal do adversário, relógio, placar,
@@ -763,19 +763,35 @@ export function createMatchLiveUiFeature(deps) {
     renderVolume();
   };
 
+  // Mesmo ícone do Volume de jogo nas linhas de lance da narração.
+  const timelineIconKind = (type, text) => {
+    const tokens = String(type || '').split(/\s+/);
+    const plain = String(text || '').replace(/<[^>]*>/g, ' ');
+    if (tokens.includes('goal')) return /contra/i.test(plain) ? 'own-goal' : /p[eê]nalti/i.test(plain) ? 'penalty-goal' : 'goal';
+    if (tokens.includes('red')) return /segundo amarelo/i.test(plain) ? 'second-yellow' : 'red';
+    if (tokens.includes('yellow')) return 'yellow';
+    if (tokens.includes('injury-substitution') || tokens.includes('substitution')) return 'substitution';
+    if (tokens.includes('injury')) return 'injury';
+    if (tokens.includes('discomfort')) return 'knock';
+    if (tokens.includes('shootout-miss')) return 'penalty-miss';
+    return '';
+  };
+
   const log = (text, type = '', side = null) => {
     if (!shouldShowTimeline(text, type)) return;
     const calendarSide = toCalendarSide(side) || toCalendarSide(inferEngineSide(text));
     const badge = teamBadgeHtml(calendarSide);
     const sideClass = calendarSide ? ` tl-side-${calendarSide}` : '';
     const typeClass = type ? ` ${type}` : '';
+    const tlIcon = timelineIconKind(type, text);
+    const iconHtml = tlIcon ? eventIconHtml(tlIcon, { size: EVENT_ICON_SIZE.report, className: 'tl-icon' }) : '';
     const minuteLabel = formatMatchMinuteLabel(
       getMinute(),
       getStoppageActive?.() ? Number(getStoppageElapsed?.() || 0) : 0,
     ); // timeline só marca +N enquanto o acréscimo está rolando
     timeline.insertAdjacentHTML(
       'beforeend',
-      `<p class="tl-event${typeClass}${sideClass}">${badge}<span class="tl-min">${minuteLabel}'</span><span class="tl-body">${text}</span></p>`,
+      `<p class="tl-event${typeClass}${sideClass}">${badge}<span class="tl-min">${minuteLabel}'</span>${iconHtml}<span class="tl-body">${text}</span></p>`,
     );
     while (timeline.children.length > MEMORY_LIMITS.liveTimeline) timeline.removeChild(timeline.firstChild);
     timeline.scrollTop = timeline.scrollHeight;

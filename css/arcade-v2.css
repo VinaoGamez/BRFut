@@ -7871,19 +7871,26 @@ html body .live-volume-legend .lg-penalty-miss { background-image: url('../asset
 html body .live-volume-legend .lg-yellow { background-image: url('../assets/ui/icons/yellow.webp') !important; }
 html body .live-volume-legend .lg-red { background-image: url('../assets/ui/icons/red.webp') !important; }
 html body .live-volume-legend .lg-injury { background-image: url('../assets/ui/icons/injury.webp') !important; }
-/* Selos de status do jogador (elenco, escalação, cartão do jogador) */
-html body :is(.player-badge-yellow, .player-badge-red, .player-badge-suspended, .player-badge-injury) {
-  width: 16px !important; height: 16px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
-  background: transparent center / contain no-repeat !important; filter: none !important;
+/* Selos de status do jogador (elenco, escalação, substituições, cartão do jogador):
+   <img class="bf-ev-icon player-badge ..."> do conjunto único de ícones. */
+html body .player-status-badges { display: inline-flex !important; align-items: center; gap: 3px; flex: none; }
+html body img.bf-ev-icon.player-badge {
+  width: 16px !important; height: 16px !important; min-width: 16px; margin: 0 !important; padding: 0 !important;
+  border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: none !important;
+  filter: drop-shadow(0 1px 1px #0009) !important; outline: 0 !important; transform: none !important;
 }
-html body :is(.player-badge-suspended, .player-badge-injury)::before,
-html body :is(.player-badge-suspended, .player-badge-injury)::after { display: none !important; }
-html body .player-badge-yellow { background-image: url('../assets/ui/icons/yellow.webp') !important; }
-html body .player-badge-red { background-image: url('../assets/ui/icons/red.webp') !important; }
-html body .player-badge-suspended { background-image: url('../assets/ui/icons/suspended.webp') !important; }
-html body .player-badge-injury { background-image: url('../assets/ui/icons/injury.webp') !important; }
-html body .player-badge-injury.mild { background-image: url('../assets/ui/icons/knock.webp') !important; }
-html body .player-badge-yellow-match { outline: 1px solid #EAF2FF88; outline-offset: 1px; }
+/* Campinho tático: selo no canto do card do jogador */
+html body .tactical-board .board-player img.bf-ev-icon.board-badge {
+  position: absolute !important; top: -6px !important; right: 2px !important; left: auto !important;
+  width: 18px !important; height: 18px !important; margin: 0 !important; border: 0 !important; background: none !important;
+  pointer-events: none; z-index: 4; filter: drop-shadow(0 1px 2px #000c) !important;
+}
+html body .tactical-board .board-player img.bf-ev-icon.board-badge + img.bf-ev-icon.board-badge { right: 20px !important; }
+html body .tactical-board .board-badge::after { content: none !important; display: none !important; }
+/* Legenda do campinho (bl2) */
+html body .board-stack .board-legend.bl2 { display: flex !important; flex-wrap: wrap; gap: 8px 16px !important; padding: 8px 4px !important; font: 500 12px "DM Sans", sans-serif !important; }
+html body .board-legend.bl2 span { display: inline-flex !important; align-items: center; gap: 6px; }
+html body .board-legend.bl2 img.board-legend-icon { width: 16px !important; height: 16px !important; }
 /* Relatório: ícones de lance e da nota */
 html body #calendarMatchReportModal .match-report-events { display: inline-flex; align-items: center; gap: 3px; }
 html body #calendarMatchReportModal .mr2-ev-icon { width: 22px !important; height: 22px !important; background: none !important; margin: 0 !important; display: grid; place-items: center; }
@@ -8460,3 +8467,9 @@ html.is-mobile body :is(#competitionRulesModal, #rosterContractModal, #transferH
 html body .modal:not(#matchModal):not(#playerCardModal) .modal-card.av2 footer.av2-foot button#officeBankLoanBorrowDeny { background: transparent !important; color: var(--av-ink) !important; box-shadow: inset 0 0 0 1px var(--av-line) !important; border: 0 !important; }
 html body .modal:not(#matchModal):not(#playerCardModal) .modal-card.av2 footer.av2-foot :is(button#officeBankLoanBorrowConfirm, button#officeBankLoanInfoDismiss) { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -3px var(--av-lime-edge) !important; border: 0 !important; }
 html body :is(#officeBankLoanBorrowModal, #officeBankLoanInfoModal) .av2 button.av2-btn { min-height: 0 !important; padding: 10px 20px !important; border-radius: 0 !important; transform: none !important; font: italic 900 12px var(--av-display) !important; letter-spacing: .05em !important; clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%); width: auto !important; }
+/* Narração ao vivo: ícone do lance antes do texto */
+html body .timeline p.tl-event img.bf-ev-icon.tl-icon { width: 20px !important; height: 20px !important; flex: none; margin-top: -1px; filter: drop-shadow(0 1px 1px #0008); }
+/* Substituições: coluna de cansaço cabe barra + "100%" sem cortar */
+html body #matchModal :is(.substitution-player-head, button.substitution-player-row) { grid-template-columns: 30px 24px minmax(80px, 1fr) 24px 62px !important; column-gap: 5px !important; }
+html body #matchModal button.substitution-player-row .sub-fatigue-col .roster-fatigue--compact i { width: 26px !important; }
+html body #matchModal button.substitution-player-row .sub-fatigue-col { justify-content: flex-start; overflow: visible; }

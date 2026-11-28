@@ -1,4 +1,5 @@
 import { MODULE_VERSIONS } from '../../core/constants.js';
+import { eventIconHtml } from '../../core/event-icons.js';
 import { clamp, on, onClick } from '../../ui/dom.js';
 import { bindBoardRosterHover, setBoardSlotHighlight } from '../../ui/board-roster-hover.js';
 import { rosterFatigueCell, positionLine, boardCardMarkup } from '../shared/player-cells.js';
@@ -151,11 +152,24 @@ export function createTacticsFeature(deps) {
 
   const boardPlayerBadges = ({ yellow, injured, atRisk }) => {
     const badges = [];
-    if (yellow) badges.push('<em class="board-badge board-badge-yellow" aria-hidden="true"></em>');
-    if (injured) badges.push('<em class="board-badge board-badge-injury" aria-hidden="true"></em>');
-    else if (atRisk) badges.push('<em class="board-badge board-badge-risk" aria-hidden="true"></em>');
+    const icon = (kind, cls, label) => eventIconHtml(kind, { size: 16, className: `board-badge ${cls}`, label });
+    if (yellow) badges.push(icon('yellow', 'board-badge-yellow', 'Amarelo'));
+    if (injured) badges.push(icon('injury', 'board-badge-injury', 'Lesão'));
+    else if (atRisk) badges.push(icon('knock', 'board-badge-risk', 'Incômodo'));
     return badges.join('');
   };
+
+  // Legenda com o mesmo conjunto de ícones do Volume de jogo / súmula.
+  const BOARD_LEGEND_ITEMS = [
+    ['yellow', 'Amarelo'],
+    ['injury', 'Lesão'],
+    ['knock', 'Incômodo'],
+    ['suspended', 'Suspenso'],
+    ['red', 'Expulso'],
+  ];
+  const BOARD_LEGEND_HTML = `<div class="board-legend bl2" aria-hidden="true">${BOARD_LEGEND_ITEMS.map(
+    ([kind, label]) => `<span>${eventIconHtml(kind, { size: 16, className: 'board-legend-icon' })}${label}</span>`
+  ).join('')}</div>`;
 
   const ensureBoardLegend = board => {
     if (!board) return;
@@ -166,31 +180,14 @@ export function createTacticsFeature(deps) {
       board.parentNode?.insertBefore(stack, board);
       stack.appendChild(board);
     }
-    const existing = stack.querySelector('.board-legend') || board.querySelector('.board-legend');
-    if (existing) {
-      if (existing.parentElement !== stack) stack.appendChild(existing);
-      existing.querySelectorAll('span').forEach(span => {
-        if (span.textContent.trim() === 'Vaga') {
-          const dot = span.querySelector('i');
-          span.textContent = '';
-          if (dot) span.appendChild(dot);
-          span.append('Expulso');
-        }
-      });
-      const labels = [...existing.querySelectorAll('span')].map(span => span.textContent.trim());
-      if (!labels.includes('Suspenso')) {
-        const vacant = [...existing.querySelectorAll('span')].find(span => span.textContent.trim() === 'Expulso');
-        const html =
-          '<span><i class="board-legend-dot board-legend-suspended"></i>Suspenso</span>';
-        if (vacant) vacant.insertAdjacentHTML('beforebegin', html);
-        else existing.insertAdjacentHTML('beforeend', html);
-      }
+    const legends = [...stack.querySelectorAll('.board-legend'), ...board.querySelectorAll('.board-legend')];
+    const current = legends.find(el => el.classList.contains('bl2'));
+    legends.forEach(el => { if (el !== current) el.remove(); });
+    if (current) {
+      if (current.parentElement !== stack) stack.appendChild(current);
       return;
     }
-    stack.insertAdjacentHTML(
-      'beforeend',
-      '<div class="board-legend" aria-hidden="true"><span><i class="board-legend-card board-legend-yellow"></i>Amarelo</span><span><i class="board-legend-dot board-legend-injury"></i>Lesão</span><span><i class="board-legend-dot board-legend-risk"></i>Incômodo</span><span><i class="board-legend-dot board-legend-suspended"></i>Suspenso</span><span><i class="board-legend-dot board-legend-vacant"></i>Expulso</span></div>'
-    );
+    stack.insertAdjacentHTML('beforeend', BOARD_LEGEND_HTML);
   };
 
   const lineupEditingUnlocked = () => {
