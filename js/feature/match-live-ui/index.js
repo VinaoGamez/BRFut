@@ -766,6 +766,21 @@ export function createMatchLiveUiFeature(deps) {
   const score = () => {
     const { home: homeGoals, away: awayGoals } = getScores();
     $('#score').textContent = `${homeGoals} — ${awayGoals}`;
+    // Volta de mata-mata: placar agregado logo abaixo do placar do jogo.
+    const agg = typeof deps.getAggregate === 'function' ? deps.getAggregate() : null;
+    let aggEl = document.getElementById('liveAggregate');
+    if (agg) {
+      if (!aggEl) {
+        $('#score')?.insertAdjacentHTML('afterend', '<p id="liveAggregate" class="live-aggregate"></p>');
+        aggEl = document.getElementById('liveAggregate');
+      }
+      const lead = agg.home === agg.away ? 'even' : agg.home > agg.away ? 'home' : 'away';
+      aggEl.dataset.lead = lead;
+      aggEl.innerHTML = `<small>AGREGADO</small><b>${agg.home} — ${agg.away}</b><em title="${agg.firstLabel}">Ida ${agg.firstHome}–${agg.firstAway}</em>`;
+      aggEl.hidden = false;
+    } else if (aggEl) {
+      aggEl.hidden = true;
+    }
     updateClock();
     renderScorers();
     renderVolume();

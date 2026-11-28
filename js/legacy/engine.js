@@ -9,6 +9,7 @@ import { createInternationalRuntime } from '../engine/international-runtime.js';
 import { storage as brfutStorage } from '../core/storage-backend.js';
 import { $, $$, on, onClick, redirectGame, clamp, cleanCareerText } from '../ui/dom.js';
 import { clubLabelHtml, clubCrestTitleHtml } from '../ui/club-label.js';
+import { statCompareRow } from '../feature/shared/stat-compare.js';
 import { applyTeamCrestToElement, teamCrestHtml, clubCrestInitials as teamCrestInitials } from '../ui/team-crest.js';
 import { bindBoardRosterHover } from '../ui/board-roster-hover.js';
 import { createHeaderGuideRenderer } from '../ui/header-guide.js';
@@ -4728,6 +4729,35 @@ export async function bootEngine({
       return{upcoming,groupTag:letter?`GRUPO ${letter}`:'COPA',groupLine,groupNote};
     },
   });
+  /** Ida do confronto de mata-mata (para o placar agregado da volta). */
+  function firstLegForGame(game){
+    if(!game||game.leg!=='VOLTA')return null;
+    const reversed=g=>g&&g!==game&&g.home===game.away&&g.away===game.home&&g.homeGoals!=null&&g.awayGoals!=null;
+    const strict=g=>reversed(g)&&(g.leg==='IDA'||(game.tieId!=null&&g.tieId===game.tieId));
+    const pools=[];
+    try{if(game.tieId&&conmebolRuntime?.tieGames)pools.push(conmebolRuntime.tieGames(game));}catch{/* sem conmebol */}
+    pools.push(copaDoBrasilFixtures);
+    try{pools.push(stateLeagueEngine.allFixturesFlat?.()||[]);}catch{/* sem estadual */}
+    ['A','B','C','D'].forEach(d=>(nationalCompetitions[d]?.fixtures||[]).forEach(r=>{if(Array.isArray(r))pools.push(r);}));
+    for(const pool of pools){const hit=(pool||[]).find(strict);if(hit)return hit;}
+    // Histórico compacto (sem "leg"): só a rodada imediatamente anterior.
+    const round=Number(game.round)||0;
+    const histories=[seasonRoundHistory,...Object.values(competitionRoundHistory||{})];
+    for(const list of histories){
+      const entry=(list||[]).find(item=>Number(item?.round)===round-1);
+      const hit=(entry?.games||[]).find(reversed);
+      if(hit)return hit;
+    }
+    return null;
+  }
+  /** Agregado do jogo de volta ao vivo, orientado ao mandante deste jogo. */
+  function liveAggregateFor(game,score){
+    const first=firstLegForGame(game);
+    if(!first)return null;
+    const home=(Number(first.awayGoals)||0)+(Number(score?.home)||0);
+    const away=(Number(first.homeGoals)||0)+(Number(score?.away)||0);
+    return{home,away,firstHome:Number(first.awayGoals)||0,firstAway:Number(first.homeGoals)||0,firstLabel:`${first.home} ${first.homeGoals}–${first.awayGoals} ${first.away}`};
+  }
   /** Central v2: pendências (até 3) e tiles de classificação, moral e diretoria. */
   /** Pós-jogo pendente de qualquer competição: espelha o placar final nas tabelas antes do AVANÇAR gravar. */
   function overlayPendingLiveGames(games){
@@ -5106,6 +5136,7 @@ export async function bootEngine({
     getSecondHalfStarted:()=>secondHalfStarted,
     getShootoutState:()=>shootoutState,
     getScores:()=>calendarLiveScores(),
+    getAggregate:()=>{try{return liveMatchGame?liveAggregateFor(liveMatchGame,calendarLiveScores()):null;}catch{return null;}},
     getGoals:()=>calendarLiveSideGoals(),
     getVolumeSamples:()=>liveVolumeSamples,
     getVolumeIncidents:()=>calendarLiveVolumeIncidents(),
@@ -6428,8 +6459,17 @@ export async function bootEngine({
     recordLiveVolumeSample();
     const {home:h,away:a}=calendarLiveSideStats(),{home:hp,away:ap}=calendarPossessionPair();
     const rows = [['Posse de bola',`${hp}%`,`${ap}%`,'possession'],['Passes','','','group'],['Total de Passes',h.passes,a.passes],['% passes certos',percent(h.accurate,h.passes),percent(a.accurate,a.passes)],['Passes errados',h.passes-h.accurate,a.passes-a.accurate],['Ataque','','','group'],['Finalizações',h.shots,a.shots],['Para Fora',h.off,a.off],['No Gol',h.on,a.on],['Defendidas',h.saved,a.saved],['Pênaltis marcados',h.penalties,a.penalties],['Escanteios',h.corners,a.corners],['Impedimentos',h.offsides,a.offsides],['Defesa','','','group'],['Defesas do Goleiro',h.keeperSaves,a.keeperSaves],['Desarmes',h.tackles,a.tackles],['Faltas Cometidas',h.fouls,a.fouls],['Cartões Amarelos',h.yellow,a.yellow,'yellow'],['Cartões Vermelhos',h.red,a.red,'red']];
-    const statsBody=rows.map(r => r[3] === 'group' ? `<div class="stat-group">${r[0]}</div>` : `<div class="stat ${r[3] || ''}"><span>${r[1]}</span><span>${r[0]}</span><span>${r[2]}</span></div>`).join('');
-    $('#stats').innerHTML=statsBody;
+    // Mesmo visual do pós-jogo: barras de comparação, agrupadas lado a lado (sem rolagem).
+    const groups=[];
+    let possession='';
+    rows.forEach(r=>{
+      if(r[3]==='possession'){possession=statCompareRow([r[0],r[1],r[2],'possession']);return;}
+      if(r[3]==='group'){groups.push({title:r[0],rows:[]});return;}
+      groups.at(-1)?.rows.push(statCompareRow(r));
+    });
+    const sides=liveMatchGame||nextUserGame;
+    const homeName=sides?.home||userClub,awayName=sides?.away||'';
+    $('#stats').innerHTML=`<section class="final-basic pm2-stats is-live"><div class="pm2-cmp-teams"><span>${homeName}</span><span>${awayName}</span></div>${possession}<div class="pm2-live-groups">${groups.map(group=>`<div class="pm2-live-group"><h4>${group.title}</h4>${group.rows.join('')}</div>`).join('')}</div></section>`;
     renderLiveOpponent?.();
     matchLiveUi.refreshMatchFeed?.();
     scheduleLiveMatchPersist();
@@ -6619,7 +6659,15 @@ export async function bootEngine({
       const renda=(venueText.match(/Renda\s+(R\$\s*[\d.,]+\s*(?:mil|mi)?)/i)||[])[1]||'';
       const crowd=(venueText.match(/([\d.]+)\s*·\s*\d+%/)||[])[1]||'';
       const occupancy=(venueText.match(/[\d.]+\s*·\s*(\d+)%/)||[])[1]||'';
-      return{result,forGoals,againstGoals,userIsHome,star:star?{name:star.name,pos:star.pos,rating:star.rating,goals:star.goals||0,assists:star.assists||0}:null,teamAverage:avg,renda,crowd,occupancy,shootout:shoot?liveMatchGame.shootoutPenalties||'':''};
+      // Volta de mata-mata: agregado e quem avança (pênaltis desempatam).
+      let aggregate=null;
+      const agg=liveAggregateFor(liveMatchGame,{home:homeGoals,away:awayGoals});
+      if(agg){
+        const aggFor=userIsHome?agg.home:agg.away,aggAgainst=userIsHome?agg.away:agg.home;
+        const qualified=aggFor>aggAgainst?true:aggFor<aggAgainst?false:(shoot?shoot===liveMatchGame[side]:null);
+        aggregate={home:agg.home,away:agg.away,forGoals:aggFor,againstGoals:aggAgainst,qualified};
+      }
+      return{aggregate,result,forGoals,againstGoals,userIsHome,star:star?{name:star.name,pos:star.pos,rating:star.rating,goals:star.goals||0,assists:star.assists||0}:null,teamAverage:avg,renda,crowd,occupancy,shootout:shoot?liveMatchGame.shootoutPenalties||'':''};
     }catch(error){
       console.warn('[brfut] pós-jogo v2',error);
       return null;
@@ -7022,6 +7070,11 @@ export async function bootEngine({
           return{title:`CLASSIFICAÇÃO · GRUPO ${letter}`,rows,more:'2 primeiros avançam · 8 melhores 3º também'};
         }
         if(division==='D'&&round<=10)return{title:`CLASSIFICAÇÃO · GRUPO A${group+1}`,rows:seriesDGroupRows(group)};
+        // Mata-mata da Série D: a tabela única não existe no regulamento — mostra o grupo do clube na 1ª fase.
+        if(division==='D'){
+          const userGroup=Math.max(0,Number(userSerieDGroupIndex)||0);
+          return{title:`1ª FASE · GRUPO A${userGroup+1}`,rows:seriesDGroupRows(userGroup),more:'Classificação final da fase de grupos'};
+        }
         if(['A','B','C','D'].includes(division)){
           const source=division===userDivision?leagueData:(nationalCompetitions[division]?.standings||[]);
           const rows=[...source].sort((a,b)=>(b.points||0)-(a.points||0)||(b.wins||0)-(a.wins||0)||(b.goalDiff||0)-(a.goalDiff||0));

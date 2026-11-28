@@ -1,3 +1,4 @@
+import { statCompareRow } from '../shared/stat-compare.js';
 import { MODULE_VERSIONS } from '../../core/constants.js';
 
 /**
@@ -186,13 +187,7 @@ export function createMatchLiveSessionFeature(deps) {
     const homeClub = (liveMatchGame || nextUserGame)?.home || userClub, awayClub = (liveMatchGame || nextUserGame)?.away || club.name;
     // Pós-jogo v2: gols já aparecem embaixo de cada time no placar; aqui ficam
     // as estatísticas em barras de comparação (mandante × visitante).
-    const num = value => Number(String(value ?? '').replace(/[^\d.,-]/g, '').replace(',', '.')) || 0;
-    const cmpRow = ([label, homeValue, awayValue]) => {
-      const hv = num(homeValue), av = num(awayValue), total = hv + av;
-      const hShare = total ? (hv / total) * 100 : 50;
-      const lead = hv === av ? 'even' : hv > av ? 'home' : 'away';
-      return `<div class="stat pm2-cmp" data-lead="${lead}"><strong class="pm2-cmp-home">${homeValue}</strong><span class="pm2-cmp-mid"><small>${label}</small><i class="pm2-cmp-bar"><b class="is-home" style="width:${hShare}%"></b><b class="is-away" style="width:${100 - hShare}%"></b></i></span><strong class="pm2-cmp-away">${awayValue}</strong></div>`;
-    };
+    const cmpRow = row => statCompareRow(row);
     $('#stats').innerHTML = `<section class="final-basic pm2-stats"><h3 class="pm2-h">ESTATÍSTICAS</h3><div class="pm2-cmp-teams"><span>${escHtml(homeClub)}</span><span>${escHtml(awayClub)}</span></div>${rows.map(cmpRow).join('')}</section>${shootoutSection}${injurySection}`;
     $('#stats').classList.remove('hidden');
     if (!processMedical) return;
@@ -255,12 +250,15 @@ export function createMatchLiveSessionFeature(deps) {
       score.after(hero);
     }
     card.classList.add('has-post-match');
-    const label = summary.result === 'V' ? 'VITÓRIA!' : summary.result === 'D' ? 'DERROTA' : 'EMPATE';
-    const tone = summary.result === 'V' ? 'win' : summary.result === 'D' ? 'loss' : 'draw';
+    const agg = summary.aggregate || null;
+    const decided = agg && agg.qualified != null;
+    const label = decided ? (agg.qualified ? 'CLASSIFICADO!' : 'ELIMINADO') : summary.result === 'V' ? 'VITÓRIA!' : summary.result === 'D' ? 'DERROTA' : 'EMPATE';
+    const tone = decided ? (agg.qualified ? 'win' : 'loss') : summary.result === 'V' ? 'win' : summary.result === 'D' ? 'loss' : 'draw';
     card.dataset.postResult = tone;
     const star = summary.star;
     const starLine = star ? [star.goals ? `${star.goals} gol${star.goals > 1 ? 's' : ''}` : '', star.assists ? `${star.assists} assist.` : ''].filter(Boolean).join(' · ') : '';
     const tiles = [
+      agg ? { label: 'Agregado', value: `${agg.home} — ${agg.away}`, sub: decided ? (agg.qualified ? 'Avança de fase' : 'Fora da competição') : 'Decisão nos pênaltis', tone: decided ? (agg.qualified ? 'lime' : 'red') : '' } : null,
       { label: 'Nota do time', value: summary.teamAverage ? summary.teamAverage.toFixed(1).replace('.', ',') : '—', tone: 'lime' },
       summary.crowd ? { label: 'Público', value: summary.crowd, sub: summary.occupancy ? `${summary.occupancy}% do estádio` : '' } : null,
       summary.userIsHome && summary.renda ? { label: 'Bilheteria', value: summary.renda.replace(/^R\$\s*/, 'R$ '), money: true } : null,

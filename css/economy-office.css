@@ -2,10 +2,10 @@
 .office-view .office-layout{display:grid;grid-template-columns:minmax(260px,1.05fr) minmax(220px,.85fr) minmax(240px,1fr);gap:16px;align-items:stretch}
 .office-view .office-ledger,.office-view .office-sponsors,.office-view .office-radar{grid-column:1 / -1}
 .office-radar{display:flex;flex-direction:column;min-height:0;padding:16px 20px 14px;gap:0}
-.office-radar>label{display:block;margin:0 0 12px;color:#2abee9;font:700 11px DM Sans,sans-serif;letter-spacing:.6px}
+.office-radar>label{display:block;margin:0 0 12px;color:#2abee9;font:700 12px DM Sans,sans-serif;letter-spacing:.6px}
 .office-radar-body{display:flex;flex-direction:column;min-height:0}
 .office-balance-bar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center}
-.office-balance-end{font:700 12px DM Sans,sans-serif;letter-spacing:.5px;white-space:nowrap}
+.office-balance-end{font:700 13px DM Sans,sans-serif;letter-spacing:.5px;white-space:nowrap}
 .office-balance-end.is-cost{color:#ff8c94}
 .office-balance-end.is-rev{color:#b6ff38}
 .office-balance-track{position:relative;height:14px;border-radius:99px;background:#0a1820;box-shadow:inset 0 0 0 1px #1e4a5c88;overflow:visible}
@@ -17,7 +17,7 @@
 .office-balance-bar[data-tone="risk"] .office-balance-end.is-cost{color:#ffb0b6}
 .office-balance-bar[data-tone="good"] .office-balance-end.is-rev{color:#d4ff6a}
 .office-budget-card,.economy-investments,.office-ledger,.office-sponsors,.office-bank-loan,.stadium-summary-card,.stadium-upgrades,.stadium-tickets{display:flex;flex-direction:column;min-height:0;padding:18px 20px}
-.office-budget-card>label,.office-budget-col>label,.economy-investments>label,.office-ledger>label,.office-sponsors>label,.office-bank-loan>label,.stadium-summary-card>label,.stadium-upgrades>label,.stadium-tickets>label{display:block;margin:0 0 14px;color:#2abee9;font:700 11px DM Sans,sans-serif;letter-spacing:.6px}
+.office-budget-card>label,.office-budget-col>label,.economy-investments>label,.office-ledger>label,.office-sponsors>label,.office-bank-loan>label,.stadium-summary-card>label,.stadium-upgrades>label,.stadium-tickets>label{display:block;margin:0 0 14px;color:#2abee9;font:700 12px DM Sans,sans-serif;letter-spacing:.6px}
 .office-budget-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 24px;align-items:stretch;margin-bottom:14px;min-height:148px}
 .office-budget-col{display:flex;flex-direction:column;min-width:0;min-height:0}
 .office-budget-col>label{margin-bottom:10px;flex-shrink:0}
@@ -26,29 +26,29 @@
 .office-season-goal-gauge{display:flex;align-items:center;justify-content:center;width:100%;max-width:100%;min-height:0;transform:scale(.92);transform-origin:center center}
 .office-season-goal-gauge:empty{display:none}
 .office-objectives-section{display:grid;gap:10px;margin-top:auto}
-.office-objectives-section>label{display:block;margin:0;color:#2abee9;font:700 11px DM Sans,sans-serif;letter-spacing:.6px}
+.office-objectives-section>label{display:block;margin:0;color:#2abee9;font:700 12px DM Sans,sans-serif;letter-spacing:.6px}
 .office-objectives{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .office-objective{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:11px 12px;border:1px solid #28505b;border-radius:6px;background:linear-gradient(165deg,#14303a 0%,#0e222c 100%)}
 .office-objective-body{display:grid;gap:4px;min-width:0}
-.office-objective-label{color:#edf8f5;font:700 12px DM Sans,sans-serif;line-height:1.35}
-.office-objective-hint{color:#7fa8b0;font-size:10px;line-height:1.35}
+.office-objective-label{color:#edf8f5;font:700 13px DM Sans,sans-serif;line-height:1.35}
+.office-objective-hint{color:#7fa8b0;font-size:12px;line-height:1.35}
 .office-objective-marker{flex-shrink:0;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font:800 13px Barlow Condensed,sans-serif;line-height:1}
 .office-objective-marker--pending{border:1px solid #2a5560;background:#0a1820;box-shadow:inset 0 0 0 1px #1e4a5c44}
 .office-objective-marker--done{border:1px solid #8fd42a;background:linear-gradient(165deg,#b6ff38 0%,#8fd42a 100%);color:#0a1820;box-shadow:0 0 10px #b6ff3844}
-.office-objective-marker--near{border:1px solid #ffc94f;background:linear-gradient(165deg,#ffe08a 0%,#ffc94f 100%);color:#0a1820;font-size:11px}
+.office-objective-marker--near{border:1px solid #ffc94f;background:linear-gradient(165deg,#ffe08a 0%,#ffc94f 100%);color:#0a1820;font-size:12px}
 .office-objective-marker--missed{border:1px solid #ff6b7a;background:linear-gradient(165deg,#ff9aa4 0%,#ff6b7a 100%);color:#0a1820}
 .office-objective.is-near .office-objective-label{color:#ffe08a}
 .office-objective.is-missed .office-objective-label{color:#ff9aa4}
 .office-objective.is-done .office-objective-label{color:#d8f5a8}
-.office-sponsors-meta,.office-bank-loan-meta{margin:0 0 12px;color:#7fa8b0;font-size:10px;line-height:1.4}
+.office-sponsors-meta,.office-bank-loan-meta{margin:0 0 12px;color:#7fa8b0;font-size:12px;line-height:1.4}
 .office-bank-loan-body{display:flex;flex-direction:column;gap:14px;min-height:0;flex:1}
-.office-bank-loan-copy{margin:0;color:#9eb6b8;font-size:11px;line-height:1.45}
+.office-bank-loan-copy{margin:0;color:#9eb6b8;font-size:12px;line-height:1.45}
 .office-bank-loan-metrics{display:flex;flex-direction:column;gap:10px}
 .office-bank-loan-metrics-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .office-bank-loan-metric{display:grid;gap:8px;min-width:0;padding:12px 14px;border:1px solid #28505b;border-radius:6px;background:linear-gradient(165deg,#14303a 0%,#0e222c 100%)}
 .office-bank-loan-metric--health{padding:14px 16px}
 .office-bank-loan-metric .office-meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;min-width:0}
-.office-bank-loan-metric .office-meter-top small{color:#7fa8b0;font:700 11px DM Sans,sans-serif;letter-spacing:.4px}
+.office-bank-loan-metric .office-meter-top small{color:#7fa8b0;font:700 12px DM Sans,sans-serif;letter-spacing:.4px}
 .office-bank-loan-metric .office-meter-top b{color:#b6ff38;font:700 26px Barlow Condensed,sans-serif;line-height:1;white-space:nowrap}
 .office-bank-loan-metric--health .office-meter-top b{font-size:28px}
 .office-bank-loan-metric .office-meter-track{display:block;height:8px;border-radius:99px;background:#0a1820;overflow:hidden;box-shadow:inset 0 0 0 1px #1e4a5c55}
@@ -60,7 +60,7 @@
 .office-bank-loan-metric[data-tone="risk"] .office-meter-track>i{background:linear-gradient(90deg,#ff8c94,#ffc94f)}
 .office-bank-loan-metric[data-meter="credit"] .office-meter-top b{color:#b6ff38;font-size:22px;line-height:1.05;white-space:normal;text-align:right}
 .office-bank-loan-metric[data-meter="rate"] .office-meter-top b{color:#63d9ff;font-size:24px}
-.office-bank-loan-metric-sub{color:#7fa8b0;font-size:11px;line-height:1.3}
+.office-bank-loan-metric-sub{color:#7fa8b0;font-size:12px;line-height:1.3}
 .office-bank-loan-form{display:flex;flex-direction:column;gap:8px;margin-top:auto}
 .office-bank-loan-form-label{display:block;margin:0;color:#edf8f5;font:700 13px DM Sans,sans-serif;letter-spacing:.45px;text-align:center}
 .office-bank-loan-form-row{display:grid;grid-template-columns:minmax(0,1fr) 52px;gap:8px;align-items:stretch}
@@ -69,26 +69,26 @@
 .office-bank-loan-input:focus{border-color:#63d9ff;box-shadow:0 0 0 1px #63d9ff44}
 .office-bank-loan-submit{display:grid;place-items:center;padding:0;border:1px solid #8fd42a;border-radius:6px;background:linear-gradient(165deg,#b6ff38 0%,#8fd42a 100%);color:#0a1820;font:800 14px DM Sans,sans-serif;letter-spacing:.4px;cursor:pointer}
 .office-bank-loan-submit:hover,.office-bank-loan-submit:focus-visible{filter:brightness(1.06);outline:none}
-.office-bank-loan-hint,.office-bank-loan-hint-inline{margin:0;color:#7fa8b0;font-size:11px;line-height:1.35;text-align:center}
+.office-bank-loan-hint,.office-bank-loan-hint-inline{margin:0;color:#7fa8b0;font-size:12px;line-height:1.35;text-align:center}
 .office-bank-loan-hint-inline{text-align:left;margin-top:4px}
 .office-bank-loan-stats{display:grid;grid-template-columns:1fr;gap:8px}
 .office-bank-loan-stats>div{display:grid;gap:3px;padding:10px 12px;border:1px solid #234650;border-radius:6px;background:#0b1d25}
-.office-bank-loan-stats small{color:#7fa8b0;font:700 10px DM Sans,sans-serif;letter-spacing:.3px}
+.office-bank-loan-stats small{color:#7fa8b0;font:700 12px DM Sans,sans-serif;letter-spacing:.3px}
 .office-bank-loan-stats b{color:#edf8f5;font:700 18px Barlow Condensed,sans-serif;line-height:1.1}
 .office-bank-loan-stats b.spend{color:#ffc94f}
 .office-bank-loan-stats b.credit{color:#b6ff38}
-.office-bank-loan-stats span{color:#9eb6b8;font-size:10px;line-height:1.3}
-.office-bank-loan-warn{margin:0;padding:10px 12px;border:1px solid #6a4a22;border-radius:6px;background:#24180c;color:#ffc94f;font-size:11px;line-height:1.4}
-.office-bank-loan-breakdown>small,.office-bank-loan-preview>small{color:#7fa8b0;font:700 10px DM Sans,sans-serif;letter-spacing:.35px}
-.office-bank-loan-breakdown-note{display:block;margin:-2px 0 4px;color:#63d9ff;font-size:10px;line-height:1.35}
-.office-bank-loan-term-hint{margin:0;color:#7fa8b0;font-size:10px;line-height:1.35;text-align:center}
+.office-bank-loan-stats span{color:#9eb6b8;font-size:12px;line-height:1.3}
+.office-bank-loan-warn{margin:0;padding:10px 12px;border:1px solid #6a4a22;border-radius:6px;background:#24180c;color:#ffc94f;font-size:12px;line-height:1.4}
+.office-bank-loan-breakdown>small,.office-bank-loan-preview>small{color:#7fa8b0;font:700 12px DM Sans,sans-serif;letter-spacing:.35px}
+.office-bank-loan-breakdown-note{display:block;margin:-2px 0 4px;color:#63d9ff;font-size:12px;line-height:1.35}
+.office-bank-loan-term-hint{margin:0;color:#7fa8b0;font-size:12px;line-height:1.35;text-align:center}
 .office-bank-loan-parcel-detail{display:grid;gap:4px;margin-top:6px;padding-top:8px;border-top:1px solid #234650}
-.office-bank-loan-parcel-note{display:block;margin-top:6px;color:#7fa8b0;font-size:10px;line-height:1.35}
+.office-bank-loan-parcel-note{display:block;margin-top:6px;color:#7fa8b0;font-size:12px;line-height:1.35}
 .office-bank-loan-stat-parcel{padding-bottom:2px}
 .office-bank-loan-preview-row--warn b{color:#ffc94f}
 .office-bank-loan-actions{display:grid;grid-template-columns:1fr;gap:8px}
-.office-bank-loan-btn{display:grid;gap:2px;padding:10px 14px;border:1px solid #2a5560;border-radius:6px;background:#14303a;color:#edf8f5;font:700 11px DM Sans,sans-serif;letter-spacing:.3px;cursor:pointer;width:100%;text-align:center}
-.office-bank-loan-btn span{color:#9eb6b8;font-size:10px;letter-spacing:.35px}
+.office-bank-loan-btn{display:grid;gap:2px;padding:10px 14px;border:1px solid #2a5560;border-radius:6px;background:#14303a;color:#edf8f5;font:700 12px DM Sans,sans-serif;letter-spacing:.3px;cursor:pointer;width:100%;text-align:center}
+.office-bank-loan-btn span{color:#9eb6b8;font-size:12px;letter-spacing:.35px}
 .office-bank-loan-btn strong{color:#edf8f5;font:700 18px Barlow Condensed,sans-serif;line-height:1.1}
 .office-bank-loan-btn--primary{border-color:#8fd42a;background:linear-gradient(165deg,#1a3a2a 0%,#14303a 100%)}
 .office-bank-loan-btn--primary strong{color:#b6ff38}
@@ -98,30 +98,30 @@
 .office-bank-loan-btn:disabled{opacity:.45;cursor:not-allowed}
 .office-bank-loan-term-row{display:grid;gap:8px}
 .office-bank-loan-term-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.office-bank-loan-term{padding:8px 6px;border:1px solid #2a5560;border-radius:6px;background:#0a1820;color:#9eb6b8;font:700 11px DM Sans,sans-serif;letter-spacing:.2px;cursor:pointer}
+.office-bank-loan-term{padding:8px 6px;border:1px solid #2a5560;border-radius:6px;background:#0a1820;color:#9eb6b8;font:700 12px DM Sans,sans-serif;letter-spacing:.2px;cursor:pointer}
 .office-bank-loan-term.is-active,.office-bank-loan-term[aria-pressed="true"]{border-color:#63d9ff;color:#edf8f5;background:#14303a;box-shadow:0 0 0 1px #63d9ff44}
-.office-bank-loan-info-btn{display:block;width:100%;padding:10px 14px;border:1px solid #2a5560;border-radius:6px;background:#14303a;color:#63d9ff;font:700 11px DM Sans,sans-serif;letter-spacing:.45px;cursor:pointer;text-align:center}
+.office-bank-loan-info-btn{display:block;width:100%;padding:10px 14px;border:1px solid #2a5560;border-radius:6px;background:#14303a;color:#63d9ff;font:700 12px DM Sans,sans-serif;letter-spacing:.45px;cursor:pointer;text-align:center}
 .office-bank-loan-info-btn:hover,.office-bank-loan-info-btn:focus-visible{border-color:#63d9ff;outline:none;box-shadow:0 0 0 1px #63d9ff44}
 #officeBankLoanInfoModal{z-index:45}
 .office-bank-loan-info-modal{width:min(calc(100vw - 32px),420px)!important;padding:0!important;overflow:hidden;text-align:left;border:1px solid #2a6980!important;border-radius:10px!important;background:linear-gradient(165deg,#14303a 0%,#0e222c 100%)!important;box-shadow:0 18px 58px #000b,0 0 0 1px #63d9ff22!important}
 .office-bank-loan-info-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px 12px;border-bottom:1px solid #28505b;background:linear-gradient(180deg,#1a3a44 0%,#14303a 100%)}
 .office-bank-loan-info-modal-heading{min-width:0}
-.office-bank-loan-info-modal-header label{display:block;margin:0 0 4px;color:#63d9ff;font:700 10px DM Sans,sans-serif;letter-spacing:.6px}
+.office-bank-loan-info-modal-header label{display:block;margin:0 0 4px;color:#63d9ff;font:700 12px DM Sans,sans-serif;letter-spacing:.6px}
 .office-bank-loan-info-modal-header h2{margin:0;color:#edf8f5;font:700 22px Barlow Condensed,sans-serif;line-height:1.1;letter-spacing:.3px}
 .office-bank-loan-info-modal-body{padding:14px 16px 12px}
-.office-bank-loan-info-modal-note{margin:0 0 10px;color:#63d9ff;font-size:10px;line-height:1.35}
+.office-bank-loan-info-modal-note{margin:0 0 10px;color:#63d9ff;font-size:12px;line-height:1.35}
 .office-bank-loan-breakdown--window{margin:0}
 .office-bank-loan-info-modal-actions{display:flex;justify-content:center;padding:12px 16px 14px;border-top:1px solid #234650;background:#0b1d25}
 .office-bank-loan-borrow-modal-actions{gap:10px}
-.office-bank-loan-borrow-confirm{min-width:120px;padding:8px 20px;border:1px solid #8fd42a;border-radius:6px;background:linear-gradient(165deg,#b6ff38 0%,#8fd42a 100%);color:#0a1820;font:800 11px DM Sans,sans-serif;letter-spacing:.35px;cursor:pointer}
+.office-bank-loan-borrow-confirm{min-width:120px;padding:8px 20px;border:1px solid #8fd42a;border-radius:6px;background:linear-gradient(165deg,#b6ff38 0%,#8fd42a 100%);color:#0a1820;font:800 12px DM Sans,sans-serif;letter-spacing:.35px;cursor:pointer}
 .office-bank-loan-borrow-confirm:hover,.office-bank-loan-borrow-confirm:focus-visible{filter:brightness(1.06);outline:none}
 .office-bank-loan-info-modal-body .office-bank-loan-preview{margin-bottom:12px}
-.office-bank-loan-info-dismiss{min-width:120px;padding:8px 20px;border:1px solid #2a5560;border-radius:6px;background:#0a1820;color:#9eb6b8;font:700 11px DM Sans,sans-serif;letter-spacing:.35px;cursor:pointer}
+.office-bank-loan-info-dismiss{min-width:120px;padding:8px 20px;border:1px solid #2a5560;border-radius:6px;background:#0a1820;color:#9eb6b8;font:700 12px DM Sans,sans-serif;letter-spacing:.35px;cursor:pointer}
 .office-bank-loan-info-dismiss:hover,.office-bank-loan-info-dismiss:focus-visible{border-color:#63d9ff;color:#edf8f5;outline:none}
 .office-bank-loan-breakdown{display:grid;gap:6px;padding:12px 14px;border:1px solid #28505b;border-radius:6px;background:#0e222c}
-.office-bank-loan-breakdown>small{color:#7fa8b0;font:700 10px DM Sans,sans-serif;letter-spacing:.35px}
+.office-bank-loan-breakdown>small{color:#7fa8b0;font:700 12px DM Sans,sans-serif;letter-spacing:.35px}
 .office-bank-loan-preview{display:grid;gap:6px;padding:12px 14px;border:1px solid #234650;border-radius:6px;background:#0b1d25}
-.office-bank-loan-preview-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;color:#9eb6b8;font-size:11px;line-height:1.35}
+.office-bank-loan-preview-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;color:#9eb6b8;font-size:12px;line-height:1.35}
 .office-bank-loan-preview-row b{color:#edf8f5;font:700 16px Barlow Condensed,sans-serif;white-space:nowrap}
 .office-bank-loan-preview-row--total b{color:#ffc94f}
 .office-sponsors-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
@@ -144,15 +144,15 @@ a.office-sponsor-logo.is-link:hover,a.office-sponsor-logo.is-link:focus-visible{
 .office-sponsor-divider{display:block;width:1px;height:36px;margin:0 12px;flex-shrink:0;background:#5fb9d4;opacity:.85;box-shadow:0 0 0 1px #2abee922}
 .office-sponsor-copy strong{margin-left:auto;color:#7fd9f2;font:700 28px Barlow Condensed,sans-serif;letter-spacing:.15px;line-height:1;white-space:nowrap;flex-shrink:0}
 .office-sponsor-card.master .office-sponsor-copy strong{font-size:32px;color:#b6ff38}
-.office-sponsor-empty{grid-column:1 / -1;color:#7fa8b0;font-size:11px;padding:8px 0}
+.office-sponsor-empty{grid-column:1 / -1;color:#7fa8b0;font-size:12px;padding:8px 0}
 .office-budget-body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:72px}
 .office-budget-card .office-budget-value{margin:0 0 6px;font:700 42px Barlow Condensed,sans-serif;color:#b6ff38;line-height:1}
 .office-budget-card .office-budget-value.is-negative{color:#ff8f6b}
-.office-budget-card .office-budget-meta{margin:0;color:#9eb6b8;font-size:11px;line-height:1.4}
+.office-budget-card .office-budget-meta{margin:0;color:#9eb6b8;font-size:12px;line-height:1.4}
 .office-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto}
 .stadium-summary-stats{grid-template-columns:1fr 1fr 1fr}
 .office-stats>div{display:grid;align-content:center;gap:4px;min-height:52px;padding:10px 8px;border:1px solid #28505b;border-radius:5px;background:#102b35;text-align:center}
-.office-stats small{display:block;color:#9eb6b8;font:700 10px DM Sans,sans-serif;letter-spacing:.3px;line-height:1.15}
+.office-stats small{display:block;color:#9eb6b8;font:700 12px DM Sans,sans-serif;letter-spacing:.3px;line-height:1.15}
 .office-stats b{display:block;color:#b6ff38;font:700 18px Barlow Condensed,sans-serif;line-height:1;white-space:nowrap}
 .office-board-brief{
   margin:14px 0 12px;
@@ -165,13 +165,13 @@ a.office-sponsor-logo.is-link:hover,a.office-sponsor-logo.is-link:focus-visible{
   display:block;
   margin:0 0 4px;
   color:#63d9ff;
-  font:700 10px DM Sans,sans-serif;
+  font:700 12px DM Sans,sans-serif;
   letter-spacing:.55px;
 }
 .office-board-brief>p{
   margin:0;
   color:#c5d8dc;
-  font-size:12px;
+  font-size:13px;
   line-height:1.45;
 }
 .office-board-brief[data-tone="ok"]{border-color:#3a6a48;background:linear-gradient(165deg,#143528 0%,#0c1f1a 100%)}
@@ -191,7 +191,7 @@ a.office-sponsor-logo.is-link:hover,a.office-sponsor-logo.is-link:focus-visible{
 .office-restriction-banner.hidden{display:none}
 .office-restriction-banner>small{
   display:block;
-  font:700 11px/1.2 'DM Sans',sans-serif;
+  font:700 12px/1.2 'DM Sans',sans-serif;
   letter-spacing:.06em;
   color:#ff8c94;
   margin-bottom:4px;
@@ -205,7 +205,7 @@ a.office-sponsor-logo.is-link:hover,a.office-sponsor-logo.is-link:focus-visible{
 .economy-investments .office-investment-levels{margin-top:12px;padding-top:12px;border-top:1px solid #234650}
 .office-meter{display:grid;gap:8px;min-width:0;padding:12px 12px 11px;border:1px solid #28505b;border-radius:6px;background:linear-gradient(165deg,#14303a 0%,#0e222c 100%)}
 .office-meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
-.office-meter-top small{color:#7fa8b0;font:700 10px DM Sans,sans-serif;letter-spacing:.35px}
+.office-meter-top small{color:#7fa8b0;font:700 12px DM Sans,sans-serif;letter-spacing:.35px}
 .office-meter-top b{color:#b6ff38;font:700 18px Barlow Condensed,sans-serif;line-height:1;white-space:nowrap}
 .office-meter-track{display:block;height:6px;border-radius:99px;background:#0a1820;overflow:hidden;box-shadow:inset 0 0 0 1px #1e4a5c55}
 .office-meter-track>i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#2abee9,#b6ff38);transition:width .28s ease}
@@ -214,29 +214,29 @@ a.office-sponsor-logo.is-link:hover,a.office-sponsor-logo.is-link:focus-visible{
 .office-meter[data-tone="warn"] .office-meter-track>i{background:linear-gradient(90deg,#ffc94f,#b6ff38)}
 .office-meter[data-tone="risk"] .office-meter-top b{color:#ff8c94}
 .office-meter[data-tone="risk"] .office-meter-track>i{background:linear-gradient(90deg,#ff8c94,#ffc94f)}
-.office-cashflow-meta{margin:-6px 0 14px;color:#7fa8b0;font-size:10px;line-height:1.4}
+.office-cashflow-meta{margin:-6px 0 14px;color:#7fa8b0;font-size:12px;line-height:1.4}
 .office-cashflow{display:flex;flex-direction:column;gap:14px;min-height:0}
 .office-cashflow-payroll{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid #234650;border-radius:6px;background:linear-gradient(165deg,#102833 0%,#0b1d25 100%)}
 .office-cashflow-payroll[data-tone="ok"]{border-color:#3a6a48}
 .office-cashflow-payroll[data-tone="warn"]{border-color:#8a7030;background:linear-gradient(165deg,#2a2418 0%,#0b1d25 100%)}
 .office-cashflow-payroll[data-tone="risk"]{border-color:#8a4040;background:linear-gradient(165deg,#2a1818 0%,#0b1d25 100%)}
 .office-cashflow-payroll-main{display:grid;gap:3px;min-width:0}
-.office-cashflow-payroll-main small{color:#7fa8b0;font:700 10px DM Sans,sans-serif;letter-spacing:.35px}
+.office-cashflow-payroll-main small{color:#7fa8b0;font:700 12px DM Sans,sans-serif;letter-spacing:.35px}
 .office-cashflow-payroll-main b{color:#edf8f5;font:700 22px Barlow Condensed,sans-serif;line-height:1}
-.office-cashflow-payroll-main b span{font-size:12px;color:#9eb6b8;font-weight:700}
-.office-cashflow-payroll-main>span{color:#9eb6b8;font-size:10px;line-height:1.35}
-.office-cashflow-payroll-side{display:grid;gap:4px;justify-items:end;color:#9eb6b8;font-size:10px;line-height:1.3}
+.office-cashflow-payroll-main b span{font-size:13px;color:#9eb6b8;font-weight:700}
+.office-cashflow-payroll-main>span{color:#9eb6b8;font-size:12px;line-height:1.35}
+.office-cashflow-payroll-side{display:grid;gap:4px;justify-items:end;color:#9eb6b8;font-size:12px;line-height:1.3}
 .office-cashflow-projection{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 @media(min-width:1100px){.office-cashflow-projection{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .office-cashflow-projection>div{display:grid;gap:3px;padding:10px 12px;border:1px solid #234650;border-radius:6px;background:#0b1d25}
-.office-cashflow-projection small{color:#7fa8b0;font:700 10px DM Sans,sans-serif;letter-spacing:.3px}
+.office-cashflow-projection small{color:#7fa8b0;font:700 12px DM Sans,sans-serif;letter-spacing:.3px}
 .office-cashflow-projection b{color:#edf8f5;font:700 16px Barlow Condensed,sans-serif;line-height:1.1}
 .office-cashflow-projection b.spend,.office-cashflow-row b.spend,.office-cashflow-result b.spend{color:#ffc94f}
 .office-cashflow-projection b.credit,.office-cashflow-row b.credit,.office-cashflow-result b.credit{color:#63d9ff}
-.office-cashflow-projection span{color:#9eb6b8;font-size:10px;line-height:1.3}
+.office-cashflow-projection span{color:#9eb6b8;font-size:12px;line-height:1.3}
 .office-cashflow-projection>div.office-cashflow-tv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
 .office-cashflow-tv-copy{display:grid;gap:3px;min-width:0}
-.office-cashflow-tv-btn{padding:8px 10px;border:1px solid #2a5560;border-radius:6px;background:#14303a;color:#7fa8b0;font:700 10px DM Sans,sans-serif;letter-spacing:.35px;cursor:not-allowed;white-space:nowrap;align-self:center}
+.office-cashflow-tv-btn{padding:8px 10px;border:1px solid #2a5560;border-radius:6px;background:#14303a;color:#7fa8b0;font:700 12px DM Sans,sans-serif;letter-spacing:.35px;cursor:not-allowed;white-space:nowrap;align-self:center}
 .office-cashflow-tv-btn:disabled{opacity:.55}
 .office-cashflow-tv.is-ready{border-color:#8fd42a;box-shadow:0 0 0 1px #8fd42a44,0 0 18px #b6ff3822;background:linear-gradient(165deg,#143528 0%,#0b1d25 100%)}
 .office-cashflow-tv.is-ready .office-cashflow-tv-btn{border-color:#8fd42a;background:linear-gradient(165deg,#b6ff38 0%,#8fd42a 100%);color:#0a1820;cursor:pointer;opacity:1;animation:office-tv-advance-pulse 1.6s ease-in-out infinite}
@@ -244,43 +244,43 @@ a.office-sponsor-logo.is-link:hover,a.office-sponsor-logo.is-link:focus-visible{
 .office-cashflow-tv.is-done .office-cashflow-tv-btn{border-color:#2a5560;background:#102833;color:#7fa8b0;cursor:default;opacity:.7;animation:none}
 @keyframes office-tv-advance-pulse{0%,100%{box-shadow:0 0 0 0 #b6ff3800}50%{box-shadow:0 0 0 4px #b6ff3833}}
 .office-cashflow-section{display:grid;gap:0;padding:0 2px;border:1px solid #234650;border-radius:6px;background:linear-gradient(180deg,#0f222b 0%,#0b1a21 100%);overflow:hidden}
-.office-cashflow-section>header{padding:9px 12px;border-bottom:1px solid #234650;color:#2abee9;font:700 10px DM Sans,sans-serif;letter-spacing:.55px;background:#102833}
+.office-cashflow-section>header{padding:9px 12px;border-bottom:1px solid #234650;color:#2abee9;font:700 12px DM Sans,sans-serif;letter-spacing:.55px;background:#102833}
 .office-cashflow-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid #1e3a44}
 .office-cashflow-row:last-child{border-bottom:none}
-.office-cashflow-row span{color:#c5d8dc;font-size:12px;line-height:1.3;min-width:0}
+.office-cashflow-row span{color:#c5d8dc;font-size:13px;line-height:1.3;min-width:0}
 .office-cashflow-row b{justify-self:end;text-align:right;color:#edf8f5;font:700 14px Barlow Condensed,sans-serif;white-space:nowrap}
 .office-cashflow-row.total{background:#0a1820;border-top:1px solid #234650}
-.office-cashflow-row.total span{color:#edf8f5;font:700 11px DM Sans,sans-serif;letter-spacing:.2px}
+.office-cashflow-row.total span{color:#edf8f5;font:700 12px DM Sans,sans-serif;letter-spacing:.2px}
 .office-cashflow-row.total b{font-size:15px}
 .office-cashflow-row.muted span,.office-cashflow-row.muted b{color:#7fa8b0}
 .office-cashflow-result,.office-cashflow-balance{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-radius:6px}
 .office-cashflow-result{border:1px solid #2a5560;background:linear-gradient(165deg,#14303a 0%,#0e222c 100%)}
-.office-cashflow-result span,.office-cashflow-balance span{color:#9eb6b8;font:700 10px DM Sans,sans-serif;letter-spacing:.4px}
+.office-cashflow-result span,.office-cashflow-balance span{color:#9eb6b8;font:700 12px DM Sans,sans-serif;letter-spacing:.4px}
 .office-cashflow-result b{font:700 20px Barlow Condensed,sans-serif;line-height:1;white-space:nowrap}
 .office-cashflow-balance{border:1px solid #3a6a48;background:linear-gradient(165deg,#143528 0%,#0c1f1a 100%)}
 .office-cashflow-balance span{color:#8fbf9a}
 .office-cashflow-balance b{color:#b6ff38;font:700 24px Barlow Condensed,sans-serif;line-height:1;white-space:nowrap}
-.office-cashflow-empty{margin:0;padding:14px 12px;border:1px dashed #234650;border-radius:6px;color:#7fa8b0;font-size:11px;line-height:1.45;background:#0b1d25}
+.office-cashflow-empty{margin:0;padding:14px 12px;border:1px dashed #234650;border-radius:6px;color:#7fa8b0;font-size:12px;line-height:1.45;background:#0b1d25}
 .economy-investments .economy-invest-head,.economy-investments .economy-invest-row,.stadium-upgrades .economy-invest-head,.stadium-upgrades .economy-invest-row{display:grid;grid-template-columns:minmax(0,1fr) 58px 108px;gap:14px;align-items:center}
 .stadium-ticket-group{margin-bottom:8px}
 .stadium-ticket-group:last-child{margin-bottom:0}
 .stadium-ticket-group-head{padding:12px 2px 6px;border-bottom:1px solid #234650;margin-bottom:2px}
 .stadium-ticket-group-head b{display:block;color:#2abee9;font:700 13px Barlow Condensed,sans-serif;letter-spacing:.3px}
-.stadium-ticket-group-head small{display:block;margin-top:4px;color:#9eb6b8;font-size:11px;line-height:1.35;max-width:48ch}
+.stadium-ticket-group-head small{display:block;margin-top:4px;color:#9eb6b8;font-size:12px;line-height:1.35;max-width:48ch}
 .stadium-ticket-group .stadium-ticket-row{min-height:56px;padding:10px 2px}
 .stadium-ticket-group .stadium-ticket-row b{font-size:15px}
 .stadium-ticket-head,.stadium-ticket-row{display:grid;grid-template-columns:minmax(0,1.2fr) 80px 120px;gap:12px;align-items:center}
 .economy-invest-head,.stadium-ticket-head{padding:0 2px 10px;border-bottom:1px solid #234650;margin-bottom:4px}
-.economy-invest-head span,.stadium-ticket-head span{color:#7fa8b0;font:700 10px DM Sans,sans-serif;letter-spacing:.4px}
+.economy-invest-head span,.stadium-ticket-head span{color:#7fa8b0;font:700 12px DM Sans,sans-serif;letter-spacing:.4px}
 .economy-invest-head span:nth-child(2),.economy-invest-head span:nth-child(3),.stadium-ticket-head span:nth-child(2),.stadium-ticket-head span:nth-child(3){text-align:right}
 .economy-investments-list,.stadium-tickets-list{display:grid;gap:0;flex:1}
 .economy-invest-row,.stadium-ticket-row{min-height:72px;padding:14px 2px;border-bottom:1px solid #1e3a44;background:transparent}
 .economy-invest-row:last-child,.stadium-ticket-row:last-child{border-bottom:none}
 .economy-invest-row>div,.stadium-ticket-row>div{min-width:0}
 .economy-invest-row b,.stadium-ticket-row b{display:block;color:#edf8f5;font:700 17px Barlow Condensed,sans-serif;letter-spacing:.2px;line-height:1.15}
-.economy-invest-row small,.stadium-ticket-row small{display:block;margin-top:5px;color:#9eb6b8;font-size:12px;line-height:1.4;max-width:42ch}
+.economy-invest-row small,.stadium-ticket-row small{display:block;margin-top:5px;color:#9eb6b8;font-size:13px;line-height:1.4;max-width:42ch}
 .economy-invest-row .economy-invest-level{justify-self:end;color:#dff4f5;font:700 16px Barlow Condensed,sans-serif;white-space:nowrap}
-.economy-invest-row button{justify-self:end;min-width:96px;padding:11px 12px!important;font-size:11px!important;letter-spacing:.3px;white-space:nowrap}
+.economy-invest-row button{justify-self:end;min-width:96px;padding:11px 12px!important;font-size:12px!important;letter-spacing:.3px;white-space:nowrap}
 .economy-invest-row button:disabled,.stadium-ticket-step:disabled{opacity:.45;cursor:not-allowed}
 .economy-invest-row.maxed b,.economy-invest-row.locked b,.economy-invest-row.structure-capped b{color:#9eb6b8}
 .economy-invest-row.locked,.economy-invest-row.structure-capped{opacity:.8}
@@ -291,12 +291,12 @@ a.office-sponsor-logo.is-link:hover,a.office-sponsor-logo.is-link:focus-visible{
 .stadium-view .office-stadium-layout .stadium-tickets{grid-column:1 / -1}
 .stadium-name-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 6px}
 .stadium-summary-body>strong,.stadium-name-row>strong{display:block;margin:0;color:#edf8f5;font:700 22px Barlow Condensed,sans-serif}
-.stadium-name-rights-btn{flex:none;padding:7px 12px;border:1px solid #3a6b78;border-radius:6px;background:#0d2430;color:#72e1ff;font:700 10px DM Sans,sans-serif;letter-spacing:.5px;cursor:pointer}
+.stadium-name-rights-btn{flex:none;padding:7px 12px;border:1px solid #3a6b78;border-radius:6px;background:#0d2430;color:#72e1ff;font:700 12px DM Sans,sans-serif;letter-spacing:.5px;cursor:pointer}
 .stadium-name-rights-btn:hover{border-color:#72e1ff;color:#edf8f5}
-.stadium-name-rights-meta{margin:0 0 14px;color:#8eb8c2;font:600 11px DM Sans,sans-serif;line-height:1.35}
-.stadium-composition-meta{margin:0 0 8px;color:#9eb6b8;font:600 11px/1.45 DM Sans,sans-serif}
+.stadium-name-rights-meta{margin:0 0 14px;color:#8eb8c2;font:600 12px DM Sans,sans-serif;line-height:1.35}
+.stadium-composition-meta{margin:0 0 8px;color:#9eb6b8;font:600 12px/1.45 DM Sans,sans-serif}
 .stadium-name-rights-btn:disabled{opacity:.45;cursor:not-allowed}
-.stadium-gate-hint{margin:12px 0 0;color:#7fa8b0;font-size:10px;line-height:1.4}
+.stadium-gate-hint{margin:12px 0 0;color:#7fa8b0;font-size:12px;line-height:1.4}
 .stadium-visual-mount{margin-top:14px;flex:1;display:flex;flex-direction:column;min-height:180px}
 .stadium-visual{flex:1;display:flex;flex-direction:column;border:1px solid #234650;border-radius:10px;overflow:hidden;background:#0a1820;transition:border-color .35s ease,box-shadow .45s ease}
 .stadium-visual--tier-7,.stadium-visual--tier-8{border-color:#3a6b78;box-shadow:0 0 24px rgba(114,225,255,.08)}
@@ -305,10 +305,10 @@ a.office-sponsor-logo.is-link:hover,a.office-sponsor-logo.is-link:focus-visible{
 .stadium-visual-img{width:100%;height:100%;min-height:150px;object-fit:cover;object-position:center 62%;display:block;transition:opacity .45s ease,transform .55s ease}
 .stadium-visual--upgraded .stadium-visual-img{transform:scale(1.02)}
 .stadium-visual-badge{position:absolute;left:10px;bottom:10px;display:grid;gap:2px;padding:7px 10px;border-radius:6px;background:rgba(10,24,32,.82);border:1px solid #3a6b78;backdrop-filter:blur(4px)}
-.stadium-visual-badge span{color:#72e1ff;font:700 10px DM Sans,sans-serif;letter-spacing:.5px}
-.stadium-visual-badge strong{color:#edf8f5;font:700 12px Barlow Condensed,sans-serif;letter-spacing:.4px}
-.stadium-visual-caption{margin:0;padding:8px 12px 4px;border-top:1px solid #1e3a44;color:#9eb6b8;font:600 10px/1.4 DM Sans,sans-serif;text-align:center}
-.stadium-visual-next{margin:0;padding:0 12px 10px;color:#7fa8b0;font:600 10px/1.35 DM Sans,sans-serif;text-align:center}
+.stadium-visual-badge span{color:#72e1ff;font:700 12px DM Sans,sans-serif;letter-spacing:.5px}
+.stadium-visual-badge strong{color:#edf8f5;font:700 13px Barlow Condensed,sans-serif;letter-spacing:.4px}
+.stadium-visual-caption{margin:0;padding:8px 12px 4px;border-top:1px solid #1e3a44;color:#9eb6b8;font:600 12px/1.4 DM Sans,sans-serif;text-align:center}
+.stadium-visual-next{margin:0;padding:0 12px 10px;color:#7fa8b0;font:600 12px/1.35 DM Sans,sans-serif;text-align:center}
 .stadium-summary-card .stadium-summary-body{display:flex;flex-direction:column;flex:1;min-height:0}
 .stadium-summary-card{min-height:460px}
 @keyframes stadiumVisualPulse{0%{box-shadow:0 0 0 rgba(114,225,255,0)}45%{box-shadow:0 0 28px rgba(114,225,255,.22)}100%{box-shadow:0 0 0 rgba(114,225,255,0)}}
@@ -319,7 +319,7 @@ a.office-sponsor-logo.is-link:hover,a.office-sponsor-logo.is-link:focus-visible{
 .office-entry-card{cursor:pointer;transition:border-color .16s ease,background .16s ease}
 .office-entry-card:hover{border-color:#63d9ff!important;background:#122b35!important}
 .office-entry-card strong{font:700 17px Barlow Condensed,sans-serif;color:#f4fbf5}
-.office-entry-card small{font-size:10px;color:#9fcfd8}
+.office-entry-card small{font-size:12px;color:#9fcfd8}
 .office-entry-card .office-icon{color:#63d9ff}
 @media(max-width:900px){.office-view .office-layout,.stadium-view .office-stadium-layout{grid-template-columns:1fr}.office-budget-header{grid-template-columns:1fr;min-height:0}.office-season-goal-col{padding-left:0;border-left:none;padding-top:12px;border-top:1px solid #1e4a5c}.office-objectives{grid-template-columns:1fr}.office-investment-levels,.office-cashflow-projection,.office-bank-loan-stats,.office-bank-loan-metrics-row{grid-template-columns:1fr}.office-stats{grid-template-columns:1fr 1fr}.stadium-summary-stats{grid-template-columns:1fr 1fr}.office-sponsors-list{grid-template-columns:1fr 1fr}.office-sponsor-card.master{grid-column:1 / -1}.office-balance-bar{grid-template-columns:1fr;gap:8px}.office-balance-end{text-align:center}}
 @media(max-width:560px){.office-sponsors-list{grid-template-columns:1fr}.office-season-goal-gauge{transform:scale(.88)}.office-bank-loan-form-row{grid-template-columns:minmax(0,1fr) 48px}}

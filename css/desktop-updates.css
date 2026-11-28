@@ -1,4 +1,4 @@
-.desktop-updates{position:fixed;right:14px;bottom:12px;z-index:140;font:12px 'DM Sans',sans-serif;color:#e6f4f8}
+.desktop-updates{position:fixed;right:14px;bottom:12px;z-index:140;font:13px 'DM Sans',sans-serif;color:#e6f4f8}
 .home-footer .desktop-updates{position:relative;right:auto;bottom:auto;flex-basis:100%;min-width:0}
 .home-footer .desktop-updates aside{left:0;right:auto;bottom:calc(100% + 10px)}
 .desktop-updates--options{position:relative;right:auto;bottom:auto;z-index:auto;margin-top:12px}
@@ -15,5 +15,5 @@
 .desktop-updates input{width:16px;height:16px;accent-color:#63d9ff;flex-shrink:0}
 .desktop-updates details{margin:12px 0}
 .desktop-updates summary{cursor:pointer;color:#63d9ff}
-.desktop-updates pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto;font:12px/1.5 'DM Sans',sans-serif;color:#d4e9ef}
+.desktop-updates pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto;font:13px/1.5 'DM Sans',sans-serif;color:#d4e9ef}
 .desktop-updates small{display:block;line-height:1.5;color:#9fbcc9}

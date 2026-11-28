@@ -153,7 +153,7 @@
   border-radius: 999px;
   background: var(--nav2-lime);
   color: #06131b;
-  font: 700 12px 'DM Sans', sans-serif;
+  font: 700 13px 'DM Sans', sans-serif;
 }
 
 #headerContinue {
@@ -175,7 +175,7 @@
 }
 
 #headerContinue small {
-  font: 600 12px 'DM Sans', sans-serif;
+  font: 600 13px 'DM Sans', sans-serif;
   letter-spacing: 0;
   opacity: .8;
 }
@@ -341,7 +341,7 @@
 
 #hubAttentionList .hub-attention-item small {
   color: var(--nav2-muted);
-  font: 500 12px 'DM Sans', sans-serif;
+  font: 500 13px 'DM Sans', sans-serif;
 }
 
 #hubAttentionList .hub-attention-item > b {
@@ -376,7 +376,7 @@
 
 #hubTiles .hub-tile small {
   color: var(--nav2-muted);
-  font: 500 12px 'DM Sans', sans-serif;
+  font: 500 13px 'DM Sans', sans-serif;
 }
 
 @media (max-width: 1099px) {
@@ -425,7 +425,7 @@ html.is-mobile .sidebar .section-nav .section-btn.section-btn {
   gap: 2px;
   min-height: 56px;
   padding: 4px 2px;
-  font-size: 12px;
+  font-size: 13px;
   text-align: center;
 }
 
@@ -479,7 +479,7 @@ html.is-mobile .sidebar .section-nav .section-btn.section-btn {
   width: auto !important;
   border: 0 !important;
   background: transparent !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
   padding: 4px 2px !important;
 }
 

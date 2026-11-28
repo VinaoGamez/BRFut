@@ -107,7 +107,7 @@
   min-height: 80px;
   padding: 18px;
   color: #789da2;
-  font: 600 12px "DM Sans", sans-serif;
+  font: 600 13px "DM Sans", sans-serif;
 }
 
 @media (max-width: 1100px) {
@@ -133,7 +133,7 @@
 
 .ranking-trophy-section > header small {
   color: #63d9ff;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .75px;
 }
@@ -255,14 +255,14 @@
   display: block;
   margin-bottom: 6px;
   color: #63d9ff;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .7px;
 }
 
 .ranking-summary strong {
   color: #edf8f5;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .national-ranking-table {
@@ -328,7 +328,7 @@
   min-height: 42px;
   background: #102b35;
   color: #63d9ff;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .55px;
 }
@@ -439,7 +439,7 @@
 .manager-ranking-row .manager-ranking-salary {
   color: #cfe3e6;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -451,7 +451,7 @@
   border-radius: 5px;
   background: #102a34;
   color: #dff9ff;
-  font: 800 10px 'DM Sans', sans-serif;
+  font: 800 12px 'DM Sans', sans-serif;
   letter-spacing: .35px;
   cursor: pointer;
   white-space: nowrap;
@@ -477,11 +477,11 @@
 .manager-card-front-glow { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 62%, rgba(2, 10, 18, .1) 68%, rgba(2, 9, 16, .94) 84%, #020a12 100%); pointer-events: none; }
 .manager-card-front-info { position: absolute; left: var(--manager-info-left, 32px); right: var(--manager-info-right, 32px); bottom: var(--manager-info-bottom, 20px); min-height: 92px; display: grid; grid-template-columns: minmax(0, 1fr) var(--manager-club-width, 106px); align-items: center; gap: 20px; }
 .manager-card-name-block { min-width: 0; padding-right: 20px; border-right: 1px solid rgba(54, 196, 216, .45); }
-.manager-card-name-block small { display: block; margin-bottom: 3px; color: #29dfee; font: 800 10px 'DM Sans', sans-serif; letter-spacing: 2px; }
+.manager-card-name-block small { display: block; margin-bottom: 3px; color: #29dfee; font: 800 12px 'DM Sans', sans-serif; letter-spacing: 2px; }
 .manager-card-name-block strong { display: block; overflow: hidden; color: #fff; font: 800 var(--manager-name-size, 43px)/.92 'Barlow Condensed', sans-serif; letter-spacing: -.6px; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 3px 18px #000; }
-.manager-card-name-block span { display: block; margin-top: 7px; overflow: hidden; color: #a7c4c9; font: 700 10px 'DM Sans', sans-serif; letter-spacing: .6px; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; }
+.manager-card-name-block span { display: block; margin-top: 7px; overflow: hidden; color: #a7c4c9; font: 700 12px 'DM Sans', sans-serif; letter-spacing: .6px; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; }
 .manager-card-club-block { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.manager-card-club-block small { display: block; width: 100%; margin-top: 4px; overflow: hidden; color: #d7f1f3; font: 800 10px 'DM Sans', sans-serif; letter-spacing: .4px; text-overflow: ellipsis; white-space: nowrap; }
+.manager-card-club-block small { display: block; width: 100%; margin-top: 4px; overflow: hidden; color: #d7f1f3; font: 800 12px 'DM Sans', sans-serif; letter-spacing: .4px; text-overflow: ellipsis; white-space: nowrap; }
 .manager-card-club-crest { height: 58px; display: grid; place-items: center; }
 .manager-card-team-crest { width: var(--manager-crest-size, 54px) !important; height: var(--manager-crest-size, 54px) !important; font-size: 16px !important; }
 .manager-card-free-label { color: #9cff2f; font: 800 27px 'Barlow Condensed', sans-serif; letter-spacing: 1px; }
@@ -489,31 +489,31 @@
 .manager-card-back::before { content: ''; position: absolute; inset: 0; opacity: .12; background: linear-gradient(115deg, transparent 30%, #20d9e8 30.3%, transparent 30.7%, transparent 68%, #20d9e8 68.3%, transparent 68.7%); pointer-events: none; }
 .manager-card-back > * { position: relative; z-index: 1; }
 .manager-card-back-header { min-height: 80px; display: flex; justify-content: space-between; gap: 18px; padding-bottom: 14px; border-bottom: 1px solid #28616e; }
-.manager-card-back-header small { color: #21dcea; font: 800 10px 'DM Sans', sans-serif; letter-spacing: 1.5px; }
+.manager-card-back-header small { color: #21dcea; font: 800 12px 'DM Sans', sans-serif; letter-spacing: 1.5px; }
 .manager-card-back-header h3 { margin: 3px 0 1px; color: #fff; font: 800 var(--manager-back-name-size, 37px)/1 'Barlow Condensed', sans-serif; }
-.manager-card-back-header p { margin: 0; color: #8eb0b5; font: 700 10px 'DM Sans', sans-serif; text-transform: uppercase; }
+.manager-card-back-header p { margin: 0; color: #8eb0b5; font: 700 12px 'DM Sans', sans-serif; text-transform: uppercase; }
 .manager-card-back-rank { flex: 0 0 70px; padding-left: 16px; border-left: 1px solid #28616e; text-align: right; }
 .manager-card-back-rank strong { display: block; color: #9cff2f; font: 800 32px 'Barlow Condensed', sans-serif; }
 .manager-career-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 16px 0 8px; }
-.manager-career-summary span { padding: 10px 5px; border: 1px solid #285361; border-radius: 7px; background: rgba(3, 14, 20, .54); text-align: center; color: #799da4; font: 800 10px 'DM Sans', sans-serif; }
+.manager-career-summary span { padding: 10px 5px; border: 1px solid #285361; border-radius: 7px; background: rgba(3, 14, 20, .54); text-align: center; color: #799da4; font: 800 12px 'DM Sans', sans-serif; }
 .manager-career-summary strong { display: block; color: #9cff2f; font: 800 23px 'Barlow Condensed', sans-serif; }
 .manager-career-record { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
 .manager-career-record span { padding: 8px 3px; border-radius: 5px; background: #0b2630; text-align: center; color: #668d94; font: 800 7px 'DM Sans', sans-serif; }
 .manager-career-record strong { display: block; color: #dff6f8; font: 800 17px 'Barlow Condensed', sans-serif; }
 .manager-card-trophy-list { min-height: 0; margin-top: var(--manager-section-gap, 18px); display: flex; flex: 1; flex-direction: column; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2b6470 transparent; }
-.manager-card-trophy-list h4 { margin: 0 0 8px; display: flex; justify-content: space-between; color: #fff; font: 800 12px 'DM Sans', sans-serif; letter-spacing: .9px; }
-.manager-card-trophy-list h4 small { color: #6c969d; font-size: 10px; text-transform: uppercase; }
+.manager-card-trophy-list h4 { margin: 0 0 8px; display: flex; justify-content: space-between; color: #fff; font: 800 13px 'DM Sans', sans-serif; letter-spacing: .9px; }
+.manager-card-trophy-list h4 small { color: #6c969d; font-size: 12px; text-transform: uppercase; }
 .manager-card-trophy-list > article { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; padding: 8px 10px; border: 1px solid rgba(174, 137, 33, .5); border-radius: 6px; background: rgba(118, 86, 4, .13); }
 .manager-card-trophy-list article div { min-width: 0; }
 .manager-card-trophy-list article strong, .manager-card-trophy-list article small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.manager-card-trophy-list article strong { color: #ffdc55; font-size: 10px; }
-.manager-card-trophy-list article small { margin-top: 2px; color: #8ba9ae; font-size: 10px; }
+.manager-card-trophy-list article strong { color: #ffdc55; font-size: 12px; }
+.manager-card-trophy-list article small { margin-top: 2px; color: #8ba9ae; font-size: 12px; }
 .manager-card-trophy-icon { font-size: 20px; }
 .manager-card-empty { flex: 1; display: grid; place-content: center; justify-items: center; min-height: 110px; border: 1px dashed #285361; border-radius: 8px; color: #769ba1; text-align: center; }
 .manager-card-empty b { margin-bottom: 8px; opacity: .5; font-size: 30px; filter: grayscale(1); }
-.manager-card-empty span { color: #b2cdd1; font: 800 11px 'DM Sans', sans-serif; text-transform: uppercase; }
-.manager-card-empty small { max-width: 230px; margin-top: 5px; font-size: 10px; line-height: 1.4; }
-.manager-card-back-footer { display: flex; justify-content: space-between; padding: 10px 0 0; border-top: 1px solid #234c57; color: #1ddce8; font: 800 10px 'DM Sans', sans-serif; letter-spacing: 1px; }
+.manager-card-empty span { color: #b2cdd1; font: 800 12px 'DM Sans', sans-serif; text-transform: uppercase; }
+.manager-card-empty small { max-width: 230px; margin-top: 5px; font-size: 12px; line-height: 1.4; }
+.manager-card-back-footer { display: flex; justify-content: space-between; padding: 10px 0 0; border-top: 1px solid #234c57; color: #1ddce8; font: 800 12px 'DM Sans', sans-serif; letter-spacing: 1px; }
 .manager-card-back-footer small { color: #809fa5; }
 
 @media (max-width: 760px) {
@@ -523,7 +523,7 @@
     padding: 0 12px;
   }
   .manager-ranking-row .manager-ranking-salary {
-    font-size: 11px;
+    font-size: 12px;
   }
   .manager-trophy-room-btn span { display: none; }
   .manager-trophy-modal { padding: 12px; }
@@ -574,7 +574,7 @@
 .championship-page-table-title small,
 #championshipPageSub {
   color: #63d9ff;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 1px;
 }
 
@@ -679,7 +679,7 @@
   background: #102b35 !important;
   color: #9edff0 !important;
   padding: 7px 11px !important;
-  font: 700 10px 'DM Sans', sans-serif !important;
+  font: 700 12px 'DM Sans', sans-serif !important;
   letter-spacing: .55px !important;
   cursor: pointer;
   box-shadow: none !important;
@@ -703,7 +703,7 @@
 .competition-rules-modal > label {
   display: block;
   color: #63d9ff;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .8px;
   margin-bottom: 4px;
 }
@@ -733,7 +733,7 @@
 .competition-rules-section h3 {
   margin: 0 0 8px;
   color: #63d9ff;
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .55px;
 }
 
@@ -770,7 +770,7 @@
   background: #0c1e28 !important;
   color: #8eb4b8 !important;
   padding: 8px 10px !important;
-  font: 700 10px 'DM Sans', sans-serif !important;
+  font: 700 12px 'DM Sans', sans-serif !important;
   letter-spacing: .4px !important;
   cursor: pointer;
   box-shadow: none !important;
@@ -808,7 +808,7 @@
   background: #102b35;
   color: #9edff0;
   padding: 9px 12px;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .45px;
   cursor: pointer;
   white-space: nowrap;
@@ -864,7 +864,7 @@
   border-radius: 4px !important;
   background: transparent !important;
   color: #d7ecee !important;
-  font: 700 11px 'DM Sans', sans-serif !important;
+  font: 700 12px 'DM Sans', sans-serif !important;
   letter-spacing: .2px !important;
   cursor: pointer;
   box-shadow: none !important;
@@ -1082,7 +1082,7 @@
 }
 
 .championship-page-tie-club .club-div {
-  font-size: 10px;
+  font-size: 12px;
   padding: 0.15em 0.4em;
 }
 
@@ -1111,12 +1111,12 @@
 
 .championship-page-tie-meta small {
   color: #8fb0b8;
-  font: 600 11px/1.35 'DM Sans', sans-serif;
+  font: 600 12px/1.35 'DM Sans', sans-serif;
 }
 
 .championship-page-tie strong.winner-note {
   color: #9edff0;
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
 }
 
 .championship-page-empty {
@@ -1161,7 +1161,7 @@
   background: #102b35 !important;
   color: #63d9ff !important;
   border-bottom: 1px solid #28505b !important;
-  font: 700 10px 'DM Sans', sans-serif !important;
+  font: 700 12px 'DM Sans', sans-serif !important;
   letter-spacing: .65px;
 }
 
@@ -1170,7 +1170,7 @@
   padding: 10px 18px !important;
   border-bottom: 1px solid #234650 !important;
   color: #eef9f7 !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 
 .championship-page-table .league-row:last-child {
@@ -1243,7 +1243,7 @@
   border-top: 1px solid #234650;
   background: #0a161c;
   color: #8ba7aa;
-  font: 600 10px 'DM Sans', sans-serif;
+  font: 600 12px 'DM Sans', sans-serif;
 }
 
 .championship-page-zone-legend span {
@@ -1281,7 +1281,7 @@
   border: 1px solid #2a4a55;
   border-radius: 6px;
   padding: 8px 28px 8px 12px;
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
@@ -1301,7 +1301,7 @@
   background: #102832;
   border-bottom: 1px solid #234650;
   color: #9bb4b8;
-  font: 600 11px 'DM Sans', sans-serif;
+  font: 600 12px 'DM Sans', sans-serif;
 }
 
 .championship-page-archive-banner strong {
@@ -1319,7 +1319,7 @@
   gap: 12px;
   margin-bottom: 8px;
   color: #d7ece8;
-  font: 700 12px 'Barlow Condensed', sans-serif;
+  font: 700 13px 'Barlow Condensed', sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -1331,7 +1331,7 @@
   gap: 6px 10px;
   padding: 6px 0;
   color: #c5dbd7;
-  font: 600 12px 'DM Sans', sans-serif;
+  font: 600 13px 'DM Sans', sans-serif;
 }
 
 .championship-page-archive-fixture small {
@@ -1355,7 +1355,7 @@
 .championship-page-group-title {
   margin: 14px 0 6px;
   color: #9fc2bd;
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.14em;
 }
 
@@ -1405,7 +1405,7 @@
   background: #102b35;
   color: #9edff0;
   padding: 9px 12px;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.45px;
   cursor: pointer;
   white-space: nowrap;
@@ -1436,7 +1436,7 @@
   min-width: 72px;
   text-align: center;
   color: #edf8f5;
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.35px;
 }
 
@@ -1482,7 +1482,7 @@
   margin: 0;
   padding: 0 2px 4px;
   color: #8fb0b8;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.55px;
   text-transform: uppercase;
 }
@@ -1502,7 +1502,7 @@
   border: 1px solid #b6ff38;
   border-radius: 3px;
   color: #dfff9b;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.35px;
 }
 
@@ -1555,7 +1555,7 @@
 
   .championship-page-table-title button {
     padding: 8px;
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 
@@ -1622,7 +1622,7 @@
 }
 
 .championship-estadual-name {
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.25px;
   line-height: 1.25;
   text-align: center;
@@ -1630,7 +1630,7 @@
 
 .championship-estadual-btn small {
   color: #7fa8b0;
-  font: 600 10px 'DM Sans', sans-serif;
+  font: 600 12px 'DM Sans', sans-serif;
   letter-spacing: 0.35px;
 }
 

@@ -15,7 +15,7 @@ main > .view.active.transfers-view {
 }
 
 .transfers-view .transfers-page-heading p {
-  font-size: 12px !important;
+  font-size: 13px !important;
   letter-spacing: .7px !important;
 }
 
@@ -75,7 +75,7 @@ main > .view.active.transfers-view {
 }
 
 .transfers-market-state {
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .7px;
   color: #9dff6a;
   font-style: normal;
@@ -102,7 +102,7 @@ main > .view.active.transfers-view {
   background: #0c1e28 !important;
   color: #a8c9cd !important;
   padding: 10px 18px !important;
-  font: 700 12px 'DM Sans', sans-serif !important;
+  font: 700 13px 'DM Sans', sans-serif !important;
   letter-spacing: .5px !important;
   cursor: pointer;
   box-shadow: none !important;
@@ -121,7 +121,7 @@ main > .view.active.transfers-view {
   border-radius: 6px;
   background: #102833;
   color: #dff7fa;
-  font: 800 10px 'DM Sans', sans-serif;
+  font: 800 12px 'DM Sans', sans-serif;
   letter-spacing: .45px;
   cursor: pointer;
 }
@@ -185,7 +185,7 @@ body.transfer-window-alert-open { overflow: hidden; }
 }
 .transfer-window-open-copy p span {
   color: #7fa8b0;
-  font: 800 10px 'DM Sans', sans-serif;
+  font: 800 12px 'DM Sans', sans-serif;
   letter-spacing: .14em;
 }
 .transfer-window-open-copy p strong {
@@ -201,7 +201,7 @@ body.transfer-window-alert-open { overflow: hidden; }
   border-radius: 6px;
   background: #10303d;
   color: #fff;
-  font: 800 11px 'DM Sans', sans-serif;
+  font: 800 12px 'DM Sans', sans-serif;
   letter-spacing: .08em;
   cursor: pointer;
 }
@@ -286,7 +286,7 @@ body.transfer-window-alert-open { overflow: hidden; }
 }
 
 .transfers-field span {
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .55px;
   text-transform: uppercase;
   color: #7ec8d4;
@@ -378,7 +378,7 @@ body.transfer-window-alert-open { overflow: hidden; }
   border: 1px solid #3a7080;
   background: #143440;
   color: #9edff0;
-  font: 800 10px 'DM Sans', sans-serif;
+  font: 800 12px 'DM Sans', sans-serif;
   letter-spacing: .4px;
   vertical-align: middle;
 }
@@ -430,7 +430,7 @@ body.transfer-window-alert-open { overflow: hidden; }
 
 .transfers-loan-away-note {
   color: #c49a9a;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .3px;
 }
 
@@ -477,7 +477,7 @@ body.transfer-window-alert-open { overflow: hidden; }
   border-radius: 5px !important;
   background: #102b35 !important;
   color: #75dfff !important;
-  font: 800 11px 'DM Sans', sans-serif !important;
+  font: 800 12px 'DM Sans', sans-serif !important;
   box-shadow: none !important;
 }
 
@@ -489,7 +489,7 @@ body.transfer-window-alert-open { overflow: hidden; }
 .transfers-pagination span {
   min-width: 160px;
   color: #b6ff38;
-  font: 700 12px 'DM Sans', sans-serif;
+  font: 700 13px 'DM Sans', sans-serif;
   text-align: center;
 }
 
@@ -556,7 +556,7 @@ body.transfers-col-resizing * {
   z-index: 1;
   padding: 8px 6px;
   text-align: left;
-  font: 800 10px 'DM Sans', sans-serif;
+  font: 800 12px 'DM Sans', sans-serif;
   letter-spacing: .4px;
   text-transform: uppercase;
   color: #dceef0;
@@ -715,7 +715,7 @@ body.transfers-col-resizing * {
   background: #275a1c !important;
   color: #e8ffb0 !important;
   padding: 6px 8px !important;
-  font: 800 11px 'DM Sans', sans-serif !important;
+  font: 800 12px 'DM Sans', sans-serif !important;
   letter-spacing: .4px !important;
   cursor: pointer;
   box-shadow: none !important;
@@ -825,7 +825,7 @@ body.transfers-col-resizing * {
   display: block;
   margin: 0 0 6px;
   color: #63d9ff;
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .65px;
 }
 
@@ -866,7 +866,7 @@ body.transfers-col-resizing * {
   display: block;
   margin-bottom: 4px;
   color: #7ec8d4;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .45px;
 }
 
@@ -885,7 +885,7 @@ body.transfers-col-resizing * {
 
 .transfers-offer-field span {
   color: #7ec8d4;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .5px;
   text-transform: uppercase;
 }
@@ -921,7 +921,7 @@ body.transfers-col-resizing * {
   background: #143440 !important;
   color: #b8eefc !important;
   padding: 8px 10px !important;
-  font: 700 11px 'DM Sans', sans-serif !important;
+  font: 700 12px 'DM Sans', sans-serif !important;
   letter-spacing: .35px !important;
   cursor: pointer;
   box-shadow: none !important;
@@ -957,7 +957,7 @@ body.transfers-col-resizing * {
 }
 .transfers-envelope-msg {
   margin: 0 0 8px;
-  font: 600 12px/1.35 'DM Sans', sans-serif;
+  font: 600 13px/1.35 'DM Sans', sans-serif;
   color: #c8e0e4;
 }
 .transfers-envelope[data-tone='warn'] .transfers-envelope-msg {
@@ -978,7 +978,7 @@ body.transfers-col-resizing * {
 .transfers-envelope-metrics small {
   display: block;
   color: #6f97a2;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.45px;
   margin-bottom: 2px;
 }
@@ -991,7 +991,7 @@ body.transfers-col-resizing * {
   min-height: 1.2em;
   margin: 0 0 6px;
   color: #9ebfc2;
-  font: 600 12px 'DM Sans', sans-serif;
+  font: 600 13px 'DM Sans', sans-serif;
 }
 
 .transfers-offer-hint.is-good { color: #9dff6a; }
@@ -1002,7 +1002,7 @@ body.transfers-col-resizing * {
   min-height: 1.2em;
   margin: 0 0 12px;
   color: #ff8b8b;
-  font: 700 12px 'DM Sans', sans-serif;
+  font: 700 13px 'DM Sans', sans-serif;
 }
 
 .transfers-offer-actions {
@@ -1015,7 +1015,7 @@ body.transfers-col-resizing * {
 .transfers-offer-submit {
   border-radius: 6px !important;
   padding: 11px 16px !important;
-  font: 800 12px 'DM Sans', sans-serif !important;
+  font: 800 13px 'DM Sans', sans-serif !important;
   letter-spacing: .45px !important;
   cursor: pointer;
   box-shadow: none !important;
@@ -1050,7 +1050,7 @@ body.transfers-col-resizing * {
 .transfers-report-eyebrow {
   display: block;
   margin-bottom: 6px;
-  font: 800 10px 'DM Sans', sans-serif;
+  font: 800 12px 'DM Sans', sans-serif;
   letter-spacing: .6px;
   color: #e8a020;
 }
@@ -1077,7 +1077,7 @@ body.transfers-col-resizing * {
 }
 
 .transfers-report-biggest small {
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .5px;
   color: #e8c060;
 }
@@ -1088,7 +1088,7 @@ body.transfers-col-resizing * {
 }
 
 .transfers-report-biggest span {
-  font: 500 12px 'DM Sans', sans-serif;
+  font: 500 13px 'DM Sans', sans-serif;
   color: #c8b890;
 }
 
@@ -1120,13 +1120,13 @@ body.transfers-col-resizing * {
 
 .transfers-report-list strong {
   grid-column: 1;
-  font: 700 12px 'DM Sans', sans-serif;
+  font: 700 13px 'DM Sans', sans-serif;
   color: #e8f0f2;
 }
 
 .transfers-report-list span {
   grid-column: 1;
-  font: 500 11px 'DM Sans', sans-serif;
+  font: 500 12px 'DM Sans', sans-serif;
   color: #8aa0a8;
 }
 
@@ -1134,7 +1134,7 @@ body.transfers-col-resizing * {
   grid-column: 2;
   grid-row: 1 / span 2;
   align-self: center;
-  font: 700 12px 'DM Sans', sans-serif;
+  font: 700 13px 'DM Sans', sans-serif;
   font-style: normal;
   color: #b8e060;
 }
@@ -1236,7 +1236,7 @@ body.transfers-col-resizing * {
   border-radius: 5px !important;
   background: #0c1e28 !important;
   color: #75dfff !important;
-  font: 700 11px 'DM Sans', sans-serif !important;
+  font: 700 12px 'DM Sans', sans-serif !important;
   letter-spacing: .4px !important;
   cursor: pointer;
   box-shadow: none !important;
@@ -1303,7 +1303,7 @@ body.transfers-col-resizing * {
 .transfers-alert-card > label {
   display: block;
   color: #7eb8c4;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.55px;
   margin-bottom: 8px;
 }
@@ -1322,7 +1322,7 @@ body.transfers-col-resizing * {
 .transfers-alert-body {
   margin: 0 0 16px;
   color: #9eb6b8;
-  font: 500 12px 'DM Sans', sans-serif;
+  font: 500 13px 'DM Sans', sans-serif;
   line-height: 1.5;
 }
 .transfers-alert-body.hidden {
@@ -1337,7 +1337,7 @@ body.transfers-col-resizing * {
 .transfers-confirm-card > label {
   display: block;
   color: #7eb8c4;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.55px;
   margin-bottom: 8px;
 }
@@ -1363,7 +1363,7 @@ body.transfers-col-resizing * {
 .transfers-alert-payroll small {
   display: block;
   color: #6f97a2;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.45px;
   margin-bottom: 3px;
 }

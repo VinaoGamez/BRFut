@@ -54,7 +54,7 @@
   width:auto;
   margin:0;
   color:#8fb0b8;
-  font:700 10px/1.2 'DM Sans',sans-serif;
+  font:700 12px/1.2 'DM Sans',sans-serif;
   letter-spacing:.85px;
   text-transform:uppercase;
 }
@@ -76,7 +76,7 @@
 }
 .cup-bracket-modal .cup-bracket-status{
   color:#b6ff38;
-  font:700 11px 'DM Sans',sans-serif;
+  font:700 12px 'DM Sans',sans-serif;
   letter-spacing:.45px;
   white-space:nowrap;
 }
@@ -86,7 +86,7 @@
   height:36px;
   padding:0 14px!important;
   border-radius:6px!important;
-  font:700 11px 'DM Sans',sans-serif!important;
+  font:700 12px 'DM Sans',sans-serif!important;
   letter-spacing:.4px!important;
   cursor:pointer;
   box-shadow:none!important;
@@ -188,7 +188,7 @@
   margin:0 0 8px;
   text-align:center;
   color:#63d9ff;
-  font:700 11px 'DM Sans',sans-serif;
+  font:700 12px 'DM Sans',sans-serif;
   letter-spacing:.55px;
   text-transform:uppercase;
 }
@@ -223,19 +223,19 @@
   padding:6px 10px;
   background:#143040;
   color:#b6ff38;
-  font:800 11px 'DM Sans',sans-serif;
+  font:800 12px 'DM Sans',sans-serif;
   letter-spacing:.55px;
   border-bottom:1px solid #2a5563;
 }
 .cup-tree-center-user{
   margin:0;
   color:#63d9ff;
-  font:700 12px/1.35 'DM Sans',sans-serif;
+  font:700 13px/1.35 'DM Sans',sans-serif;
 }
 .cup-tree-center-count{
   margin:0;
   color:#9ebfc2;
-  font:600 11px/1.3 'DM Sans',sans-serif;
+  font:600 12px/1.3 'DM Sans',sans-serif;
 }
 .cup-tree-pot.has-user{
   border-color:#63d9ff88;
@@ -309,13 +309,13 @@
   padding:8px 11px 9px;
   border-top:1px solid #1e3a44;
   color:#9ebfc2;
-  font:600 12px 'DM Sans',sans-serif;
+  font:600 13px 'DM Sans',sans-serif;
   letter-spacing:.15px;
   line-height:1.35;
 }
 .cup-tree-match-meta strong{
   color:#b6ff38;
-  font:700 12px 'DM Sans',sans-serif;
+  font:700 13px 'DM Sans',sans-serif;
 }
 
 .cup-tree-center{
@@ -364,7 +364,7 @@
   border:1px solid #3a6b77;
   background:rgba(18,43,53,0.7);
   color:#b6ff38;
-  font:700 10px 'DM Sans',sans-serif;
+  font:700 12px 'DM Sans',sans-serif;
   letter-spacing:.5px;
 }
 .cup-tree-pot-status.is-wait{
@@ -388,7 +388,7 @@
   background:#174052;
   border:1px solid #3a6a7a;
   color:#edf8f5;
-  font:800 10px 'Barlow Condensed',sans-serif;
+  font:800 12px 'Barlow Condensed',sans-serif;
   font-style:normal;
 }
 .cup-tree-pot-grid i.tbd{
@@ -413,7 +413,7 @@
   padding:8px 10px;
   background:#123843;
   color:#63d9ff;
-  font:700 12px 'DM Sans',sans-serif;
+  font:700 13px 'DM Sans',sans-serif;
   letter-spacing:.5px;
   text-align:center;
 }
@@ -437,5 +437,5 @@
   .cup-tree-wing.right{order:3}
   .cup-tree-center{order:2}
   .cup-tree-team b{font-size:14px}
-  .cup-tree-match-meta{font-size:12px}
+  .cup-tree-match-meta{font-size:13px}
 }

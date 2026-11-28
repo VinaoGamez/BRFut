@@ -9,7 +9,7 @@
   border-radius: 5px;
   background: #14303a;
   color: #edf8f5;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.65px;
   cursor: pointer;
   box-shadow: none;
@@ -43,7 +43,7 @@
   border-radius: 99px;
   background: #ffc94f;
   color: #1a1205;
-  font: 800 10px 'DM Sans', sans-serif;
+  font: 800 12px 'DM Sans', sans-serif;
   line-height: 1;
 }
 
@@ -153,7 +153,7 @@
   border-radius: 5px;
   background: #12313c;
   color: #edf8f5;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.55px;
   cursor: pointer;
 }

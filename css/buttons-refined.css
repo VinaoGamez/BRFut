@@ -77,7 +77,7 @@ body.dark-mode .new-game-modal button.division-card b{
   color:#eaf4f3!important;font-size:18px;letter-spacing:.2px
 }
 body.dark-mode .new-game-modal button.division-card small{
-  color:#88a9ad!important;font-size:10px;line-height:1.35
+  color:#88a9ad!important;font-size:12px;line-height:1.35
 }
 body.dark-mode .new-game-modal button.division-card:hover{
   background:linear-gradient(145deg,#163945,#102832)!important;

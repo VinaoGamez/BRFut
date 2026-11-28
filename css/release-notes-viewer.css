@@ -23,7 +23,7 @@
 
 .updates-info-summary span {
   color: #9eb6b8;
-  font: 600 12px 'DM Sans', sans-serif;
+  font: 600 13px 'DM Sans', sans-serif;
 }
 
 .updates-info-row button {
@@ -32,7 +32,7 @@
   color: #fff !important;
   border: 1px solid #63d9ff !important;
   padding: 10px 16px;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.35px;
   cursor: pointer;
   border-radius: 5px;
@@ -58,7 +58,7 @@
   display: block;
   margin: 0 0 8px;
   color: #63d9ff;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.55px;
 }
 
@@ -66,7 +66,7 @@
   margin: 0;
   padding-left: 18px;
   color: #d7ece8;
-  font: 500 12px/1.45 'DM Sans', sans-serif;
+  font: 500 13px/1.45 'DM Sans', sans-serif;
 }
 
 .release-notes-topic li + li {

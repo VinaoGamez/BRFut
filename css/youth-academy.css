@@ -71,7 +71,7 @@
 
 .youth-infra-card label {
   color: #63d9ff;
-  font: 700 11px "DM Sans", sans-serif;
+  font: 700 12px "DM Sans", sans-serif;
   letter-spacing: 0.06em;
 }
 
@@ -93,7 +93,7 @@
   border-radius: 6px;
   background: #2abee9;
   color: #071015;
-  font: 700 12px "DM Sans", sans-serif;
+  font: 700 13px "DM Sans", sans-serif;
   padding: 10px 14px;
   cursor: pointer;
 }
@@ -207,7 +207,7 @@
   border-radius: 6px;
   background: #0b1a22;
   color: #63d9ff;
-  font: 700 11px "DM Sans", sans-serif;
+  font: 700 12px "DM Sans", sans-serif;
   letter-spacing: 0.06em;
   cursor: pointer;
 }
@@ -296,7 +296,7 @@
   min-width: 1.4rem;
   padding: 1px 6px;
   border-radius: 4px;
-  font: 800 11px "DM Sans", sans-serif;
+  font: 800 12px "DM Sans", sans-serif;
   letter-spacing: 0.04em;
   vertical-align: middle;
 }
@@ -404,7 +404,7 @@
 
 .youth-scout-slot span {
   color: #63d9ff;
-  font: 700 12px "DM Sans", sans-serif;
+  font: 700 13px "DM Sans", sans-serif;
   letter-spacing: 0.04em;
 }
 
@@ -473,7 +473,7 @@
 
 .youth-grid-table__head span {
   color: #63d9ff;
-  font: 700 12px "DM Sans", sans-serif;
+  font: 700 13px "DM Sans", sans-serif;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
@@ -637,7 +637,7 @@
   background: rgba(212, 168, 75, 0.18);
   border: 1px solid rgba(212, 168, 75, 0.45);
   color: #e8c46a;
-  font: 700 10px "DM Sans", sans-serif;
+  font: 700 12px "DM Sans", sans-serif;
   letter-spacing: 0.6px;
   vertical-align: middle;
   cursor: help;

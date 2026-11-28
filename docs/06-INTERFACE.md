@@ -93,6 +93,19 @@ Definida pelo dono do projeto em 27/11/2026. **Nenhuma tela ou pop-up pode corta
 
 ---
 
+## Regra de legibilidade (obrigatória)
+
+- Piso de fonte: nenhum texto do jogo abaixo de **11 px** (rótulos/kickers em Kanit) e **12 px** para texto corrido, no PC e no celular. Tamanhos menores só em iniciais de escudo e ícones.
+- Tabelas de classificação e listas de times: nome do clube com pelo menos **14–15 px** e escudo de **26–30 px** quando houver espaço (ex.: mini tabela da Central).
+- Mesma informação, mesmo visual: estatísticas de partida usam sempre as barras de comparação (`statCompareRow`, `js/feature/shared/stat-compare.js`) — ao vivo, pós-jogo e relatórios.
+- Auditoria: `qa/font_audit.py desk|mobile` lista textos abaixo do piso por tela.
+
+## Regra sem rolagem interna (meta)
+
+- Evitar áreas com barra de rolagem própria dentro das telas e pop-ups. Quando o conteúdo não couber, dividir em **abas** ou usar botões **"ver mais / ver completo"**.
+- A rolagem da página inteira (principalmente no celular) continua permitida; o que se evita é a caixa rolável dentro de outra.
+- Cada tela revisada passa a seguir esta regra; as antigas são migradas por etapa.
+
 ## CSS
 
 Arquivos estáticos em `css/` — ex.: `layout.css`, `calendar.css`, `tactics-ui.css`, `economy-office.css`. Ordem de cascade preservada no `index.html`.

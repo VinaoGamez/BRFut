@@ -100,7 +100,7 @@
   width: 216px;
   margin: 0;
   color: var(--nto-muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
   text-align: center;
 }
@@ -147,7 +147,7 @@
   max-width: 460px;
   margin: 0;
   color: var(--nto-muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -161,7 +161,7 @@
   border: 1px solid #7a3030;
   background: linear-gradient(180deg, #4a1818, #321010);
   color: #ffd8d8;
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   cursor: pointer;
@@ -186,7 +186,7 @@
 
 .nto-table th {
   color: #0d4a5e;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   background: #a8dcef;
@@ -242,7 +242,7 @@
   display: block;
   margin-top: 2px;
   color: #3a5f6e;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .nto-ovr {
@@ -275,7 +275,7 @@
   border: 1px solid #315f70;
   background: #102630;
   color: #dce9e8;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.3px;
   text-transform: uppercase;
   cursor: pointer;
@@ -366,7 +366,7 @@
 
   .nto-hero-meta {
     width: 168px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .nto-offers-title {

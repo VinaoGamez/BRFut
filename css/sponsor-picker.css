@@ -13,7 +13,7 @@
   display:block;
   margin-bottom:4px;
   color:#63d9ff;
-  font:700 10px DM Sans,sans-serif;
+  font:700 12px DM Sans,sans-serif;
   letter-spacing:1px;
 }
 .sponsor-picker-modal h2{
@@ -25,7 +25,7 @@
 .sponsor-picker-lead{
   margin:0 0 18px;
   color:#9eb6b8;
-  font-size:12px;
+  font-size:13px;
   line-height:1.45;
 }
 .sponsor-picker-section{
@@ -50,7 +50,7 @@
 }
 .sponsor-picker-section small{
   color:#9fcfd8;
-  font:700 12px DM Sans,sans-serif;
+  font:700 13px DM Sans,sans-serif;
   letter-spacing:.4px;
   text-transform:uppercase;
 }
@@ -131,13 +131,13 @@
 }
 .sponsor-offer-copy small{
   color:#8eb8c2;
-  font:600 10px DM Sans,sans-serif;
+  font:600 12px DM Sans,sans-serif;
 }
 .sponsor-picker-error{
   min-height:18px;
   margin:0 0 8px;
   color:#ff8c94;
-  font:600 12px DM Sans,sans-serif;
+  font:600 13px DM Sans,sans-serif;
 }
 .sponsor-picker-summary{
   display:flex;
@@ -152,7 +152,7 @@
 }
 .sponsor-picker-summary span{
   color:#9eb6b8;
-  font:700 11px DM Sans,sans-serif;
+  font:700 12px DM Sans,sans-serif;
   letter-spacing:.4px;
   text-transform:uppercase;
 }
@@ -198,7 +198,7 @@
   display:block;
   margin-bottom:4px;
   color:#ffb45c;
-  font:700 10px DM Sans,sans-serif;
+  font:700 12px DM Sans,sans-serif;
   letter-spacing:1px;
 }
 .sponsor-reroll-warn h2{

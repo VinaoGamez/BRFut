@@ -12,7 +12,7 @@
   display:block;
   margin-bottom:6px;
   color:#ff8c94;
-  font:700 12px DM Sans,sans-serif;
+  font:700 13px DM Sans,sans-serif;
   letter-spacing:1.2px;
 }
 .manager-sack-modal h2{
@@ -43,7 +43,7 @@
 .manager-sack-stats small{
   display:block;
   color:#8fb4bc;
-  font:700 10px DM Sans,sans-serif;
+  font:700 12px DM Sans,sans-serif;
   letter-spacing:.4px;
   margin-bottom:5px;
 }
@@ -116,7 +116,7 @@
 .manager-sack-offer button{
   min-width:92px;
   padding:11px 14px!important;
-  font:700 12px DM Sans,sans-serif!important;
+  font:700 13px DM Sans,sans-serif!important;
   letter-spacing:.35px;
   white-space:nowrap;
 }

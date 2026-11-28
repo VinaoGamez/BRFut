@@ -70,7 +70,7 @@ main > .view.active {
   justify-content: space-between;
   gap: 8px;
   padding: 10px 11px !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
   line-height: 1.2;
   letter-spacing: 0.35px !important;
   text-transform: uppercase;
@@ -110,7 +110,7 @@ main > .view.active {
   border-radius: 999px;
   background: var(--md-lime, #bbeb27);
   color: #06131b;
-  font: 700 12px 'DM Sans', sans-serif;
+  font: 700 13px 'DM Sans', sans-serif;
   line-height: 1;
   flex-shrink: 0;
   box-shadow: 0 0 0 2px rgba(6, 19, 27, 0.55);
@@ -139,7 +139,7 @@ main > .view.active {
   display: block;
   margin-top: 6px;
   color: #9eb6b8;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
   max-width: 720px;
 }
@@ -162,7 +162,7 @@ main > .view.active {
 }
 .view#dashboard .match.season-ended > label {
   margin-bottom: 10px !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   letter-spacing: 0.8px;
 }
 .view#dashboard .match.season-ended > label em {
@@ -247,7 +247,7 @@ main > .view.active {
   letter-spacing: 0.2px;
 }
 .view#dashboard .match .teams > div > small.match-team-context {
-  font: 500 11px 'DM Sans', sans-serif !important;
+  font: 500 12px 'DM Sans', sans-serif !important;
   color: #6a929e !important;
   letter-spacing: 0.25px;
 }
@@ -255,7 +255,7 @@ main > .view.active {
   display: none;
 }
 .view#dashboard .match .teams > strong.match-vs-block .match-competition-phase {
-  font: 600 11px 'DM Sans', sans-serif;
+  font: 600 12px 'DM Sans', sans-serif;
   color: #7aabbb;
   letter-spacing: 0.35px;
   text-transform: uppercase;
@@ -324,7 +324,7 @@ main > .view.active {
 .match-competition b {
   min-width: 0;
   color: #edf8f5;
-  font: 800 11px 'DM Sans', sans-serif;
+  font: 800 12px 'DM Sans', sans-serif;
   letter-spacing: 0.35px;
   line-height: 1.15;
   text-transform: uppercase;
@@ -395,7 +395,7 @@ main > .view.active {
     height: 20px;
   }
   .view#dashboard .match-competition b {
-    font-size: 12px;
+    font-size: 13px;
   }
 }
 .view#dashboard .match.season-ended .season-review-board {
@@ -455,7 +455,7 @@ main > .view.active {
 }
 .view#dashboard .match.season-ended .season-review-club small {
   color: #8ec5d2;
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.4px;
   text-transform: uppercase;
 }
@@ -534,7 +534,7 @@ main > .view.active {
 }
 .view#dashboard .match.season-ended .season-review-tile-copy span {
   color: #8eb8c2;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.45px;
   text-transform: uppercase;
 }
@@ -549,7 +549,7 @@ main > .view.active {
 }
 .view#dashboard .match.season-ended .season-review-tile-copy small {
   color: #9eb6b8;
-  font: 600 11px 'DM Sans', sans-serif;
+  font: 600 12px 'DM Sans', sans-serif;
   line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -667,7 +667,7 @@ main > .view.active {
 
 .team-games-modal > label {
   color: #63d9ff;
-  font: 700 11px "DM Sans", sans-serif;
+  font: 700 12px "DM Sans", sans-serif;
   letter-spacing: .8px;
 }
 
@@ -679,7 +679,7 @@ main > .view.active {
 .team-games-modal > p {
   margin: 0 0 15px;
   color: #9eb6b8;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .team-games-head,
@@ -695,7 +695,7 @@ main > .view.active {
   padding: 9px 10px;
   background: #102b35;
   color: #63d9ff;
-  font: 700 10px "DM Sans", sans-serif;
+  font: 700 12px "DM Sans", sans-serif;
   letter-spacing: .6px;
 }
 
@@ -741,7 +741,7 @@ main > .view.active {
   display: block;
   margin-bottom: 5px;
   color: #79b9cc;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.25;
   letter-spacing: .35px;
 }
@@ -857,7 +857,7 @@ main > .view.active {
   margin: 0 !important;
   font-style: normal;
   color: #63d9ff;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -907,7 +907,7 @@ main > .view.active {
 .dashboard-message-row small {
   display: block;
   color: #63d9ff;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .45px;
 }
 
@@ -922,7 +922,7 @@ main > .view.active {
 .dashboard-message-empty {
   padding: 12px 2px;
   color: #8fa9ae;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -1045,7 +1045,7 @@ main > .view.active {
 .messages-toolbar-top small {
   display: block;
   color: #63d9ff;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .55px;
 }
 
@@ -1060,7 +1060,7 @@ main > .view.active {
   border: 1px solid #3a6b77 !important;
   background: #12313c !important;
   color: #75dfff !important;
-  font-size: 10px !important;
+  font-size: 12px !important;
   white-space: nowrap;
 }
 
@@ -1076,7 +1076,7 @@ main > .view.active {
   border: 1px solid #315d69 !important;
   background: #102a34 !important;
   color: #b9ced2 !important;
-  font-size: 10px !important;
+  font-size: 12px !important;
 }
 
 .message-filters button.active {
@@ -1117,7 +1117,7 @@ main > .view.active {
 .message-item-main small {
   display: block;
   color: #63d9ff;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .45px;
 }
 
@@ -1131,7 +1131,7 @@ main > .view.active {
 
 .message-item time {
   color: #8fa9ae;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -1149,7 +1149,7 @@ main > .view.active {
 .message-reader-head small {
   display: block;
   color: #63d9ff;
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .55px;
 }
 
@@ -1164,7 +1164,7 @@ main > .view.active {
 
 .message-reader-head time {
   color: #8fa9ae;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .message-reader-head.is-reader-grid,
@@ -1219,7 +1219,7 @@ main > .view.active {
 .message-reader-head.is-transfer-offer time {
   justify-self: end;
   text-align: right;
-  font: 700 12px 'DM Sans', sans-serif;
+  font: 700 13px 'DM Sans', sans-serif;
   color: #9eb8bc;
   white-space: nowrap;
 }
@@ -1262,7 +1262,7 @@ main > .view.active {
 .message-reader-head.is-training-report time {
   flex: 0 0 auto;
   margin-left: auto;
-  font: 700 12px 'DM Sans', sans-serif;
+  font: 700 13px 'DM Sans', sans-serif;
   color: #9eb8bc;
   white-space: nowrap;
 }
@@ -1392,7 +1392,7 @@ main > .view.active {
   border-radius: 5px;
   background: #12313c;
   color: #75dfff;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .35px;
   cursor: pointer;
 }
@@ -1469,7 +1469,7 @@ main > .view.active {
   border-radius: 5px;
   background: #102a34;
   color: #d7e8ea;
-  font: 700 12px 'DM Sans', sans-serif;
+  font: 700 13px 'DM Sans', sans-serif;
   letter-spacing: .45px;
   cursor: pointer;
 }
@@ -1598,7 +1598,7 @@ main > .view.active {
   padding: 42px 18px;
   text-align: center;
   color: #8fa9ae;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 /* --- Ambiente do Elenco (dashboard) --- */
@@ -1643,7 +1643,7 @@ main > .view.active {
 .overall-box small,
 .environment-gauge small {
   display: block;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: .55px;
   color: #9eb6b8;
 }
@@ -1727,7 +1727,7 @@ main > .view.active {
 
 .dashboard-environment-note small {
   margin-top: 8px;
-  font-size: 11px;
+  font-size: 12px;
   color: #9eb6b8;
   line-height: 1.45;
 }
@@ -1755,7 +1755,7 @@ main > .view.active {
 
 .dashboard-factors small {
   display: block !important;
-  font: 700 10px 'DM Sans', sans-serif !important;
+  font: 700 12px 'DM Sans', sans-serif !important;
   letter-spacing: .3px;
   color: #9eb6b8 !important;
   min-height: 0 !important;
@@ -1824,7 +1824,7 @@ main > .view.active {
 }
 
 #dashboard.dashboard-wc-mode .environment-card .dashboard-overall small {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 #dashboard.dashboard-wc-mode .environment-card .dashboard-environment {
@@ -1837,7 +1837,7 @@ main > .view.active {
 }
 
 #dashboard.dashboard-wc-mode .environment-card .dashboard-environment small {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: .4px;
 }
 
@@ -1846,7 +1846,7 @@ main > .view.active {
   margin-top: 8px;
   text-align: center;
   color: #9fcfd8;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -1862,7 +1862,7 @@ main > .view.active {
   width: 100%;
   min-height: 30px;
   padding: 7px 10px !important;
-  font-size: 10px !important;
+  font-size: 12px !important;
   text-align: center !important;
   white-space: nowrap;
   overflow: hidden;
@@ -1898,7 +1898,7 @@ main > .view.active {
 
   #dashboard .dashboard-overall small,
   #dashboard .dashboard-environment small {
-    font-size: 10px !important;
+    font-size: 12px !important;
   }
 
   #dashboard .dashboard-summary {
@@ -1919,7 +1919,7 @@ main > .view.active {
   }
 
   #dashboard .dashboard-factors small {
-    font-size: 10px !important;
+    font-size: 12px !important;
   }
 
   #dashboard .dashboard-factors b {
@@ -1931,7 +1931,7 @@ main > .view.active {
   }
 
   #dashboard .dashboard-environment-note small {
-    font-size: 11px !important;
+    font-size: 12px !important;
   }
 }
 
@@ -1943,7 +1943,7 @@ main > .view.active {
 
 #dashboard .dashboard-overall small,
 #dashboard .dashboard-environment small {
-  font-size: 10px !important;
+  font-size: 12px !important;
 }
 
 #dashboard .dashboard-overall strong {
@@ -1979,7 +1979,7 @@ main > .view.active {
 }
 
 #dashboard.dashboard-wc-mode .dashboard-team-stats > label {
-  font-size: 11px !important;
+  font-size: 12px !important;
   letter-spacing: .8px;
 }
 
@@ -2003,7 +2003,7 @@ main > .view.active {
 }
 
 #dashboard.dashboard-wc-mode .dashboard-team-stat-copy small {
-  font-size: 10px !important;
+  font-size: 12px !important;
   letter-spacing: .55px;
 }
 
@@ -2012,7 +2012,7 @@ main > .view.active {
 }
 
 #dashboard.dashboard-wc-mode .dashboard-team-stat-copy span {
-  font-size: 12px !important;
+  font-size: 13px !important;
 }
 
 #teamScoutModal .environment-gauge,
@@ -2191,7 +2191,7 @@ main > .view.active {
 }
 
 .view#dashboard .club-upcoming-badge.match-competition b {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.2px;
   line-height: 1.1;
 }
@@ -2207,7 +2207,7 @@ main > .view.active {
     height: 11px;
   }
   .view#dashboard .club-upcoming-badge.match-competition b {
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 
@@ -2364,7 +2364,7 @@ main > .view.active.training-view {
 }
 
 .training-view .training-page-heading p {
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.65px;
 }
 
@@ -2417,7 +2417,7 @@ main > .view.active.training-view {
   display: block;
   margin: 0 0 14px;
   color: #63d9ff;
-  font: 700 12px 'DM Sans', sans-serif;
+  font: 700 13px 'DM Sans', sans-serif;
   letter-spacing: 0.55px;
 }
 
@@ -2489,7 +2489,7 @@ main > .view.active.training-view {
 }
 
 .training-planner .training-free-header small {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .training-planner .training-free-header strong {
@@ -2498,7 +2498,7 @@ main > .view.active.training-view {
 
 .training-planner .training-free-header .training-mode-badge {
   padding: 6px 12px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.2;
 }
 
@@ -2522,7 +2522,7 @@ main > .view.active.training-view {
 }
 
 .training-planner .training-panel-label {
-  font-size: 12px;
+  font-size: 13px;
   margin-bottom: 12px;
 }
 
@@ -2560,7 +2560,7 @@ main > .view.active.training-view {
 
 .training-status-row small {
   color: #63d9ff;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.45px;
 }
 
@@ -2627,7 +2627,7 @@ main > .view.active.training-view {
   border-radius: 5px;
   background: #0a1a22;
   color: #c5d8db;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .training-tradeoff-grid {
@@ -2659,7 +2659,7 @@ main > .view.active.training-view {
   margin: 0;
   padding-left: 18px;
   color: #9eb6b8;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -2686,7 +2686,7 @@ main > .view.active.training-view {
   border-radius: 50%;
   background: #1d5a6d;
   color: #fff;
-  font: 700 11px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
 }
 
 .training-flow-list span {
@@ -2713,7 +2713,7 @@ main > .view.active.training-view {
   min-height: 36px;
   padding: 8px 14px !important;
   flex-shrink: 0;
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 
 .training-guide-row {
@@ -2741,7 +2741,7 @@ main > .view.active.training-view {
   display: block;
   margin-top: 6px;
   color: #c5d8db;
-  font: 500 12px 'DM Sans', sans-serif;
+  font: 500 13px 'DM Sans', sans-serif;
   font-weight: 500;
   line-height: 1.45;
   letter-spacing: 0;
@@ -2785,7 +2785,7 @@ main > .view.active.training-view {
 .training-session-note {
   margin: 0 0 10px;
   color: #718f95;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -2812,7 +2812,7 @@ main > .view.active.training-view {
 
 .training-free-header small {
   color: #63d9ff;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.5px;
 }
 
@@ -2831,7 +2831,7 @@ main > .view.active.training-view {
   flex-shrink: 0;
   padding: 5px 10px;
   border-radius: 999px;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.04em;
 }
 
@@ -2867,7 +2867,7 @@ main > .view.active.training-view {
 
 .training-session > header small {
   color: #63d9ff;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.5px;
 }
 
@@ -2956,7 +2956,7 @@ main > .view.active.training-view {
 
 .training-options button small {
   color: #8eacb2;
-  font: 500 11px 'DM Sans', sans-serif;
+  font: 500 12px 'DM Sans', sans-serif;
   line-height: 1.35;
 }
 
@@ -3034,7 +3034,7 @@ main > .view.active.training-view {
 .training-mode-btn small {
   display: block;
   color: #8eacb2;
-  font: 500 12px 'DM Sans', sans-serif;
+  font: 500 13px 'DM Sans', sans-serif;
   line-height: 1.35;
 }
 
@@ -3042,14 +3042,14 @@ main > .view.active.training-view {
   display: block;
   margin: 0 0 10px;
   color: #7eb8c8;
-  font: 700 10px 'DM Sans', sans-serif;
+  font: 700 12px 'DM Sans', sans-serif;
   letter-spacing: 0.5px;
 }
 
 .training-dev-hint {
   margin: 0 0 12px;
   color: #718f95;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -3060,7 +3060,7 @@ main > .view.active.training-view {
   padding-top: 12px;
   border-top: 1px solid #234650;
   color: #718f95;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -3114,7 +3114,7 @@ main > .view.active.training-view {
 .training-shortcut-note {
   margin: 0;
   color: #9eb6b8;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -3128,7 +3128,7 @@ main > .view.active.training-view {
 
 .training-mode-btn b {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.04em;
 }
 
@@ -3136,7 +3136,7 @@ main > .view.active.training-view {
   display: block;
   margin-top: 4px;
   color: #8aa7ad;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -3148,7 +3148,7 @@ main > .view.active.training-view {
 .calendar-view .routine-alert.training-report small {
   display: block;
   color: #7eb8c8;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.08em;
 }
 
@@ -3156,13 +3156,13 @@ main > .view.active.training-view {
   display: block;
   margin: 4px 0;
   color: #dff6ff;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .calendar-view .routine-alert.training-report span {
   display: block;
   color: #a8c4ca;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -3170,7 +3170,7 @@ main > .view.active.training-view {
   margin: 0;
   padding: 13px 16px 4px;
   color: #9eb6b8;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -3184,7 +3184,7 @@ main > .view.active.training-view {
   margin-top: 14px;
   padding: 0;
   color: #718f95;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -3196,7 +3196,7 @@ main > .view.active.training-view {
   border-radius: 6px !important;
   background: #1d5a6d !important;
   color: #fff !important;
-  font: 700 12px 'DM Sans', sans-serif !important;
+  font: 700 13px 'DM Sans', sans-serif !important;
   letter-spacing: 0.4px;
   cursor: pointer;
   box-shadow: inset 0 -2px #b6ff38;
@@ -3223,7 +3223,7 @@ main > .view.active.training-view {
 .coming-soon-view .coming-soon-card > p {
   margin: 0;
   color: #9eb6b8;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -3295,12 +3295,12 @@ main > .view.active.training-view {
 }
 
 /* Libertadores / Sul-Americana na página de Campeonatos */
-.league-row .conmebol-country { margin-left: 6px; font-size: 11px; color: var(--muted, #9eb6b8); font-weight: 500; }
+.league-row .conmebol-country { margin-left: 6px; font-size: 12px; color: var(--muted, #9eb6b8); font-weight: 500; }
 .league-row.playoff { box-shadow: inset 3px 0 0 #ffb020; }
 .championship-page-zone-legend i.playoff { background: #ffb020; }
 .conmebol-ties { display: grid; gap: 6px; margin: 0 0 12px; }
 .conmebol-tie { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); font-size: 13px; }
-.conmebol-tie small { color: var(--muted, #9eb6b8); font-size: 12px; }
+.conmebol-tie small { color: var(--muted, #9eb6b8); font-size: 13px; }
 .conmebol-tie.highlight { border-color: #bbeb27; background: rgba(187,235,39,.06); }
 .conmebol-final-note { margin: 0 0 10px; font-size: 13px; color: var(--muted, #9eb6b8); }
 .conmebol-ko { width: min(640px, 100%); display: grid; gap: 12px; }

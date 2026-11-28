@@ -98,8 +98,12 @@ export function playerCardInfoMarkup(card, { division = null, isOwn = false } = 
   const wageMonth = wageRound ? wageMonthlyFromRound(wageRound, division || card.clubDivision || 'A') : 0;
   const condition = fatigue == null ? '' : `<div class="pcv2-cond" data-level="${fatigue >= 70 ? 'ok' : fatigue >= 40 ? 'warn' : 'low'}">
       <small>CONDIÇÃO</small><i><b style="width:${fatigue}%"></b></i><strong>${fatigue}%</strong></div>`;
-  const potential = pot && pot > Number(card.overall)
-    ? `<div class="pcv2-pot"><small>POTENCIAL</small><strong>${pot}</strong><em>+${pot - Math.round(Number(card.overall) || 0)}</em></div>`
+  // Potencial sempre visível: sem dado salvo, o teto é o próprio OVR (jogador no auge).
+  const ovrNum = Math.round(Number(card.overall) || 0);
+  const potValue = Math.max(pot || 0, ovrNum);
+  const potGap = potValue - ovrNum;
+  const potential = potValue
+    ? `<div class="pcv2-pot${potGap > 0 ? '' : ' is-peak'}"><small>POTENCIAL</small><strong>${potValue}</strong><em>${potGap > 0 ? `+${potGap}` : age >= 30 ? 'no auge' : 'atingido'}</em></div>`
     : '';
   return `
     <div class="pcv2-top">

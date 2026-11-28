@@ -3,6 +3,7 @@
 - Responder sempre em português.
 - Visual: seguir "Arcade Noturno v2" (tokens e formas em `css/arcade-v2.css`; guia em `docs/06-INTERFACE.md`).
 - **Alinhamento obrigatório:** cartões, tabelas e painéis lado a lado na mesma linha têm a mesma altura e bordas alinhadas; o menor estica para ocupar a linha. Nenhuma tela nova ou alterada pode quebrar isso (detalhes em `docs/06-INTERFACE.md`, seção "Regra de alinhamento").
+- **Legível e sem rolagem interna:** piso de fonte 11–12 px, nomes/escudos de times grandes, mesma informação com o mesmo visual; evitar caixas roláveis dentro das telas (usar abas ou "ver mais"). Detalhes em `docs/06-INTERFACE.md`.
 - **Nada cortado no celular:** o fim de toda tela e pop-up precisa poder ser rolado até ficar visível acima da navegação inferior/botão Continuar, e nada passa da largura da tela (detalhes em `docs/06-INTERFACE.md`, seção "Regra de conteúdo visível no celular").
 - Não reescrever o motor de partida; não mexer em `main` nem fazer merge sem aprovação; o site fica privado até estar 100% funcional.
 - Clubes: só nomes inspirados, sem marcas reais.
