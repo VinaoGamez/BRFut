@@ -7053,3 +7053,271 @@ html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel > .pause-res
   html body .sale2-card .transfers-offer-facts small { white-space: normal !important; }
   html body .sale2-result .mv2-tile strong { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; font-size: 16px !important; }
 }
+
+/* ===================== Etapa 3 — Retrospectiva da temporada ===================== */
+html body #seasonTransitionModal { overflow-y: auto !important; align-items: flex-start !important; padding: 24px 16px !important; }
+html body #seasonTransitionModal > .modal-card.retro2 {
+  width: min(1060px, calc(100vw - 32px)) !important;
+  max-width: none !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: auto !important;
+  display: flex !important;
+  flex-direction: column;
+  text-align: left;
+}
+html body .retro2 .retro-head { display: flex; align-items: center; gap: 14px; padding: 16px 22px 12px; border-bottom: 1px solid var(--av-line); }
+html body .retro2 .retro-head-crest { flex: none; width: 52px; height: 52px; display: grid; place-items: center; }
+html body .retro2 .retro-head-crest :is(img, svg, .crest--club, i) { width: 52px !important; height: 52px !important; }
+html body .retro2 .retro-head-copy { flex: 1; min-width: 0; }
+html body .retro2 .retro-head-copy h2 { margin: 2px 0 0 !important; font: italic 900 28px/1.1 var(--av-display) !important; color: var(--av-ink) !important; }
+html body .retro2 .retro-tabs { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+html body .retro2 .retro-tabs button {
+  padding: 9px 14px !important; min-height: 38px; border: 0 !important; border-radius: 0 !important;
+  background: var(--av-rail) !important; color: var(--av-muted) !important;
+  font: italic 800 13px var(--av-display) !important; letter-spacing: .06em; text-transform: uppercase;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); cursor: pointer;
+}
+html body .retro2 .retro-tabs button.is-active { background: var(--av-gold) !important; color: #06131b !important; }
+html body .retro2 .retro-body { padding: 16px 22px; min-height: 540px; box-sizing: border-box; }
+html body .retro2 .retro-pane { display: none; flex-direction: column; gap: 12px; }
+html body .retro2 .retro-pane.is-active { display: flex; }
+html body .retro2 .retro-foot { display: flex; align-items: center; gap: 12px; padding: 12px 22px 16px; border-top: 1px solid var(--av-line); background: var(--av-panel); }
+html body .retro2 .retro-foot-line { flex: 1; min-width: 0; font-size: 14px; color: var(--av-muted); }
+html body .retro2 .retro-foot-line.promoted { color: var(--av-green); }
+html body .retro2 .retro-foot-line.relegated { color: var(--av-red); }
+html body .retro2 .season-summary-actions { display: flex; gap: 10px; margin: 0 !important; padding: 0 !important; border: 0 !important; }
+html body .retro2 .season-summary-actions button {
+  min-height: 44px; padding: 10px 20px !important; border: 0 !important; border-radius: 0 !important;
+  font: italic 800 14px var(--av-display) !important; letter-spacing: .05em; text-transform: uppercase;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); cursor: pointer; white-space: nowrap;
+}
+html body .retro2 #closeSeasonSummary { background: transparent !important; color: var(--av-ink) !important; box-shadow: inset 0 0 0 2px var(--av-line) !important; }
+html body .retro2 #startNextSeason { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -4px var(--av-lime-edge) !important; }
+html body .retro2 .season-goal-preview-switcher { margin: 10px 22px 0; }
+
+/* seções e peças */
+html body :is(.retro2, .sr2) .retro-sec { display: flex; align-items: baseline; gap: 10px; margin: 0 0 6px; padding: 0; background: none; border: 0; }
+html body :is(.retro2, .sr2) .retro-sec h3 { margin: 0 !important; font: italic 800 12px var(--av-display) !important; letter-spacing: .1em; text-transform: uppercase; color: var(--av-muted) !important; }
+html body :is(.retro2, .sr2) .retro-sec small { font-size: 12px; color: var(--av-muted); }
+html body :is(.retro2, .sr2) .retro-link { margin-left: auto; padding: 4px 0 !important; background: none !important; border: 0 !important; color: var(--av-cyan) !important; font: 700 13px var(--av-body) !important; cursor: pointer; box-shadow: none !important; min-height: 0 !important; }
+
+html body :is(.retro2, .sr2) .retro-comp { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--av-rail); box-shadow: inset 0 3px var(--rc, var(--av-cyan)); min-width: 0; }
+html body :is(.retro2, .sr2) .retro-comp.c-cyan { --rc: var(--av-cyan); }
+html body :is(.retro2, .sr2) .retro-comp.c-green { --rc: var(--av-green); }
+html body :is(.retro2, .sr2) .retro-comp.c-orange { --rc: var(--av-orange); }
+html body :is(.retro2, .sr2) .retro-comp.c-gold { --rc: var(--av-gold); }
+html body :is(.retro2, .sr2) .retro-comp-name { font: italic 800 12px var(--av-display); letter-spacing: .07em; color: var(--rc); text-transform: uppercase; overflow-wrap: anywhere; }
+html body :is(.retro2, .sr2) .retro-comp-result { font: italic 900 22px/1.1 var(--av-display); color: var(--av-gold); }
+html body :is(.retro2, .sr2) .retro-comp.is-good .retro-comp-result { color: var(--av-green); }
+html body :is(.retro2, .sr2) .retro-comp.is-bad .retro-comp-result { color: var(--av-red); }
+html body :is(.retro2, .sr2) .retro-comp-detail { font-size: 13px; color: var(--av-muted); line-height: 1.35; }
+html body :is(.retro2, .sr2) .retro-comp.is-compact .retro-comp-result { font-size: 19px; }
+
+html body :is(.retro2, .sr2) .retro-tile { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; background: var(--av-rail); min-width: 0; }
+html body :is(.retro2, .sr2) .retro-tile > span { font: italic 800 11px var(--av-display); letter-spacing: .08em; text-transform: uppercase; color: var(--av-muted); }
+html body :is(.retro2, .sr2) .retro-tile > strong { font: italic 900 20px/1.15 var(--av-display); color: var(--av-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body :is(.retro2, .sr2) .retro-tile > small { font-size: 12px; color: var(--av-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body :is(.retro2, .sr2) .retro-tile.t-good > strong { color: var(--av-green); }
+html body :is(.retro2, .sr2) .retro-tile.t-bad > strong { color: var(--av-red); }
+html body :is(.retro2, .sr2) .retro-tile.t-mid > strong { color: var(--av-gold); }
+html body :is(.retro2, .sr2) .retro-tile.t-lime > strong { color: var(--av-lime); }
+
+html body .retro2 .retro-tiles, html body .retro2 .retro-comps { display: grid; gap: 10px; grid-auto-rows: 1fr; }
+html body .retro2 :is(.retro-tiles, .retro-comps).n-1 { grid-template-columns: 1fr; }
+html body .retro2 :is(.retro-tiles, .retro-comps).n-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html body .retro2 :is(.retro-tiles, .retro-comps).n-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html body .retro2 :is(.retro-tiles, .retro-comps).n-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+html body .retro2 .retro-tiles.n-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+html body .retro2 .retro-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+html body .retro2 .retro-split.is-xi { grid-template-columns: minmax(0, 1fr) 420px; }
+html body .retro2 .retro-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+
+/* resumo */
+html body .retro2 .retro-goal { display: flex; align-items: center; gap: 18px; padding: 12px 16px; background: var(--av-rail); }
+html body .retro2 .retro-goal > svg, html body .retro2 .retro-goal > div:first-child:not(.retro-goal-copy) { flex: none; }
+html body .retro2 .retro-goal-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+html body .modal .modal-card.retro2 .retro-goal-kicker { color: var(--av-muted) !important; font-size: 11px !important; }
+html body .retro2 .retro-goal-copy strong { font: italic 900 19px/1.2 var(--av-display); color: var(--av-ink); }
+html body .retro2 .retro-goal-copy em { font-style: normal; font-weight: 700; font-size: 14px; color: var(--av-cyan); }
+html body .retro2 .retro-goal-copy em.is-exceeded { color: var(--av-lime); }
+html body .retro2 .retro-goal-copy em.is-near { color: var(--av-gold); }
+html body .retro2 .retro-goal-copy em.is-missed { color: var(--av-red); }
+html body .retro2 .retro-goal-copy small { font-size: 13px; color: var(--av-muted); line-height: 1.4; }
+html body .retro2 .retro-objectives { padding: 12px 14px; background: var(--av-rail); }
+html body .retro2 .retro-objectives ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+html body .retro2 .retro-objectives li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--av-ink); }
+html body .retro2 .retro-objectives li i { flex: none; width: 20px; height: 20px; display: grid; place-items: center; font-style: normal; font-weight: 900; font-size: 12px; color: #06131b; background: var(--av-red); }
+html body .retro2 .retro-objectives li.is-met i { background: var(--av-green); }
+html body .retro2 .retro-objectives li.is-near i { background: var(--av-gold); }
+html body .retro2 .retro-objectives li small { margin-left: auto; font-size: 12px; color: var(--av-muted); white-space: nowrap; }
+html body .retro2 .retro-quote { margin: 0; padding: 10px 14px; background: var(--av-rail); box-shadow: inset 3px 0 var(--av-gold); font-size: 14px; line-height: 1.5; color: #c9d6e8; }
+html body .retro2 .retro-quote cite { margin-left: 6px; font-style: normal; font-weight: 700; color: var(--av-muted); }
+html body .retro2 .retro-lead { margin: 0; font-size: 13px; color: var(--av-muted); }
+
+/* campanha */
+html body .retro2 .retro-form-row { display: flex; gap: 3px; flex-wrap: wrap; padding-top: 2px; }
+html body .retro2 .retro-form-row i { width: 20px; height: 22px; display: grid; place-items: center; font: italic 900 12px var(--av-display); color: #06131b; background: var(--av-red); }
+html body .retro2 .retro-form-row i.r-w { background: var(--av-green); }
+html body .retro2 .retro-form-row i.r-d { background: var(--av-muted); }
+html body .retro2 .retro-table { display: flex; flex-direction: column; gap: 3px; }
+html body .retro2 .retro-tr { display: grid; grid-template-columns: minmax(0, 1fr) repeat(4, 34px) 54px 40px; gap: 4px; align-items: center; padding: 8px 10px; background: var(--av-rail); font-size: 14px; color: var(--av-ink); }
+html body .retro2 .retro-tr > span:not(:first-child) { text-align: center; font-variant-numeric: tabular-nums; }
+html body .retro2 .retro-tr.is-head { background: transparent; padding-block: 2px; font: italic 800 11px var(--av-display); letter-spacing: .08em; text-transform: uppercase; color: var(--av-muted); }
+
+/* elenco */
+html body .retro2 .retro-award { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--av-rail); box-shadow: inset 3px 0 var(--ra, var(--av-ink)); }
+html body .retro2 .retro-award.t-lime { --ra: var(--av-lime); }
+html body .retro2 .retro-award.t-gold { --ra: var(--av-gold); }
+html body .retro2 .retro-award.t-cyan { --ra: var(--av-cyan); }
+html body .retro2 .retro-award.t-green { --ra: var(--av-green); }
+html body .retro2 .retro-award > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html body .retro2 .retro-award span { font: italic 800 11px var(--av-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ra); }
+html body .retro2 .retro-award strong { font: italic 900 17px/1.2 var(--av-display); color: var(--av-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .retro2 .retro-award strong small { font: 600 12px var(--av-body); color: var(--av-muted); }
+html body .retro2 .retro-award > b { flex: none; font: italic 900 18px var(--av-display); color: var(--ra); }
+html body .retro2 .retro-xi { position: relative; flex: 1; min-height: 400px; background: repeating-linear-gradient(0deg, #0f3a24 0 40px, #11432a 40px 80px); box-shadow: inset 0 0 0 2px #2c6b45; }
+html body .retro2 .retro-xi-dot { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 2px; width: 92px; }
+html body .retro2 .retro-xi-dot b { padding: 2px 7px; background: var(--av-panel); font: italic 900 14px var(--av-display); color: var(--av-ink); box-shadow: inset 0 -2px var(--av-lime); }
+html body .retro2 .retro-xi-dot small { font-size: 12px; font-weight: 700; color: #eaf2ff; text-shadow: 0 1px 2px #000; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+html body .retro2 .retro-xi-dot.is-empty { opacity: .45; }
+
+/* finanças */
+html body .retro2 .retro-line { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; background: var(--av-rail); font-size: 14px; color: var(--av-muted); }
+html body .retro2 .retro-line b { color: var(--av-ink); white-space: nowrap; }
+html body .retro2 .retro-line b.is-pos { color: var(--av-green); }
+html body .retro2 .retro-line b.is-neg { color: var(--av-red); }
+html body .retro2 .retro-line.is-total { margin-top: auto; background: var(--av-panel-hi); color: var(--av-ink); font-size: 15px; }
+html body .retro2 .retro-line.is-total b { font: italic 900 17px var(--av-display); color: var(--av-gold); }
+
+/* brasil */
+html body .retro2 .retro-champs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+html body .retro2 .retro-champs.is-dense { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html body .retro2 .retro-champ { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--av-rail); min-width: 0; }
+html body .retro2 .retro-champ.is-user { box-shadow: inset 3px 0 var(--av-lime); }
+html body .retro2 .retro-champ .retro-champ-crest, html body .retro2 .retro-champ :is(img, svg) { flex: none; width: 30px !important; height: 30px !important; }
+html body .retro2 .retro-champ > div { min-width: 0; display: flex; flex-direction: column; }
+html body .retro2 .retro-champ span { font: italic 800 11px var(--av-display); letter-spacing: .06em; text-transform: uppercase; color: var(--av-gold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .retro2 .retro-champ strong { font-size: 14px; color: var(--av-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .retro2 .retro-champs.is-dense .retro-champ { padding: 6px 8px; }
+html body .retro2 .retro-champs.is-dense .retro-champ :is(img, svg, .retro-champ-crest) { width: 24px !important; height: 24px !important; }
+html body .retro2 .retro-moves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+html body .retro2 .retro-move { padding: 9px 11px; background: var(--av-rail); box-shadow: inset 3px 0 var(--av-green); }
+html body .retro2 .retro-move.is-relegate { box-shadow: inset 3px 0 var(--av-red); }
+html body .retro2 .retro-move > span { display: block; font: italic 800 12px var(--av-display); letter-spacing: .06em; text-transform: uppercase; color: var(--av-green); margin-bottom: 4px; }
+html body .retro2 .retro-move.is-relegate > span { color: var(--av-red); }
+html body .retro2 .retro-move p { margin: 0; display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 13px; line-height: 1.5; color: var(--av-ink); }
+html body .retro2 .retro-move p b { font-weight: 600; }
+html body .retro2 .retro-move p b.is-user { color: var(--av-lime); font-weight: 800; }
+
+@media (max-width: 760px) {
+  html body #seasonTransitionModal { padding: 0 !important; }
+  html body #seasonTransitionModal > .modal-card.retro2 { width: 100vw !important; min-height: 100%; margin: 0 !important; }
+  html body .retro2 .retro-head { flex-wrap: wrap; padding: 14px 14px 10px; gap: 10px; }
+  html body .retro2 .retro-head-crest, html body .retro2 .retro-head-crest :is(img, svg, .crest--club, i) { width: 40px !important; height: 40px !important; }
+  html body .retro2 .retro-head-copy h2 { font-size: 22px !important; }
+  html body .retro2 .retro-tabs { width: 100%; justify-content: stretch; flex-wrap: nowrap; }
+  html body .retro2 .retro-tabs button { flex: 1 1 0; min-width: 0; padding: 9px 2px !important; font-size: 11px !important; letter-spacing: 0; clip-path: none; }
+  html body .retro2 .retro-body { padding: 12px 14px; min-height: 0; }
+  html body .retro2 :is(.retro-tiles, .retro-comps):is(.n-3, .n-4, .n-5) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html body .retro2 .retro-comps.n-3 > :first-child, html body .retro2 .retro-tiles.n-5 > :last-child, html body .retro2 .retro-tiles.n-3 > :last-child { grid-column: 1 / -1; }
+  html body .retro2 .retro-split, html body .retro2 .retro-split.is-xi { grid-template-columns: minmax(0, 1fr); }
+  html body .retro2 .retro-xi { min-height: 360px; }
+  html body .retro2 .retro-goal { gap: 12px; padding: 10px 12px; }
+  html body .retro2 .retro-goal > svg { width: 84px; height: auto; }
+  html body .retro2 .retro-champs.is-dense { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html body .retro2 .retro-moves { grid-template-columns: minmax(0, 1fr); }
+  html body .retro2 .retro-tr { grid-template-columns: minmax(0, 1fr) repeat(4, 26px) 46px 34px; font-size: 13px; padding: 8px; }
+  html body .retro2 .retro-foot { position: sticky; bottom: 0; z-index: 5; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); }
+  html body .retro2 .retro-foot-line { font-size: 13px; text-align: center; }
+  html body .retro2 .season-summary-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  html body .retro2 .season-summary-actions button { padding: 10px 8px !important; font-size: 13px !important; white-space: normal; }
+}
+
+/* ---------- Central: temporada encerrada ---------- */
+html body .view#dashboard .match.season-ended .teams,
+html body .view#dashboard .match.season-ended .match-actions-footer,
+html body .view#dashboard .match.season-ended .club-upcoming { display: none !important; }
+html body .view#dashboard .match.season-ended .season-review-board:not(.hidden) {
+  display: block !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; min-height: 0 !important;
+}
+html body .sr2 { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 14px; padding: 16px 18px 18px; align-items: stretch; }
+html body .sr2-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+html body .sr2-hero { display: flex; align-items: center; gap: 14px; }
+html body .sr2-crest { flex: none; width: 64px; height: 64px; display: grid; place-items: center; }
+html body .sr2-crest :is(img, svg, .crest--club, i) { width: 64px !important; height: 64px !important; }
+html body .sr2-copy { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+html body .sr2-kicker { font: italic 800 12px var(--av-display); letter-spacing: .12em; color: var(--av-gold); }
+html body .sr2-copy h3 { margin: 0 !important; font: italic 900 26px/1.1 var(--av-display) !important; color: var(--av-ink) !important; cursor: pointer; }
+html body .sr2-copy small { font-size: 13px; color: var(--av-muted); line-height: 1.4; }
+html body .sr2-comps { display: grid; gap: 8px; grid-auto-rows: 1fr; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+html body .sr2-comps.n-1 { grid-template-columns: 1fr; }
+html body .sr2-comps.n-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html body .sr2-comps.n-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html body .sr2-highlights { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 1fr; }
+html body .sr2-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: auto; }
+html body .sr2-btn {
+  min-height: 44px; padding: 10px 20px !important; border: 0 !important; border-radius: 0 !important; cursor: pointer;
+  font: italic 800 14px var(--av-display) !important; letter-spacing: .05em; text-transform: uppercase;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+html body .sr2-btn.is-ghost { background: var(--av-rail) !important; color: var(--av-cyan) !important; box-shadow: inset 0 0 0 2px var(--av-line) !important; }
+html body .sr2-btn.is-primary { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -4px var(--av-lime-edge) !important; }
+html body .sr2-next { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: var(--av-rail); }
+html body .sr2-next-row { display: flex; justify-content: space-between; gap: 8px; padding: 9px 10px; background: var(--av-panel); font-size: 14px; color: var(--av-muted); }
+html body .sr2-next-row strong { color: var(--av-ink); text-align: right; }
+@media (max-width: 1100px) {
+  html body .sr2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  html body .sr2 { padding: 12px; gap: 10px; }
+  html body .sr2-crest, html body .sr2-crest :is(img, svg, .crest--club, i) { width: 48px !important; height: 48px !important; }
+  html body .sr2-copy h3 { font-size: 21px !important; }
+  html body .sr2-comps, html body .sr2-comps.n-3, html body .sr2-highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html body .sr2-actions { display: grid; grid-template-columns: 1fr; }
+  html body .sr2-btn { width: 100%; }
+}
+html body .modal .modal-card.retro2 header.retro-sec,
+html body .view#dashboard .sr2 header.retro-sec { display: flex !important; min-height: 0 !important; height: auto !important; margin: 0 0 6px !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; position: static !important; }
+html body .view#dashboard .sr2 .sr2-btn.is-primary { background: var(--av-lime) !important; color: #06131b !important; box-shadow: inset 0 -4px var(--av-lime-edge) !important; }
+html body .view#dashboard .sr2 .sr2-btn.is-ghost { background: var(--av-rail) !important; color: var(--av-cyan) !important; box-shadow: inset 0 0 0 2px var(--av-line) !important; }
+html body .view#dashboard .match.season-ended { display: flex !important; flex-direction: column; }
+html body .view#dashboard .match.season-ended .season-review-board:not(.hidden) { flex: 1 1 auto; display: flex !important; }
+html body .view#dashboard .match.season-ended .season-review-board > .sr2 { flex: 1; }
+html body .sr2-record { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 1fr; }
+@media (max-width: 640px) { html body .sr2-record { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+html body .sr2 .retro-form-row { display: flex; gap: 3px; flex-wrap: wrap; padding-top: 2px; }
+html body .sr2 .retro-form-row i { width: 20px; height: 22px; display: grid; place-items: center; font: italic 900 12px var(--av-display); color: #06131b; background: var(--av-red); }
+html body .sr2 .retro-form-row i.r-w { background: var(--av-green); }
+html body .sr2 .retro-form-row i.r-d { background: var(--av-muted); }
+html body .view#dashboard .match.season-ended .season-review-board { container-type: inline-size; container-name: sr2; }
+@container sr2 (max-width: 960px) {
+  html body .sr2 { grid-template-columns: minmax(0, 1fr); }
+  html body .sr2-next { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 0; background: none; }
+  html body .sr2-next > .retro-sec { grid-column: 1 / -1; }
+  html body .sr2-next-row { flex-direction: column; justify-content: flex-start; gap: 3px; padding: 10px 12px; background: var(--av-rail); font-size: 12px; }
+  html body .sr2-next-row strong { text-align: left; font-size: 15px; }
+  html body .sr2-actions { order: 9; }
+}
+@container sr2 (max-width: 560px) {
+  html body .sr2-next, html body .sr2-comps, html body .sr2-comps.n-3, html body .sr2-comps.n-4, html body .sr2-highlights, html body .sr2-record { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+html body .sr2 > .sr2-actions { grid-column: 1 / -1; margin-top: 0; }
+html body .sr2, html body .sr2-next { align-content: start; }
+html body .sr2-main { justify-content: flex-start; }
+html body .modal .modal-card.retro2 button.retro-link { margin-left: auto !important; padding: 4px 0 !important; min-height: 0 !important; width: auto !important; border: 0 !important; outline: 0; background: transparent !important; box-shadow: none !important; clip-path: none !important; color: var(--av-cyan) !important; font: 700 13px var(--av-body) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body .modal .modal-card.retro2 button.retro-link:hover { text-decoration: underline; }
+html body .retro2 .retro-line.is-net { margin-top: auto; }
+html body .retro2 .retro-line.is-net + .is-total { margin-top: 0; }
+html body .retro2 > :is(.retro-head, .retro-body, .retro-foot, .season-goal-preview-switcher) { flex: none !important; }
+html body .retro2 .retro-goal .season-goal-gauge { width: auto !important; padding: 0 !important; border: 0 !important; margin: 0 !important; flex: none; }
+@media (max-width: 760px) {
+  html body .retro2 .retro-goal .season-goal-gauge-legend { display: none !important; }
+  html body .retro2 .retro-goal-copy strong { font-size: 17px; }
+}
+html body .modal .modal-card.retro2 > header.retro-head { height: auto !important; min-height: 0 !important; background: none !important; justify-content: flex-start !important; color: inherit !important; letter-spacing: normal !important; font-size: inherit !important; }
+@media (max-width: 760px) {
+  html body #seasonTransitionModal > .modal-card.retro2 { min-height: 100dvh !important; }
+  html body .retro2 .retro-foot { margin-top: auto; }
+}

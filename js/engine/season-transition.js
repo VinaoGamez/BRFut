@@ -500,6 +500,17 @@ export function createSeasonTransitionEngine(deps) {
       seasonGoalResult: deps.getSeasonGoalResult(),
       seasonObjectivesResult: deps.getSeasonObjectivesResult(),
       movements,
+      campaign: {
+        position,
+        serieDPhase,
+        cupPhase,
+        stateLeague,
+        nextDivision: pendingUserDivision,
+        promoted: userPromoted,
+        relegated: userRelegated,
+        leagueChampion: leagueChampion === userClub,
+        cupChampion: champions.CUP === userClub,
+      },
     });
   };
 

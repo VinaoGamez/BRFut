@@ -3,6 +3,7 @@ import { formatKnockoutFixtureScore, isKnockoutShootoutCompetition as isKnockout
 import { applyCompetitionBadge, competitionBadgeMarkup, resolveCompetitionBadge } from '../../ui/competition-badge.js';
 import { setHumanBadgeOnCrest } from '../../ui/human-badge.js';
 import { applyTeamCrestToElement, teamCrestHtml } from '../../ui/team-crest.js';
+import { esc, goalStatusText, money, ratingText, retroCompCard, retroTile, shortPlayerName } from '../season-summary/retro-view.js';
 import { resolveNationalTeam } from '../../engine/national-teams.js';
 import { formatMatchRating } from '../../engine/player-match-stats.js';
 import { isStateLeagueGame } from '../../engine/state-league-format.js';
@@ -67,6 +68,8 @@ export function createDashboardFeature(deps) {
     isKnockoutShootoutCompetition,
     leadersFor,
     clubSeasonLeaders,
+    getSeasonRetro,
+    openSeasonRetro,
     clubSeasonRatingSummary,
     getSeasonRoundHistory,
     getCopaFixtures,
@@ -280,78 +283,83 @@ export function createDashboardFeature(deps) {
     };
   };
 
-  const seasonReviewIcon = kind => {
-    const icons = {
-      win: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4h10v3c0 3.2-1.8 5.7-4.2 7L13 16v2h3v2H8v-2h3v-2l-.8-2C7.8 12.7 6 10.2 6 7V4zm1.5 1.5v1.7c0 2.2 1.1 4 2.9 5.1l.6.4.6-.4c1.8-1.1 2.9-2.9 2.9-5.1V5.5h-7z"/></svg>',
-      loss: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm3.3 13.3-1.4 1.4L12 13.8l-1.9 1.9-1.4-1.4 1.9-1.9-1.9-1.9 1.4-1.4 1.9 1.9 1.9-1.9 1.4 1.4-1.9 1.9 1.9 1.9z"/></svg>',
-      smash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2c1.7 3.4 3.2 5.6 5.5 8.2C20.2 13.4 22 16 22 19a5 5 0 0 1-10 0c0-1.2.4-2.4 1-3.5C11.3 17.8 10 19.2 8.5 20.2 6.2 18 4.8 15.4 4 12.8c2.2.2 4.1-.2 5.8-1.2C8.2 9.8 7 7.6 6.2 5.2 8.4 5.8 10.3 4.6 12 2z"/></svg>',
-      concede: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 11h6V5h4v6h6v2h-6v6h-4v-6H4v-2z" opacity=".35"/><path fill="currentColor" d="M3 12h18v2H3z"/></svg>',
-      crowdUp: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 18V8l8-4 8 4v10h-3v-6H7v6H4zm5 0v-4h6v4H9z"/></svg>',
-      crowdDown: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 20h18v-2H3v2zm2-4h14l-1.2-7H6.2L5 16zm4.5-9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm5 0a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/></svg>',
-      scorer: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>',
-      assist: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M5 12h9M11 7l5 5-5 5"/><circle cx="5" cy="12" r="2.2" fill="currentColor"/></svg>',
-    };
-    return icons[kind] || icons.win;
+  let seasonRetroClicksBound = false;
+  const bindSeasonRetroClicks = () => {
+    if (seasonRetroClicksBound) return;
+    seasonRetroClicksBound = true;
+    document.addEventListener('click', event => {
+      if (event.target.closest('[data-season-retro-open]')) {
+        event.preventDefault();
+        if (typeof openSeasonRetro === 'function') openSeasonRetro();
+        return;
+      }
+      if (event.target.closest('[data-season-retro-advance]')) {
+        event.preventDefault();
+        document.querySelector('#startNextSeason')?.click();
+      }
+    });
   };
 
-  const seasonReviewTile = ({ tone, icon, label, value, meta = '' }) => `
-    <article class="season-review-tile tone-${tone}">
-      <div class="season-review-tile-icon">${seasonReviewIcon(icon)}</div>
-      <div class="season-review-tile-copy">
-        <span>${label}</span>
-        <strong>${value}</strong>
-        ${meta ? `<small>${meta}</small>` : ''}
-      </div>
-    </article>`;
-
   const renderSeasonReviewBoard = () => {
+    bindSeasonRetroClicks();
     const board = $('#seasonReviewBoard');
     if (!board) return;
     const userClub = getUserClub();
     const careerSeason = typeof getCareerSeason === 'function' ? getCareerSeason() : '';
-    const stats = buildSeasonReviewStats();
-    const hasGames = stats.gameCount > 0;
-    const streakValue = count => (hasGames ? String(count) : '—');
-    const streakMeta = count => (hasGames ? `jogo${count === 1 ? '' : 's'} seguidos` : '');
-    const winValue = stats.biggestWin?.score || '—';
-    const winMeta = stats.biggestWin
-      ? `vs ${stats.biggestWin.opponent} · ${stats.biggestWin.label}`
-      : '';
-    const defeatValue = stats.biggestDefeat?.score || '—';
-    const defeatMeta = stats.biggestDefeat
-      ? `vs ${stats.biggestDefeat.opponent} · ${stats.biggestDefeat.label}`
-      : '';
-    const maxCrowdValue = stats.maxCrowd
-      ? stats.maxCrowd.attendance.toLocaleString('pt-BR')
-      : '—';
-    const maxCrowdMeta = stats.maxCrowd
-      ? `vs ${stats.maxCrowd.opponent} · ${stats.maxCrowd.label}`
-      : '';
-    const minCrowdValue = stats.minCrowd
-      ? stats.minCrowd.attendance.toLocaleString('pt-BR')
-      : '—';
-    const minCrowdMeta = stats.minCrowd
-      ? `vs ${stats.minCrowd.opponent} · ${stats.minCrowd.label}`
-      : '';
+    const retro = typeof getSeasonRetro === 'function' ? getSeasonRetro() : null;
+    const stats = retro?.review || buildSeasonReviewStats();
+    const total = retro?.total || { games: stats.gameCount || 0, pct: 0 };
+    const comps = (retro?.competitions || []).slice(0, 3);
+    const goalLine = goalStatusText(retro?.goal);
+    const meta = [goalLine, total.games ? `${total.games} jogos · ${total.pct}% de aproveitamento` : ''].filter(Boolean).join(' · ');
+    const rewards = retro?.prizeTotal;
+    const best = retro?.awards?.best;
     const scorerName = stats.leaders?.scorer?.name || '—';
-    const assistantName = stats.leaders?.assistant?.name || '—';
     const goals = Number(stats.leaders?.goals) || 0;
-    const assists = Number(stats.leaders?.assists) || 0;
+    const nextYear = retro?.next?.year || (Number(careerSeason) || 0) + 1;
+    const next = retro?.next || {};
+    const nextRows = [
+      ['Divisão', next.division ? `Série ${next.division}` : '—'],
+      ['Estadual', next.state || '—'],
+      ['Orçamento', next.budget != null ? money(next.budget) : '—'],
+      ['Contratos até ' + (next.expiringLimit || ''), next.expiring != null ? `${next.expiring} jogador${next.expiring === 1 ? '' : 'es'}` : '—'],
+    ];
     board.innerHTML = `
-      <div class="season-review-club">
-        <div class="season-review-crest-wrap">${teamCrestHtml(userClub)}</div>
-        <b class="club-link" data-club="${userClub}" role="button" tabindex="0">${userClub}</b>
-        <small>${careerSeason ? `Temporada ${careerSeason}` : 'Campanha encerrada'}${hasGames ? ` · ${stats.gameCount} jogos` : ''}</small>
-      </div>
-      <div class="season-review-stats">
-        ${seasonReviewTile({ tone: 'lime', icon: 'win', label: 'Maior sequência de vitórias', value: streakValue(stats.winStreak), meta: streakMeta(stats.winStreak) })}
-        ${seasonReviewTile({ tone: 'red', icon: 'loss', label: 'Maior sequência de derrotas', value: streakValue(stats.lossStreak), meta: streakMeta(stats.lossStreak) })}
-        ${seasonReviewTile({ tone: 'cyan', icon: 'smash', label: 'Maior goleada realizada', value: winValue, meta: winMeta })}
-        ${seasonReviewTile({ tone: 'amber', icon: 'concede', label: 'Maior goleada sofrida', value: defeatValue, meta: defeatMeta })}
-        ${seasonReviewTile({ tone: 'cyan', icon: 'crowdUp', label: 'Maior público', value: maxCrowdValue, meta: maxCrowdMeta })}
-        ${seasonReviewTile({ tone: 'muted', icon: 'crowdDown', label: 'Menor público', value: minCrowdValue, meta: minCrowdMeta })}
-        ${seasonReviewTile({ tone: 'lime', icon: 'scorer', label: 'Artilheiro', value: scorerName === '—' ? '—' : scorerName, meta: scorerName === '—' ? '' : `${goals} gol${goals === 1 ? '' : 's'}` })}
-        ${seasonReviewTile({ tone: 'cyan', icon: 'assist', label: 'Melhor assistente', value: assistantName === '—' ? '—' : assistantName, meta: assistantName === '—' ? '' : `${assists} assistência${assists === 1 ? '' : 's'}` })}
+      <div class="sr2">
+        <div class="sr2-main">
+          <div class="sr2-hero">
+            <div class="sr2-crest">${teamCrestHtml(userClub)}</div>
+            <div class="sr2-copy">
+              <span class="sr2-kicker">TEMPORADA ${esc(careerSeason)} ENCERRADA</span>
+              <h3 class="club-link" data-club="${esc(userClub)}">${esc(retro?.headline || `${userClub} encerra a temporada`)}</h3>
+              <small>${esc(meta || 'Campanha encerrada')}</small>
+            </div>
+          </div>
+          <div class="sr2-comps n-${comps.length + 1}">
+            ${comps.map(comp => retroCompCard(comp, { compact: true })).join('')}
+            ${retroCompCard({ name: 'PREMIAÇÃO', result: rewards ? `+${money(rewards)}` : '—', detail: next.budget != null ? `caixa ${money(next.budget)}` : 'ver retrospectiva', tone: rewards ? 'good' : 'mid', color: 'gold' }, { compact: true })}
+          </div>
+          <div class="sr2-record">
+            ${retroTile('Jogos', String(total.games || 0), `${total.wins || 0}V ${total.draws || 0}E ${total.losses || 0}D`)}
+            ${retroTile('Aproveitamento', `${total.pct || 0}%`, `${total.points || 0} pontos`, (total.pct || 0) >= 55 ? 'good' : (total.pct || 0) >= 40 ? 'mid' : 'bad')}
+            ${retroTile('Saldo de gols', `${(total.gd || 0) > 0 ? '+' : (total.gd || 0) < 0 ? '−' : ''}${Math.abs(total.gd || 0)}`, 'todas as competições', (total.gd || 0) >= 0 ? 'good' : 'bad')}
+            <article class="retro-tile retro-form"><span>Últimos jogos</span><div class="retro-form-row">${(retro?.form || []).slice(-6).map(r => `<i class="r-${r === 'V' ? 'w' : r === 'E' ? 'd' : 'l'}">${r}</i>`).join('') || '<small>—</small>'}</div><small>&nbsp;</small></article>
+          </div>
+          <div class="sr2-highlights">
+            ${retroTile('Artilheiro', scorerName === '—' ? '—' : shortPlayerName(scorerName), scorerName === '—' ? '' : `${goals} gol${goals === 1 ? '' : 's'}`)}
+            ${retroTile('Craque', best ? shortPlayerName(best.name) : '—', best ? `nota ${ratingText(best.avgRating)}` : '', 'lime')}
+            ${retroTile('Maior vitória', stats.biggestWin?.score || '—', stats.biggestWin ? `vs ${stats.biggestWin.opponent}` : '', 'good')}
+            ${retroTile('Maior público', stats.maxCrowd ? Number(stats.maxCrowd.attendance).toLocaleString('pt-BR') : '—', stats.maxCrowd ? `vs ${stats.maxCrowd.opponent}` : '')}
+          </div>
+        </div>
+        <aside class="sr2-next">
+          <header class="retro-sec"><h3>Próxima temporada · ${esc(nextYear)}</h3></header>
+          ${nextRows.map(([label, value]) => `<div class="sr2-next-row"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}
+        </aside>
+        <div class="sr2-actions">
+            <button type="button" class="sr2-btn is-ghost" data-season-retro-open>VER RETROSPECTIVA</button>
+            ${retro?.ready ? `<button type="button" class="sr2-btn is-primary" data-season-retro-advance>AVANÇAR PARA ${esc(nextYear)} →</button>` : ''}
+          </div>
       </div>`;
     board.classList.remove('hidden');
   };
@@ -625,8 +633,8 @@ export function createDashboardFeature(deps) {
         playBtn.title = 'Feche os contratos Master e Secundários para liberar a temporada';
         playBtn.disabled = false;
       } else if (fullyComplete) {
-        playBtn.textContent = 'BALANÇO / PRÓXIMA TEMPORADA →';
-        playBtn.title = 'Abrir balanço da temporada e avançar quando estiver pronto';
+        playBtn.textContent = 'VER RETROSPECTIVA →';
+        playBtn.title = 'Abrir a retrospectiva da temporada e avançar quando estiver pronto';
       } else {
         playBtn.textContent = 'JOGAR PARTIDA →';
         playBtn.title = '';
@@ -1288,5 +1296,6 @@ export function createDashboardFeature(deps) {
     renderRecentResults,
     renderTeamStatsCard,
     renderDashboardStadiumPreview,
+    getSeasonReviewStats: () => ({ ...buildSeasonReviewStats(), results: userCompletedMatchResults() }),
   };
 }
