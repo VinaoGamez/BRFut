@@ -135,6 +135,7 @@ export function createChampionshipPageFeature(deps) {
     simulateRoundMatch,
     gameRandom,
     overlayPendingLiveKnockoutGames,
+    overlayPendingLiveGames = games => games,
     cupTieGames,
     cupTieAggregate,
     cupGameForDisplay,
@@ -794,12 +795,16 @@ export function createChampionshipPageFeature(deps) {
       const tier = Number(liveMatchGame.stateTier) || 1;
       const gameComp = stateCompetitionKey(uf, tier);
       if (gameComp === competitionId) {
-        rows = applyTablePreviewToRows(rows, {
-          home: liveMatchGame.home,
-          away: liveMatchGame.away,
-          homeGoals: Number(liveMatchGame.homeGoals ?? 0),
-          awayGoals: Number(liveMatchGame.awayGoals ?? 0),
-        });
+        // Placar final ao vivo (o jogo só grava homeGoals no AVANÇAR).
+        const shown = overlayPendingLiveGames([liveMatchGame])[0] || liveMatchGame;
+        if (shown.homeGoals != null && shown.awayGoals != null) {
+          rows = applyTablePreviewToRows(rows, {
+            home: liveMatchGame.home,
+            away: liveMatchGame.away,
+            homeGoals: Number(shown.homeGoals),
+            awayGoals: Number(shown.awayGoals),
+          });
+        }
       }
     }
     return rows;
@@ -1289,8 +1294,10 @@ export function createChampionshipPageFeature(deps) {
         body.innerHTML = renderChampionshipPageRoundFixtures(games, { completed, roundLabel: phaseLabel });
       } else {
         const activeGroup = WORLD_CUP_GROUP_LETTERS[pageWorldCupGroup] || 'A';
-        const rows = worldCupCompetition ? computeGroupStandings(activeGroup, worldCupCompetition.groupFixtures, gameRandom) : [];
-        const groupGames = (worldCupCompetition?.groupFixtures || []).filter(game => game.group === activeGroup);
+        const rows = worldCupCompetition
+          ? (typeof deps.getWorldCupGroupRows === 'function' && !isArchiveView() ? deps.getWorldCupGroupRows(activeGroup) : computeGroupStandings(activeGroup, overlayPendingLiveGames(worldCupCompetition.groupFixtures), gameRandom))
+          : [];
+        const groupGames = overlayPendingLiveGames((worldCupCompetition?.groupFixtures || []).filter(game => game.group === activeGroup));
         if (head) head.innerHTML = '<span>#</span><span>SELEÇÃO</span><span>J</span><span>V</span><span>E</span><span>D</span><span>SG</span><span>PTS</span>';
         const rowsHtml = rows.map((row, index) => {
           const pos = index + 1;
@@ -1838,14 +1845,14 @@ export function createChampionshipPageFeature(deps) {
         const current = stateLeagueEngine.getCurrentRound(pageCompetition, userClub);
         const round = clamp(requested || current, 1, Math.max(1, limit));
         const games = stateLeagueEngine.getRoundGamesForBrowse(pageCompetition, round) || [];
-        return { key: pageCompetition, round, current, limit, games };
+        return { key: pageCompetition, round, current, limit, games: overlayPendingLiveGames(games) };
       }
       if (['A', 'B', 'C', 'D'].includes(pageCompetition)) {
         const fixtures = getNationalCompetitions()?.[pageCompetition]?.fixtures || [];
         if (!fixtures.length) return null;
         const current = clamp(getCurrentRound(), 1, fixtures.length);
         const round = clamp(requested || current, 1, fixtures.length);
-        return { key: pageCompetition, round, current, limit: fixtures.length, games: fixtures[round - 1] || [] };
+        return { key: pageCompetition, round, current, limit: fixtures.length, games: overlayPendingLiveGames(fixtures[round - 1] || []) };
       }
     } catch {
       return null;
@@ -1856,6 +1863,8 @@ export function createChampionshipPageFeature(deps) {
   const champV2 = createChampionshipV2({
     $,
     getUserClub: () => getUserClub(),
+    getUserNationalTeam: () => (typeof getUserNationalTeamName === 'function' ? getUserNationalTeamName() : ''),
+    getNationalForm: deps.getNationalForm,
     getClubForm: deps.getClubForm,
     getSideRound,
     getScorers: deps.getScorers,

@@ -609,10 +609,71 @@ export function createCalendarViewFeature(deps) {
       homeSheets.length || awaySheets.length
         ? `<div class="match-report-ratings"><h3>NOTAS</h3>${legend}<div class="match-report-ratings-grid">${ratingsBlock(game.home, homeSheets, motmKey, tipIndex)}${ratingsBlock(game.away, awaySheets, motmKey, tipIndex)}</div></div>`
         : `<div class="match-report-empty">Notas ainda não disponíveis para esta partida.</div>`;
+    // Lances: gols, cartões e substituições em ordem de minuto, cada um do lado do seu time.
+    const minuteLabel = item => `${Number(item.minute) || 0}'${item.stoppage ? `+${item.stoppage}` : ''}`;
+    const sortKey = item => (Number(item.minute) || 0) * 100 + (Number(item.stoppage) || 0);
+    const esc = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    const events = [];
+    ['home', 'away'].forEach(side => {
+      (goals?.[side] || []).forEach(goal => events.push({
+        side,
+        minute: goal.minute,
+        stoppage: goal.stoppage,
+        kind: 'goal',
+        icon: '⚽',
+        title: `${esc(goal.name)}${goal.type === 'own' ? ' <em>(contra)</em>' : goal.type === 'penalty' ? ' <em>(pênalti)</em>' : ''}`,
+        sub: goal.assist ? `Assistência: ${esc(goal.assist)}` : '',
+      }));
+    });
+    (incidents || []).forEach(item => {
+      const side = item.side === 'away' ? 'away' : item.side === 'home' ? 'home' : null;
+      if (!side || !item.name) return;
+      if (item.type === 'yellow' || item.type === 'red') {
+        events.push({ side, minute: item.minute, stoppage: item.stoppage, kind: item.type, icon: '', title: esc(item.name), sub: item.type === 'red' ? 'Cartão vermelho' : 'Cartão amarelo' });
+      } else if (item.type === 'substitution') {
+        const [outName, inName] = String(item.name).split(/\s*(?:→|->)\s*/).map(part => part.trim());
+        if (!outName || !inName) return;
+        events.push({ side, minute: item.minute, stoppage: item.stoppage, kind: 'sub', icon: '⇄', title: esc(inName), sub: `Sai ${esc(outName)}` });
+      }
+    });
+    events.sort((a, b) => sortKey(a) - sortKey(b));
+    const lancesHtml = events.length
+      ? `<div class="mr2-events"><div class="mr2-events-head"><b>${esc(game.home)}</b><span></span><b>${esc(game.away)}</b></div>${events
+          .map(ev => {
+            const cell = `<div class="mr2-ev-body"><i class="mr2-ev-icon" data-kind="${ev.kind}">${ev.icon}</i><span><b>${ev.title}</b>${ev.sub ? `<small>${ev.sub}</small>` : ''}</span></div>`;
+            return `<div class="mr2-ev" data-side="${ev.side}">${ev.side === 'home' ? cell : '<div></div>'}<strong class="mr2-ev-min">${minuteLabel(ev)}</strong>${ev.side === 'away' ? cell : '<div></div>'}</div>`;
+          })
+          .join('')}</div>`
+      : '<div class="match-report-empty">Nenhum lance registrado nesta partida.</div>';
+    const tabs = [
+      ['notas', 'Notas', ratingsHtml],
+      ['lances', 'Lances', lancesHtml],
+      ...(showStatistics ? [['stats', 'Estatísticas', statisticsHtml]] : []),
+    ];
     const reportModal = ensureMatchReportModal();
     const content = $('#matchReportContent');
     if (!reportModal || !content) return;
-    content.innerHTML = header + (showStatistics ? statisticsHtml : '') + ratingsHtml;
+    content.innerHTML = `${header}<nav class="mr2-tabs" role="tablist">${tabs
+      .map(([id, label], index) => `<button type="button" role="tab" data-mr2-tab="${id}" class="${index === 0 ? 'is-active' : ''}" aria-selected="${index === 0}">${label}</button>`)
+      .join('')}</nav>${tabs
+      .map(([id, , html], index) => `<section class="mr2-pane" data-mr2-pane="${id}"${index === 0 ? '' : ' hidden'}>${html}</section>`)
+      .join('')}`;
+    if (!content.dataset.mr2Tabs) {
+      content.dataset.mr2Tabs = '1';
+      content.addEventListener('click', event => {
+        const tab = event.target.closest('[data-mr2-tab]');
+        if (!tab) return;
+        const id = tab.dataset.mr2Tab;
+        content.querySelectorAll('[data-mr2-tab]').forEach(btn => {
+          const on = btn.dataset.mr2Tab === id;
+          btn.classList.toggle('is-active', on);
+          btn.setAttribute('aria-selected', String(on));
+        });
+        content.querySelectorAll('[data-mr2-pane]').forEach(pane => { pane.hidden = pane.dataset.mr2Pane !== id; });
+        const card = content.closest('.modal-card');
+        if (card) card.scrollTop = 0;
+      });
+    }
     reportModal.classList.remove('hidden');
   };
 

@@ -2281,7 +2281,17 @@ body.national-team-command .nav[data-view='youth'],
 body.national-team-command .nav[data-view='training'],
 body.national-team-command .header-budget-wrap,
 body.national-team-command .side-mini-cards,
-body.national-team-command .training-shortcut-card {
+body.national-team-command .training-shortcut-card,
+body.national-team-command .section-btn[data-section='clube'],
+body.national-team-command .nav[data-view='transfers'],
+body.national-team-command .nav[data-view='clubhub'],
+body.national-team-command .nav[data-view='clubhistory'],
+body.national-team-command .nav[data-view='ranking'],
+body.national-team-command #champV2Chips button:not([data-champ-v2='CMU']):not([data-champ-v2='ELIMINATORIAS']),
+body.national-team-command #championshipPagePickerMenu [data-page-competition]:not([data-page-competition='CMU']):not([data-page-competition='ELIMINATORIAS']),
+body.national-team-command .champ-v2-rank,
+body.national-team-command #rosterContractBtn,
+body.national-team-command #rosterContractPanel {
   display: none !important;
 }
 

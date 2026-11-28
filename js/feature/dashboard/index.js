@@ -465,7 +465,7 @@ export function createDashboardFeature(deps) {
         .slice(0, DASHBOARD_TABLE_ROWS)
         .map(
           (row, index) =>
-            `<div class="standing-row ${row.name === ntName ? 'highlight' : ''}" data-national-team="${row.code || ''}" role="button" tabindex="0"><span>${index + 1}</span><span class="club-link">${row.name}</span><span>${row.played || 0}</span><span>${row.gd >= 0 ? '+' : ''}${row.gd || 0}</span><span>${row.points || 0}</span></div>`,
+            `<div class="standing-row ${row.name === ntName ? 'highlight' : ''}" data-national-team="${row.code || ''}" role="button" tabindex="0"><span>${index + 1}</span><span class="club-link standing-club-cell">${teamCrestHtml(row.name, { className: 'standing-row-crest' })}<span>${row.name}</span></span><span>${row.played || 0}</span><span>${row.gd >= 0 ? '+' : ''}${row.gd || 0}</span><span>${row.points || 0}</span></div>`,
         )
         .join('');
       return;

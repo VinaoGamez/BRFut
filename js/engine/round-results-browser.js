@@ -75,7 +75,13 @@ export function createRoundResultsBrowser(deps) {
     return `Brasileirão Série ${division}`;
   };
   const renderRoundGameScore = game => {
-    if (game?.scheduled || game?.homeGoals == null || game?.awayGoals == null) return '<i>× — ×</i>';
+    if (game?.scheduled || game?.homeGoals == null || game?.awayGoals == null) {
+      const when = game?.date ? new Date(game.date) : null;
+      const label = when && !Number.isNaN(when.getTime())
+        ? `<b>${String(when.getDate()).padStart(2, '0')}/${String(when.getMonth() + 1).padStart(2, '0')}</b>${when.getHours() ? `<small>${String(when.getHours()).padStart(2, '0')}h${when.getMinutes() ? String(when.getMinutes()).padStart(2, '0') : ''}</small>` : ''}`
+        : '<b>A JOGAR</b>';
+      return `<i class="rg-when">${label}</i>`;
+    }
     const pen = game.penalties ? ` (${game.penalties})` : '';
     return `${game.homeGoals} — ${game.awayGoals}${pen}`;
   };
@@ -90,17 +96,17 @@ export function createRoundResultsBrowser(deps) {
     const box = deps.$('#roundStandings');
     if (!box) return;
     const data = typeof deps.getRoundStandings === 'function'
-      ? deps.getRoundStandings(roundBrowserDivision, { group: roundBrowserGroup, round: roundBrowserRound })
+      ? deps.getRoundStandings(roundBrowserDivision, { group: roundBrowserDivision === 'CMU' ? roundBrowserWorldCupGroup : roundBrowserGroup, round: roundBrowserRound })
       : null;
     if (!data?.rows?.length) { box.hidden = true; box.innerHTML = ''; return; }
-    const userClub = deps.getUserClub();
+    const userClub = roundBrowserDivision === 'CMU' ? deps.getUserNationalTeamName() : deps.getUserClub();
     box.hidden = false;
-    box.innerHTML = `<h3 class="round-standings-title">${data.title || 'CLASSIFICAÇÃO'}</h3><div class="round-standings-head"><span>#</span><span></span><span>CLUBE</span><span>SG</span><span>PTS</span></div>`
+    box.innerHTML = `<h3 class="round-standings-title">${data.title || 'CLASSIFICAÇÃO'}</h3><div class="round-standings-head"><span>#</span><span></span><span>${roundBrowserDivision === 'CMU' ? 'SELEÇÃO' : 'CLUBE'}</span><span>SG</span><span>PTS</span></div>`
       + data.rows.map((row, index) => {
         const club = row.club || row.name;
         const pts = row.points ?? row.pts ?? 0;
         const gd = row.goalDiff ?? row.gd ?? ((row.goalsFor ?? 0) - (row.goalsAgainst ?? 0));
-        return `<div class="round-standings-row${club === userClub ? ' is-user' : ''}"><span>${index + 1}</span>${teamCrestHtml(club, { className: 'round-crest' })}<b class="club-link" data-club="${club}" role="button" tabindex="0">${club}</b><span>${fmtGd(gd)}</span><strong>${pts}</strong></div>`;
+        return `<div class="round-standings-row${club === userClub ? ' is-user' : ''}"><span>${index + 1}</span>${teamCrestHtml(club, { className: 'round-crest' })}${row.code ? `<b class="club-link" data-national-team="${row.code}" role="button" tabindex="0">${club}</b>` : `<b class="club-link" data-club="${club}" role="button" tabindex="0">${club}</b>`}<span>${fmtGd(gd)}</span><strong>${pts}</strong></div>`;
       }).join('')
       + (data.more ? `<p class="round-standings-more">${data.more}</p>` : '');
   };
@@ -114,9 +120,13 @@ export function createRoundResultsBrowser(deps) {
     const serieDGroups = deps.getSerieDGroups();
     const wcMode = deps.isWorldCupDashboard() && !roundBrowserLockedCompetition;
     if (divisionTabs) {
-      if ((roundBrowserLockedCompetition && roundBrowserLockedCompetition !== 'CUP') || wcMode) {
-        const lockedId = wcMode ? 'CMU' : roundBrowserLockedCompetition;
-        if (wcMode) roundBrowserDivision = 'CMU';
+      if (wcMode) {
+        // Comando da seleção: só a Copa, na mesma aba v2 das demais competições.
+        roundBrowserDivision = 'CMU';
+        divisionTabs.classList.remove('is-locked');
+        divisionTabs.innerHTML = '<button class="active" data-round-division="CMU" data-comp-kind="gold">COPA DO MUNDO</button>';
+      } else if (roundBrowserLockedCompetition && roundBrowserLockedCompetition !== 'CUP') {
+        const lockedId = roundBrowserLockedCompetition;
         divisionTabs.innerHTML = `<div class="round-division-tabs-locked">${roundBrowserCompetitionLabel(lockedId)}</div>`;
         divisionTabs.classList.add('is-locked');
       } else {
@@ -209,9 +219,9 @@ export function createRoundResultsBrowser(deps) {
       if (nt) return `<b class="club-link" data-national-team="${nt.code}" role="button" tabindex="0">${name}</b>`;
       return `<b class="club-link" data-club="${name}" role="button" tabindex="0">${name}</b>`;
     };
-    const crest = name => (deps.resolveNationalTeam(name) ? '' : teamCrestHtml(name, { className: 'round-crest' }));
+    const crest = name => teamCrestHtml(name, { className: 'round-crest' });
     const winSide = game => (game.scheduled || game.homeGoals == null ? '' : game.homeGoals > game.awayGoals ? 'home' : game.homeGoals < game.awayGoals ? 'away' : (game.shootoutWinner === game.home ? 'home' : game.shootoutWinner === game.away ? 'away' : 'draw'));
-    deps.$('#roundGames').innerHTML = `<div class="round-games-head"><span>MANDANTE</span><span>PLACAR</span><span>VISITANTE</span></div>${playableGames.length ? playableGames.map(game => { const isUser = game.home === userClub || game.away === userClub || (userNationalTeamName && (game.home === userNationalTeamName || game.away === userNationalTeamName)); return `<div class="round-game-row ${isUser ? 'user-game' : ''} ${game.scheduled ? 'scheduled' : ''}" data-win="${winSide(game)}"><span class="rg-home">${isUser ? '<small class="user-game-tag">SEU JOGO</small>' : ''}${bindTeam(game.home)}${crest(game.home)}</span><strong>${renderRoundGameScore(game)}</strong><span class="rg-away">${crest(game.away)}${bindTeam(game.away)}</span></div>`; }).join('') : '<div class="round-games-empty">Nenhum jogo disponível para esta rodada.</div>'}${live && playableGames.some(game => game.scheduled) ? '<p class="round-games-note">Os demais jogos da rodada terminam quando você avançar.</p>' : ''}`;
+    deps.$('#roundGames').innerHTML = `<div class="round-games-head"><span>MANDANTE</span><span>PLACAR</span><span>VISITANTE</span></div>${playableGames.length ? playableGames.map(game => { const isUser = game.home === userClub || game.away === userClub || (userNationalTeamName && (game.home === userNationalTeamName || game.away === userNationalTeamName)); return `<div class="round-game-row ${isUser ? 'user-game' : ''} ${game.scheduled ? 'scheduled' : ''}" data-win="${winSide(game)}"><span class="rg-home">${isUser ? '<small class="user-game-tag">SEU JOGO</small>' : ''}${bindTeam(game.home)}${crest(game.home)}</span><strong>${renderRoundGameScore(game)}</strong><span class="rg-away">${crest(game.away)}${bindTeam(game.away)}</span></div>`; }).join('') : '<div class="round-games-empty">Nenhum jogo disponível para esta rodada.</div>'}${live && playableGames.some(game => game.scheduled || game.homeGoals == null) ? `<p class="round-games-note">${roundBrowserDivision === 'CMU' ? 'Jogos sem placar ainda vão acontecer — a tabela atualiza quando você avançar até a data deles.' : 'Os demais jogos da rodada terminam quando você avançar.'}</p>` : ''}`;
     renderStandings();
   };
   const openRoundResults = contextGame => {

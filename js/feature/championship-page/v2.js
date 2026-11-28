@@ -23,7 +23,7 @@ const CHIP_META = {
 
 const esc = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
-export function createChampionshipV2({ $, getUserClub, getClubForm, getSideRound, getScorers, getUserNationalRank, openRanking }) {
+export function createChampionshipV2({ $, getUserClub, getUserNationalTeam, getNationalForm, getClubForm, getSideRound, getScorers, getUserNationalRank, openRanking }) {
   const sideRounds = new Map();
   let scheduled = false;
   let observer = null;
@@ -49,8 +49,9 @@ export function createChampionshipV2({ $, getUserClub, getClubForm, getSideRound
     if (bar.innerHTML !== html) bar.innerHTML = html;
   };
 
-  const formCell = club => {
-    const form = typeof getClubForm === 'function' ? getClubForm(club) || [] : [];
+  const formCell = (club, national = false) => {
+    const source = national ? getNationalForm : getClubForm;
+    const form = typeof source === 'function' ? source(club) || [] : [];
     const last = form.slice(-5);
     const pads = Array.from({ length: 5 - last.length }, () => '<i data-r="-">·</i>').join('');
     const marks = last
@@ -66,25 +67,32 @@ export function createChampionshipV2({ $, getUserClub, getClubForm, getSideRound
     const body = $('#leagueTable');
     const head = $('#championshipPageHead');
     if (!body) return;
-    const rows = [...body.querySelectorAll('.league-row[data-club]')].filter(row => row.children.length === 8);
-    if (!rows.length) return;
+    const rows = [...body.querySelectorAll('.league-row[data-club], .league-row[data-national-team]')].filter(row => row.children.length === 8);
+    const summaryNow = $('#champV2Summary');
+    if (!rows.length) {
+      summaryNow?.remove();
+      return;
+    }
+    const teamOf = row => row.dataset.club || row.children[1]?.textContent?.trim() || '';
+    const national = !rows[0].dataset.club;
     rows.forEach(row => {
       if (row.dataset.v2) return;
       row.dataset.v2 = '1';
       const name = row.children[1];
-      const club = row.dataset.club;
+      const club = teamOf(row);
       if (name && !name.querySelector('.champ-v2-crest')) {
         name.insertAdjacentHTML('afterbegin', teamCrestHtml(club, { className: 'champ-v2-crest' }));
       }
-      row.insertAdjacentHTML('beforeend', formCell(club));
+      row.insertAdjacentHTML('beforeend', formCell(club, national));
     });
     const table = body.closest('.championship-page-table');
     table?.classList.add('champ-v2-table');
     if (head && head.children.length === 8) head.insertAdjacentHTML('beforeend', '<span>ÚLTIMOS</span>');
 
-    // Resumo da sua posição, quando o seu time está nesta tabela.
-    const userRow = rows.find(row => row.dataset.club === getUserClub());
-    let summary = $('#champV2Summary');
+    // Resumo da sua posição, quando o seu time (ou a sua seleção) está nesta tabela.
+    const me = national ? (typeof getUserNationalTeam === 'function' ? getUserNationalTeam() : '') : getUserClub();
+    const userRow = me ? rows.find(row => teamOf(row) === me) : null;
+    let summary = summaryNow;
     if (!userRow) {
       summary?.remove();
       return;

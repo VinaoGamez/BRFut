@@ -1476,6 +1476,8 @@ export function createTransfersFeature(deps) {
   };
 
   function showWindowOpenAlert({ force = false } = {}) {
+    // Comandando a seleção na Copa: avisos de mercado do clube ficam para depois.
+    if (typeof document !== 'undefined' && document.body?.classList.contains('national-team-command')) return false;
     const api = engine();
     const phase = api?.getWindowPhase?.() || null;
     const status = api?.marketStatus?.() || null;
