@@ -3,22 +3,22 @@
  * Toda tela que mostra gol, cartão, substituição, lesão etc. usa este conjunto,
  * para o mesmo lance ter sempre o mesmo visual.
  */
-import goalUrl from '../../assets/ui/icons/goal.webp?url';
-import ownGoalUrl from '../../assets/ui/icons/own-goal.webp?url';
-import penaltyGoalUrl from '../../assets/ui/icons/penalty-goal.webp?url';
-import penaltyMissUrl from '../../assets/ui/icons/penalty-miss.webp?url';
-import assistUrl from '../../assets/ui/icons/assist.webp?url';
-import yellowUrl from '../../assets/ui/icons/yellow.webp?url';
-import redUrl from '../../assets/ui/icons/red.webp?url';
-import secondYellowUrl from '../../assets/ui/icons/second-yellow.webp?url';
-import subUrl from '../../assets/ui/icons/sub.webp?url';
-import subInUrl from '../../assets/ui/icons/sub-in.webp?url';
-import subOutUrl from '../../assets/ui/icons/sub-out.webp?url';
-import injuryUrl from '../../assets/ui/icons/injury.webp?url';
-import knockUrl from '../../assets/ui/icons/knock.webp?url';
-import suspendedUrl from '../../assets/ui/icons/suspended.webp?url';
-import motmUrl from '../../assets/ui/icons/motm.webp?url';
-import captainUrl from '../../assets/ui/icons/captain.webp?url';
+const goalUrl = new URL('../../assets/ui/icons/goal.webp', import.meta.url).href;
+const ownGoalUrl = new URL('../../assets/ui/icons/own-goal.webp', import.meta.url).href;
+const penaltyGoalUrl = new URL('../../assets/ui/icons/penalty-goal.webp', import.meta.url).href;
+const penaltyMissUrl = new URL('../../assets/ui/icons/penalty-miss.webp', import.meta.url).href;
+const assistUrl = new URL('../../assets/ui/icons/assist.webp', import.meta.url).href;
+const yellowUrl = new URL('../../assets/ui/icons/yellow.webp', import.meta.url).href;
+const redUrl = new URL('../../assets/ui/icons/red.webp', import.meta.url).href;
+const secondYellowUrl = new URL('../../assets/ui/icons/second-yellow.webp', import.meta.url).href;
+const subUrl = new URL('../../assets/ui/icons/sub.webp', import.meta.url).href;
+const subInUrl = new URL('../../assets/ui/icons/sub-in.webp', import.meta.url).href;
+const subOutUrl = new URL('../../assets/ui/icons/sub-out.webp', import.meta.url).href;
+const injuryUrl = new URL('../../assets/ui/icons/injury.webp', import.meta.url).href;
+const knockUrl = new URL('../../assets/ui/icons/knock.webp', import.meta.url).href;
+const suspendedUrl = new URL('../../assets/ui/icons/suspended.webp', import.meta.url).href;
+const motmUrl = new URL('../../assets/ui/icons/motm.webp', import.meta.url).href;
+const captainUrl = new URL('../../assets/ui/icons/captain.webp', import.meta.url).href;
 
 export const EVENT_ICONS = {
   goal: { url: goalUrl, label: 'Gol' },
