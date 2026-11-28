@@ -6889,3 +6889,167 @@ html.is-mobile body #matchModal > .modal-card[data-mlv="live"] > #timeline { hei
 html.is-mobile body #matchModal > .modal-card[data-mlv="vest"] > :is(#liveVolume, #timeline, #mlvTimelineBar, #stats, #matchStatus, #mlvTabs) { display: none !important; }
 html.is-mobile body #matchModal > .modal-card[data-mlv="vest"] > #matchActions:not(:has(#finalNext)) { display: none !important; }
 html.is-mobile body #matchModal [data-mlv="vest"] #pausePanel { display: flex !important; flex-direction: column; } html.is-mobile body #matchModal [data-mlv="vest"] #pausePanel > .pause-resume-row { order: 9; }
+
+/* ---------- Venda v2 ---------- */
+html body .sale2-insight { display: flex; flex-direction: column; gap: 10px; margin: 10px 0 2px; }
+html body .sale2-insight.hidden { display: none !important; }
+html body .sale2-meter { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--av-rail); }
+html body .sale2-meter > div { display: flex; justify-content: space-between; align-items: baseline; }
+html body .sale2-meter small, html body .sale2-buyers > small { color: var(--av-muted); font: italic 800 11px/1 var(--av-display); letter-spacing: .1em; }
+html body .sale2-meter strong { font: italic 900 15px/1 var(--av-display); }
+html body .sale2-meter[data-tone="good"] strong { color: var(--av-green); }
+html body .sale2-meter[data-tone="mid"] strong { color: var(--av-gold); }
+html body .sale2-meter[data-tone="low"] strong { color: var(--av-red); }
+html body .sale2-meter i { display: block; height: 8px; background: var(--av-night); transform: skewX(-18deg); }
+html body .sale2-meter i b { display: block; height: 100%; background: linear-gradient(90deg, var(--av-red), var(--av-gold), var(--av-green)); transition: width .25s ease; }
+html body .sale2-buyers { display: flex; flex-direction: column; gap: 5px; }
+html body .sale2-buyer { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; grid-template-areas: "crest name cap" "crest need cap"; align-items: center; column-gap: 10px; padding: 7px 10px; background: var(--av-rail); }
+html body .sale2-buyer .sale2-crest { grid-area: crest; width: 24px !important; height: 27px !important; margin: 0 !important; }
+html body .sale2-buyer strong { grid-area: name; color: var(--av-ink); font: 700 14px/1.2 var(--av-body); }
+html body .sale2-buyer em { grid-area: need; color: var(--av-cyan); font: 600 11px/1 var(--av-body); font-style: normal; }
+html body .sale2-buyer span { grid-area: cap; font: 700 13px/1 var(--av-body); color: var(--av-gold); }
+html body .sale2-buyer[data-ok="1"] span { color: var(--av-green); }
+html body .sale2-empty, html body .sale2-impact { margin: 0; color: var(--av-muted); font-size: 13px; }
+html body .sale2-impact strong { color: var(--av-ink); }
+html body .sale2-result-modal { display: grid; place-items: center; padding: 16px; background: rgba(3, 8, 16, .8) !important; }
+html body .sale2-result-modal.hidden { display: none !important; }
+html body .sale2-result.mv2-shell { width: min(540px, calc(100vw - 32px)); }
+html body .sale2-move { display: flex; align-items: center; gap: 14px; padding: 12px; background: var(--av-rail); }
+html body .sale2-move > b { color: var(--av-lime); font: italic 900 22px/1 var(--av-display); }
+html body .sale2-move .sale2-crest-lg { width: 36px !important; height: 40px !important; margin: 0 !important; }
+html body .sale2-move > div { margin-left: auto; text-align: right; }
+html body .sale2-move small { display: block; color: var(--av-muted); font: italic 800 10px/1 var(--av-display); letter-spacing: .1em; }
+html body .sale2-move strong { color: var(--av-gold); font: italic 900 26px/1.1 var(--av-display); }
+html body .sale2-result .mv2-tile strong.is-good { color: var(--av-green); }
+html body .sale2-result .mv2-tile strong.is-bad { color: var(--av-red); }
+html body .sale2-result .mv2-tile em { color: var(--av-muted); font-size: 12px; font-style: normal; }
+@media (max-width: 640px) {
+  html body .sale2-result-modal { place-items: end center; padding: 0; }
+  html body .sale2-result.mv2-shell { width: 100vw; }
+  html body .sale2-result .mv2-foot { flex-wrap: wrap; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  html body .sale2-result .mv2-foot .mv2-btn { flex: 1 1 100%; }
+}
+
+/* ---------- Proposta recebida v2 (leitor de mensagens) ---------- */
+html body .msg2-chip { display: inline-block; padding: 3px 10px; background: var(--av-gold); color: var(--av-night) !important; font: italic 800 11px/1.2 var(--av-display) !important; letter-spacing: .06em; clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+html body .msg2-offer .message-reader-offer-crest { width: 46px !important; height: 52px !important; flex: none; background: none !important; border: 0 !important; }
+html body .msg2-player { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 12px; background: var(--av-rail); }
+html body .msg2-player > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html body .msg2-player strong { color: var(--av-ink); font: italic 900 17px/1.15 var(--av-display); }
+html body .msg2-player small { color: var(--av-muted); font-size: 12px; }
+html body .msg2-player > b { display: flex; flex-direction: column; align-items: center; color: var(--av-lime); font: italic 900 22px/1 var(--av-display); }
+html body .msg2-player > b small { color: var(--av-muted); font: italic 800 10px/1 var(--av-display); letter-spacing: .1em; }
+html body .msg2-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+html body .msg2-tiles > div { display: flex; flex-direction: column; gap: 3px; padding: 9px 12px; background: var(--av-rail); }
+html body .msg2-tiles small { color: var(--av-muted); font: italic 800 10px/1.2 var(--av-display); letter-spacing: .1em; }
+html body .msg2-tiles strong { color: var(--av-ink); font: italic 900 18px/1.1 var(--av-display); }
+html body .msg2-tiles strong.is-gold { color: var(--av-gold); }
+html body .msg2-tiles em { color: var(--av-muted); font-size: 12px; font-style: normal; }
+html body .msg2-aux { margin: 8px 0 0; padding: 9px 12px; background: var(--av-rail); box-shadow: inset 3px 0 var(--av-cyan); color: #c9d6e8; font-size: 13px; line-height: 1.5; }
+html body .msg2-aux strong { color: var(--av-ink); }
+html body .message-reader-transfer-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border: 0 !important; background: none !important; padding: 0 !important; }
+html body .message-reader-transfer-actions.hidden { display: none !important; }
+html body .message-reader-transfer-actions .message-reader-offer-expire { flex: 1 1 260px; margin: 0; display: flex; flex-direction: column; gap: 4px; background: none !important; border: 0 !important; color: var(--av-muted) !important; }
+html body .msg2-deadline { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+html body .msg2-deadline small { color: var(--av-orange); font: italic 800 11px/1 var(--av-display); letter-spacing: .1em; }
+html body .msg2-deadline i { flex: 1; min-width: 60px; height: 6px; background: var(--av-rail); transform: skewX(-18deg); }
+html body .msg2-deadline i b { display: block; height: 100%; background: var(--av-orange); }
+html body .msg2-final { color: var(--av-gold); font: italic 800 12px/1 var(--av-display); }
+html body .message-reader-transfer-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+html body .msg2-btn {
+  min-width: 0 !important; margin: 0 !important; padding: 10px 16px !important; border: 0 !important; border-radius: 0 !important;
+  font: italic 900 12px/1 var(--av-display) !important; letter-spacing: .05em; text-transform: uppercase; cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); box-shadow: none;
+}
+html body .msg2-btn.hidden { display: none !important; }
+html body .msg2-btn.is-accept { background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important; color: var(--av-night) !important; }
+html body .msg2-btn.is-counter { background: var(--av-panel-hi) !important; color: var(--av-cyan) !important; }
+html body .msg2-btn.is-reject { background: transparent !important; color: var(--av-red) !important; box-shadow: inset 0 0 0 1px var(--av-red) !important; }
+html body .msg2-counter { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; padding: 10px 12px; background: var(--av-rail); }
+html body .msg2-counter.hidden { display: none !important; }
+html body .msg2-counter label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; }
+html body .msg2-counter small { color: var(--av-muted); font: italic 800 10px/1 var(--av-display); letter-spacing: .1em; }
+html body .msg2-counter input { padding: 8px 10px !important; background: var(--av-night) !important; border: 0 !important; border-radius: 0 !important; box-shadow: inset 0 -2px var(--av-lime) !important; color: var(--av-ink) !important; font: italic 900 18px/1 var(--av-display) !important; }
+html body .msg2-counter p { flex: 1 1 100%; margin: 0; color: var(--av-muted); font-size: 12px; }
+@media (max-width: 640px) {
+  html body .msg2-tiles { grid-template-columns: 1fr 1fr; }
+  html body .message-reader-transfer-buttons { width: 100%; }
+  html body .message-reader-transfer-buttons .msg2-btn { flex: 1 1 0; }
+}
+
+/* ---------- Mensagens v2: blocos ---------- */
+html body .msg2-score { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--av-rail); box-shadow: inset 3px 0 var(--av-line); }
+html body .msg2-score[data-outcome="win"] { box-shadow: inset 3px 0 var(--av-green); }
+html body .msg2-score[data-outcome="loss"] { box-shadow: inset 3px 0 var(--av-red); }
+html body .msg2-score[data-outcome="draw"] { box-shadow: inset 3px 0 var(--av-gold); }
+html body .msg2-score .msg2-crest { width: 32px !important; height: 36px !important; flex: none; margin: 0 !important; }
+html body .msg2-score > strong { color: var(--av-ink); font: italic 900 26px/1 var(--av-display); white-space: nowrap; }
+html body .msg2-score > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; margin-left: 4px; }
+html body .msg2-score > span b { color: var(--av-ink); font: 700 14px/1.2 var(--av-body); }
+html body .msg2-score > span small { color: var(--av-muted); font-size: 12px; }
+html body .msg2-tiles-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 8px; }
+html body .msg2-tile { display: flex; flex-direction: column; gap: 3px; padding: 9px 12px; background: var(--av-rail); }
+html body .msg2-tile small { color: var(--av-muted); font: italic 800 10px/1.2 var(--av-display); letter-spacing: .1em; }
+html body .msg2-tile strong { color: var(--av-ink); font: italic 900 17px/1.1 var(--av-display); overflow-wrap: anywhere; }
+html body .msg2-tile em { color: var(--av-muted); font-size: 12px; font-style: normal; }
+html body .msg2-tile.is-gold strong { color: var(--av-gold); }
+html body .msg2-tile.is-good strong { color: var(--av-green); }
+html body .msg2-tile.is-bad strong { color: var(--av-red); }
+html body .msg2-phrase, html body .msg2-lead, html body .msg2-text { margin: 10px 0 0; color: #c9d6e8; font-size: 14px; line-height: 1.55; }
+html body .msg2-lead { color: var(--av-ink); font-weight: 700; margin-top: 0; }
+html body .msg2-list { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+html body .msg2-list li { padding: 7px 10px; background: var(--av-rail); box-shadow: inset 3px 0 var(--av-cyan); color: #c9d6e8; font-size: 13px; }
+
+/* Pós-jogo: lances sem caixa rolável (4 mais recentes) + narração paginada. */
+html body #matchModal .has-post-match > #pm2TimelineToggle { display: none !important; }
+html body #matchModal .has-post-match > #mlvTimelineBar { display: flex !important; grid-area: tg; }
+html body #matchModal .has-post-match > #timeline {
+  display: flex !important; flex-direction: column-reverse; justify-content: flex-end; gap: 6px;
+  max-height: none !important; height: auto !important; overflow: hidden !important;
+}
+html body #matchModal .has-post-match:not(.mlv-full) > #timeline > *:nth-last-child(n+5) { display: none !important; }
+html body #matchModal .has-post-match.mlv-full > #timeline > .mlv-off { display: none !important; }
+html body #matchModal .has-post-match.mlv-full > #liveVolume { display: none !important; }
+html body #matchModal .has-post-match.mlv-full { grid-template-areas: "head head" "score score" "hero hero" "shoot shoot" "stats tl" "stats tl" "stats tg" "act act" !important; }
+html body #matchModal .has-post-match:not(.mlv-full) .mlv-tl-bar :is([data-mlv-prev], [data-mlv-next]) { display: none !important; }
+html.is-mobile body #matchModal .has-post-match > #timeline { max-height: none !important; }
+/* Vestiário: leitura do auxiliar, barras e Desfazer. */
+html body #matchModal .mlv-vest-insight { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+html body #matchModal .mlv-vest-insight[hidden] { display: none !important; }
+html body #matchModal .mlv-aux { margin: 0 !important; padding: 9px 12px !important; background: var(--av-rail) !important; box-shadow: inset 3px 0 var(--av-gold); color: #c9d6e8 !important; font-size: 13px !important; line-height: 1.45; }
+html body #matchModal .mlv-aux strong { color: var(--av-gold) !important; }
+html body #matchModal .mlv-vest-bars { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; background: var(--av-rail); }
+html body #matchModal .mlv-vest-bars .stat.pm2-cmp { grid-template-columns: 46px minmax(0, 1fr) 46px !important; }
+html body #matchModal .mlv-undo {
+  min-width: 0 !important; margin: 0 !important; padding: 10px 18px !important; border: 0 !important; border-radius: 0 !important;
+  background: transparent !important; color: var(--av-ink) !important; box-shadow: inset 0 0 0 1px var(--av-line) !important;
+  font: italic 900 12px/1 var(--av-display) !important; letter-spacing: .05em; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); cursor: pointer;
+}
+html body #matchModal .mlv-undo:disabled { opacity: .5; cursor: default; }
+html body .sale2-card #transfersOfferHint,
+html body .sale2-card #transfersOfferPlayer { display: none !important; }
+html body .sale2-verdict { margin: 0; font-size: 13px; font-weight: 700; }
+html body .sale2-verdict[data-tone="good"] { color: var(--av-green); }
+html body .sale2-verdict[data-tone="mid"] { color: var(--av-gold); }
+html body .sale2-verdict[data-tone="low"] { color: var(--av-red); }
+html body .sale2-result .mv2-head { overflow: visible; }
+html body .sale2-result .mv2-title { font-size: 21px !important; line-height: 1.15 !important; white-space: normal !important; overflow: visible !important; max-height: none !important; height: auto !important; }
+html body .sale2-card { width: min(560px, calc(100vw - 32px)) !important; }
+html body .sale2-card .transfers-offer-facts small { white-space: nowrap; }
+html body .sale2-result > .mv2-head { height: auto !important; min-height: 0 !important; max-height: none !important; flex: none !important; align-items: flex-start !important; }
+html body .sale2-result > .mv2-head > div { overflow: visible !important; }
+html body .modal .modal-card .message-reader-transfer-buttons .msg2-btn.is-accept,
+html body #messagesReaderPane .message-reader-transfer-buttons .msg2-btn.is-accept,
+html body .modal .modal-card .msg2-counter .msg2-btn.is-accept { background: linear-gradient(180deg, var(--av-lime) calc(100% - 3px), var(--av-lime-edge) calc(100% - 3px)) !important; color: var(--av-night) !important; box-shadow: none !important; border: 0 !important; }
+html body .modal .modal-card .message-reader-transfer-buttons .msg2-btn.is-reject,
+html body #messagesReaderPane .message-reader-transfer-buttons .msg2-btn.is-reject { background: transparent !important; color: var(--av-red) !important; box-shadow: inset 0 0 0 1px var(--av-red) !important; border: 0 !important; }
+html body .modal .modal-card .message-reader-transfer-buttons .msg2-btn.is-counter,
+html body #messagesReaderPane .message-reader-transfer-buttons .msg2-btn.is-counter { background: var(--av-panel-hi) !important; color: var(--av-cyan) !important; box-shadow: none !important; border: 0 !important; }
+html body .msg2-offer .message-reader-offer-player { display: inline !important; padding: 0 !important; margin: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; color: var(--av-lime) !important; font: inherit !important; font-weight: 800 !important; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; clip-path: none !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel > .pause-resume-row { display: flex !important; flex-wrap: nowrap !important; width: auto !important; max-width: none !important; grid-template-columns: none !important; align-self: stretch; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel > .pause-resume-row > button { flex: none !important; width: auto !important; min-width: 0 !important; }
+html:not(.is-mobile) body #matchModal [data-mlv="vest"] #pausePanel > .pause-resume-row > #liveDayMatches { margin-right: auto !important; }
+@media (max-width: 640px) {
+  html body .sale2-card .transfers-offer-facts small { white-space: normal !important; }
+  html body .sale2-result .mv2-tile strong { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; font-size: 16px !important; }
+}

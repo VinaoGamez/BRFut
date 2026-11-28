@@ -11,7 +11,7 @@
  */
 const PAGE = 10;
 
-export function installMatchLiveLayout({ renderStats } = {}) {
+export function installMatchLiveLayout({ renderStats, vestSnapshot, vestRestore, vestInsight, statCompareRow } = {}) {
   if (typeof document === 'undefined') return null;
   const modal = document.getElementById('matchModal');
   const card = modal?.querySelector('.modal-card');
@@ -19,6 +19,7 @@ export function installMatchLiveLayout({ renderStats } = {}) {
   if (!card || !timeline) return null;
   let page = 0;
   let full = false;
+  let snapshot = null;
 
   const isHidden = el => !el || el.classList.contains('hidden') || el.hidden;
 
@@ -78,6 +79,42 @@ export function installMatchLiveLayout({ renderStats } = {}) {
     });
   };
 
+  const esc = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  /** Leitura do auxiliar + 3 barras do jogo + Desfazer no vestiário. */
+  const renderVestExtras = () => {
+    const controls = card.querySelector('#pausePanel .pause-controls');
+    if (!controls) return;
+    let box = controls.querySelector('.mlv-vest-insight');
+    if (!box) {
+      controls.querySelector('.mlv-vest-tabs')?.insertAdjacentHTML('afterend', '<section class="mlv-vest-insight"></section>');
+      box = controls.querySelector('.mlv-vest-insight');
+    }
+    const data = typeof vestInsight === 'function' ? vestInsight() : null;
+    const lines = data?.lines || [];
+    const bars = (data?.bars || []).map(row => (typeof statCompareRow === 'function' ? statCompareRow(row) : '')).join('');
+    box.innerHTML = `${lines.length ? `<p class="mlv-aux"><strong>Leitura do auxiliar:</strong> ${lines.map(esc).join(' ')}</p>` : ''}${bars ? `<div class="mlv-vest-bars">${bars}</div>` : ''}`;
+    box.hidden = !lines.length && !bars;
+    const row = card.querySelector('#pausePanel .pause-resume-row');
+    if (row && !row.querySelector('[data-vest-undo]')) {
+      row.querySelector('#resumeMatch')?.insertAdjacentHTML('beforebegin', '<button type="button" class="mlv-undo" data-vest-undo>DESFAZER</button>');
+      row.querySelector('[data-vest-undo]').addEventListener('click', () => {
+        const result = typeof vestRestore === 'function' ? vestRestore(snapshot) : { ok: false };
+        const btn = row.querySelector('[data-vest-undo]');
+        if (!btn) return;
+        if (result?.ok) {
+          btn.textContent = 'DESFEITO ✓';
+          setTimeout(() => { btn.textContent = 'DESFAZER'; }, 1400);
+        } else if (result?.reason === 'substitution_done') {
+          btn.disabled = true;
+          btn.title = 'Substituição confirmada não pode ser desfeita.';
+          btn.textContent = 'SUBSTITUIÇÃO JÁ FEITA';
+        }
+      });
+    }
+    const undo = row?.querySelector('[data-vest-undo]');
+    if (undo && !undo.disabled) undo.title = 'Volta formação, escalação e tática ao que eram quando a pausa começou.';
+  };
+
   const ensureMobileTabs = () => {
     if (document.getElementById('mlvTabs')) return;
     const anchor = document.getElementById('liveVolume') || timeline;
@@ -98,7 +135,7 @@ export function installMatchLiveLayout({ renderStats } = {}) {
   const sync = () => {
     const post = card.classList.contains('has-post-match');
     const vest = !isHidden(document.getElementById('pausePanel'));
-    const state = post ? '' : vest ? 'vest' : 'live';
+    const state = post ? 'post' : vest ? 'vest' : 'live';
     if (card.dataset.mlv !== state) {
       card.dataset.mlv = state;
       if (state === 'live') {
@@ -106,8 +143,14 @@ export function installMatchLiveLayout({ renderStats } = {}) {
         const stats = document.getElementById('stats');
         if (stats && !stats.innerHTML.trim()) { try { renderStats?.(); } catch { /* sem jogo */ } }
       }
-      if (state !== 'live') { full = false; page = 0; }
+      if (state !== 'live' && state !== 'post') { full = false; page = 0; }
+      if (state === 'vest') {
+        try { snapshot = typeof vestSnapshot === 'function' ? vestSnapshot() : null; } catch { snapshot = null; }
+        const undo = card.querySelector('[data-vest-undo]');
+        if (undo) { undo.disabled = false; undo.textContent = 'DESFAZER'; }
+      }
     }
+    if (state === 'vest') { try { renderVestExtras(); } catch { /* opcional */ } }
     ensureVestTabs();
     ensureMobileTabs();
     applyPager();

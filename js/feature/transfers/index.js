@@ -1681,6 +1681,7 @@ export function createTransfersFeature(deps) {
       return;
     }
     // sell / list — mesmo critério de atratividade do preço pedido
+    renderSaleInsight(offer);
     if (offer >= value * 1.15) {
       hint.textContent = 'Preço alto — pode não haver comprador disposto.';
       hint.className = 'transfers-offer-hint is-warn';
@@ -1696,8 +1697,101 @@ export function createTransfersFeature(deps) {
     }
   };
 
+
+  // ---------- Venda v2: termômetro, quem pode comprar e impacto ----------
+  const saleEsc = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const ensureSaleInsight = () => {
+    let box = $('#transfersSaleInsight');
+    if (!box) {
+      $('#transfersOfferHint')?.insertAdjacentHTML('beforebegin', '<section id="transfersSaleInsight" class="sale2-insight hidden" aria-live="polite"></section>');
+      box = $('#transfersSaleInsight');
+    }
+    return box;
+  };
+  const renderSaleInsight = offer => {
+    const box = ensureSaleInsight();
+    if (!box || !offerState) return;
+    if (offerState.mode === 'buy') { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    const preview = engine()?.previewSellBuyers?.(offerState.playerId, offer || offerState.value);
+    if (!preview?.ok) { box.classList.add('hidden'); return; }
+    offerState.salePreview = preview;
+    const chance = Math.max(0, Math.min(100, preview.chance));
+    const label = !preview.buyers.length ? 'Nenhum interessado' : chance >= 70 ? 'Alta' : chance >= 40 ? 'Média' : 'Baixa';
+    const tone = chance >= 70 ? 'good' : chance >= 40 ? 'mid' : 'low';
+    const fee = offer || offerState.value;
+    const buyers = preview.buyers.length
+      ? preview.buyers.map(buyer => `<div class="sale2-buyer" data-ok="${fee <= buyer.askCap ? '1' : '0'}">${teamCrestHtml(buyer.name, { className: 'sale2-crest' })}<strong>${saleEsc(buyer.name)}</strong><span>paga até ~${formatMoney(buyer.askCap)}</span>${buyer.needPos ? '<em>precisa da posição</em>' : ''}</div>`).join('')
+      : '<p class="sale2-empty">Nenhum clube com caixa e vaga para este jogador agora.</p>';
+    box.innerHTML = `<div class="sale2-meter" data-tone="${tone}"><div><small>CHANCE DE COMPRADOR</small><strong>${label}</strong></div><i><b style="width:${chance}%"></b></i></div>
+      <div class="sale2-buyers"><small>QUEM PODE COMPRAR</small>${buyers}</div>
+      <p class="sale2-verdict" data-tone="${tone}">${!preview.buyers.length ? 'Ninguém tem caixa ou vaga para ele agora.' : preview.accepting ? `${saleEsc(preview.buyers.find(buyer => fee <= buyer.askCap)?.name || preview.buyers[0].name)} aceita este preço — a venda sai na hora.` : `Acima do que o mercado paga: até ${formatMoney(preview.bestCap)} a venda sai na hora (${saleEsc(preview.buyers[0].name)}).`}</p>
+      <p class="sale2-impact">No elenco depois da venda: <strong>${preview.positionAfter} ${saleEsc(offerState.pos || '')}</strong> (hoje ${preview.positionCount})${preview.purchaseFee ? ` · ${fee >= preview.purchaseFee ? 'lucro' : 'prejuízo'} de <strong>${formatMoney(Math.abs(fee - preview.purchaseFee))}</strong> sobre a compra` : ''}</p>`;
+    box.classList.remove('hidden');
+    const submit = $('#transfersOfferSubmit');
+    if (submit && offerState.mode === 'sell') submit.textContent = preview.accepting ? `VENDER POR ${formatMoney(fee)}` : 'TENTAR VENDA';
+  };
+
+  // ---------- Resultado da venda v2 ----------
+  const ensureSaleResultModal = () => {
+    let modal = $('#saleResultModal');
+    if (!modal) {
+      document.body.insertAdjacentHTML('beforeend', '<div id="saleResultModal" class="modal sale2-result-modal hidden" role="dialog" aria-modal="true"><div class="mv2-shell sale2-result" data-tone="lime"><header class="mv2-head"><div><span class="mv2-kicker" id="saleResultKicker"></span><h2 class="mv2-title" id="saleResultTitle"></h2></div><button type="button" class="mv2-close" data-sale-close aria-label="Fechar">×</button></header><div class="mv2-body" id="saleResultBody"></div><footer class="mv2-foot" id="saleResultFoot"></footer></div></div>');
+      modal = $('#saleResultModal');
+      modal.addEventListener('click', event => {
+        if (event.target === modal || event.target.closest('[data-sale-close]')) { modal.classList.add('hidden'); return; }
+        const retry = event.target.closest('[data-sale-retry]');
+        if (retry) {
+          const api = engine();
+          const fee = Number(retry.dataset.saleRetry) || 0;
+          const playerId = retry.dataset.playerId;
+          const result = api?.sellPlayer?.(playerId, fee);
+          if (result?.ok) {
+            onDealComplete?.(result);
+            persistSeason();
+            render();
+          }
+          showSaleResult(result || { ok: false, reason: 'no_buyer' });
+        }
+      });
+    }
+    return modal;
+  };
+  const showSaleResult = (result, context = {}) => {
+    const modal = ensureSaleResultModal();
+    const shell = modal.querySelector('.sale2-result');
+    const kicker = $('#saleResultKicker');
+    const title = $('#saleResultTitle');
+    const body = $('#saleResultBody');
+    const foot = $('#saleResultFoot');
+    if (result?.ok) {
+      const balance = Number(getBalance?.()) || 0;
+      const purchase = Number(result.player?.purchaseFee) || 0;
+      shell.dataset.tone = 'lime';
+      kicker.textContent = 'VENDIDO';
+      title.textContent = `${result.player?.name || 'Jogador'} vendido ao ${result.to}`;
+      body.innerHTML = `<div class="sale2-move">${teamCrestHtml(result.from, { className: 'sale2-crest-lg' })}<b>→</b>${teamCrestHtml(result.to, { className: 'sale2-crest-lg' })}<div><small>VALOR</small><strong>${formatMoney(result.fee)}</strong></div></div>
+        <div class="mv2-tiles"><div class="mv2-tile"><small>CAIXA</small><strong>${formatBudget?.(balance - result.fee) || '—'} → ${formatBudget?.(balance) || '—'}</strong></div>${purchase ? `<div class="mv2-tile"><small>${result.fee >= purchase ? 'LUCRO' : 'PREJUÍZO'}</small><strong class="${result.fee >= purchase ? 'is-good' : 'is-bad'}">${formatMoney(Math.abs(result.fee - purchase))}</strong></div>` : `<div class="mv2-tile"><small>VALOR DE MERCADO</small><strong>${formatMoney(result.value)}</strong></div>`}</div>
+        ${result.releaseFee ? `<p class="mv2-note">Taxa de liberação paga: ${formatMoney(result.releaseFee)}.</p>` : ''}`;
+      foot.innerHTML = '<button type="button" class="mv2-btn is-primary" data-sale-close>OK</button>';
+    } else {
+      shell.dataset.tone = 'red';
+      kicker.textContent = result?.reason === 'offer_too_high' ? 'SEM COMPRADOR NESTE PREÇO' : 'VENDA NÃO CONCLUÍDA';
+      const name = result?.playerName || context.playerName || 'o jogador';
+      if (result?.reason === 'offer_too_high' && result.askCap) {
+        title.textContent = `Ninguém pagou ${formatMoney(result.fee)} por ${name}`;
+        body.innerHTML = `<div class="mv2-tiles"><div class="mv2-tile"><small>VOCÊ PEDIU</small><strong class="is-bad">${formatMoney(result.fee)}</strong></div><div class="mv2-tile"><small>O MERCADO PAGA</small><strong class="is-good">até ${formatMoney(result.askCap)}</strong>${result.buyerName ? `<em>${saleEsc(result.buyerName)}</em>` : ''}</div></div>
+          <p class="mv2-note">Perto do que o mercado paga, a venda sai na hora. Acima disso, nenhum clube com caixa e vaga aceita.</p>`;
+        foot.innerHTML = `<button type="button" class="mv2-btn is-ghost" data-sale-close>MANTER NO ELENCO</button><button type="button" class="mv2-btn is-primary" data-sale-retry="${result.askCap}" data-player-id="${saleEsc(result.playerId || context.playerId || '')}">VENDER POR ${formatMoney(result.askCap)}</button>`;
+      } else {
+        title.textContent = `Não foi possível vender ${name}`;
+        body.innerHTML = `<p class="mv2-note">${saleEsc(reasonLabel(result?.reason, result || {}))}</p>`;
+        foot.innerHTML = '<button type="button" class="mv2-btn is-primary" data-sale-close>ENTENDI</button>';
+      }
+    }
+    modal.classList.remove('hidden');
+  };
   const openOfferModal = ({ mode, playerId, name, clubName, pos, overall, age, ask, value, wage }) => {
-    offerState = { mode, playerId, ask, value, wage, playerName: name, clubName };
+    offerState = { mode, playerId, ask, value, wage, playerName: name, clubName, pos };
     const modal = $('#transfersOfferModal');
     if (!modal) return;
     const copy =
@@ -1711,15 +1805,15 @@ export function createTransfersFeature(deps) {
         : mode === 'list'
           ? {
               eyebrow: 'NEGOCIAÇÃO · LISTA',
-              title: 'Preço pedido na lista',
+              title: `Colocar ${name || 'jogador'} à venda`,
               inputLabel: 'Preço pedido na lista (R$)',
-              submit: 'CONFIRMAR LISTAGEM',
+              submit: 'COLOCAR À VENDA',
             }
           : {
-              eyebrow: 'NEGOCIAÇÃO · VENDA',
-              title: 'Preço de venda',
-              inputLabel: 'Preço pedido na venda (R$)',
-              submit: 'CONFIRMAR VENDA',
+              eyebrow: 'VENDA',
+              title: `Vender ${name || 'jogador'}`,
+              inputLabel: 'Preço pedido (R$)',
+              submit: 'VENDER',
             };
     $('#transfersOfferEyebrow').textContent = copy.eyebrow;
     $('#transfersOfferTitle').textContent = copy.title;
@@ -1737,6 +1831,14 @@ export function createTransfersFeature(deps) {
         ? `${formatMoney(ask)}${ask !== value ? ` · merc. ${formatMoney(value)}` : ''}`
         : formatMoney(value);
     $('#transfersOfferWage').textContent = formatMoney(wage || 0);
+    const factLabels = [...document.querySelectorAll('#transfersOfferModal .transfers-offer-facts small')];
+    const labels = mode === 'buy' ? ['PEDIDO / VALOR', 'SALÁRIO', 'SEU CAIXA'] : ['VALOR DE MERCADO', 'FOLHA LIBERADA', 'SEU CAIXA'];
+    factLabels.forEach((el, index) => { if (labels[index]) el.textContent = labels[index]; });
+    if (mode !== 'buy') {
+      const monthly = wageMonthlyFromRound(Number(wage) || 0, getUserDivision?.() || 'A');
+      $('#transfersOfferWage').textContent = `${formatMoney(monthly)}/mês`;
+    }
+    $('#transfersOfferModal .transfers-offer-card')?.classList.toggle('sale2-card', mode !== 'buy');
     try {
       $('#transfersOfferBalance').textContent = formatBudget?.(getBalance?.()) || '—';
     } catch {
@@ -1918,16 +2020,14 @@ export function createTransfersFeature(deps) {
     if (!result.ok) {
       const msg = reasonLabel(result.reason, result);
       setStatus(msg);
+      const context = { playerName: offerState.playerName, playerId: offerState.playerId };
       closeOfferModal();
-      alertTransferResult(result, { titleFail: 'Venda não concluída' });
+      showSaleResult(result, context);
       return;
     }
     setStatus(`Vendido: ${result.player.name} → ${result.to} · ${formatMoney(result.fee)}`);
     closeOfferModal();
-    alertTransferResult(result, {
-      titleOk: 'Venda concluída',
-      leadOk: `${result.player.name} foi negociado com ${result.to} por ${formatMoney(result.fee)}.`,
-    });
+    showSaleResult(result);
     onDealComplete?.(result);
     persistSeason();
     render();

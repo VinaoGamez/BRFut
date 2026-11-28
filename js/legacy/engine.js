@@ -2146,6 +2146,7 @@ export async function bootEngine({
   reconcileCurrentRound();
   let persistSeason=()=>{};
   let respondToIncomingTransferOffer=()=>{};
+  let transferOfferContext=()=>null;
   let respondToContractRenewal=()=>{};
   let respondToNationalTeamOffer=()=>{};
   let openNationalTeamScout=()=>{};
@@ -2184,6 +2185,8 @@ export async function bootEngine({
       });
     },
     onTransferOfferRespond:opts=>respondToIncomingTransferOffer(opts),
+    getTransferOfferContext:meta=>transferOfferContext(meta),
+    getUserClub:()=>userClub,
     onContractRenewalRespond:opts=>respondToContractRenewal(opts),
     onNationalTeamOfferRespond:opts=>respondToNationalTeamOffer(opts),
     onViewNationalTeam:code=>openNationalTeamScout(code),
@@ -4557,8 +4560,71 @@ export async function bootEngine({
     messages.closeMessageReader?.();
     rosterContracts.render?.();
   };
-  respondToIncomingTransferOffer=({offerId,accept}={})=>{
+  /** Contexto para decidir uma proposta: jogador, valor, compra, posição e leitura do auxiliar. */
+  transferOfferContext=(meta={})=>{
+    try{
+      const index=squad.findIndex(player=>resolvePlayerId(player)===meta.playerId||player.name===meta.playerName);
+      const player=index>=0?squad[index]:null;
+      if(!player)return null;
+      const value=Number(player.marketValue)||0;
+      const fee=Number(meta.fee)||0;
+      const samePos=squad.filter(item=>item.pos===player.pos).length;
+      const starter=index<11;
+      const expiresYear=player.contract?.expiresDate?String(player.contract.expiresDate).slice(0,4):null;
+      const lines=[];
+      if(value&&fee)lines.push(fee>=value*1.05?'A oferta está acima do valor de mercado.':fee>=value*0.95?'A oferta está no valor de mercado.':'A oferta está abaixo do valor de mercado.');
+      lines.push(starter?'É titular: a saída mexe no time.':'É reserva e tem jogado pouco.');
+      if(samePos-1<=2)lines.push(`Sem ele, ficam só ${samePos-1} ${player.pos} no elenco.`);
+      return{
+        pos:player.pos,overall:Number(player.overall)||0,age:Number(player.age)||0,
+        role:starter?'titular':'reserva',contractUntil:expiresYear,
+        value,purchaseFee:Number(player.purchaseFee)||0,positionCount:samePos,
+        aux:lines.join(' '),
+      };
+    }catch{return null;}
+  };
+  respondToIncomingTransferOffer=({offerId,accept,counterFee}={})=>{
     if(!transfersEngine||!offerId)return;
+    if(counterFee!=null){
+      const counter=transfersEngine.counterIncomingOffer?.(offerId,counterFee);
+      if(!counter?.ok){
+        transfersUi?.showActionAlert?.({title:'Contraproposta não enviada',lead:counter?.reason==='counter_used'?'Você já fez uma contraproposta para esta oferta.':'A contraproposta precisa ser maior que a oferta atual.',tone:'warn'});
+        return;
+      }
+      const offer=counter.offer;
+      if(counter.outcome==='accepted'){
+        respondToIncomingTransferOffer({offerId,accept:true});
+        return;
+      }
+      if(counter.outcome==='countered'||counter.outcome==='held'){
+        const held=counter.outcome==='held';
+        messages.replaceMessage?.(
+          {offerId:offer.id,messageId:offer.messageId},
+          {
+            type:'incoming-offer',
+            title:'PROPOSTA DE COMPRA',
+            body:held?`${offer.fromClub} não sobe a oferta por ${offer.playerName}: ${formatTransferMoney(offer.fee)} é o máximo. É a proposta final.`:`${offer.fromClub} não chega ao valor pedido, mas sobe a oferta por ${offer.playerName} para ${formatTransferMoney(offer.fee)}. É a proposta final.`,
+            resolveAction:false,
+            meta:{competition:'Mercado',requiresAction:true,offerId:offer.id,offerType:offer.type,playerId:offer.playerId,playerName:offer.playerName,fromClub:offer.fromClub,fee:offer.fee,expiresRound:offer.expiresRound,counterUsed:true,finalOffer:true},
+          },
+        );
+        messages.openMessageForOffer?.(offer.id);
+        return;
+      }
+      messages.replaceMessage?.(
+        {offerId:offer.id,messageId:offer.messageId},
+        {
+          type:'offer-rejected',
+          title:'Negociação encerrada',
+          body:`${offer.fromClub} achou o valor alto demais e desistiu de ${offer.playerName}.`,
+          resolveAction:true,
+          actionResult:'rejected',
+          meta:{competition:'Mercado',offerId:offer.id,playerId:offer.playerId,requiresAction:false,actionResolved:true},
+        },
+      );
+      transfersUi?.showActionAlert?.({title:'Negociação encerrada',lead:`${offer.fromClub} desistiu de ${offer.playerName} depois da contraproposta.`,tone:'warn'});
+      return;
+    }
     const result=accept
       ?transfersEngine.acceptIncomingOffer(offerId)
       :transfersEngine.rejectIncomingOffer(offerId);
@@ -6492,7 +6558,55 @@ export async function bootEngine({
     matchLiveUi.refreshMatchFeed?.();
     scheduleLiveMatchPersist();
   };
-  installMatchLiveLayout({renderStats:()=>renderStats()});
+  installMatchLiveLayout({
+    renderStats:()=>renderStats(),
+    // Vestiário: foto do time ao abrir a pausa (para Desfazer) e leitura do auxiliar.
+    vestSnapshot:()=>({
+      order:activeUserSquad.slice(),formation,positions:[...positionAssignments],
+      tactics:tactics?.getTacticalValues?.()||null,subs:substitutions,
+      cards:cards?JSON.parse(JSON.stringify(cards)):null,
+    }),
+    vestRestore:snap=>{
+      if(!snap)return{ok:false,reason:'no_snapshot'};
+      if(snap.subs!==substitutions)return{ok:false,reason:'substitution_done'};
+      activeUserSquad.splice(0,activeUserSquad.length,...snap.order);
+      formation=snap.formation;
+      positionAssignments=[...snap.positions];
+      if(snap.cards)cards=snap.cards;
+      if(snap.tactics)tactics?.loadTacticalValues?.(snap.tactics);
+      try{syncTactics();drawBoard();renderSubstitutionControls();renderTacticalConfrontation({context:'pause'});}catch{/* tela opcional */}
+      return{ok:true};
+    },
+    vestInsight:()=>{
+      const lines=[];
+      try{
+        const score=calendarLiveScores();
+        const userHome=userAtHomeInLiveMatch();
+        const mine=userHome?score.home:score.away,theirs=userHome?score.away:score.home;
+        const starters=activeUserSquad.slice(0,11).filter(Boolean);
+        const tired=[...starters].sort((a,b)=>(Number(a.fatigue)||100)-(Number(b.fatigue)||100))[0];
+        if(tired&&(Number(tired.fatigue)||100)<70)lines.push(`${tired.name} está com ${Math.round(Number(tired.fatigue)||0)}% de condição — boa troca agora.`);
+        const booked=starters.filter((player,slot)=>cards?.home?.[slot]?.yellow||cards?.[slot]?.yellow).map(player=>player.name);
+        if(booked.length)lines.push(`${booked.slice(0,2).join(' e ')} ${booked.length>1?'têm':'tem'} cartão amarelo: cuidado com a expulsão.`);
+        if(matchStarted&&!preMatchPreparation){
+          if(mine<theirs)lines.push('Atrás no placar: subir a mentalidade e a pressão ajuda a buscar o gol.');
+          else if(mine>theirs)lines.push('Na frente: baixar a linha e fechar o meio segura o resultado.');
+          else lines.push('Empate: pequenos ajustes no meio podem decidir o jogo.');
+        }else{
+          lines.push('Confira a escalação e a tática antes do apito inicial.');
+        }
+      }catch{/* leitura opcional */}
+      let bars=[];
+      try{
+        if(matchStarted&&!preMatchPreparation){
+          const {home:h,away:a}=calendarLiveSideStats(),{home:hp,away:ap}=calendarPossessionPair();
+          bars=[['Posse de bola',`${hp}%`,`${ap}%`],['Finalizações',h.shots,a.shots],['Faltas',h.fouls,a.fouls]];
+        }
+      }catch{bars=[];}
+      return{lines,bars};
+    },
+    statCompareRow,
+  });
   tactics=createTacticsFeature({
     $,$$,playerNameCell,
     renderPlayerNameCell:(player,options)=>playerRename.renderNameCell(player,options),
@@ -9154,6 +9268,14 @@ export async function bootEngine({
       // QA do ao vivo: fila só com uma competição (ex.: 'ELIMINATÓRIAS').
       focusCompetition:competition=>{setQaFocusCompetition(competition);renderUserMatchPresentation?.();},
       qualifiers:()=>savedNewGame?.conmebolQualifiers||null,
+      // QA de mensagens: gera uma proposta real de compra por um reserva do elenco.
+      qaIncomingOffer:()=>{
+        const target=squad.slice(11).find(player=>!player.onLoan)||squad[squad.length-1];
+        const buyer=Object.keys(clubs).find(name=>name!==userClub&&clubs[name]?.division===userDivision);
+        const created=transfersEngine?.createIncomingOffer?.({type:'buy',playerId:resolvePlayerId(target),fromClub:buyer,fee:Math.round((Number(target.marketValue)||100000)*1.05)});
+        if(created?.ok)notifyIncomingTransferOffers([created.offer]);
+        return created?.ok?created.offer:created;
+      },
       nextUserEntry:()=>{const entry=nextPendingUserEntry();return entry?{competition:entry.game.competition,home:entry.game.home,away:entry.game.away,date:String(entry.details?.date)}:null;}};
   }
   if(new URLSearchParams(location.search).has('conmebolAudit')&&savedNewGame){

@@ -2,6 +2,7 @@ import { MODULE_VERSIONS } from '../../core/constants.js';
 import { formatTrainingWeeklyReportHtml } from '../../engine/training-development.js';
 import { defaultClubCrestInitials } from '../../ui/club-label.js';
 import { teamCrestHtml } from '../../ui/team-crest.js';
+import { messageCardHtml, messageDisplayTitle } from './message-cards.js';
 
 const MESSAGE_LIMIT = 200;
 /** Mensagens não lidas com esta idade (dias de calendário) são marcadas como lidas. */
@@ -288,6 +289,8 @@ export function createMessagesFeature(deps) {
     onTransferActionRequired,
     onNationalTeamActionRequired,
     onTransferOfferRespond,
+    getTransferOfferContext,
+    getUserClub,
     onNationalTeamOfferRespond,
     onContractRenewalRespond,
     onViewNationalTeam,
@@ -454,6 +457,20 @@ export function createMessagesFeature(deps) {
         : transferOffer
           ? 'transfer'
           : '';
+    const acceptBtn = $('#messageReaderOfferAccept');
+    const rejectBtn = $('#messageReaderOfferReject');
+    const counterBtn = $('#messageReaderOfferCounter');
+    const counterForm = $('#messageReaderCounterForm');
+    const buyOffer = show && transferOffer && !isLoanOfferMessage(message);
+    const feeNow = Number(message?.meta?.fee) || 0;
+    if (acceptBtn) acceptBtn.textContent = buyOffer && feeNow ? `ACEITAR ${feeNow >= 1e6 ? `R$ ${(feeNow / 1e6).toFixed(feeNow >= 1e7 ? 0 : 1).replace('.', ',')} MI` : `R$ ${Math.round(feeNow / 1e3)} MIL`}` : ntOffer ? 'ACEITAR CONVITE' : contractRenewal ? 'RENOVAR' : 'ACEITAR';
+    if (rejectBtn) rejectBtn.textContent = 'RECUSAR';
+    if (counterBtn) counterBtn.classList.toggle('hidden', !buyOffer || !!message?.meta?.counterUsed);
+    if (counterForm) {
+      counterForm.classList.add('hidden');
+      const input = counterForm.querySelector('input');
+      if (input && feeNow) input.value = Math.round(feeNow * 1.2).toLocaleString('pt-BR');
+    }
     const expire = $('#messageReaderOfferExpire');
     if (expire) {
       if (show && contractRenewal) {
@@ -462,7 +479,9 @@ export function createMessagesFeature(deps) {
           ? `<span>Pedido: R$ ${escapeHtml(wageAsk.toLocaleString('pt-BR'))}/rodada.</span><span>Aceitar renova por 6 meses.</span>`
           : '<span>Renovação semestral — aceitar ou recusar.</span>';
       } else if (show && transferOffer && message.meta?.expiresRound) {
-        expire.innerHTML = `<span>Expira na rodada ${escapeHtml(message.meta.expiresRound)}.</span><span>Responda com urgência.</span>`;
+        const left = Math.max(0, Number(message.meta.expiresRound) - Number(getCurrentRound?.() || message.round || 0));
+        const total = Math.max(1, Number(message.meta.expiresRound) - Number(message.round || 0));
+        expire.innerHTML = `<span class="msg2-deadline"><small>PRAZO</small><i><b style="width:${Math.round(Math.min(1, left / total) * 100)}%"></b></i><span>expira na rodada ${escapeHtml(message.meta.expiresRound)} · ${left ? `faltam ${left}` : 'última rodada'}</span></span>${message.meta?.finalOffer ? '<span class="msg2-final">Proposta final do clube</span>' : ''}`;
       } else if (show && ntOffer) {
         expire.innerHTML = '<span>Compromisso paralelo ao seu clube na Copa do Mundo.</span>';
       } else {
@@ -546,8 +565,7 @@ export function createMessagesFeature(deps) {
       if (trainingWeeklyMessage) {
         meta.innerHTML = '';
       } else if (offerMessage) {
-        const competition = message.meta?.competition || 'Mercado';
-        meta.innerHTML = `<span>RODADA ${escapeHtml(message.round)}</span><span>${escapeHtml(competition)}</span>`;
+        meta.innerHTML = `<span class="msg2-chip" data-cat="transfer">MERCADO</span><span>Rodada ${escapeHtml(message.round)}</span>`;
       } else if (nationalTeamOfferMessage) {
         meta.innerHTML = `<span>${escapeHtml(message.meta?.competition || 'Copa do Mundo 2026')}</span>`;
       } else if (competitionShortMeta) {
@@ -579,7 +597,7 @@ export function createMessagesFeature(deps) {
         title.innerHTML = '<span>PROPOSTA DE</span><span>EMPRÉSTIMO</span>';
       } else if (pendingOffer) {
         title.classList.remove('is-loan-title');
-        title.textContent = transferOfferReaderTitle(message);
+        title.textContent = message.meta?.playerName ? `Proposta por ${message.meta.playerName}` : transferOfferReaderTitle(message);
       } else if (matchdayMessage) {
         title.classList.remove('is-loan-title');
         title.textContent = 'JOGO DO DIA';
@@ -591,7 +609,7 @@ export function createMessagesFeature(deps) {
         title.textContent = 'RELATÓRIOS DE TREINAMENTOS';
       } else {
         title.classList.remove('is-loan-title');
-        title.textContent = message.title;
+        title.textContent = messageDisplayTitle(message, { userClub: getUserClub?.() });
       }
     }
     if (time) {
@@ -604,17 +622,28 @@ export function createMessagesFeature(deps) {
         if (fromClub && offerText.startsWith(fromClub)) {
           offerText = offerText.slice(fromClub.length).replace(/^\s+/, '');
         }
-        const crest = defaultClubCrestInitials(fromClub);
+        const pending = isTransferActionRequired(message);
+        const ctx = pending && typeof getTransferOfferContext === 'function' ? getTransferOfferContext(message.meta || {}) : null;
+        const fee = Number(message.meta?.fee) || 0;
+        const money = value => `R$ ${value >= 1e6 ? `${(value / 1e6).toFixed(value >= 1e7 ? 0 : 1).replace('.', ',')} mi` : value >= 1e3 ? `${Math.round(value / 1e3)} mil` : value}`;
+        const loan = isLoanOfferMessage(message);
+        const playerCard = ctx
+          ? `<div class="msg2-player"><span class="badge pos-chip" data-line="${escAttr(ctx.pos === 'GOL' ? 'gol' : ['ZAG', 'LAT'].includes(ctx.pos) ? 'def' : ['VOL', 'MC', 'MEI'].includes(ctx.pos) ? 'mei' : 'ata')}">${escapeHtml(ctx.pos)}</span><div><strong>${escapeHtml(message.meta?.playerName || '')}</strong><small>${ctx.age} anos · ${ctx.role}${ctx.contractUntil ? ` · contrato até ${escapeHtml(ctx.contractUntil)}` : ''}</small></div><b><small>OVR</small>${ctx.overall}</b></div>`
+          : '';
+        const tiles = ctx && !loan
+          ? `<div class="msg2-tiles"><div><small>PROPOSTA</small><strong class="is-gold">${money(fee)}</strong></div><div><small>VALOR DE MERCADO</small><strong>${money(ctx.value)}</strong>${ctx.value ? `<em>${fee >= ctx.value ? '+' : ''}${Math.round(((fee - ctx.value) / ctx.value) * 100)}% ${fee >= ctx.value ? 'acima' : 'abaixo'}</em>` : ''}</div><div><small>VOCÊ PAGOU</small><strong>${ctx.purchaseFee ? money(ctx.purchaseFee) : '—'}</strong>${ctx.purchaseFee ? `<em>${fee >= ctx.purchaseFee ? 'lucro' : 'prejuízo'} de ${money(Math.abs(fee - ctx.purchaseFee))}</em>` : '<em>sem custo registrado</em>'}</div></div>`
+          : '';
+        const aux = ctx?.aux ? `<p class="msg2-aux"><strong>Auxiliar:</strong> ${escapeHtml(ctx.aux)}</p>` : '';
         body.innerHTML = fromClub
-          ? `<div class="message-reader-offer-panel">
-              <i class="message-reader-offer-crest" aria-hidden="true">${escapeHtml(crest)}</i>
+          ? `<div class="message-reader-offer-panel msg2-offer">
+              ${teamCrestHtml(fromClub, { className: 'message-reader-offer-crest' })}
               <div class="message-reader-offer-main">
                 <div class="message-reader-offer-team">
                   <strong class="club-link" data-club="${escapeHtml(fromClub)}" role="button" tabindex="0">${escapeHtml(fromClub)}</strong>
                 </div>
                 <p>${formatOfferTextHtml(offerText, message)}</p>
               </div>
-            </div>`
+            </div>${playerCard}${tiles}${aux}`
           : formatOfferTextHtml(offerText, message);
       } else if (nationalTeamOfferMessage) {
         const teamName = message.meta?.nationalTeamName || '';
@@ -637,7 +666,7 @@ export function createMessagesFeature(deps) {
       } else if (trainingWeeklyMessage) {
         body.innerHTML = trainingWeeklyReaderHtml(message);
       } else {
-        body.innerHTML = bodyToHtml(message.body);
+        body.innerHTML = messageCardHtml(message, { userClub: getUserClub?.() }) || bodyToHtml(message.body);
       }
     }
     syncTransferOfferActions(message);
@@ -682,7 +711,7 @@ export function createMessagesFeature(deps) {
                     ? 'DISCIPLINA'
                     : isTrainingWeeklyMessage(message)
                       ? 'RELATÓRIOS DE TREINAMENTOS'
-                      : message.title;
+                      : messageDisplayTitle(message, { userClub: getUserClub?.() });
             const selected = readerIndex >= 0 && filteredMessages()[readerIndex]?.id === message.id && isReaderDocked();
             return `<article class="message-item ${message.read ? 'read' : 'unread'} message-${message.category}${urgent ? ' message-action-required' : ''}${selected ? ' is-selected' : ''}" data-message-id="${message.id}"><i class="message-item-dot" aria-hidden="true"></i><div class="message-item-main"><small>${CATEGORY_LABELS[message.category] || message.category.toUpperCase()} · RODADA ${message.round}${urgent ? ' · AÇÃO' : ''}</small><strong>${escapeHtml(listTitle)}</strong><span class="message-item-preview">${escapeHtml(messagePreview(message))}</span></div><time>${formatMessageTime(message.at)}</time></article>`;
           })
@@ -991,6 +1020,19 @@ export function createMessagesFeature(deps) {
       if (typeof onTransferOfferRespond !== 'function') return;
       onTransferOfferRespond({ offerId, accept: true });
     });
+    onClick('#messageReaderOfferCounter', () => {
+      const form = $('#messageReaderCounterForm');
+      form?.classList.toggle('hidden');
+      form?.querySelector('input')?.focus();
+    });
+    onClick('#messageReaderCounterSend', () => {
+      const actions = $('#messageReaderTransferActions');
+      const offerId = actions?.dataset?.offerId;
+      const raw = $('#messageReaderCounterForm input')?.value || '';
+      const fee = Number(String(raw).replace(/[^\d]/g, '')) || 0;
+      if (!offerId || !fee || typeof onTransferOfferRespond !== 'function') return;
+      onTransferOfferRespond({ offerId, counterFee: fee });
+    });
     onClick('#messageReaderOfferReject', () => {
       const actions = $('#messageReaderTransferActions');
       const offerId = actions?.dataset?.offerId;
@@ -1020,6 +1062,10 @@ export function createMessagesFeature(deps) {
     setPersist,
     pushMessage,
     replaceMessage,
+    openMessageForOffer: offerId => {
+      const message = careerMessages.find(item => item.meta?.offerId === offerId);
+      return message ? openMessageReader(message.id) : false;
+    },
     findMessage,
     presentTransferActionMessages,
     renderMessages,

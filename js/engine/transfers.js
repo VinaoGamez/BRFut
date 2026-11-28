@@ -1718,6 +1718,7 @@ export function createTransfersEngine(deps) {
     clearLoanState(moved);
     markPlayerMoved(moved);
     applyTransferContract(moved, buyer.division, wageDemand);
+    if (buyerName === userClubState().name) moved.purchaseFee = fee;
     buyer.roster.push(moved);
     const installmentPlan = addTransferInstallments(buyer, paymentPlan, {
       playerId,
@@ -1760,37 +1761,8 @@ export function createTransfersEngine(deps) {
     return result;
   };
 
-  /**
-   * Vende jogador do usuário para um clube IA seletivo (caixa, necessidade, ranking).
-   */
-  const sellPlayer = (playerId, feeInput = null) => {
-    const gate = assertMarket();
-    if (!gate.ok) {
-      return {
-        ok: false,
-        reason: gate.reason,
-        nextOpenRound: gate.nextOpenRound,
-      };
-    }
-    const { name: sellerName, club: seller } = userClubState();
-    if (!seller) return { ok: false, reason: 'no_club' };
-    if (seller.roster.length <= minRoster) return { ok: false, reason: 'min_roster' };
-
-    const index = seller.roster.findIndex(item => resolvePlayerId(item) === playerId);
-    if (index < 0) return { ok: false, reason: 'not_found' };
-    const player = seller.roster[index];
-    if (player.onLoan) return { ok: false, reason: 'on_loan' };
-    const moveGate = assertPlayerCanMove(player);
-    if (!moveGate.ok) return moveGate;
-    ensureMarketFields(player, { division: seller.division, season: getCareerSeason() });
-    const value = Number(player.marketValue) || estimatePlayerValue(player, seller.division);
-    const fee =
-      feeInput != null && Number(feeInput) > 0
-        ? Math.round(Number(feeInput))
-        : player.askingPrice > 0
-          ? Math.round(Number(player.askingPrice))
-          : value;
-
+  /** Clubes IA que comprariam o jogador do usuário (mesma regra da venda). */
+  const sellCandidatesFor = ({ player, seller, sellerName, fee, value, playerId }) => {
     const clubs = getClubs() || {};
     const sellerAvg =
       seller.roster.reduce((sum, p) => sum + (Number(p.overall) || 0), 0) /
@@ -1837,18 +1809,126 @@ export function createTransfersEngine(deps) {
       })
       .filter(entry => entry.cash >= fee * 0.5)
       .sort((a, b) => b.score - a.score);
+    return candidates;
+  };
 
-    if (!candidates.length) return { ok: false, reason: 'no_buyer', fee, value };
+  /** Prévia da venda: quem compraria, até quanto e a chance de fechar no preço. */
+  const previewSellBuyers = (playerId, feeInput = null) => {
+    const { name: sellerName, club: seller } = userClubState();
+    if (!seller) return { ok: false, reason: 'no_club' };
+    const player = seller.roster.find(item => resolvePlayerId(item) === playerId);
+    if (!player) return { ok: false, reason: 'not_found' };
+    ensureMarketFields(player, { division: seller.division, season: getCareerSeason() });
+    const value = Number(player.marketValue) || estimatePlayerValue(player, seller.division);
+    const fee = Number(feeInput) > 0 ? Math.round(Number(feeInput)) : value;
+    let candidates = sellCandidatesFor({ player, seller, sellerName, fee, value, playerId });
+    const pricedOut = !candidates.length && fee > value;
+    if (pricedOut) candidates = sellCandidatesFor({ player, seller, sellerName, fee: value, value, playerId });
+    const buyers = [...candidates].sort((x, y) => y.askCap - x.askCap).slice(0, 3)
+      .map(entry => ({ name: entry.name, askCap: entry.askCap, needPos: entry.needPos, division: entry.club?.division || null }));
+    const bestCap = buyers[0]?.askCap || 0;
+    const accepting = pricedOut ? 0 : candidates.filter(entry => fee <= entry.askCap).length;
+    // Chance: 0 sem comprador; sobe com quantos aceitam e com a folga até o teto.
+    const chance = !candidates.length ? 0
+      : accepting ? Math.min(98, 55 + accepting * 8 + Math.round(((bestCap - fee) / Math.max(1, bestCap)) * 60))
+      : Math.max(5, Math.round(40 * (bestCap / Math.max(1, fee)) - 15));
+    const samePos = seller.roster.filter(item => item.pos === player.pos).length;
+    return {
+      ok: true, value, fee, buyers, bestCap, chance, accepting,
+      positionCount: samePos, positionAfter: Math.max(0, samePos - 1),
+      purchaseFee: Number(player.purchaseFee) || null,
+      wage: Number(player.contract?.wagePerRound ?? player.wage) || 0,
+    };
+  };
+
+  /** Contraproposta numa oferta recebida: o clube aceita, devolve o teto dele ou desiste. */
+  const counterIncomingOffer = (offerId, feeInput) => {
+    const offer = findPendingOffer(offerId);
+    if (!offer) return { ok: false, reason: 'not_found' };
+    if (offer.status !== 'pending' || offer.type !== 'buy') return { ok: false, reason: 'not_pending', offer };
+    if (offer.counterUsed) return { ok: false, reason: 'counter_used', offer: { ...offer } };
+    const { club: user } = userClubState();
+    const buyer = getClubs()?.[offer.fromClub];
+    const player = user?.roster.find(item => resolvePlayerId(item) === offer.playerId);
+    if (!buyer || !player) return { ok: false, reason: 'not_found' };
+    ensureMarketFields(player, { division: user.division, season: getCareerSeason() });
+    const value = Number(player.marketValue) || estimatePlayerValue(player, user.division);
+    const rawCap = buyerAskCap(offer.fromClub, buyer, player, value).askCap;
+    const fee = Math.round(Number(feeInput) || 0);
+    if (!(fee > offer.fee)) return { ok: false, reason: 'counter_low', offer: { ...offer } };
+    offer.counterUsed = true;
+    if (fee <= rawCap) {
+      offer.fee = fee;
+      return { ok: true, outcome: 'accepted', fee, offer: { ...offer } };
+    }
+    if (rawCap > offer.fee && fee <= rawCap * 1.12) {
+      offer.fee = rawCap;
+      return { ok: true, outcome: 'countered', fee: rawCap, offer: { ...offer } };
+    }
+    if (fee <= Math.max(rawCap, offer.fee) * 1.12) {
+      return { ok: true, outcome: 'held', fee: offer.fee, offer: { ...offer } };
+    }
+    offer.status = 'rejected';
+    resolveOfferMessage(offer);
+    return { ok: true, outcome: 'withdrawn', fee: offer.fee, offer: { ...offer } };
+  };
+
+  /**
+   * Vende jogador do usuário para um clube IA seletivo (caixa, necessidade, ranking).
+   */
+  const sellPlayer = (playerId, feeInput = null) => {
+    const gate = assertMarket();
+    if (!gate.ok) {
+      return {
+        ok: false,
+        reason: gate.reason,
+        nextOpenRound: gate.nextOpenRound,
+      };
+    }
+    const { name: sellerName, club: seller } = userClubState();
+    if (!seller) return { ok: false, reason: 'no_club' };
+    if (seller.roster.length <= minRoster) return { ok: false, reason: 'min_roster' };
+
+    const index = seller.roster.findIndex(item => resolvePlayerId(item) === playerId);
+    if (index < 0) return { ok: false, reason: 'not_found' };
+    const player = seller.roster[index];
+    if (player.onLoan) return { ok: false, reason: 'on_loan' };
+    const moveGate = assertPlayerCanMove(player);
+    if (!moveGate.ok) return moveGate;
+    ensureMarketFields(player, { division: seller.division, season: getCareerSeason() });
+    const value = Number(player.marketValue) || estimatePlayerValue(player, seller.division);
+    const fee =
+      feeInput != null && Number(feeInput) > 0
+        ? Math.round(Number(feeInput))
+        : player.askingPrice > 0
+          ? Math.round(Number(player.askingPrice))
+          : value;
+
+    const candidates = sellCandidatesFor({ player, seller, sellerName, fee, value, playerId });
+
+    if (!candidates.length) {
+      // Preço acima do caixa dos compradores: mostra quanto o mercado pagaria no valor.
+      const atValue = fee > value ? sellCandidatesFor({ player, seller, sellerName, fee: value, value, playerId }) : [];
+      if (atValue.length) {
+        const best = [...atValue].sort((x, y) => y.askCap - x.askCap)[0];
+        return { ok: false, reason: 'offer_too_high', fee, value, askCap: best.askCap, buyerName: best.name, playerName: player.name, playerId };
+      }
+      return { ok: false, reason: 'no_buyer', fee, value, playerName: player.name, playerId };
+    }
 
     const buyerEntry = candidates.find(entry => fee <= entry.askCap);
     if (!buyerEntry) {
-      const bestCap = Math.max(...candidates.map(entry => entry.askCap));
+      const best = [...candidates].sort((x, y) => y.askCap - x.askCap)[0];
+      const bestCap = best?.askCap || 0;
       return {
         ok: false,
         reason: 'offer_too_high',
         fee,
         value,
         askCap: bestCap,
+        buyerName: best?.name || null,
+        playerName: player.name,
+        playerId,
       };
     }
 
@@ -3056,6 +3136,8 @@ export function createTransfersEngine(deps) {
     attachOfferMessageId,
     acceptIncomingOffer,
     rejectIncomingOffer,
+    counterIncomingOffer,
+    previewSellBuyers,
     evaluateUserPayroll: (opts = {}) => {
       const { club } = userClubState();
       if (!club) return null;

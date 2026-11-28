@@ -848,9 +848,11 @@
     <div id="messageReaderTransferActions" class="message-reader-transfer-actions hidden" data-offer-id="">
       <p id="messageReaderOfferExpire" class="message-reader-offer-expire"></p>
       <div class="message-reader-transfer-buttons">
-        <button id="messageReaderOfferReject" type="button" class="message-reader-offer-icon is-reject" aria-label="Recusar" title="Recusar"><span aria-hidden="true">×</span></button>
-        <button id="messageReaderOfferAccept" type="button" class="message-reader-offer-icon is-accept" aria-label="Aceitar" title="Aceitar"><span aria-hidden="true">✓</span></button>
+        <button id="messageReaderOfferReject" type="button" class="msg2-btn is-reject">RECUSAR</button>
+        <button id="messageReaderOfferCounter" type="button" class="msg2-btn is-counter hidden">CONTRAPROPOSTA</button>
+        <button id="messageReaderOfferAccept" type="button" class="msg2-btn is-accept">ACEITAR</button>
       </div>
+      <div id="messageReaderCounterForm" class="msg2-counter hidden"><label><small>SEU PREÇO (R$)</small><input type="text" inputmode="numeric" autocomplete="off" aria-label="Valor da contraproposta"></label><button id="messageReaderCounterSend" type="button" class="msg2-btn is-accept">ENVIAR</button><p>O clube pode aceitar, subir até o limite dele ou desistir. Uma tentativa por proposta.</p></div>
     </div>
     <footer class="message-reader-actions">
       <button id="messageReaderPrev" type="button">← ANTERIOR</button>

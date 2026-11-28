@@ -1180,5 +1180,41 @@ check('loan buy option: exercise locks fee and clears loan flags', () => {
   assert(!again.ok && again.reason === 'not_on_loan', again.reason);
 });
 
+check('counter offer: accept within cap, single attempt, withdraw when far above', () => {
+  const mk = id => makePlayer({ playerId: id, name: `Alvo ${id}`, overall: 72, pos: 'MC', marketValue: 1_000_000 });
+  const clubs = withPayrollRoom({
+    'Meu Clube': makeTransferClub('Meu Clube', { budget: 3_000_000, roster: [mk('co-a'), mk('co-b'), ...transferSquad(19, 'co-me')] }),
+    'Interessado FC': makeTransferClub('Interessado FC', { budget: 40_000_000, roster: transferSquad(19, 'co-int', { pos: 'ZAG' }) }),
+  });
+  const engine = createTransfersEngine(moneyEngineDeps(clubs, { getCurrentRound: () => 2, getSeasonRoundCount: () => 38 }));
+  const first = engine.createIncomingOffer({ type: 'buy', playerId: 'co-a', fromClub: 'Interessado FC', fee: 900_000 });
+  assert(first.ok, first.reason || 'create');
+  const low = engine.counterIncomingOffer(first.offer.id, 800_000);
+  assert(!low.ok && low.reason === 'counter_low', 'counter must be above offer');
+  const ok = engine.counterIncomingOffer(first.offer.id, 1_000_000);
+  assert(ok.ok && ok.outcome === 'accepted' && ok.offer.fee === 1_000_000, `outcome=${ok.outcome}`);
+  const again = engine.counterIncomingOffer(first.offer.id, 1_050_000);
+  assert(!again.ok && again.reason === 'counter_used', 'one counter per offer');
+  const second = engine.createIncomingOffer({ type: 'buy', playerId: 'co-b', fromClub: 'Interessado FC', fee: 900_000 });
+  assert(second.ok, second.reason || 'create 2');
+  const far = engine.counterIncomingOffer(second.offer.id, 9_000_000);
+  assert(far.ok && far.outcome === 'withdrawn' && far.offer.status === 'rejected', `far=${far.outcome}`);
+});
+
+check('previewSellBuyers lists buyers and chance drops when price is above caps', () => {
+  const target = makePlayer({ playerId: 'pv-t', name: 'Prévia', overall: 70, pos: 'ATA', marketValue: 1_000_000 });
+  const clubs = withPayrollRoom({
+    'Meu Clube': makeTransferClub('Meu Clube', { budget: 3_000_000, roster: [target, ...transferSquad(19, 'pv-me')] }),
+    'Comprador FC': makeTransferClub('Comprador FC', { budget: 30_000_000, roster: transferSquad(19, 'pv-c', { pos: 'ZAG' }) }),
+  });
+  const engine = createTransfersEngine(moneyEngineDeps(clubs));
+  const cheap = engine.previewSellBuyers('pv-t', 800_000);
+  assert(cheap.ok && cheap.buyers.length >= 1, 'has buyers');
+  assert(cheap.accepting >= 1 && cheap.chance >= 55, `cheap chance ${cheap.chance}`);
+  const pricey = engine.previewSellBuyers('pv-t', 5_000_000);
+  assert(pricey.ok && pricey.accepting === 0 && pricey.chance < cheap.chance, `pricey chance ${pricey.chance}`);
+  assert(pricey.bestCap > 0, 'reports best cap');
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
