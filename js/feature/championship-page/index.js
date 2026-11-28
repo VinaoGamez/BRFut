@@ -622,6 +622,152 @@ export function createChampionshipPageFeature(deps) {
     });
   };
 
+  /* ===== Chaveamento v2 (cb2): abas de fase, seu caminho, árvore e grade paginada ===== */
+  const bracketView = { page: 0, filter: 'all', phase: null };
+  const cbEsc = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const shortPhase = name => String(name || '').replace('OITAVAS DE FINAL', 'OITAVAS').replace('QUARTAS DE FINAL', 'QUARTAS').replace('SEMIFINAL', 'SEMI');
+
+  const bracketModel = () => {
+    if (bracketCompetition === 'SERIE_D') {
+      const nationalCompetitions = getNationalCompetitions();
+      return {
+        label: 'SÉRIE D',
+        rule: 'Ida e volta · empate no agregado vai para os pênaltis',
+        phases: getSerieDKnockoutPhaseDefs().map(def => {
+          const meta = serieDKnockoutPhaseMeta(def);
+          let ties = [];
+          if (meta.generated) {
+            const fixtures = serieDStageFixturesMerged(def.startRound);
+            ties = [...new Set(fixtures.map(game => game.tieId).filter(Boolean))]
+              .map(tieId => serieDBracketTieFromStage(def.startRound, tieId)).filter(Boolean);
+            if (def.key === 'semi' && nationalCompetitions.D.knockout?.stages?.playoff?.length) {
+              const { semi, playoff } = splitSerieDSemiPlayoffTies(ties);
+              ties = [...semi.map(tie => ({ ...tie, group: 'SEMIFINAL' })), ...playoff.map(tie => ({ ...tie, group: 'REPESCAGEM · ACESSO À SÉRIE C' }))];
+            }
+          }
+          return { index: def.index, name: def.name, teams: def.teams, generated: meta.generated, completed: meta.completed, ties, date: null, twoLegged: true };
+        }),
+      };
+    }
+    const cup = getCupCompetition();
+    return {
+      label: 'COPA DO BRASIL',
+      phases: getCupPhaseDefinitions().map(def => {
+        const stage = cup.stages.find(item => item.index === def.index);
+        const ties = stage?.fixtures?.length
+          ? [...new Set(stage.fixtures.map(game => game.tieId))].map(tieId => cupBracketTieFromStage(stage, tieId)).filter(Boolean)
+          : [];
+        return { index: def.index, name: stage?.name || def.name, teams: def.teams, generated: ties.length > 0, completed: !!stage?.completed, ties, date: def.dates?.[0] || null, twoLegged: !!def.twoLegged };
+      }),
+    };
+  };
+
+  const cbDivision = name => getClubs?.()?.[name]?.division || null;
+  const cbTie = (tie, { compact = false } = {}) => {
+    const userClub = getUserClub();
+    const line = (name, score) => {
+      const lost = tie.winner && tie.winner !== name;
+      return `<div class="cb2-side${tie.winner === name ? ' is-winner' : ''}${lost ? ' is-out' : ''}${name === userClub ? ' is-user' : ''}">${teamCrestHtml(name, { className: 'cb2-crest' })}<b class="club-link" data-club="${cbEsc(name)}" role="button" tabindex="0">${cbEsc(name)}</b>${!compact && cbDivision(name) ? `<small>${cbDivision(name)}</small>` : ''}<em>${cbEsc(score)}</em></div>`;
+    };
+    const meta = [tie.legMeta, tie.penLabel ? `pênaltis ${tie.penLabel}` : ''].filter(Boolean).join(' · ');
+    return `<article class="cb2-tie${tie.userTie ? ' is-user' : ''}">${line(tie.sideA, tie.scoreA)}${line(tie.sideB, tie.scoreB)}<small class="cb2-meta">${cbEsc(meta)}</small></article>`;
+  };
+  const cbPlaceholder = () => '<article class="cb2-tie is-tbd"><span>a definir</span></article>';
+
+  const renderBracketV2 = phaseIndex => {
+    const model = bracketModel();
+    const userClub = getUserClub();
+    const phase = model.phases.find(item => item.index === phaseIndex) || model.phases.find(item => item.generated) || model.phases[0];
+    if (!phase) return;
+    if (bracketView.phase !== phase.index) { bracketView.phase = phase.index; bracketView.page = 0; bracketView.filter = 'all'; }
+    setBracketRoundView(phase.index);
+    const title = $('#cupBracketTitle'), actionsEl = $('#cupBracketActions'), body = $('#cupBracketBody');
+    if (!title || !actionsEl || !body) return;
+    const fmtDate = date => (date ? new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '');
+    title.textContent = phase.generated ? `${phase.name.charAt(0)}${phase.name.slice(1).toLowerCase()} · ${phase.ties.length} confronto${phase.ties.length === 1 ? '' : 's'}` : phase.name.charAt(0) + phase.name.slice(1).toLowerCase();
+    // Abas das fases com status.
+    const tabs = model.phases.map(item => {
+      const status = item.completed ? 'done' : item.generated ? 'live' : 'wait';
+      const tip = item.completed ? 'Concluída' : item.generated ? 'Em disputa' : `Aguardando sorteio${item.date ? ` · jogos a partir de ${fmtDate(item.date)}` : ''}`;
+      return `<button type="button" class="cb2-phase is-${status}${item.index === phase.index ? ' is-active' : ''}" data-bracket-phase="${item.index}" ${item.generated ? '' : 'disabled'} title="${tip}"><i></i>${cbEsc(shortPhase(item.name))}</button>`;
+    }).join('');
+    // Seu caminho.
+    const steps = model.phases.filter(item => item.ties.some(tie => tie.userTie)).map(item => {
+      const tie = item.ties.find(entry => entry.userTie);
+      const opp = tie.sideA === userClub ? tie.sideB : tie.sideA;
+      const own = tie.sideA === userClub ? tie.scoreA : tie.scoreB;
+      const other = tie.sideA === userClub ? tie.scoreB : tie.scoreA;
+      const state = tie.winner === userClub ? ['✓', 'is-win'] : tie.winner ? ['✗', 'is-loss'] : ['EM DISPUTA', 'is-live'];
+      return `<span class="cb2-step"><b>${cbEsc(shortPhase(item.name))}</b>${teamCrestHtml(opp, { className: 'cb2-step-crest' })}<span>${cbEsc(own)} × ${cbEsc(other)}</span><i class="${state[1]}">${state[0]}</i></span>`;
+    });
+    const alive = steps.length && !model.phases.some(item => item.ties.some(tie => tie.userTie && tie.winner && tie.winner !== userClub));
+    const nextPhase = alive ? model.phases.find(item => !item.ties.some(tie => tie.userTie) && item.index > Math.max(...model.phases.filter(p => p.ties.some(t => t.userTie)).map(p => p.index))) : null;
+    if (nextPhase && model.phases.find(item => item.ties.some(tie => tie.userTie && tie.winner === userClub && item.index === nextPhase.index - 1))) {
+      steps.push(`<span class="cb2-step is-next"><b>${cbEsc(shortPhase(nextPhase.name))}</b><span>aguardando sorteio</span></span>`);
+    }
+    const path = steps.length
+      ? `<div class="cb2-path"><span class="cb2-path-label">SEU CAMINHO</span>${steps.join('<i class="cb2-arrow">›</i>')}</div>`
+      : `<div class="cb2-path is-empty"><span class="cb2-path-label">SEU CAMINHO</span><span>${cbEsc(userClub)} ainda não entrou nesta competição.</span></div>`;
+    const rule = model.rule || (phase.twoLegged ? 'Ida e volta · empate no agregado vai para os pênaltis' : 'Jogo único · empate vai para os pênaltis');
+    actionsEl.innerHTML = `<nav class="cb2-phases" role="tablist">${tabs}</nav>${path}`;
+    // Árvore: das oitavas (16 clubes) até a final, quando não há repescagem.
+    const treeStartIndex = model.phases.find(item => item.teams === 16)?.index;
+    const treePhases = treeStartIndex != null ? model.phases.filter(item => item.index >= treeStartIndex) : [];
+    const useTree = treePhases.length && phase.index >= treeStartIndex && !treePhases.some(item => item.ties.some(tie => tie.group));
+    if (useTree) {
+      const expected = item => Math.max(1, Math.round((item.teams || 2) / 2));
+      const half = (item, side) => {
+        const n = expected(item);
+        const list = item.ties.length ? item.ties : Array.from({ length: n }, () => null);
+        const mid = Math.ceil(list.length / 2);
+        const slice = side === 'left' ? list.slice(0, mid) : list.slice(mid);
+        return slice.map(tie => (tie ? cbTie(tie, { compact: true }) : cbPlaceholder())).join('');
+      };
+      const nonFinal = treePhases.filter(item => item.teams > 2);
+      const final = treePhases.find(item => item.teams === 2);
+      const col = (item, side) => `<div class="cb2-col${item.index === phase.index ? ' is-active' : ''}"><span class="cb2-col-title">${cbEsc(shortPhase(item.name))}</span><div class="cb2-col-ties">${half(item, side)}</div></div>`;
+      const finalTie = final?.ties?.[0];
+      const narrow = document.documentElement.classList.contains('is-mobile') || (Number(globalThis.innerWidth) || 1440) <= 1100;
+      if (narrow) {
+        // Celular: uma fase inteira por bloco, das oitavas até a final.
+        const fullCol = item => {
+          const n = expected(item);
+          const inner = item.ties.length
+            ? item.ties.map(tie => cbTie(tie, { compact: true })).join('')
+            : `<article class="cb2-tie is-tbd"><span>${n} confronto${n === 1 ? '' : 's'} a definir${item.date ? ` · a partir de ${fmtDate(item.date)}` : ''}</span></article>`;
+          return `<div class="cb2-col${item.index === phase.index ? ' is-active' : ''}"><span class="cb2-col-title">${cbEsc(shortPhase(item.name))}</span><div class="cb2-col-ties">${inner}</div></div>`;
+        };
+        body.innerHTML = `<div class="cb2-tree">${treePhases.map(fullCol).join('')}</div><p class="cb2-rule">${cbEsc(rule)}</p>`;
+        return;
+      }
+      body.innerHTML = `<div class="cb2-tree">
+        ${nonFinal.map(item => col(item, 'left')).join('')}
+        <div class="cb2-final${final && final.index === phase.index ? ' is-active' : ''}"><svg class="cb2-cup" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v3a6 6 0 0 1-4 5.7V15h3v3H7v-3h3v-3.3A6 6 0 0 1 6 6z"/><path d="M4 4h2v3H4zM18 4h2v3h-2z" opacity=".6"/></svg><span class="cb2-col-title">FINAL</span>${finalTie ? cbTie(finalTie, { compact: true }) : cbPlaceholder()}${final?.date ? `<small>a partir de ${fmtDate(final.date)}</small>` : ''}</div>
+        ${[...nonFinal].reverse().map(item => col(item, 'right')).join('')}
+      </div><p class="cb2-rule">${cbEsc(rule)}</p>`;
+      return;
+    }
+    // Grade paginada.
+    if (!phase.generated) {
+      body.innerHTML = `<div class="cb2-empty">Sorteio desta fase ainda não aconteceu${phase.date ? ` · jogos a partir de ${fmtDate(phase.date)}` : ''}.</div>`;
+      return;
+    }
+    const divRank = name => ({ A: 1, B: 2, C: 3, D: 4 }[cbDivision(name)] || 5);
+    const isUpset = tie => tie.winner && divRank(tie.winner) > divRank(tie.winner === tie.sideA ? tie.sideB : tie.sideA);
+    let ties = [...phase.ties.filter(tie => tie.userTie), ...phase.ties.filter(tie => !tie.userTie)];
+    const upsets = ties.filter(isUpset).length;
+    if (bracketView.filter === 'upsets') ties = ties.filter(isUpset);
+    const PAGE = 12;
+    const shown = ties.slice(0, PAGE * (bracketView.page + 1));
+    const groups = [...new Set(shown.map(tie => tie.group || ''))];
+    const grid = groups.map(group => `${group ? `<div class="cb2-group">${cbEsc(group)}</div>` : ''}<div class="cb2-grid">${shown.filter(tie => (tie.group || '') === group).map(tie => cbTie(tie)).join('')}</div>`).join('');
+    const filters = upsets
+      ? `<nav class="cb2-filters"><button type="button" data-bracket-filter="all" class="${bracketView.filter === 'all' ? 'is-active' : ''}">TODOS</button><button type="button" data-bracket-filter="upsets" class="${bracketView.filter === 'upsets' ? 'is-active' : ''}">ZEBRAS · ${upsets}</button></nav>`
+      : '<span></span>';
+    const more = ties.length > shown.length ? `<button type="button" class="cb2-more" data-bracket-more>VER MAIS ${Math.min(PAGE, ties.length - shown.length)}</button>` : '';
+    body.innerHTML = `<div class="cb2-gridbar">${filters}<small>${cbEsc(rule)}</small></div>${grid || '<div class="cb2-empty">Nenhum confronto neste filtro.</div>'}<div class="cb2-pager"><small>Mostrando ${shown.length} de ${ties.length}</small>${more}</div>`;
+  };
+
   const setBracketCompetitionLabel = text => {
     const label = $('#cupBracketCompetitionLabel');
     if (label) label.textContent = text;
@@ -631,9 +777,9 @@ export function createChampionshipPageFeature(deps) {
     const index = Number(phaseIndex) || 1;
     bracketCompetition = 'CUP';
     setBracketRoundView(index);
-    setBracketCompetitionLabel('CHAVEAMENTO · COPA DO BRASIL');
+    setBracketCompetitionLabel(`CHAVEAMENTO · COPA DO BRASIL ${getCareerSeason?.() || ''}`.trim());
     markCupPhaseSelection(index);
-    renderCupBracket(index);
+    renderBracketV2(index);
     $('#cupBracketModal')?.classList.remove('hidden');
   };
 
@@ -641,9 +787,9 @@ export function createChampionshipPageFeature(deps) {
     const index = Number(phaseIndex) || 1;
     bracketCompetition = 'SERIE_D';
     setBracketRoundView(index);
-    setBracketCompetitionLabel('CHAVEAMENTO · SÉRIE D');
+    setBracketCompetitionLabel(`CHAVEAMENTO · SÉRIE D ${getCareerSeason?.() || ''}`.trim());
     markSerieDPhaseSelection(index);
-    renderSerieDBracket(index);
+    renderBracketV2(index);
     $('#cupBracketModal')?.classList.remove('hidden');
   };
 
@@ -683,8 +829,7 @@ export function createChampionshipPageFeature(deps) {
 
   const refreshCupBracketIfOpen = () => {
     if ($('#cupBracketModal')?.classList.contains('hidden')) return;
-    if (bracketCompetition === 'SERIE_D') renderSerieDBracket(getBracketRoundView());
-    else renderCupBracket(getBracketRoundView() || getCupCompetition().currentPhase || 1);
+    renderBracketV2(Number(getBracketRoundView()) || (bracketCompetition === 'SERIE_D' ? 1 : getCupCompetition().currentPhase || 1));
   };
 
   const renderChampionshipPageTieSide = (name, side) => {
@@ -1800,6 +1945,15 @@ export function createChampionshipPageFeature(deps) {
       if (event.target.closest('[data-cup-bracket-close]')) { closeCupBracket(); return; }
       if (event.target.closest('[data-cup-bracket-prev]:not(:disabled)')) { goCupBracketPrevPhase(); return; }
       if (event.target.closest('[data-cup-bracket-next]:not(:disabled)')) { goCupBracketNextPhase(); return; }
+      const phaseBtn = event.target.closest('[data-bracket-phase]:not(:disabled)');
+      if (phaseBtn) {
+        const index = Number(phaseBtn.dataset.bracketPhase);
+        if (bracketCompetition === 'SERIE_D') openSerieDBracket(index); else openCupBracket(index);
+        return;
+      }
+      const filterBtn = event.target.closest('[data-bracket-filter]');
+      if (filterBtn) { bracketView.filter = filterBtn.dataset.bracketFilter; bracketView.page = 0; renderBracketV2(bracketView.phase); return; }
+      if (event.target.closest('[data-bracket-more]')) { bracketView.page += 1; renderBracketV2(bracketView.phase); return; }
     });
 
     const competitionRulesModal = createCompetitionRulesModalFeature({ $, onClick });

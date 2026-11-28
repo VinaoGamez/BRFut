@@ -180,6 +180,7 @@ import { applyCareerPreferences, mergePreferencesIntoCareer } from '../core/save
 import { createMatchRatingsEngine, DEFAULT_USER_TACTICS, blankMatchStats } from '../engine/match-ratings.js';
 import { createSeasonTransitionEngine } from '../engine/season-transition.js';
 import { commitSeasonArchiveFromLive, listSeasonArchiveYears, loadSeasonArchive } from '../core/season-archive-storage.js';
+import { buildSeasonArchive } from '../engine/season-archive.js';
 import { createSeasonSaveWriter } from '../engine/season-save-writer.js';
 import { serializeUserStadium, applySavedUserStadium } from '../engine/stadium-sectors.js';
 import { createInjuryEngine } from '../engine/injury.js';
@@ -4034,11 +4035,24 @@ export async function bootEngine({
     getSavedNewGame:()=>savedNewGame,
     getPlayerHistory:()=>playerHistory,
     getCurrentClubMatches:()=>[
-      ...seasonRoundHistory.flatMap(round=>round?.games||[]),
+      ...seasonRoundHistory.flatMap(round=>(round?.games||[]).map(game=>({...game,competition:game.competition||'LEAGUE'}))),
       ...copaDoBrasilFixtures,
       ...recopaFixtures,
       ...(FEATURES.stateLeague?stateLeagueEngine.allFixturesFlat():[]),
     ],
+    // Temporada em andamento no formato do arquivo anual (histórico do clube v2).
+    getLiveSeasonArchive:()=>buildSeasonArchive({
+      careerSeason,
+      seed:savedNewGame?.seed,
+      userClub,
+      userDivision,
+      nationalCompetitions,
+      competitionRoundHistory:{...(competitionRoundHistory||{}),[userDivision]:seasonRoundHistory},
+      cupCompetition,
+      stateLeagueResults:FEATURES.stateLeague?stateLeagueEngine.exportSeasonResults():{},
+      stateLeagueSnapshot:FEATURES.stateLeague?stateLeagueEngine.serialize({all:true,includeHistory:false}):null,
+    }),
+    getConmebolFixtures:()=>conmebolFixtures,
     getCurrentClubStanding:clubName=>{
       const name=clubName||userClub;
       for(const [division,competition] of Object.entries(nationalCompetitions)){
@@ -5961,7 +5975,7 @@ export async function bootEngine({
   onClick('#championshipNextRound',()=>{championshipRoundView++;renderChampionshipRound();});
   championshipSidebar.addEventListener('click',event=>{const leaderTab=event.target.closest('[data-championship-leader-tab]');if(leaderTab){championshipLeaderMode=leaderTab.dataset.championshipLeaderTab;renderChampionshipLeaders();return;}const groupStep=Number(event.target.closest('[data-championship-group-step]')?.dataset.championshipGroupStep||0);if(!groupStep||championshipDivision!=='D'||championshipRoundView>10)return;championshipGroupView=(championshipGroupView+groupStep+serieDGroups.length)%serieDGroups.length;renderChampionshipRound();});
 
-  document.body.insertAdjacentHTML('beforeend',`<div id="cupBracketModal" class="modal hidden cup-bracket-modal"><div class="modal-card"><button id="closeCupBracket" class="close" type="button" aria-label="Fechar">×</button><header class="cup-bracket-head"><div class="cup-bracket-titles"><label id="cupBracketCompetitionLabel">CHAVEAMENTO · COPA DO BRASIL</label><h2 id="cupBracketTitle">Fase</h2></div><div id="cupBracketActions"></div></header><div id="cupBracketBody" class="cup-bracket-body"></div></div></div>`);
+  document.body.insertAdjacentHTML('beforeend',`<div id="cupBracketModal" class="modal hidden cup-bracket-modal"><div class="modal-card cb2"><header class="cb2-head"><div class="cb2-title"><span class="cb2-kicker" id="cupBracketCompetitionLabel">CHAVEAMENTO</span><h2 id="cupBracketTitle">Mata-mata</h2></div><button id="closeCupBracket" class="close" type="button" aria-label="Fechar">×</button></header><div class="cb2-body"><div id="cupBracketActions" class="cb2-actions"></div><div id="cupBracketBody" class="cb2-content"></div></div></div></div>`);
   let openCupBracket=()=>{};
   let openSerieDBracket=()=>{};
   let closeCupBracket=()=>{$('#cupBracketModal')?.classList.add('hidden');};
@@ -6497,6 +6511,8 @@ export async function bootEngine({
     getSeasonRoundHistory: () => seasonRoundHistory,
     getCompetitionRoundHistory: () => competitionRoundHistory,
     getCareerSeed: () => savedNewGame?.seed,
+    getStateLeagueEngine: () => stateLeagueEngine,
+    getConmebolFixtures: () => conmebolFixtures,
   });
   const modal = $('#matchModal'), timeline = $('#timeline');
   const stopMatchClock=()=>{clearInterval(timer);matchLiveUi.stopLiveSecondTimer();};

@@ -14,8 +14,8 @@ import { seasonGoalGauge } from '../season-summary/goal-gauge.js';
 import { mountStadiumVisual } from './stadium-visual.js';
 import { sponsorLogoUrl } from '../../assets/sponsor-logos.js';
 import { listSeasonArchiveYears, loadSeasonArchive } from '../../core/season-archive-storage.js';
-import { buildClubHistory } from '../../engine/club-history.js';
-import { renderClubHistoryCard, hydrateClubHistoryCard } from '../../ui/club-history-card.js';
+import { buildClubHistory, buildClubHistoryV2 } from '../../engine/club-history.js';
+import { CLUB_HISTORY_V2_HTML, renderClubHistoryV2, clubHistoryCrestHtml } from '../../ui/club-history-v2.js';
 import { fetchStructuredSeasonHistory } from '../../core/career-history-sync.js';
 import { createClubV2 } from './club-v2.js';
 
@@ -110,6 +110,8 @@ export function createEconomyFeature(deps) {
     getPlayerHistory,
     getCurrentClubMatches,
     getCurrentClubStanding,
+    getLiveSeasonArchive,
+    getConmebolFixtures,
     getNationalRankingEntries,
     getSeasonGoal,
     getSeasonGoalResult,
@@ -137,38 +139,73 @@ export function createEconomyFeature(deps) {
   let stadiumAlertReady = false;
   let clubHistoryReady = false;
 
+  // Histórico do clube v2: abre direto no conteúdo (resumo, temporadas, troféus, recordes).
+  const clubHistoryView = { clubName: null, tab: 'seasons', page: 0, history: null, meta: {} };
   const closeClubHistory = () => {
-    const modal = $('#clubHistoryCardModal');
-    if (!modal) return;
-    modal.hidden = true;
+    $('#clubHistoryCardModal')?.classList.add('hidden');
     document.body.classList.remove('club-history-open');
   };
 
+  const renderClubHistoryView = () => {
+    const body = $('#clubHistoryCardBody');
+    if (!body || !clubHistoryView.history) return;
+    body.innerHTML = renderClubHistoryV2({
+      clubName: clubHistoryView.clubName,
+      history: clubHistoryView.history,
+      tab: clubHistoryView.tab,
+      page: clubHistoryView.page,
+      meta: clubHistoryView.meta,
+    });
+  };
+
   const ensureClubHistoryModal = () => {
-    if (!$('#clubHistoryCardModal')) document.body.insertAdjacentHTML('beforeend', '<div id="clubHistoryCardModal" class="club-history-modal" role="dialog" aria-modal="true" aria-label="Histórico do clube" hidden><div id="clubHistoryCardBody" class="club-history-modal-body"></div></div>');
+    const existing = $('#clubHistoryCardModal');
+    if (existing && !existing.querySelector('.ch2')) existing.remove();
+    if (!$('#clubHistoryCardModal')) document.body.insertAdjacentHTML('beforeend', CLUB_HISTORY_V2_HTML);
     if (clubHistoryReady) return;
-    onClick('#clubHistoryCardModal', event => { if (event.target?.id === 'clubHistoryCardModal') closeClubHistory(); });
-    onClick('#clubHistoryCardBody', event => {
-      const seasonToggle = event.target.closest('.club-history-season-toggle');
-      if (seasonToggle) {
-        const selected = seasonToggle.closest('.club-history-season');
-        selected.parentElement.querySelectorAll('.club-history-season').forEach(season => {
-          const active = season === selected;
-          season.classList.toggle('is-expanded', active);
-          season.querySelector('.club-history-season-toggle')?.setAttribute('aria-expanded', String(active));
-          const content = season.querySelector('.club-history-season-content');
-          if (content) content.hidden = !active;
-        });
-        return;
-      }
-      const card = event.target.closest('.club-history-card');
-      if (card) card.classList.toggle('is-flipped');
+    onClick('#clubHistoryCardModal', event => {
+      if (event.target?.id === 'clubHistoryCardModal' || event.target.closest('#closeClubHistory')) { closeClubHistory(); return; }
+      const tab = event.target.closest('[data-ch2-tab]');
+      if (tab) { clubHistoryView.tab = tab.dataset.ch2Tab; clubHistoryView.page = 0; renderClubHistoryView(); return; }
+      const pageBtn = event.target.closest('[data-ch2-page]');
+      if (pageBtn) { clubHistoryView.page = Math.max(0, clubHistoryView.page + Number(pageBtn.dataset.ch2Page)); renderClubHistoryView(); }
     });
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && !$('#clubHistoryCardModal')?.hidden) closeClubHistory();
-      if ((event.key === 'Enter' || event.key === ' ') && event.target?.classList?.contains('club-history-card')) { event.preventDefault(); event.target.classList.toggle('is-flipped'); }
+      if (event.key === 'Escape' && !$('#clubHistoryCardModal')?.classList.contains('hidden')) closeClubHistory();
     });
     clubHistoryReady = true;
+  };
+
+  const clubHistoryTopScorer = (clubName) => {
+    const players = getPlayerHistory?.()?.getStore?.()?.players || {};
+    let best = null;
+    Object.values(players).forEach(player => {
+      const goals = Object.values(player?.seasons || {}).reduce((sum, season) => sum + (Number(season?.clubs?.[clubName]?.goals) || 0), 0);
+      if (goals > 0 && (!best || goals > best.goals)) best = { name: player.name, goals };
+    });
+    return best;
+  };
+
+  const buildClubHistoryData = (clubName, archives) => {
+    const conmebolGames = (getConmebolFixtures?.() || []).filter(game => (game.home === clubName || game.away === clubName));
+    const conmebolDone = conmebolGames.filter(game => game.completed || (game.homeGoals != null && game.awayGoals != null));
+    const comps = [];
+    if (conmebolGames.length) {
+      const name = String(conmebolGames[0].competition || 'Continental');
+      const last = conmebolDone[conmebolDone.length - 1] || null;
+      const phase = last?.phase && !/grupo|group/i.test(last.phase) ? last.phase : 'Fase de grupos';
+      const pretty = /SUL-AMERICANA/i.test(name) ? 'Sul-Americana' : /LIBERTADORES/i.test(name) ? 'Libertadores' : /RECOPA/i.test(name) ? 'Recopa Sul-Americana' : name;
+      comps.push({ name: pretty, result: phase, tone: 'cyan' });
+    }
+    let liveArchive = null;
+    try { liveArchive = getLiveSeasonArchive?.() || null; } catch { liveArchive = null; }
+    return buildClubHistoryV2({
+      clubName,
+      liveArchive,
+      liveExtra: { games: conmebolDone, comps },
+      archives,
+      rankingTitles: getNationalRankingEntries?.()?.[clubName]?.titles || [],
+    });
   };
 
   const openClubHistory = requestedClubName => {
@@ -176,28 +213,35 @@ export function createEconomyFeature(deps) {
     const clubName = typeof requestedClubName === 'string' && requestedClubName.trim() ? requestedClubName.trim() : getUserClub?.();
     const career = getSavedNewGame?.() || {};
     const years = listSeasonArchiveYears({ seasonIndex: career.seasonIndex });
-    const archives = years.map(year => loadSeasonArchive(year, { seed: career.seed })).filter(Boolean);
-    const historyStore = getPlayerHistory?.()?.getStore?.() || {};
-    const rankingTitles = getNationalRankingEntries?.()?.[clubName]?.titles || [];
-    const currentLogs = [...(getCurrentClubMatches?.() || []), ...(historyStore.matchLogs || [])];
-    const seasons = buildClubHistory({ clubName, currentSeason: getCareerSeason?.(), currentLogs, currentStanding: getCurrentClubStanding?.(clubName), archives, rankingTitles });
-    const body = $('#clubHistoryCardBody');
-    body.innerHTML = renderClubHistoryCard({ clubName, seasons });
-    hydrateClubHistoryCard(body);
-    $('#clubHistoryCardModal').hidden = false;
+    const archives = years.map(year => loadSeasonArchive(year, { seed: career.seed })).filter(Boolean)
+      .filter(archive => Number(archive.careerSeason) !== Number(getCareerSeason?.()));
+    Object.assign(clubHistoryView, {
+      clubName,
+      tab: 'seasons',
+      page: 0,
+      history: buildClubHistoryData(clubName, archives),
+      meta: { topScorer: clubHistoryTopScorer(clubName), sinceLabel: clubName === getUserClub?.() ? 'seu clube' : '' },
+    });
+    const title = $('#clubHistoryTitle');
+    if (title) title.textContent = clubName;
+    const crest = $('#clubHistoryCrest');
+    if (crest) crest.innerHTML = clubHistoryCrestHtml(clubName);
+    renderClubHistoryView();
+    const modal = $('#clubHistoryCardModal');
+    modal?.classList.remove('hidden');
+    if (modal) modal.scrollTop = 0;
     document.body.classList.add('club-history-open');
-    body.querySelector('.club-history-card')?.focus();
-    const missingYears = years.filter(year => !archives.some(archive => Number(archive?.careerSeason) === Number(year)));
+    // Temporadas que só existem na nuvem entram quando chegarem.
+    const missingYears = years.filter(year => !archives.some(archive => Number(archive?.careerSeason) === Number(year)) && Number(year) !== Number(getCareerSeason?.()));
     if (missingYears.length) {
       Promise.all(missingYears.map(year => fetchStructuredSeasonHistory(year)))
         .then(remote => remote.map(item => item?.archive).filter(Boolean))
         .then(remoteArchives => {
-          if (!remoteArchives.length || $('#clubHistoryCardModal')?.hidden) return;
+          if (!remoteArchives.length || $('#clubHistoryCardModal')?.classList.contains('hidden') || clubHistoryView.clubName !== clubName) return;
           const merged = [...archives, ...remoteArchives]
             .filter((archive, index, all) => all.findIndex(item => Number(item.careerSeason) === Number(archive.careerSeason)) === index);
-          const updated = buildClubHistory({ clubName, currentSeason: getCareerSeason?.(), currentLogs, currentStanding: getCurrentClubStanding?.(clubName), archives: merged, rankingTitles });
-          body.innerHTML = renderClubHistoryCard({ clubName, seasons: updated });
-          hydrateClubHistoryCard(body);
+          clubHistoryView.history = buildClubHistoryData(clubName, merged);
+          renderClubHistoryView();
         });
     }
   };
