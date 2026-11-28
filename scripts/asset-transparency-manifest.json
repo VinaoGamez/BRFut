@@ -132,31 +132,6 @@
       "partial_alpha_pixels": 0
     },
     {
-      "path": "assets/ui/assist-boot.webp",
-      "source_path": "assets/ui/assist-boot.png",
-      "source_sha256": "8da512dff80f4ba3f7fe4d2f6ae6f71d0923fb783ed01862c9dc05e2f78d082a",
-      "transformation": "monochrome-white-to-alpha",
-      "size": [
-        256,
-        256
-      ],
-      "alpha_sha256": "1ffd96d29f3356c71f3eda1985e013756d8b62feccafcd949cb3603a235a0c6d",
-      "transparent_pixels": 45292,
-      "partial_alpha_pixels": 20244
-    },
-    {
-      "path": "assets/ui/sub-arrows.webp",
-      "source_path": "assets/ui/sub-arrows.png",
-      "source_sha256": "9d6837d13cc63c96183652484de252759b8e7142941be36e9dd592031b3b087a",
-      "size": [
-        256,
-        256
-      ],
-      "alpha_sha256": "eccd46d0987b1f98e65bb64424e71fc2c8979ed87004c8d9074dedc7a2953b99",
-      "transparent_pixels": 52281,
-      "partial_alpha_pixels": 1500
-    },
-    {
       "path": "brand/transfer-history/mercado-da-bola.webp",
       "source_path": "brand/transfer-history/mercado-da-bola.png",
       "source_sha256": "07795f64f17af48ee2a5a9235987dbe696a5153074920d8e47d5667233e6f015",
@@ -245,6 +220,198 @@
       "alpha_sha256": "131958fd24311f8822e724349ff423f20ec794e1dd979d37af802398700c35e8",
       "transparent_pixels": 38555,
       "partial_alpha_pixels": 1803
+    },
+    {
+      "path": "assets/ui/icons/assist.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "c9138bb7c328a3ce5b5c5edafc686fac8682c54b1d842ee1d324e98ff2462026",
+      "transparent_pixels": 11040,
+      "source_path": "assets/ui/icons/assist.webp",
+      "partial_alpha_pixels": 636,
+      "source_sha256": "844f9d9ed73e17baacbfc2713987431829893b7a21694bdd5979bdf4c0f62a11"
+    },
+    {
+      "path": "assets/ui/icons/captain.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "30f8567ba9bdb81abc8f3b5c49ee7552bc271723c62b98f5757aad516fc64447",
+      "transparent_pixels": 7691,
+      "source_path": "assets/ui/icons/captain.webp",
+      "partial_alpha_pixels": 519,
+      "source_sha256": "b5f40e17cc2b35258bd75596cf657e6c9e96fa3c5c6f6a094ac684a6441f1177"
+    },
+    {
+      "path": "assets/ui/icons/goal.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "daa4b57f6755a05780fbdb32b1516e7a74077e9c01ab1b5ef9e5b075237aedda",
+      "transparent_pixels": 5882,
+      "source_path": "assets/ui/icons/goal.webp",
+      "partial_alpha_pixels": 697,
+      "source_sha256": "99499dd3fdfc3a632066cb19625fb1b74de4a17d64e9a7ea3ad5eb24b3fcf826"
+    },
+    {
+      "path": "assets/ui/icons/injury.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "940d0f740b8b3f37b50d47b95dda8b17cc7d522ca8c62a99006d0715784ef0c4",
+      "transparent_pixels": 5935,
+      "source_path": "assets/ui/icons/injury.webp",
+      "partial_alpha_pixels": 762,
+      "source_sha256": "5c9851e4ca330d6d1d863e33df79985127123de2447a1062471055421de259c6"
+    },
+    {
+      "path": "assets/ui/icons/knock.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "bdfa6044416ea3792d10a7718a6a24abb11674211689e5434a193b6671f84843",
+      "transparent_pixels": 5942,
+      "source_path": "assets/ui/icons/knock.webp",
+      "partial_alpha_pixels": 738,
+      "source_sha256": "b8f9bc90ee14e1bae63e1e274158f6a2ee6623621719c7bda576fe5c99bac76e"
+    },
+    {
+      "path": "assets/ui/icons/motm.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "831b5d53e7b6d0061b01eb652361efd0be1c2cfbe4fb9901bfbb889f6ce64fc6",
+      "transparent_pixels": 8661,
+      "source_path": "assets/ui/icons/motm.webp",
+      "partial_alpha_pixels": 1050,
+      "source_sha256": "7397d567b5d75cb89804bd1ac778bd8c7566cd176449baaca194523faf32a51b"
+    },
+    {
+      "path": "assets/ui/icons/own-goal.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "1f05643eb4a4bc3b5aa74c9b8d975a7cd90f28e4292cbfbf692eaa8f51fb0de9",
+      "transparent_pixels": 5975,
+      "source_path": "assets/ui/icons/own-goal.webp",
+      "partial_alpha_pixels": 716,
+      "source_sha256": "f7d29439d28b30b4c585ee8c07af9df6b7b4ec17c89cbe11c941057d9070ab18"
+    },
+    {
+      "path": "assets/ui/icons/penalty-goal.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "d2eed509e00d2f29f99fae8e00f3207f340e2298e16f6c5597238aa7e6164b80",
+      "transparent_pixels": 6465,
+      "source_path": "assets/ui/icons/penalty-goal.webp",
+      "partial_alpha_pixels": 747,
+      "source_sha256": "6173a8bb3bb9f540c323bec8cae14046a03f281557c3518d7abd56089638093c"
+    },
+    {
+      "path": "assets/ui/icons/penalty-miss.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "60f54d943e63b67068c517a6d28bcda0dc174692ad10bdcfbc259c8f91812bbf",
+      "transparent_pixels": 6569,
+      "source_path": "assets/ui/icons/penalty-miss.webp",
+      "partial_alpha_pixels": 1288,
+      "source_sha256": "d0ca21132c0a8cff260fd7f761ee94d7a588d49270777d5c45e1ebc742f3b3f0"
+    },
+    {
+      "path": "assets/ui/icons/red.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "676f842fe6ffa5310bf8774ab178b9b87837993ed86bce063875549bd61dc329",
+      "transparent_pixels": 8412,
+      "source_path": "assets/ui/icons/red.webp",
+      "partial_alpha_pixels": 731,
+      "source_sha256": "59c90a92ee0065f9eb407d3c54608d7dcad6fc90c5641c1500c67044c891ff1e"
+    },
+    {
+      "path": "assets/ui/icons/second-yellow.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "1da3ca79a08021415517380cef7208ceaf52e527435c00959f1f96bcd6e55904",
+      "transparent_pixels": 7506,
+      "source_path": "assets/ui/icons/second-yellow.webp",
+      "partial_alpha_pixels": 717,
+      "source_sha256": "fd42b56c3fac07bf5b1b7eafd02c755f217c5de4d27d3bfc8f7bf81a51b477ec"
+    },
+    {
+      "path": "assets/ui/icons/sub-in.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "d2dbcdc05194d1874b3bb5e04726bd68e2bb0d1015931650b800131192678d33",
+      "transparent_pixels": 10839,
+      "source_path": "assets/ui/icons/sub-in.webp",
+      "partial_alpha_pixels": 613,
+      "source_sha256": "205be04f22e85b2222bb2e4c99181227bf709423bdbd95a3b8341743343a108b"
+    },
+    {
+      "path": "assets/ui/icons/sub-out.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "20f7e05e36d3d6838e46f622be4b6abd105458ea9a1a07c2ee4785bdc61d26cb",
+      "transparent_pixels": 10823,
+      "source_path": "assets/ui/icons/sub-out.webp",
+      "partial_alpha_pixels": 598,
+      "source_sha256": "794b9536e90efc3b1b888b3656216074e12e68d3b07aa67158f8bbeb086e0142"
+    },
+    {
+      "path": "assets/ui/icons/sub.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "22b8cbb1fe280922a6ca1ec9148a377c2b12ff9684890570ac31173cc4860496",
+      "transparent_pixels": 8814,
+      "source_path": "assets/ui/icons/sub.webp",
+      "partial_alpha_pixels": 972,
+      "source_sha256": "25593b95cd6b85a707d3f4c3ab9921bb34c9a2b0744db48286875cc5bbae54c1"
+    },
+    {
+      "path": "assets/ui/icons/suspended.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "56ae8e4e1676437f91c295fdb3516936c9de58d634f280c1b9f69d6d845e22a1",
+      "transparent_pixels": 9750,
+      "source_path": "assets/ui/icons/suspended.webp",
+      "partial_alpha_pixels": 3020,
+      "source_sha256": "cf694e90d2c34015690f091b2cc557034b78ebad282fa2f5a808f9f7425081c9"
+    },
+    {
+      "path": "assets/ui/icons/yellow.webp",
+      "size": [
+        128,
+        128
+      ],
+      "alpha_sha256": "45e8dd34002a2f5f77fd4a7cc4c76b6b440fd7e71b189d8b6b8176cec46ec607",
+      "transparent_pixels": 8506,
+      "source_path": "assets/ui/icons/yellow.webp",
+      "partial_alpha_pixels": 713,
+      "source_sha256": "a0f4063d90f91f7e033f10d2c7f6a352a0ce2a856034ba524ee62bb1860dad1f"
     }
   ]
 }

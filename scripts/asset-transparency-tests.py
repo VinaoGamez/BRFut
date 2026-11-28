@@ -21,7 +21,7 @@ restore_spec.loader.exec_module(restorer)
 class TransparencyTests(unittest.TestCase):
     def test_all_corrected_masks_match_audited_source_alpha(self):
         manifest = json.loads((ROOT / "scripts" / "asset-transparency-manifest.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(manifest["assets"]), 19)
+        self.assertEqual(len(manifest["assets"]), 33)
         for entry in manifest["assets"]:
             with self.subTest(path=entry["path"]), Image.open(ROOT / entry["path"]) as image:
                 self.assertEqual(list(image.size), entry["size"])
@@ -97,17 +97,16 @@ class TransparencyTests(unittest.TestCase):
             with Image.open(output) as converted:
                 self.assertEqual(converted.convert("RGBA").getchannel("A").getextrema(), (255, 255))
 
-    def test_assist_icon_has_negative_space_not_a_white_canvas(self):
-        with Image.open(ROOT / "assets" / "ui" / "assist-boot.webp") as image:
-            rgba = image.convert("RGBA")
-            self.assertEqual(rgba.getpixel((0, 0))[3], 0)
-            self.assertEqual(rgba.getpixel((rgba.width - 1, rgba.height - 1))[3], 0)
-            # Existing CSS invert changes black ink to white, not its alpha.
-            inverted = Image.new("RGBA", rgba.size, "white")
-            inverted.putalpha(rgba.getchannel("A"))
-            background = Image.new("RGBA", rgba.size, "#071923")
-            composed = Image.alpha_composite(background, inverted)
-            self.assertEqual(composed.getpixel((0, 0)), background.getpixel((0, 0)))
+    def test_event_icon_set_is_complete_and_transparent(self):
+        names = ["goal", "own-goal", "penalty-goal", "penalty-miss", "assist", "yellow", "red", "second-yellow",
+                 "sub", "sub-in", "sub-out", "injury", "knock", "suspended", "motm", "captain"]
+        for name in names:
+            with self.subTest(icon=name), Image.open(ROOT / "assets" / "ui" / "icons" / (name + ".webp")) as image:
+                rgba = image.convert("RGBA")
+                self.assertEqual(rgba.size, (128, 128))
+                for pixel in [(0, 0), (127, 0), (0, 127), (127, 127)]:
+                    self.assertEqual(rgba.getpixel(pixel)[3], 0)
+                self.assertGreaterEqual(max(rgba.getchannel("A").tobytes()), 250)
 
     def test_edge_cleanup_preserves_interior_colours_and_cyan_outline(self):
         image = Image.new("RGBA", (40, 40), (255, 0, 255, 0))

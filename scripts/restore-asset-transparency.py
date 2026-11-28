@@ -14,7 +14,7 @@ from PIL import Image, ImageOps, ImageFilter
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_REV = "3f433db8a1e3df1cf3cfae0434be0e28e481feaf"
 ASSET_DIRS = ("public", "assets", "brand")
-MONOCHROME_ASSETS = ("assets/ui/assist-boot.webp",)
+MONOCHROME_ASSETS = ()
 MAGENTA_EDGE_ASSETS = (
     "public/brand/stats-scorer.webp", "public/brand/stats-assist.webp", "public/brand/stats-overall.webp",
     "assets/match-view/tokens/away-gk.webp", "assets/match-view/tokens/away-outfield.webp",

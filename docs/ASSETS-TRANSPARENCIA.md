@@ -19,7 +19,7 @@ arte do mercado. O master WebP do troféu também foi corrigido.
 - Oito ícones auditados tinham resíduos da antiga cor-chave magenta perto do
   recorte original. A limpeza se limita a essa faixa de borda; detalhes roxos
   no interior não são removidos. O redimensionamento posterior cria antialias.
-- `assets/ui/assist-boot.webp` era uma arte monocromática com canvas branco
+- `assets/ui/assist-boot.webp` e `sub-arrows.webp` foram substituídos em 28/11/2026 pelo conjunto único `assets/ui/icons/*.webp` (ver `js/core/event-icons.js`).
   opaco desde a origem. O branco foi convertido em espaço negativo/alfa,
   preservando a apresentação pelo filtro de inversão que já existia no CSS.
 - São 19 arquivos corrigidos. Banners, cards e QR code não foram convertidos
