@@ -4,7 +4,8 @@
 
 import { resolvePlayerId } from '../../engine/player-identity.js';
 import { fetchPlayerSeasonStats } from '../../core/player-stats-sync.js';
-import { mountMatchdayCard } from '../../lab/player-card-system.js';
+import { positionLine } from '../shared/player-cells.js';
+import { clubCrestUrl } from '../../engine/club-crests.js';
 import { cardArtForPlayer } from '../../engine/player-card-art.js';
 import { rosterPlayerToCardPlayer } from '../player-card/roster-card-player.js';
 import { topThreeStats, barStats, careerSnapshot } from '../../lab/card-back.js';
@@ -24,18 +25,16 @@ function ensureModal() {
     'beforeend',
     `<div id="${MODAL_ID}" class="modal hidden player-card-modal" role="dialog" aria-modal="true" aria-labelledby="playerCardV2Name">
       <div class="player-card-modal-shell mv2-shell pcv2" data-tone="lime">
-        <header class="mv2-head">
-          <div>
+        <header class="mv2-head pcv2-head">
+          <img class="pcv2-crest" id="playerCardV2Crest" alt="" hidden>
+          <div class="pcv2-head-text">
             <span class="mv2-kicker" id="playerCardV2Kicker">ELENCO</span>
-            <h2 class="mv2-title" id="playerCardV2Name">Jogador</h2>
+            <h2 class="mv2-title pcv2-name" id="playerCardV2Name">Jogador</h2>
           </div>
           <button type="button" class="mv2-close" data-pcv2-close aria-label="Fechar">×</button>
         </header>
         <div class="pcv2-grid">
-          <div class="pcv2-card">
-            <div id="playerCardMount" class="player-card-modal-mount"></div>
-            <small class="pcv2-flip-hint">Toque no card para virar</small>
-          </div>
+          <div class="pcv2-photo" id="playerCardV2Photo" aria-hidden="true"></div>
           <div class="pcv2-info" id="playerCardV2Info"></div>
         </div>
         <footer class="mv2-foot pcv2-foot">
@@ -77,7 +76,7 @@ export function playerCardInfoMarkup(card, { division = null, isOwn = false } = 
   const fatigue = Number.isFinite(Number(card.fatigue)) ? Math.round(Number(card.fatigue)) : null;
   const injured = !!(card.injury && (card.injury.roundsLeft > 0 || card.injury.weeksLeft > 0 || card.injury.active));
   const chips = [
-    `<span class="pcv2-chip is-pos">${escHtml(pos)}</span>`,
+    `<span class="pcv2-chip is-pos" data-line="${positionLine(pos)}">${escHtml(pos)}</span>`,
     age ? `<span class="pcv2-chip">${age} anos</span>` : '',
     foot ? `<span class="pcv2-chip">${foot}</span>` : '',
     card.nationality ? `<span class="pcv2-chip">${escHtml(card.nationality)}</span>` : '',
@@ -138,13 +137,13 @@ export function createPlayerCardModal(deps = {}) {
   ensureModal();
 
   const modal = () => document.getElementById(MODAL_ID);
-  const mountEl = () => document.getElementById('playerCardMount');
+  const photoEl = () => document.getElementById('playerCardV2Photo');
   let openCtx = null;
 
   const close = () => {
     modal()?.classList.add('hidden');
-    const mount = mountEl();
-    if (mount) mount.innerHTML = '';
+    const photo = photoEl();
+    if (photo) photo.innerHTML = '';
     openCtx = null;
   };
 
@@ -196,7 +195,17 @@ export function createPlayerCardModal(deps = {}) {
       const div = division ? ` · SÉRIE ${String(division).toUpperCase()}` : '';
       kicker.textContent = ownerClub ? `${isOwn ? 'SEU ELENCO' : ownerClub.toUpperCase()}${div}` : 'JOGADOR LIVRE';
     }
-    if (nameEl) nameEl.textContent = player.name || 'Jogador';
+    if (nameEl) {
+      nameEl.textContent = player.name || 'Jogador';
+      nameEl.title = player.name || '';
+    }
+    const crestEl = document.getElementById('playerCardV2Crest');
+    if (crestEl) {
+      const url = ownerClub ? clubCrestUrl(ownerClub) : null;
+      crestEl.hidden = !url;
+      if (url) crestEl.src = url;
+      else crestEl.removeAttribute('src');
+    }
     const mainBtn = modal()?.querySelector('[data-pcv2-action="main"]');
     const loanBtn = modal()?.querySelector('[data-pcv2-action="loan"]');
     const hint = document.getElementById('playerCardV2Hint');
@@ -228,13 +237,14 @@ export function createPlayerCardModal(deps = {}) {
     const renderCard = currentCard => {
       const info = document.getElementById('playerCardV2Info');
       if (info) info.innerHTML = playerCardInfoMarkup(currentCard, { division, isOwn });
-      mountMatchdayCard(mountEl(), currentCard, {
-        interactive: true,
-        showActions: false,
-        actionMode,
-        actionsEnabled,
-        cardArt: currentCard._cardArt,
-      });
+      const photo = photoEl();
+      if (photo) {
+        photo.dataset.line = positionLine(currentCard.pos);
+        const art = currentCard._cardArt;
+        photo.innerHTML = art
+          ? `<span class="pcv2-photo-frame"><img src="${escHtml(art)}" alt="" decoding="async"></span>`
+          : `<span class="pcv2-photo-empty">${escHtml(currentCard.pos || '')}</span>`;
+      }
     };
     renderCard(cardPlayer);
 
